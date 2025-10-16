@@ -21,7 +21,7 @@ def admin_required(f):
 @login_required
 @admin_required
 def dashboard():
-    total_members = User.query.filter_by(is_admin=False).count()
+    total_members = User.query.count()
     total_news = News.query.count()
     total_events = Event.query.count()
     return render_template('admin/dashboard.html', 

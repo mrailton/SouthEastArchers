@@ -9,8 +9,7 @@ class LoginForm(FlaskForm):
 
 class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
-    first_name = StringField('First Name', validators=[DataRequired(), Length(min=2, max=50)])
-    last_name = StringField('Last Name', validators=[DataRequired(), Length(min=2, max=50)])
+    name = StringField('Name', validators=[DataRequired(), Length(min=2, max=100)])
     phone = StringField('Phone', validators=[Length(max=20)])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     password2 = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])

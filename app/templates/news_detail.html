@@ -12,7 +12,7 @@
             <div class="text-gray-500 mb-6">
                 <span>Published {{ news.created_at.strftime('%B %d, %Y') }}</span>
                 {% if news.author %}
-                <span class="ml-4">By {{ news.author.first_name }} {{ news.author.last_name }}</span>
+                <span class="ml-4">By {{ news.author.name }}</span>
                 {% endif %}
             </div>
             <div class="prose max-w-none">

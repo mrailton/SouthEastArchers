@@ -33,8 +33,7 @@ def register():
     if form.validate_on_submit():
         user = User(
             email=form.email.data,
-            first_name=form.first_name.data,
-            last_name=form.last_name.data,
+            name=form.name.data,
             phone=form.phone.data
         )
         user.set_password(form.password.data)

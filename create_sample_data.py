@@ -16,8 +16,7 @@ def create_sample_data():
             # Create admin user
             admin = User(
                 email='admin@southeastarchers.ie',
-                first_name='Admin',
-                last_name='User',
+                name='Admin User',
                 phone='0871234567',
                 is_admin=True
             )
@@ -42,8 +41,7 @@ def create_sample_data():
         if not member:
             member = User(
                 email='member@example.com',
-                first_name='John',
-                last_name='Doe',
+                name='John Doe',
                 phone='0879876543',
                 is_admin=False
             )

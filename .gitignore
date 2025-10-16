@@ -30,3 +30,4 @@ instance/
 migrations/versions/*.pyc
 .coverage
 .coveragerc
+htmlcov

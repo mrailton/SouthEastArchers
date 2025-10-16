@@ -36,7 +36,43 @@ A Flask web application for managing an archery club with membership, credit tra
 
 ## Setup Instructions
 
-### Prerequisites
+### Option 1: Docker (Recommended)
+
+The easiest way to run the application is using Docker:
+
+```bash
+# Quick start
+./scripts/docker-run.sh start
+
+# Run migrations
+./scripts/docker-run.sh migrate
+
+# Create sample data
+./scripts/docker-run.sh sample-data
+
+# View logs
+./scripts/docker-run.sh logs
+```
+
+The application will be available at http://localhost:5000
+
+**Docker Commands:**
+- `start` - Start the application
+- `stop` - Stop the application  
+- `restart` - Restart containers
+- `logs` - View logs
+- `migrate` - Run database migrations
+- `sample-data` - Create sample data
+- `shell` - Open shell in container
+- `build` - Build Docker image locally
+- `pull` - Pull latest image from GitHub Container Registry
+- `status` - Show container status
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed Docker deployment guide.
+
+### Option 2: Local Development
+
+#### Prerequisites
 
 - Python 3.13+
 - MySQL (optional, for production)
@@ -254,6 +290,51 @@ flask shell
 
 ## Production Deployment
 
+### Docker Deployment (Recommended)
+
+The application includes full Docker support with automated builds via GitHub Actions.
+
+**Quick Deploy:**
+```bash
+# Pull latest image from GitHub Container Registry
+docker pull ghcr.io/USERNAME/southeastarchers:latest
+
+# Run with docker-compose
+docker-compose up -d
+
+# Initialize database
+docker-compose exec web flask db upgrade
+```
+
+**Features:**
+- ✅ Multi-stage Docker build for minimal image size
+- ✅ Automated builds on push to main/develop
+- ✅ Images published to GitHub Container Registry (GHCR)
+- ✅ Support for multiple architectures (amd64, arm64)
+- ✅ Security scanning with Trivy
+- ✅ Health checks built-in
+- ✅ Non-root user for security
+- ✅ Nginx reverse proxy included (optional)
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment documentation.
+
+### GitHub Actions CI/CD
+
+The repository includes automated workflows:
+
+- **Tests**: Run on every push and pull request
+- **Docker Build**: Build and push images to GHCR
+- **Security Scan**: Scan images for vulnerabilities
+- **Coverage**: Upload test coverage to Codecov
+
+Images are tagged automatically:
+- `latest` - Latest build from main
+- `main`, `develop` - Branch builds
+- `v1.0.0` - Tagged releases
+- `main-abc123` - Commit SHA
+
+### Manual Deployment
+
 1. Set `FLASK_ENV=production` in `.env`
 2. Use a production WSGI server (Gunicorn, uWSGI)
 3. Use MySQL or PostgreSQL instead of SQLite
@@ -268,6 +349,33 @@ Example with Gunicorn:
 pip install gunicorn
 gunicorn -w 4 -b 127.0.0.1:8000 app:app
 ```
+
+## Testing
+
+The project includes a comprehensive test suite with PyTest.
+
+**Run tests:**
+```bash
+# All tests
+./run_tests.sh
+
+# With coverage
+./run_tests.sh coverage
+
+# Fast mode
+./run_tests.sh fast
+
+# Specific tests
+./run_tests.sh specific admin
+```
+
+**Test Statistics:**
+- 22 tests covering all major functionality
+- 75.43% code coverage
+- Tests for models, routes, forms, and authentication
+- In-memory SQLite database for fast execution
+
+See [TESTING.md](TESTING.md) and [tests/README.md](tests/README.md) for detailed testing documentation.
 
 ## License
 

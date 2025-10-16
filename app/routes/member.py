@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
+
 from app import db
-from app.models import CreditPurchase, Membership
 from app.forms import CreditPurchaseForm
+from app.models import CreditPurchase
 from config import Config
 
 bp = Blueprint('member', __name__, url_prefix='/member')

@@ -1,10 +1,11 @@
+from functools import wraps
+
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from functools import wraps
+
 from app import db
-from app.models import News, Event, User, ShootingNight, Membership
 from app.forms import NewsForm, EventForm, ShootingNightForm
-from datetime import datetime
+from app.models import News, Event, User, ShootingNight
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 

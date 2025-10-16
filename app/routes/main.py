@@ -1,6 +1,8 @@
-from flask import Blueprint, render_template
-from app.models import News, Event
 from datetime import datetime
+
+from flask import Blueprint, render_template
+
+from app.models import News, Event
 
 bp = Blueprint('main', __name__)
 

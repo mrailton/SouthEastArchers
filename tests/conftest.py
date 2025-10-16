@@ -1,9 +1,11 @@
 """Pytest configuration and fixtures for testing."""
-import pytest
 import os
 from datetime import datetime, timedelta
+
+import pytest
+
 from app import create_app, db
-from app.models import User, Membership, News, Event, ShootingNight, CreditPurchase
+from app.models import User, Membership, News, Event, ShootingNight
 from config import Config
 
 

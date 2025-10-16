@@ -10,4 +10,4 @@ else
   echo "DATABASE_URL not set; skipping migrations."
 fi
 
-exec gunicorn wsgi:app --host "0.0.0.0" --port "${PORT}" --workers "${WORKERS:-4}"
+exec gunicorn wsgi:app --bind "0.0.0.0:5000" --workers "${WORKERS:-4}"

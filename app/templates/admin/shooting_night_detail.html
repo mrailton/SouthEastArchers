@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+        <div class="mb-6">
+            <a href="{{ url_for('admin.shooting_night_list') }}" class="text-green-600 hover:text-green-700">← Back to Shooting Nights</a>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <div class="flex justify-between items-start mb-6">
+                <h1 class="text-3xl font-bold">Shooting Night Details</h1>
+                <div class="flex gap-2">
+                    <a href="{{ url_for('admin.shooting_night_edit', id=shooting_night.id) }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                        Edit
+                    </a>
+                    <form method="POST" action="{{ url_for('admin.shooting_night_delete', id=shooting_night.id) }}" class="inline" onsubmit="return confirm('Are you sure? Credits will be restored to all attendees.');">
+                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <p class="text-gray-600 mb-1">Date</p>
+                    <p class="font-semibold text-lg">{{ shooting_night.date.strftime('%A, %B %d, %Y') }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600 mb-1">Location</p>
+                    <p class="font-semibold text-lg">
+                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">{{ shooting_night.location }}</span>
+                    </p>
+                </div>
+                <div>
+                    <p class="text-gray-600 mb-1">Total Attendees</p>
+                    <p class="font-semibold text-lg">{{ shooting_night.attendees|length }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600 mb-1">Recorded By</p>
+                    <p class="font-semibold text-lg">{{ shooting_night.creator.name }}</p>
+                </div>
+            </div>
+            
+            {% if shooting_night.notes %}
+            <div class="mb-8">
+                <p class="text-gray-600 mb-2">Notes</p>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p class="text-gray-700 whitespace-pre-line">{{ shooting_night.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold mb-4">Attendees ({{ shooting_night.attendees|length }})</h2>
+            {% if shooting_night.attendees %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="text-left py-3 px-4 font-semibold">Name</th>
+                            <th class="text-left py-3 px-4 font-semibold">Email</th>
+                            <th class="text-left py-3 px-4 font-semibold">Current Credits</th>
+                            <th class="text-left py-3 px-4 font-semibold">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attendee in shooting_night.attendees %}
+                        <tr class="border-t">
+                            <td class="py-3 px-4">
+                                <a href="{{ url_for('admin.member_detail', id=attendee.id) }}" class="text-blue-600 hover:text-blue-700">
+                                    {{ attendee.name }}
+                                </a>
+                            </td>
+                            <td class="py-3 px-4">{{ attendee.email }}</td>
+                            <td class="py-3 px-4">{{ attendee.total_credits }}</td>
+                            <td class="py-3 px-4">
+                                {% if attendee.current_membership %}
+                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Active</span>
+                                {% else %}
+                                <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-gray-600">No attendees recorded.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

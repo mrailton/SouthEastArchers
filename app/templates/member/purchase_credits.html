@@ -17,13 +17,12 @@
                 </p>
             </div>
             
-            <form method="POST" action="" x-data="{ credits: 1 }">
+            <form method="POST" action="" x-data="{ credits: 1, creditCost: {{ credit_cost }} }">
                 {{ form.hidden_tag() }}
                 
                 <div class="mb-6">
                     <label for="credits" class="block text-gray-700 font-semibold mb-2">Number of Credits</label>
-                    {{ form.credits(class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500", 
-                                    'x-model'='credits', 'min'='1', 'max'='100') }}
+                    {{ form.credits(class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500", **{'x-model': 'credits', 'min': '1', 'max': '100'}) }}
                     {% if form.credits.errors %}
                         <p class="text-red-500 text-sm mt-1">{{ form.credits.errors[0] }}</p>
                     {% endif %}
@@ -41,7 +40,7 @@
                     <div class="border-t pt-2 mt-2">
                         <div class="flex justify-between">
                             <span class="text-lg font-bold">Total:</span>
-                            <span class="text-lg font-bold text-green-600" x-text="'€' + (credits * {{ credit_cost }}).toFixed(2)"></span>
+                            <span class="text-lg font-bold text-green-600" x-text="'€' + (credits * creditCost).toFixed(2)"></span>
                         </div>
                     </div>
                 </div>

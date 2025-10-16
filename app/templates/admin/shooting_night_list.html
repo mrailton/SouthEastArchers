@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-4xl font-bold">Shooting Nights</h1>
+        <a href="{{ url_for('admin.shooting_night_create') }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">
+            Record New Shooting Night
+        </a>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <table class="min-w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="text-left py-3 px-6 font-semibold">Date</th>
+                    <th class="text-left py-3 px-6 font-semibold">Location</th>
+                    <th class="text-left py-3 px-6 font-semibold">Attendees</th>
+                    <th class="text-left py-3 px-6 font-semibold">Notes</th>
+                    <th class="text-right py-3 px-6 font-semibold">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for night in shooting_nights %}
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="py-4 px-6">{{ night.date.strftime('%b %d, %Y') }}</td>
+                    <td class="py-4 px-6">
+                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">{{ night.location }}</span>
+                    </td>
+                    <td class="py-4 px-6">{{ night.attendees|length }} members</td>
+                    <td class="py-4 px-6">
+                        {% if night.notes %}
+                            {{ night.notes[:50] }}{% if night.notes|length > 50 %}...{% endif %}
+                        {% else %}
+                            <span class="text-gray-400">No notes</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-6 text-right">
+                        <a href="{{ url_for('admin.shooting_night_detail', id=night.id) }}" class="text-blue-600 hover:text-blue-700 mr-3">View</a>
+                        <a href="{{ url_for('admin.shooting_night_edit', id=night.id) }}" class="text-green-600 hover:text-green-700 mr-3">Edit</a>
+                        <form method="POST" action="{{ url_for('admin.shooting_night_delete', id=night.id) }}" class="inline" onsubmit="return confirm('Are you sure? Credits will be restored to attendees.');">
+                            <button type="submit" class="text-red-600 hover:text-red-700">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="py-8 px-6 text-center text-gray-500">No shooting nights recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

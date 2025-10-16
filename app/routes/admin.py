@@ -2,8 +2,9 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from functools import wraps
 from app import db
-from app.models import News, Event, User
-from app.forms import NewsForm, EventForm
+from app.models import News, Event, User, ShootingNight, Membership
+from app.forms import NewsForm, EventForm, ShootingNightForm
+from datetime import datetime
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -143,7 +144,7 @@ def event_delete(id):
 @login_required
 @admin_required
 def member_list():
-    members = User.query.filter_by(is_admin=False).order_by(User.created_at.desc()).all()
+    members = User.query.order_by(User.created_at.desc()).all()
     return render_template('admin/member_list.html', members=members)
 
 @bp.route('/members/<int:id>')
@@ -152,3 +153,126 @@ def member_list():
 def member_detail(id):
     member = User.query.get_or_404(id)
     return render_template('admin/member_detail.html', member=member)
+
+# Shooting Night Management
+@bp.route('/shooting-nights')
+@login_required
+@admin_required
+def shooting_night_list():
+    shooting_nights = ShootingNight.query.order_by(ShootingNight.date.desc()).all()
+    return render_template('admin/shooting_night_list.html', shooting_nights=shooting_nights)
+
+@bp.route('/shooting-nights/create', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def shooting_night_create():
+    form = ShootingNightForm()
+    # Get all active members with current memberships
+    members = User.query.filter_by(is_active=True).order_by(User.name).all()
+    form.attendees.choices = [(m.id, m.name) for m in members]
+    
+    if form.validate_on_submit():
+        shooting_night = ShootingNight(
+            date=form.date.data,
+            location=form.location.data,
+            notes=form.notes.data,
+            created_by=current_user.id
+        )
+        db.session.add(shooting_night)
+        db.session.flush()  # Get the ID before adding attendees
+        
+        # Add attendees and deduct credits
+        for user_id in form.attendees.data:
+            user = User.query.get(user_id)
+            if user:
+                shooting_night.attendees.append(user)
+                
+                # Deduct one credit from user's current membership
+                membership = user.current_membership
+                if membership and membership.credits_remaining > 0:
+                    membership.credits_remaining -= 1
+        
+        db.session.commit()
+        flash('Shooting night recorded successfully!', 'success')
+        return redirect(url_for('admin.shooting_night_list'))
+    
+    return render_template('admin/shooting_night_form.html', form=form, title='Record Shooting Night')
+
+@bp.route('/shooting-nights/<int:id>')
+@login_required
+@admin_required
+def shooting_night_detail(id):
+    shooting_night = ShootingNight.query.get_or_404(id)
+    return render_template('admin/shooting_night_detail.html', shooting_night=shooting_night)
+
+@bp.route('/shooting-nights/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def shooting_night_edit(id):
+    shooting_night = ShootingNight.query.get_or_404(id)
+    form = ShootingNightForm(obj=shooting_night)
+    
+    # Get all active members
+    members = User.query.filter_by(is_admin=False, is_active=True).order_by(User.name).all()
+    form.attendees.choices = [(m.id, m.name) for m in members]
+    
+    if request.method == 'GET':
+        # Pre-select current attendees
+        form.attendees.data = [attendee.id for attendee in shooting_night.attendees]
+    
+    if form.validate_on_submit():
+        # Get previous attendees
+        previous_attendees = set(shooting_night.attendees)
+        new_attendees_ids = set(form.attendees.data)
+        
+        # Find who was added and who was removed
+        previous_attendees_ids = {a.id for a in previous_attendees}
+        added_ids = new_attendees_ids - previous_attendees_ids
+        removed_ids = previous_attendees_ids - new_attendees_ids
+        
+        # Restore credits for removed attendees
+        for user_id in removed_ids:
+            user = User.query.get(user_id)
+            if user:
+                membership = user.current_membership
+                if membership:
+                    membership.credits_remaining += 1
+        
+        # Deduct credits for newly added attendees
+        for user_id in added_ids:
+            user = User.query.get(user_id)
+            if user:
+                membership = user.current_membership
+                if membership and membership.credits_remaining > 0:
+                    membership.credits_remaining -= 1
+        
+        # Update shooting night details
+        shooting_night.date = form.date.data
+        shooting_night.location = form.location.data
+        shooting_night.notes = form.notes.data
+        
+        # Update attendees
+        shooting_night.attendees = [User.query.get(uid) for uid in form.attendees.data]
+        
+        db.session.commit()
+        flash('Shooting night updated successfully!', 'success')
+        return redirect(url_for('admin.shooting_night_list'))
+    
+    return render_template('admin/shooting_night_form.html', form=form, title='Edit Shooting Night', shooting_night=shooting_night)
+
+@bp.route('/shooting-nights/<int:id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def shooting_night_delete(id):
+    shooting_night = ShootingNight.query.get_or_404(id)
+    
+    # Restore credits to all attendees
+    for attendee in shooting_night.attendees:
+        membership = attendee.current_membership
+        if membership:
+            membership.credits_remaining += 1
+    
+    db.session.delete(shooting_night)
+    db.session.commit()
+    flash('Shooting night deleted and credits restored!', 'success')
+    return redirect(url_for('admin.shooting_night_list'))

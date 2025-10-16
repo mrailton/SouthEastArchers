@@ -84,7 +84,7 @@
         </div>
         
         <!-- Credit Purchases -->
-        <div class="bg-white rounded-lg shadow-lg p-8">
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
             <h2 class="text-2xl font-bold mb-4">Credit Purchase History</h2>
             {% if member.credit_purchases %}
             <div class="overflow-x-auto">
@@ -109,6 +109,48 @@
             </div>
             {% else %}
             <p class="text-gray-600">No credit purchases yet.</p>
+            {% endif %}
+        </div>
+        
+        <!-- Shooting Night Attendance -->
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold mb-4">Shooting Night Attendance</h2>
+            {% if member.attended_shooting_nights %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left py-2">Date</th>
+                            <th class="text-left py-2">Location</th>
+                            <th class="text-left py-2">Notes</th>
+                            <th class="text-right py-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for night in member.attended_shooting_nights|sort(attribute='date', reverse=True) %}
+                        <tr class="border-b">
+                            <td class="py-2">{{ night.date.strftime('%b %d, %Y') }}</td>
+                            <td class="py-2">
+                                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">{{ night.location }}</span>
+                            </td>
+                            <td class="py-2">
+                                {% if night.notes %}
+                                    {{ night.notes[:30] }}{% if night.notes|length > 30 %}...{% endif %}
+                                {% else %}
+                                    <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-2 text-right">
+                                <a href="{{ url_for('admin.shooting_night_detail', id=night.id) }}" class="text-blue-600 hover:text-blue-700">View Details</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-gray-600 mt-4">Total shooting nights attended: {{ member.attended_shooting_nights|length }}</p>
+            {% else %}
+            <p class="text-gray-600">No shooting nights attended yet.</p>
             {% endif %}
         </div>
     </div>

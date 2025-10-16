@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">{{ title }}</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-6">
+                    <label for="date" class="block text-gray-700 font-semibold mb-2">Date</label>
+                    {{ form.date(class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500") }}
+                    {% if form.date.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.date.errors[0] }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-6">
+                    <label for="location" class="block text-gray-700 font-semibold mb-2">Location</label>
+                    {{ form.location(class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500") }}
+                    {% if form.location.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.location.errors[0] }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-semibold mb-2">Attendees</label>
+                    <div class="border rounded-lg p-4 max-h-64 overflow-y-auto">
+                        {% if form.attendees.choices %}
+                            {% for subfield in form.attendees %}
+                                <div class="flex items-center mb-2">
+                                    {{ subfield(class="mr-2") }}
+                                    {{ subfield.label(class="text-gray-700") }}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-gray-500">No active members available</p>
+                        {% endif %}
+                    </div>
+                    {% if form.attendees.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.attendees.errors[0] }}</p>
+                    {% endif %}
+                    <p class="text-sm text-gray-600 mt-2">Each attendee will have 1 credit deducted from their membership.</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="notes" class="block text-gray-700 font-semibold mb-2">Notes (optional)</label>
+                    {{ form.notes(class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500", rows="4") }}
+                    {% if form.notes.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.notes.errors[0] }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="flex gap-4">
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">
+                        Save Shooting Night
+                    </button>
+                    <a href="{{ url_for('admin.shooting_night_list') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

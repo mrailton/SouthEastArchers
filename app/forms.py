@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, TextAreaField, DateTimeField, BooleanField, IntegerField, FloatField
+from wtforms import StringField, PasswordField, TextAreaField, DateTimeField, BooleanField, IntegerField, FloatField, SelectField, DateField, SelectMultipleField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Length, NumberRange
+from wtforms.widgets import CheckboxInput, ListWidget
 from app.models import User
 
 class LoginForm(FlaskForm):
@@ -33,3 +34,14 @@ class EventForm(FlaskForm):
 
 class CreditPurchaseForm(FlaskForm):
     credits = IntegerField('Number of Credits', validators=[DataRequired(), NumberRange(min=1, max=100)])
+
+class MultiCheckboxField(SelectMultipleField):
+    widget = ListWidget(prefix_label=False)
+    option_widget = CheckboxInput()
+
+class ShootingNightForm(FlaskForm):
+    date = DateField('Date', validators=[DataRequired()], format='%Y-%m-%d')
+    location = SelectField('Location', validators=[DataRequired()], 
+                          choices=[('Hall', 'Hall'), ('Meadow', 'Meadow'), ('Woods', 'Woods')])
+    attendees = MultiCheckboxField('Attendees', coerce=int)
+    notes = TextAreaField('Notes', validators=[Length(max=500)])

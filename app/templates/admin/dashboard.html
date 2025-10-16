@@ -25,6 +25,9 @@
         <div class="bg-white rounded-lg shadow-lg p-6">
             <h2 class="text-2xl font-bold mb-4">Quick Actions</h2>
             <div class="space-y-3">
+                <a href="{{ url_for('admin.shooting_night_create') }}" class="block bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg text-center font-semibold">
+                    Record Shooting Night
+                </a>
                 <a href="{{ url_for('admin.news_create') }}" class="block bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg text-center font-semibold">
                     Create News Article
                 </a>
@@ -40,6 +43,9 @@
         <div class="bg-white rounded-lg shadow-lg p-6">
             <h2 class="text-2xl font-bold mb-4">Management</h2>
             <div class="space-y-3">
+                <a href="{{ url_for('admin.shooting_night_list') }}" class="block text-green-600 hover:text-green-700 font-semibold py-2">
+                    Shooting Nights →
+                </a>
                 <a href="{{ url_for('admin.news_list') }}" class="block text-green-600 hover:text-green-700 font-semibold py-2">
                     Manage News →
                 </a>

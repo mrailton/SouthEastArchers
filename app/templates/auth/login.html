@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-12 px-4">
+    <div class="max-w-md w-full">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">Sign in to your account</h2>
+            <p class="mt-2 text-gray-600">Or <a href="{{ url_for('auth.register') }}" class="text-green-600 hover:text-green-700 font-semibold">register for a new account</a></p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-4">
+                    <label for="email" class="block text-gray-700 font-semibold mb-2">Email</label>
+                    {{ form.email(class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500") }}
+                    {% if form.email.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.email.errors[0] }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-6">
+                    <label for="password" class="block text-gray-700 font-semibold mb-2">Password</label>
+                    {{ form.password(class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500") }}
+                    {% if form.password.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.password.errors[0] }}</p>
+                    {% endif %}
+                </div>
+                
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

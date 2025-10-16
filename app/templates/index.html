@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="bg-green-700 text-white py-20">
+    <div class="container mx-auto px-4 text-center">
+        <h1 class="text-5xl font-bold mb-4">Welcome to South East Archers</h1>
+        <p class="text-xl mb-8">Your premier archery club in the South East</p>
+        {% if not current_user.is_authenticated %}
+        <a href="{{ url_for('auth.register') }}" class="bg-white text-green-700 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 inline-block">
+            Join Today - €100/year
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container mx-auto px-4 py-16">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center p-6">
+            <div class="text-5xl mb-4">🎯</div>
+            <h3 class="text-xl font-bold mb-2">Professional Facilities</h3>
+            <p class="text-gray-600">State-of-the-art archery range with expert coaching</p>
+        </div>
+        <div class="text-center p-6">
+            <div class="text-5xl mb-4">👥</div>
+            <h3 class="text-xl font-bold mb-2">Friendly Community</h3>
+            <p class="text-gray-600">Join a welcoming community of archery enthusiasts</p>
+        </div>
+        <div class="text-center p-6">
+            <div class="text-5xl mb-4">📅</div>
+            <h3 class="text-xl font-bold mb-2">Regular Events</h3>
+            <p class="text-gray-600">Competitions, training sessions, and social events</p>
+        </div>
+    </div>
+</div>
+
+<!-- Latest News Section -->
+{% if news %}
+<div class="bg-white py-16">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-8 text-center">Latest News</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {% for item in news %}
+            <div class="border rounded-lg p-6 hover:shadow-lg transition">
+                <h3 class="text-xl font-bold mb-2">{{ item.title }}</h3>
+                <p class="text-gray-600 mb-4">{{ item.content[:150] }}...</p>
+                <a href="{{ url_for('main.news_detail', id=item.id) }}" class="text-green-600 hover:text-green-700 font-semibold">Read More →</a>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-8">
+            <a href="{{ url_for('main.news') }}" class="text-green-600 hover:text-green-700 font-semibold">View All News →</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Upcoming Events Section -->
+{% if events %}
+<div class="container mx-auto px-4 py-16">
+    <h2 class="text-3xl font-bold mb-8 text-center">Upcoming Events</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {% for event in events %}
+        <div class="border rounded-lg p-6 hover:shadow-lg transition">
+            <div class="text-sm text-green-600 mb-2">{{ event.event_date.strftime('%B %d, %Y at %I:%M %p') }}</div>
+            <h3 class="text-xl font-bold mb-2">{{ event.title }}</h3>
+            <p class="text-gray-600 mb-4">{{ event.description[:100] }}...</p>
+            <a href="{{ url_for('main.event_detail', id=event.id) }}" class="text-green-600 hover:text-green-700 font-semibold">Learn More →</a>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="text-center mt-8">
+        <a href="{{ url_for('main.events') }}" class="text-green-600 hover:text-green-700 font-semibold">View All Events →</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Membership Info -->
+<div class="bg-green-50 py-16">
+    <div class="container mx-auto px-4 text-center">
+        <h2 class="text-3xl font-bold mb-8">Membership Benefits</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-bold mb-4">Annual Membership</h3>
+                <p class="text-4xl font-bold text-green-600 mb-4">€100</p>
+                <ul class="text-left space-y-2 text-gray-600">
+                    <li>✓ Full year membership</li>
+                    <li>✓ 20 shooting credits included</li>
+                    <li>✓ Access to all facilities</li>
+                    <li>✓ Member events and competitions</li>
+                </ul>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-bold mb-4">Additional Credits</h3>
+                <p class="text-4xl font-bold text-green-600 mb-4">€5</p>
+                <ul class="text-left space-y-2 text-gray-600">
+                    <li>✓ Per credit pricing</li>
+                    <li>✓ 1 credit = 1 night shooting</li>
+                    <li>✓ Purchase anytime online</li>
+                    <li>✓ No expiration on credits</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

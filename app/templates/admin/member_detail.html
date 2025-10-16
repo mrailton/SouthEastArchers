@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+        <div class="mb-6">
+            <a href="{{ url_for('admin.member_list') }}" class="text-green-600 hover:text-green-700">← Back to Members List</a>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h1 class="text-3xl font-bold mb-6">Member Details</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <p class="text-gray-600 mb-1">Name</p>
+                    <p class="font-semibold text-lg">{{ member.first_name }} {{ member.last_name }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600 mb-1">Email</p>
+                    <p class="font-semibold text-lg">{{ member.email }}</p>
+                </div>
+                {% if member.phone %}
+                <div>
+                    <p class="text-gray-600 mb-1">Phone</p>
+                    <p class="font-semibold text-lg">{{ member.phone }}</p>
+                </div>
+                {% endif %}
+                <div>
+                    <p class="text-gray-600 mb-1">Member Since</p>
+                    <p class="font-semibold text-lg">{{ member.created_at.strftime('%B %d, %Y') }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600 mb-1">Total Credits</p>
+                    <p class="font-semibold text-lg">{{ member.total_credits }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600 mb-1">Status</p>
+                    {% if member.current_membership %}
+                    <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">Active</span>
+                    {% else %}
+                    <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-semibold">Inactive</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Memberships -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h2 class="text-2xl font-bold mb-4">Membership History</h2>
+            {% if member.memberships %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left py-2">Start Date</th>
+                            <th class="text-left py-2">End Date</th>
+                            <th class="text-left py-2">Credits</th>
+                            <th class="text-left py-2">Amount</th>
+                            <th class="text-left py-2">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for membership in member.memberships %}
+                        <tr class="border-b">
+                            <td class="py-2">{{ membership.start_date.strftime('%b %d, %Y') }}</td>
+                            <td class="py-2">{{ membership.end_date.strftime('%b %d, %Y') }}</td>
+                            <td class="py-2">{{ membership.credits_remaining }}</td>
+                            <td class="py-2">€{{ "%.2f"|format(membership.amount_paid) }}</td>
+                            <td class="py-2">
+                                {% if membership.is_active %}
+                                <span class="text-green-600 font-semibold">Active</span>
+                                {% else %}
+                                <span class="text-gray-600">Expired</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-gray-600">No membership history.</p>
+            {% endif %}
+        </div>
+        
+        <!-- Credit Purchases -->
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold mb-4">Credit Purchase History</h2>
+            {% if member.credit_purchases %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left py-2">Date</th>
+                            <th class="text-left py-2">Credits</th>
+                            <th class="text-left py-2">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for purchase in member.credit_purchases %}
+                        <tr class="border-b">
+                            <td class="py-2">{{ purchase.purchase_date.strftime('%b %d, %Y') }}</td>
+                            <td class="py-2">{{ purchase.credits_purchased }}</td>
+                            <td class="py-2">€{{ "%.2f"|format(purchase.amount_paid) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-gray-600">No credit purchases yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

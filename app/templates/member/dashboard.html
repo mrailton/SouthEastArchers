@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+    <h1 class="text-4xl font-bold mb-8">Member Dashboard</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Membership Status -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Membership Status</h3>
+            {% if membership %}
+            <p class="text-3xl font-bold text-green-600">Active</p>
+            <p class="text-gray-600 mt-2">Expires: {{ membership.end_date.strftime('%B %d, %Y') }}</p>
+            {% else %}
+            <p class="text-3xl font-bold text-red-600">Inactive</p>
+            {% endif %}
+        </div>
+        
+        <!-- Credits Remaining -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Available Credits</h3>
+            <p class="text-3xl font-bold text-green-600">{{ current_user.total_credits }}</p>
+            <p class="text-gray-600 mt-2">1 credit = 1 night shooting</p>
+        </div>
+        
+        <!-- Quick Action -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Need More Credits?</h3>
+            <a href="{{ url_for('member.purchase_credits') }}" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold inline-block">
+                Purchase Credits
+            </a>
+        </div>
+    </div>
+    
+    <!-- Membership Details -->
+    {% if membership %}
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold mb-4">Membership Details</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <p class="text-gray-600">Start Date:</p>
+                <p class="font-semibold">{{ membership.start_date.strftime('%B %d, %Y') }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600">End Date:</p>
+                <p class="font-semibold">{{ membership.end_date.strftime('%B %d, %Y') }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600">Credits Remaining:</p>
+                <p class="font-semibold">{{ membership.credits_remaining }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600">Amount Paid:</p>
+                <p class="font-semibold">€{{ "%.2f"|format(membership.amount_paid) }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Recent Credit Purchases -->
+    {% if purchases %}
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold mb-4">Recent Credit Purchases</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="border-b">
+                        <th class="text-left py-3 px-4">Date</th>
+                        <th class="text-left py-3 px-4">Credits</th>
+                        <th class="text-left py-3 px-4">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for purchase in purchases %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-3 px-4">{{ purchase.purchase_date.strftime('%B %d, %Y') }}</td>
+                        <td class="py-3 px-4">{{ purchase.credits_purchased }}</td>
+                        <td class="py-3 px-4">€{{ "%.2f"|format(purchase.amount_paid) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">My Profile</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="space-y-4">
+                <div>
+                    <label class="text-gray-600">Name:</label>
+                    <p class="font-semibold">{{ current_user.first_name }} {{ current_user.last_name }}</p>
+                </div>
+                
+                <div>
+                    <label class="text-gray-600">Email:</label>
+                    <p class="font-semibold">{{ current_user.email }}</p>
+                </div>
+                
+                {% if current_user.phone %}
+                <div>
+                    <label class="text-gray-600">Phone:</label>
+                    <p class="font-semibold">{{ current_user.phone }}</p>
+                </div>
+                {% endif %}
+                
+                <div>
+                    <label class="text-gray-600">Member Since:</label>
+                    <p class="font-semibold">{{ current_user.created_at.strftime('%B %d, %Y') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

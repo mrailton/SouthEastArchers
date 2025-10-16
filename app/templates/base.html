@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}South East Archers{% endblock %}</title>
+    <!-- TailwindCSS 4.1.13 - Latest stable version -->
+    <script src="https://cdn.tailwindcss.com?v=4.1.13"></script>
+    <!-- Alpine.js 3.15.0 - Latest stable version -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.0/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-green-800 text-white shadow-lg" x-data="{ mobileMenuOpen: false }">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl">🏹</span>
+                    <a href="{{ url_for('main.index') }}" class="text-xl font-bold">South East Archers</a>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="{{ url_for('main.index') }}" class="hover:text-green-200">Home</a>
+                    <a href="{{ url_for('main.about') }}" class="hover:text-green-200">About</a>
+                    <a href="{{ url_for('main.news') }}" class="hover:text-green-200">News</a>
+                    <a href="{{ url_for('main.events') }}" class="hover:text-green-200">Events</a>
+                    
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('member.dashboard') }}" class="hover:text-green-200">Dashboard</a>
+                        {% if current_user.is_admin %}
+                            <a href="{{ url_for('admin.dashboard') }}" class="hover:text-green-200">Admin</a>
+                        {% endif %}
+                        <a href="{{ url_for('auth.logout') }}" class="hover:text-green-200">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="hover:text-green-200">Login</a>
+                        <a href="{{ url_for('auth.register') }}" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">Join Now</a>
+                    {% endif %}
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Mobile Menu -->
+            <div x-show="mobileMenuOpen" class="md:hidden pb-4">
+                <a href="{{ url_for('main.index') }}" class="block py-2 hover:text-green-200">Home</a>
+                <a href="{{ url_for('main.about') }}" class="block py-2 hover:text-green-200">About</a>
+                <a href="{{ url_for('main.news') }}" class="block py-2 hover:text-green-200">News</a>
+                <a href="{{ url_for('main.events') }}" class="block py-2 hover:text-green-200">Events</a>
+                
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('member.dashboard') }}" class="block py-2 hover:text-green-200">Dashboard</a>
+                    {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin.dashboard') }}" class="block py-2 hover:text-green-200">Admin</a>
+                    {% endif %}
+                    <a href="{{ url_for('auth.logout') }}" class="block py-2 hover:text-green-200">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="block py-2 hover:text-green-200">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="block py-2 hover:text-green-200">Join Now</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mx-auto px-4 mt-4">
+                {% for category, message in messages %}
+                    <div x-data="{ show: true }" x-show="show" 
+                         class="{% if category == 'error' %}bg-red-100 border-red-400 text-red-700{% else %}bg-green-100 border-green-400 text-green-700{% endif %} border px-4 py-3 rounded relative mb-4">
+                        <span class="block sm:inline">{{ message }}</span>
+                        <span @click="show = false" class="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer">
+                            <svg class="fill-current h-6 w-6" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+                            </svg>
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-4">South East Archers</h3>
+                    <p class="text-gray-400">Your premier archery club in the South East</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Quick Links</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="{{ url_for('main.about') }}" class="hover:text-white">About Us</a></li>
+                        <li><a href="{{ url_for('main.news') }}" class="hover:text-white">News</a></li>
+                        <li><a href="{{ url_for('main.events') }}" class="hover:text-white">Events</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Membership</h3>
+                    <p class="text-gray-400">€100 per year - includes 20 shooting credits</p>
+                    <p class="text-gray-400 mt-2">Additional credits: €5 each</p>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 South East Archers. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

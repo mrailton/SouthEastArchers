@@ -1,5 +1,6 @@
 """Pytest configuration and fixtures for testing."""
 import pytest
+import os
 from datetime import datetime, timedelta
 from app import create_app, db
 from app.models import User, Membership, News, Event, ShootingNight, CreditPurchase
@@ -17,8 +18,14 @@ class TestConfig(Config):
 @pytest.fixture(scope='function')
 def app():
     """Create and configure a test application instance."""
-    app = create_app()
-    app.config.from_object(TestConfig)
+    # Force test environment variable to prevent accidental production DB usage
+    os.environ['TESTING'] = '1'
+    
+    app = create_app(TestConfig)
+    
+    # Double-check we're using in-memory database
+    assert app.config['SQLALCHEMY_DATABASE_URI'] == 'sqlite:///:memory:', \
+        "Tests must use in-memory database!"
     
     with app.app_context():
         db.create_all()
@@ -27,6 +34,9 @@ def app():
         db.drop_all()
         # Close the engine connection pool
         db.engine.pool.dispose()
+    
+    # Clean up environment variable
+    os.environ.pop('TESTING', None)
 
 
 @pytest.fixture(scope='function')

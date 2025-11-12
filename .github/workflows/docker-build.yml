@@ -86,11 +86,14 @@ jobs:
           ALLOWED_HOSTS=localhost,127.0.0.1
           EOF
 
+      - name: Create Docker network
+        run: docker network create test-network
+
       - name: Start MySQL for testing
         run: |
           docker run -d \
             --name mysql \
-            --network bridge \
+            --network test-network \
             -e MYSQL_ROOT_PASSWORD=test_mysql_password \
             -e MYSQL_DATABASE=test_southeast_archers \
             -p 3306:3306 \
@@ -115,7 +118,7 @@ jobs:
       - name: Run database migrations
         run: |
           docker run --rm \
-            --network bridge \
+            --network test-network \
             --env-file .env.test \
             ${{ steps.image.outputs.name }}:test \
             python manage.py migrate --noinput
@@ -125,7 +128,7 @@ jobs:
           # Start the application in the background
           docker run -d \
             --name test-app \
-            --network bridge \
+            --network test-network \
             --env-file .env.test \
             -p 8000:8000 \
             ${{ steps.image.outputs.name }}:test
@@ -176,6 +179,7 @@ jobs:
         run: |
           docker stop test-app mysql || true
           docker rm test-app mysql || true
+          docker network rm test-network || true
 
       - name: Build and push multi-arch Docker image
         if: github.event_name != 'pull_request'

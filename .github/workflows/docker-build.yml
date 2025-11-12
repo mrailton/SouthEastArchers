@@ -72,20 +72,6 @@ jobs:
             VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
             REVISION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
 
-      - name: Create test environment
-        run: |
-          # Create .env file for testing
-          cat > .env.test << EOF
-          DEBUG=False
-          SECRET_KEY=test-secret-key-for-github-actions-only
-          DB_NAME=test_southeast_archers
-          DB_USER=root
-          DB_PASSWORD=test_mysql_password
-          DB_HOST=mysql
-          DB_PORT=3306
-          ALLOWED_HOSTS=localhost,127.0.0.1
-          EOF
-
       - name: Create Docker network
         run: docker network create test-network
 
@@ -96,53 +82,54 @@ jobs:
             --network test-network \
             -e MYSQL_ROOT_PASSWORD=test_mysql_password \
             -e MYSQL_DATABASE=test_southeast_archers \
-            -p 3306:3306 \
             --health-cmd="mysqladmin ping -h localhost -ptest_mysql_password" \
-            --health-interval=10s \
+            --health-interval=5s \
             --health-timeout=5s \
-            --health-retries=5 \
+            --health-retries=10 \
             mysql:8.0
 
       - name: Wait for MySQL to be ready
         run: |
           echo "Waiting for MySQL to be ready..."
-          for i in {1..30}; do
-            if docker exec mysql mysqladmin ping -h localhost -ptest_mysql_password --silent; then
-              echo "MySQL is ready!"
-              break
-            fi
-            echo "Waiting for MySQL... ($i/30)"
-            sleep 2
-          done
+          timeout 60s bash -c 'until docker exec mysql mysqladmin ping -h localhost -ptest_mysql_password --silent 2>/dev/null; do sleep 2; echo "Waiting..."; done'
+          echo "MySQL is ready!"
 
       - name: Run database migrations
         run: |
           docker run --rm \
             --network test-network \
-            --env-file .env.test \
+            -e DEBUG=False \
+            -e SECRET_KEY=test-secret-key-for-github-actions-only \
+            -e DB_NAME=test_southeast_archers \
+            -e DB_USER=root \
+            -e DB_PASSWORD=test_mysql_password \
+            -e DB_HOST=mysql \
+            -e DB_PORT=3306 \
+            -e ALLOWED_HOSTS=localhost,127.0.0.1 \
             ${{ steps.image.outputs.name }}:test \
             python manage.py migrate --noinput
 
       - name: Test application startup
         run: |
-          # Start the application in the background
           docker run -d \
             --name test-app \
             --network test-network \
-            --env-file .env.test \
+            -e DEBUG=False \
+            -e SECRET_KEY=test-secret-key-for-github-actions-only \
+            -e DB_NAME=test_southeast_archers \
+            -e DB_USER=root \
+            -e DB_PASSWORD=test_mysql_password \
+            -e DB_HOST=mysql \
+            -e DB_PORT=3306 \
+            -e ALLOWED_HOSTS=localhost,127.0.0.1 \
             -p 8000:8000 \
             ${{ steps.image.outputs.name }}:test
 
-          # Wait for application to be ready
+      - name: Wait for application to be ready
+        run: |
           echo "Waiting for application to start..."
-          for i in {1..30}; do
-            if curl -f http://localhost:8000/health/ > /dev/null 2>&1; then
-              echo "Application is healthy!"
-              break
-            fi
-            echo "Waiting for application... ($i/30)"
-            sleep 2
-          done
+          timeout 60s bash -c 'until curl -f http://localhost:8000/health/ 2>/dev/null; do sleep 2; echo "Waiting..."; done'
+          echo "Application is ready!"
 
       - name: Test health endpoint
         run: |
@@ -171,18 +158,20 @@ jobs:
         run: |
           echo "=== Application Logs ==="
           docker logs test-app || true
+          echo ""
           echo "=== MySQL Logs ==="
           docker logs mysql || true
 
       - name: Cleanup test containers
         if: always()
         run: |
-          docker stop test-app mysql || true
-          docker rm test-app mysql || true
-          docker network rm test-network || true
+          docker stop test-app mysql 2>/dev/null || true
+          docker rm test-app mysql 2>/dev/null || true
+          docker network rm test-network 2>/dev/null || true
 
       - name: Build and push multi-arch Docker image
         if: github.event_name != 'pull_request'
+        id: build-and-push
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -215,7 +204,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Deploy to Coolify:**" >> $GITHUB_STEP_SUMMARY

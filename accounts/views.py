@@ -4,7 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.urls import reverse
-from datetime import datetime, timedelta
+from django.utils import timezone
+from datetime import timedelta
 
 from .forms import LoginForm, RegistrationForm
 from .models import User
@@ -50,7 +51,7 @@ def register_view(request):
             # Create initial membership
             membership = Membership.objects.create(
                 user=user,
-                end_date=datetime.now() + timedelta(days=365),
+                end_date=timezone.now() + timedelta(days=365),
                 credits_remaining=20,
                 amount_paid=100.0
             )

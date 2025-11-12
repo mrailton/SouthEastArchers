@@ -1,0 +1,85 @@
+# Docker Compose for Local Development
+# Includes hot-reload, volume mounts, and development tools
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: southeast_db_dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-devpassword}
+      MYSQL_DATABASE: ${DB_NAME:-southeast_archers}
+      # Optional: Create a dedicated dev user (leave empty to use root)
+      MYSQL_USER: ${MYSQL_USER:-}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+    ports:
+      - "${DB_PORT_HOST:-3307}:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-devpassword}"]
+      timeout: 20s
+      retries: 10
+      interval: 5s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: southeast_web_dev
+    restart: unless-stopped
+    environment:
+      DEBUG: ${DEBUG:-True}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-me}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
+      DB_NAME: ${DB_NAME:-southeast_archers}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-devpassword}
+      DB_HOST: db
+      DB_PORT: 3306
+      # Development-specific settings
+      PYTHONUNBUFFERED: 1
+    volumes:
+      # Mount source code for live reload
+      - .:/app
+      # Exclude virtual environment
+      - /app/.venv
+      # Persist media files
+      - ./media:/app/media
+      # Named volume for node_modules to avoid host conflicts
+      - node_modules:/app/theme/static_src/node_modules
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python manage.py runserver 0.0.0.0:8000
+    stdin_open: true
+    tty: true
+
+  tailwind:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: southeast_tailwind_dev
+    restart: unless-stopped
+    environment:
+      DEBUG: ${DEBUG:-True}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-me}
+      DB_NAME: ${DB_NAME:-southeast_archers}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-devpassword}
+      DB_HOST: db
+      DB_PORT: 3306
+    volumes:
+      # Mount source code for live CSS compilation
+      - .:/app
+      - /app/.venv
+      - node_modules:/app/theme/static_src/node_modules
+    command: python manage.py tailwind start
+    stdin_open: true
+    tty: true
+
+volumes:
+  mysql_dev_data:
+  node_modules:

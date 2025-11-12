@@ -3,35 +3,35 @@
 {% block title %}{{ event.title }} - South East Archers{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <h1>{{ event.title }}</h1>
-        <p class="text-muted">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="md:col-span-2">
+        <h1 class="text-4xl font-bold mb-2">{{ event.title }}</h1>
+        <p class="text-gray-500 mb-4">
             Organized by {{ event.created_by.name }} on {{ event.created_at|date:"M d, Y" }}
         </p>
-        <hr>
-        <div class="event-details mb-4">
-            <p><strong>📅 Date & Time:</strong> {{ event.event_date|date:"l, M d, Y \a\t h:i A" }}</p>
+        <hr class="my-4 border-gray-300">
+        <div class="mb-6">
+            <p class="mb-2"><strong>📅 Date & Time:</strong> {{ event.event_date|date:"l, M d, Y \a\t h:i A" }}</p>
             {% if event.location %}
             <p><strong>📍 Location:</strong> {{ event.location }}</p>
             {% endif %}
         </div>
-        <div class="event-description">
+        <div class="prose max-w-none">
             {{ event.description|linebreaks }}
         </div>
-        <hr>
-        <a href="{% url 'core:events_list' %}" class="btn btn-outline-primary">Back to Events</a>
+        <hr class="my-6 border-gray-300">
+        <a href="{% url 'core:events_list' %}" class="inline-block px-4 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-600 hover:text-white transition">Back to Events</a>
     </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Event Information</h5>
+    <div>
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <h5 class="font-semibold">Event Information</h5>
             </div>
-            <div class="card-body">
-                <p><strong>Date:</strong> {{ event.event_date|date:"M d, Y" }}</p>
-                <p><strong>Time:</strong> {{ event.event_date|time:"h:i A" }}</p>
+            <div class="px-4 py-3">
+                <p class="mb-2"><strong>Date:</strong> {{ event.event_date|date:"M d, Y" }}</p>
+                <p class="mb-2"><strong>Time:</strong> {{ event.event_date|time:"h:i A" }}</p>
                 {% if event.location %}
-                <p><strong>Location:</strong> {{ event.location }}</p>
+                <p class="mb-2"><strong>Location:</strong> {{ event.location }}</p>
                 {% endif %}
                 <p><strong>Organizer:</strong> {{ event.created_by.name }}</p>
             </div>

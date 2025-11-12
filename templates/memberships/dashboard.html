@@ -3,27 +3,23 @@
 {% block title %}Member Dashboard - South East Archers{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <h1>Member Dashboard</h1>
-    </div>
-</div>
+<h1 class="text-4xl font-bold mb-8">Member Dashboard</h1>
 
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Membership Details</h5>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div class="bg-blue-600 text-white px-4 py-3 rounded-t-lg">
+                <h5 class="font-semibold">Membership Details</h5>
             </div>
-            <div class="card-body">
+            <div class="px-4 py-4">
                 {% if membership %}
-                <p><strong>Email:</strong> {{ user.email }}</p>
-                <p><strong>Name:</strong> {{ user.name }}</p>
-                <p><strong>Phone:</strong> {{ user.phone|default:"Not provided" }}</p>
-                <hr>
-                <p><strong>Status:</strong> {% if membership.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-danger">Inactive</span>{% endif %}</p>
-                <p><strong>Credits Available:</strong> <span class="badge bg-info" style="font-size: 1.2em;">{{ membership.credits_remaining }}</span></p>
-                <p><strong>Member Since:</strong> {{ membership.start_date|date:"M d, Y" }}</p>
+                <p class="mb-2"><strong>Email:</strong> {{ user.email }}</p>
+                <p class="mb-2"><strong>Name:</strong> {{ user.name }}</p>
+                <p class="mb-4"><strong>Phone:</strong> {{ user.phone|default:"Not provided" }}</p>
+                <hr class="my-4 border-gray-300">
+                <p class="mb-2"><strong>Status:</strong> {% if membership.is_active %}<span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-green-500 rounded">Active</span>{% else %}<span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded">Inactive</span>{% endif %}</p>
+                <p class="mb-2"><strong>Credits Available:</strong> <span class="inline-block px-3 py-1 text-base font-semibold text-white bg-blue-500 rounded">{{ membership.credits_remaining }}</span></p>
+                <p class="mb-2"><strong>Member Since:</strong> {{ membership.start_date|date:"M d, Y" }}</p>
                 <p><strong>Membership Expires:</strong> {{ membership.end_date|date:"M d, Y" }}</p>
                 {% else %}
                 <p>You don't have an active membership.</p>
@@ -32,34 +28,36 @@
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Credit Management</h5>
+    <div>
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div class="bg-green-600 text-white px-4 py-3 rounded-t-lg">
+                <h5 class="font-semibold">Credit Management</h5>
             </div>
-            <div class="card-body">
-                <p>Additional credits cost €{{ credit_cost }} each.</p>
-                <a href="{% url 'memberships:purchase_credits' %}" class="btn btn-success mb-3 w-100">Purchase Credits</a>
+            <div class="px-4 py-4">
+                <p class="mb-4">Additional credits cost €{{ credit_cost }} each.</p>
+                <a href="{% url 'memberships:purchase_credits' %}" class="block text-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition mb-4">Purchase Credits</a>
                 {% if recent_purchases %}
-                <h6>Recent Purchases</h6>
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Credits</th>
-                            <th>Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for purchase in recent_purchases %}
-                        <tr>
-                            <td>{{ purchase.purchase_date|date:"M d, Y" }}</td>
-                            <td>{{ purchase.credits_purchased }}</td>
-                            <td>€{{ purchase.amount_paid }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <h6 class="font-semibold mb-3">Recent Purchases</h6>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left font-medium text-gray-700">Date</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-700">Credits</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-700">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for purchase in recent_purchases %}
+                            <tr>
+                                <td class="px-3 py-2">{{ purchase.purchase_date|date:"M d, Y" }}</td>
+                                <td class="px-3 py-2">{{ purchase.credits_purchased }}</td>
+                                <td class="px-3 py-2">€{{ purchase.amount_paid }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
                 {% endif %}
             </div>
         </div>

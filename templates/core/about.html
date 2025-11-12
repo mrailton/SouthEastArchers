@@ -3,18 +3,18 @@
 {% block title %}About - South East Archers{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <h1>About South East Archers</h1>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="md:col-span-2">
+        <h1 class="text-4xl font-bold mb-6">About South East Archers</h1>
 
-        <div class="mt-4">
-            <h3>Our Mission</h3>
-            <p>South East Archers is dedicated to promoting the sport of archery and providing a welcoming community for archers of all skill levels.</p>
+        <div class="mt-6">
+            <h3 class="text-2xl font-semibold mb-3">Our Mission</h3>
+            <p class="text-gray-700">South East Archers is dedicated to promoting the sport of archery and providing a welcoming community for archers of all skill levels.</p>
         </div>
 
-        <div class="mt-4">
-            <h3>What We Offer</h3>
-            <ul>
+        <div class="mt-6">
+            <h3 class="text-2xl font-semibold mb-3">What We Offer</h3>
+            <ul class="list-disc pl-6 space-y-2 text-gray-700">
                 <li><strong>Regular Shooting Nights:</strong> Join us for shooting events at our various locations including the Hall, Meadow, and Woods.</li>
                 <li><strong>Member Memberships:</strong> Get a membership with included credits for shooting events.</li>
                 <li><strong>Credit System:</strong> Use credits to participate in shooting nights, or purchase additional credits as needed.</li>
@@ -22,37 +22,37 @@
             </ul>
         </div>
 
-        <div class="mt-4">
-            <h3>Getting Started</h3>
-            <p>If you're new to archery or want to join our community, here's how to get started:</p>
-            <ol>
-                <li><a href="{% url 'accounts:register' %}">Register an account</a> with your email address.</li>
+        <div class="mt-6">
+            <h3 class="text-2xl font-semibold mb-3">Getting Started</h3>
+            <p class="text-gray-700 mb-3">If you're new to archery or want to join our community, here's how to get started:</p>
+            <ol class="list-decimal pl-6 space-y-2 text-gray-700">
+                <li><a href="{% url 'accounts:register' %}" class="text-blue-600 hover:underline">Register an account</a> with your email address.</li>
                 <li>Receive a membership with 20 initial credits.</li>
-                <li>Check out our <a href="{% url 'core:events_list' %}">upcoming events</a> and <a href="{% url 'core:news_list' %}">latest news</a>.</li>
+                <li>Check out our <a href="{% url 'core:events_list' %}" class="text-blue-600 hover:underline">upcoming events</a> and <a href="{% url 'core:news_list' %}" class="text-blue-600 hover:underline">latest news</a>.</li>
                 <li>Join us for a shooting night!</li>
             </ol>
         </div>
 
-        <div class="mt-4">
-            <h3>Contact Us</h3>
-            <p>Have questions? Get in touch with us:</p>
-            <p>Email: <a href="mailto:info@southeastarchers.org">info@southeastarchers.org</a></p>
+        <div class="mt-6">
+            <h3 class="text-2xl font-semibold mb-3">Contact Us</h3>
+            <p class="text-gray-700">Have questions? Get in touch with us:</p>
+            <p class="text-gray-700">Email: <a href="mailto:info@southeastarchers.org" class="text-blue-600 hover:underline">info@southeastarchers.org</a></p>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Get Involved</h5>
+    <div>
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <h5 class="font-semibold">Get Involved</h5>
             </div>
-            <div class="card-body">
+            <div class="px-4 py-4">
                 {% if user.is_authenticated %}
-                <p>Welcome, {{ user.name }}!</p>
-                <a href="{% url 'memberships:dashboard' %}" class="btn btn-primary w-100">Go to Dashboard</a>
+                <p class="mb-3">Welcome, {{ user.name }}!</p>
+                <a href="{% url 'memberships:dashboard' %}" class="block text-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Go to Dashboard</a>
                 {% else %}
-                <p>Want to join our community?</p>
-                <a href="{% url 'accounts:register' %}" class="btn btn-primary w-100 mb-2">Register</a>
-                <a href="{% url 'accounts:login' %}" class="btn btn-outline-primary w-100">Login</a>
+                <p class="mb-3">Want to join our community?</p>
+                <a href="{% url 'accounts:register' %}" class="block text-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition mb-2">Register</a>
+                <a href="{% url 'accounts:login' %}" class="block text-center px-4 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-600 hover:text-white transition">Login</a>
                 {% endif %}
             </div>
         </div>

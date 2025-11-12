@@ -3,27 +3,27 @@
 {% block title %}{{ news.title }} - South East Archers{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <h1>{{ news.title }}</h1>
-        <p class="text-muted">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="md:col-span-2">
+        <h1 class="text-4xl font-bold mb-2">{{ news.title }}</h1>
+        <p class="text-gray-500 mb-4">
             By {{ news.author.name }} on {{ news.created_at|date:"M d, Y h:i A" }}
         </p>
-        <hr>
-        <div class="article-content">
+        <hr class="my-4 border-gray-300">
+        <div class="prose max-w-none">
             {{ news.content|linebreaks }}
         </div>
-        <hr>
-        <a href="{% url 'core:news_list' %}" class="btn btn-outline-primary">Back to News</a>
+        <hr class="my-6 border-gray-300">
+        <a href="{% url 'core:news_list' %}" class="inline-block px-4 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-600 hover:text-white transition">Back to News</a>
     </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Article Info</h5>
+    <div>
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <h5 class="font-semibold">Article Info</h5>
             </div>
-            <div class="card-body">
-                <p><strong>Author:</strong> {{ news.author.name }}</p>
-                <p><strong>Published:</strong> {{ news.created_at|date:"M d, Y" }}</p>
+            <div class="px-4 py-3">
+                <p class="mb-2"><strong>Author:</strong> {{ news.author.name }}</p>
+                <p class="mb-2"><strong>Published:</strong> {{ news.created_at|date:"M d, Y" }}</p>
                 {% if news.updated_at != news.created_at %}
                 <p><strong>Last Updated:</strong> {{ news.updated_at|date:"M d, Y" }}</p>
                 {% endif %}

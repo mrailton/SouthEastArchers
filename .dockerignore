@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+ENV/
+env/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.dev.example
+.env.example
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Node (exclude cache but keep node_modules for Tailwind build)
+theme/static_src/node_modules/.cache
+
+# Docker
+docker-compose*.yml
+Dockerfile.dev
+.dockerignore
+
+# Development scripts
+dev.sh
+docker-test.sh
+
+# Misc
+*.bak
+*.tmp
+.cache/

@@ -1,0 +1,70 @@
+# Development Dockerfile for Django application with Tailwind CSS
+# Optimized for hot-reload and rapid development
+
+FROM python:3.14-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    default-libmysqlclient-dev \
+    pkg-config \
+    curl \
+    git \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv for fast package management
+RUN pip install --no-cache-dir uv
+
+# Create app directory
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml uv.lock* ./
+
+# Install Python dependencies
+RUN uv pip install --system -r pyproject.toml
+
+# Copy minimal files needed for Tailwind installation
+COPY manage.py ./
+COPY config/ ./config/
+COPY theme/ ./theme/
+COPY accounts/ ./accounts/
+COPY core/ ./core/
+COPY events/ ./events/
+COPY memberships/ ./memberships/
+COPY news/ ./news/
+COPY shooting/ ./shooting/
+COPY static/ ./static/
+COPY templates/ ./templates/
+
+# Pre-install Tailwind binary (as root to avoid permission issues)
+ENV DEBUG=False \
+    SECRET_KEY=build-time-secret-key \
+    DB_NAME=dev_db \
+    DB_USER=dev_user \
+    DB_PASSWORD=dev_password \
+    DB_HOST=localhost \
+    DB_PORT=3306
+
+RUN python manage.py tailwind install || true
+
+# Create non-root user for development
+RUN useradd -m -u 1000 django && \
+    chown -R django:django /app && \
+    chmod -R 755 /usr/local/lib/python3.14/site-packages/pytailwindcss/bin || true
+
+# Switch to non-root user
+USER django
+
+# Expose ports
+EXPOSE 8000 8001
+
+# Development command - will be overridden by docker-compose
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

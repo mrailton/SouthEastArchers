@@ -3,30 +3,30 @@
 {% block title %}My Profile - South East Archers{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <h1>My Profile</h1>
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">Account Information</h5>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="md:col-span-2">
+        <h1 class="text-4xl font-bold mb-6">My Profile</h1>
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <h5 class="font-semibold">Account Information</h5>
             </div>
-            <div class="card-body">
-                <p><strong>Email:</strong> {{ user.email }}</p>
-                <p><strong>Name:</strong> {{ user.name }}</p>
-                <p><strong>Phone:</strong> {{ user.phone|default:"Not provided" }}</p>
+            <div class="px-4 py-4">
+                <p class="mb-2"><strong>Email:</strong> {{ user.email }}</p>
+                <p class="mb-2"><strong>Name:</strong> {{ user.name }}</p>
+                <p class="mb-2"><strong>Phone:</strong> {{ user.phone|default:"Not provided" }}</p>
                 <p><strong>Member Since:</strong> {{ user.created_at|date:"M d, Y" }}</p>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Quick Actions</h5>
+    <div>
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <h5 class="font-semibold">Quick Actions</h5>
             </div>
-            <div class="card-body">
-                <a href="{% url 'memberships:dashboard' %}" class="btn btn-primary w-100 mb-2">Dashboard</a>
-                <a href="{% url 'memberships:purchase_credits' %}" class="btn btn-success w-100">Purchase Credits</a>
+            <div class="px-4 py-4 space-y-2">
+                <a href="{% url 'memberships:dashboard' %}" class="block text-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Dashboard</a>
+                <a href="{% url 'memberships:purchase_credits' %}" class="block text-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">Purchase Credits</a>
             </div>
         </div>
     </div>

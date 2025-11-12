@@ -3,46 +3,45 @@
 {% block title %}Purchase Credits - South East Archers{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <h1 class="mb-4">Purchase Credits</h1>
+<div class="flex justify-center">
+    <div class="w-full max-w-lg">
+        <h1 class="text-4xl font-bold mb-6">Purchase Credits</h1>
 
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Credit Pricing</h5>
-                <p>Each credit costs <strong>€{{ credit_cost }}</strong></p>
-                <p class="text-muted">Credits are used to participate in shooting nights.</p>
-            </div>
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
+            <h5 class="text-xl font-semibold mb-2">Credit Pricing</h5>
+            <p class="mb-2">Each credit costs <strong>€{{ credit_cost }}</strong></p>
+            <p class="text-gray-500">Credits are used to participate in shooting nights.</p>
         </div>
 
-        <form method="post">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="id_credits" class="form-label">Number of Credits *</label>
-                {{ form.credits }}
-                {% if form.credits.errors %}
-                <div class="text-danger mt-1">{{ form.credits.errors }}</div>
-                {% endif %}
-            </div>
+        <div x-data="{ credits: 0, creditCost: {{ credit_cost }}, get totalCost() { return (this.credits * this.creditCost).toFixed(2); } }">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label for="id_credits" class="block text-gray-700 font-medium mb-2">Number of Credits *</label>
+                    {{ form.credits }}
+                    {% if form.credits.errors %}
+                    <div class="text-red-600 text-sm mt-1">{{ form.credits.errors }}</div>
+                    {% endif %}
+                </div>
 
-            <div class="alert alert-info">
-                <strong id="total-cost">Total Cost:</strong> <span id="cost-amount">€0.00</span>
-            </div>
+                <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+                    <strong>Total Cost:</strong> <span x-text="'€' + totalCost"></span>
+                </div>
 
-            <button type="submit" class="btn btn-success w-100">Purchase Credits</button>
-            <a href="{% url 'memberships:dashboard' %}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>
-        </form>
+                <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">Purchase Credits</button>
+                <a href="{% url 'memberships:dashboard' %}" class="block text-center w-full px-4 py-2 mt-2 border border-gray-400 text-gray-700 rounded hover:bg-gray-100 transition">Cancel</a>
+            </form>
+        </div>
     </div>
 </div>
 
 <script>
-document.getElementById('id_credits').addEventListener('change', function() {
-    const credits = parseInt(this.value) || 0;
-    const cost = credits * {{ credit_cost }};
-    document.getElementById('cost-amount').textContent = '€' + cost.toFixed(2);
+// Initialize Alpine.js reactive data from form input
+document.addEventListener('alpine:init', () => {
+    const creditsInput = document.getElementById('id_credits');
+    if (creditsInput) {
+        creditsInput.setAttribute('x-model.number', 'credits');
+    }
 });
-
-// Set initial value
-document.getElementById('id_credits').dispatchEvent(new Event('change'));
 </script>
 {% endblock %}

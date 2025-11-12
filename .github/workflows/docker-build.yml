@@ -60,7 +60,7 @@ jobs:
         with:
           context: .
           load: true
-          tags: ${{ env.IMAGE_NAME }}:test
+          tags: ${{ lower(env.IMAGE_NAME) }}:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -113,7 +113,7 @@ jobs:
           docker run --rm \
             --network bridge \
             --env-file .env.test \
-            ${{ env.IMAGE_NAME }}:test \
+            ${{ lower(env.IMAGE_NAME) }}:test \
             python manage.py migrate --noinput
 
       - name: Test application startup
@@ -124,7 +124,7 @@ jobs:
             --network bridge \
             --env-file .env.test \
             -p 8000:8000 \
-            ${{ env.IMAGE_NAME }}:test
+            ${{ lower(env.IMAGE_NAME) }}:test
 
           # Wait for application to be ready
           echo "Waiting for application to start..."

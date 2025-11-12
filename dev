@@ -15,19 +15,19 @@ PROJECT_NAME="southeast"
 
 # Function to print colored output
 print_info() {
-    echo -e "${BLUE}ℹ ${1}${NC}"
+    printf "${BLUE}ℹ ${1}${NC}\n"
 }
 
 print_success() {
-    echo -e "${GREEN}✓ ${1}${NC}"
+    printf "${GREEN}✓ ${1}${NC}\n"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠ ${1}${NC}"
+    printf "${YELLOW}⚠ ${1}${NC}\n"
 }
 
 print_error() {
-    echo -e "${RED}✗ ${1}${NC}"
+    printf "${RED}✗ ${1}${NC}\n"
 }
 
 # Check if Docker is running
@@ -40,37 +40,31 @@ check_docker() {
 
 # Show help
 show_help() {
-    cat << EOF
-${GREEN}SouthEast Archers Development Helper${NC}
-
-Usage: ./dev.sh [command]
-
-Commands:
-  ${BLUE}up${NC}              Start development environment
-  ${BLUE}down${NC}            Stop development environment
-  ${BLUE}restart${NC}         Restart development environment
-  ${BLUE}build${NC}           Rebuild Docker images (add --no-cache for clean build)
-  ${BLUE}logs${NC}            Show logs (add service name: logs web)
-  ${BLUE}shell${NC}           Open shell in web container
-  ${BLUE}manage${NC}          Run Django management command (e.g., ./dev.sh manage migrate)
-  ${BLUE}migrate${NC}         Run database migrations
-  ${BLUE}makemigrations${NC}  Create new migrations
-  ${BLUE}createsuperuser${NC} Create Django superuser
-  ${BLUE}test${NC}            Run tests
-  ${BLUE}dbshell${NC}         Open database shell
-  ${BLUE}install${NC}         Install new package with uv (e.g., ./dev.sh install requests)
-  ${BLUE}tailwind${NC}        Run Tailwind command (e.g., ./dev.sh tailwind build)
-  ${BLUE}clean${NC}           Stop and remove all containers, volumes, and images
-  ${BLUE}status${NC}          Show status of containers
-  ${BLUE}help${NC}            Show this help message
-
-Examples:
-  ./dev.sh up
-  ./dev.sh logs web
-  ./dev.sh manage createsuperuser
-  ./dev.sh install django-debug-toolbar
-
-EOF
+    printf "${GREEN}SouthEast Archers Development Helper${NC}\n\n"
+    printf "Usage: ./dev [command]\n\n"
+    printf "Commands:\n"
+    printf "  ${BLUE}up${NC}              Start development environment\n"
+    printf "  ${BLUE}down${NC}            Stop development environment\n"
+    printf "  ${BLUE}restart${NC}         Restart development environment\n"
+    printf "  ${BLUE}build${NC}           Rebuild Docker images (add --no-cache for clean build)\n"
+    printf "  ${BLUE}logs${NC}            Show logs (add service name: logs web)\n"
+    printf "  ${BLUE}shell${NC}           Open shell in web container\n"
+    printf "  ${BLUE}manage${NC}          Run Django management command (e.g., ./dev manage migrate)\n"
+    printf "  ${BLUE}migrate${NC}         Run database migrations\n"
+    printf "  ${BLUE}makemigrations${NC}  Create new migrations\n"
+    printf "  ${BLUE}createsuperuser${NC} Create Django superuser\n"
+    printf "  ${BLUE}test${NC}            Run tests\n"
+    printf "  ${BLUE}dbshell${NC}         Open database shell\n"
+    printf "  ${BLUE}install${NC}         Install new package with uv (e.g., ./dev install requests)\n"
+    printf "  ${BLUE}tailwind${NC}        Run Tailwind command (e.g., ./dev tailwind build)\n"
+    printf "  ${BLUE}clean${NC}           Stop and remove all containers, volumes, and images\n"
+    printf "  ${BLUE}status${NC}          Show status of containers\n"
+    printf "  ${BLUE}help${NC}            Show this help message\n\n"
+    printf "Examples:\n"
+    printf "  ./dev up\n"
+    printf "  ./dev logs web\n"
+    printf "  ./dev manage createsuperuser\n"
+    printf "  ./dev install django-debug-toolbar\n\n"
 }
 
 # Start development environment
@@ -80,7 +74,7 @@ cmd_up() {
     docker-compose -f $COMPOSE_FILE up -d
     print_success "Development environment started!"
     print_info "Web application: http://localhost:8000"
-    print_info "Run './dev.sh logs' to see logs"
+    print_info "Run './dev logs' to see logs"
 }
 
 # Stop development environment

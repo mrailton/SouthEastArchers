@@ -16,7 +16,7 @@ from memberships.models import Membership
 def login_view(request):
     """Handle user login with email"""
     if request.user.is_authenticated:
-        return redirect('core:dashboard')
+        return redirect('memberships:dashboard')
 
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -28,7 +28,7 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 next_page = request.GET.get('next')
-                return redirect(next_page) if next_page else redirect('core:dashboard')
+                return redirect(next_page) if next_page else redirect('memberships:dashboard')
             else:
                 messages.error(request, 'Invalid email or password.')
     else:
@@ -41,7 +41,7 @@ def login_view(request):
 def register_view(request):
     """Handle user registration"""
     if request.user.is_authenticated:
-        return redirect('core:dashboard')
+        return redirect('memberships:dashboard')
 
     if request.method == 'POST':
         form = RegistrationForm(request.POST)

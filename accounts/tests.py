@@ -303,7 +303,7 @@ class TestLoginView:
             'password': user_data['password']
         })
         assert response.status_code == 302  # Redirect after successful login
-        assert response.url == reverse('core:dashboard')
+        assert response.url == reverse('memberships:dashboard')
 
     def test_login_with_invalid_credentials(self, client, user):
         """Test login fails with invalid credentials."""
@@ -316,7 +316,7 @@ class TestLoginView:
 
     def test_login_redirects_to_next_parameter(self, client, user, user_data):
         """Test login redirects to 'next' parameter if provided."""
-        next_url = reverse('memberships:profile')
+        next_url = reverse('memberships:purchase_credits')
         response = client.post(
             reverse('accounts:login') + f'?next={next_url}',
             {
@@ -401,7 +401,7 @@ class TestLogoutView:
     def test_user_logged_out(self, authenticated_client):
         """Test user is actually logged out."""
         authenticated_client.get(reverse('accounts:logout'))
-        response = authenticated_client.get(reverse('core:dashboard'))
+        response = authenticated_client.get(reverse('memberships:dashboard'))
         # Should redirect to login because user is no longer authenticated
         assert response.status_code == 302
         assert '/accounts/login/' in response.url

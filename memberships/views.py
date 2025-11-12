@@ -9,13 +9,14 @@ from .forms import CreditPurchaseForm
 
 @login_required
 def dashboard(request):
-    """Member dashboard showing membership and credits"""
+    """Unified member dashboard showing membership and credits"""
     membership = request.user.memberships.filter(is_active=True).first()
     recent_purchases = request.user.credit_purchases.all().order_by('-purchase_date')[:5]
 
     context = {
         'membership': membership,
         'recent_purchases': recent_purchases,
+        'credit_cost': settings.CREDIT_COST,
     }
     return render(request, 'memberships/dashboard.html', context)
 
@@ -58,11 +59,3 @@ def purchase_credits(request):
         'credit_cost': settings.CREDIT_COST,
     }
     return render(request, 'memberships/purchase_credits.html', context)
-
-
-@login_required
-def profile(request):
-    """User profile page"""
-    membership = request.user.memberships.filter(is_active=True).first()
-    context = {'membership': membership}
-    return render(request, 'memberships/profile.html', context)

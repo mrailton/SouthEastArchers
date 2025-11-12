@@ -1,5 +1,4 @@
 from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 
 from news.models import News
@@ -55,11 +54,3 @@ def event_detail(request, pk):
     event = get_object_or_404(Event, pk=pk, published=True)
     context = {'event': event}
     return render(request, 'core/event_detail.html', context)
-
-
-@login_required
-def dashboard(request):
-    """Member dashboard"""
-    membership = request.user.memberships.filter(is_active=True).first()
-    context = {'membership': membership}
-    return render(request, 'core/dashboard.html', context)

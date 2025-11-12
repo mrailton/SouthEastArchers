@@ -341,41 +341,6 @@ class TestEventDetailView:
         assert response.status_code == 404
 
 
-@pytest.mark.views
-@pytest.mark.django_db
-class TestDashboardView:
-    """Test the dashboard view."""
-
-    def test_dashboard_requires_login(self, client):
-        """Test dashboard redirects to login for anonymous users."""
-        response = client.get(reverse('core:dashboard'))
-        assert response.status_code == 302
-        assert '/accounts/login/' in response.url
-
-    def test_dashboard_loads_for_authenticated_user(self, authenticated_client, membership):
-        """Test dashboard loads for logged-in user."""
-        response = authenticated_client.get(reverse('core:dashboard'))
-        assert response.status_code == 200
-
-    def test_dashboard_shows_membership_info(self, authenticated_client, user, membership):
-        """Test dashboard displays membership information."""
-        response = authenticated_client.get(reverse('core:dashboard'))
-        assert 'membership' in response.context
-        assert response.context['membership'] == membership
-
-    def test_dashboard_shows_user_name(self, authenticated_client, user, membership):
-        """Test dashboard displays user name."""
-        response = authenticated_client.get(reverse('core:dashboard'))
-        content = response.content.decode()
-        assert user.name in content
-
-    def test_dashboard_no_membership(self, authenticated_client):
-        """Test dashboard when user has no active membership."""
-        response = authenticated_client.get(reverse('core:dashboard'))
-        assert response.status_code == 200
-        assert response.context['membership'] is None
-
-
 # ============================================================================
 # INTEGRATION TESTS
 # ============================================================================
@@ -431,7 +396,7 @@ class TestPublicSiteIntegration:
     def test_login_to_dashboard_flow(self, client, user, user_data, membership):
         """Test complete flow from login to dashboard."""
         # Try to access dashboard (should redirect)
-        response = client.get(reverse('core:dashboard'))
+        response = client.get(reverse('memberships:dashboard'))
         assert response.status_code == 302
 
         # Login
@@ -442,6 +407,6 @@ class TestPublicSiteIntegration:
         assert response.status_code == 302
 
         # Access dashboard (should work now)
-        response = client.get(reverse('core:dashboard'))
+        response = client.get(reverse('memberships:dashboard'))
         assert response.status_code == 200
         assert response.context['membership'] == membership

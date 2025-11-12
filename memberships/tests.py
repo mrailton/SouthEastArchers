@@ -208,6 +208,12 @@ class TestMembershipDashboardView:
         assert response.status_code == 200
         assert response.context['membership'] is None
 
+    def test_dashboard_shows_user_name(self, authenticated_client, user, membership):
+        """Test dashboard displays user name in welcome message."""
+        response = authenticated_client.get(reverse('memberships:dashboard'))
+        content = response.content.decode()
+        assert user.name in content
+
 
 @pytest.mark.views
 @pytest.mark.django_db
@@ -280,33 +286,6 @@ class TestPurchaseCreditsView:
 
 @pytest.mark.views
 @pytest.mark.django_db
-class TestProfileView:
-    """Test the profile view."""
-
-    def test_profile_requires_login(self, client):
-        """Test profile redirects to login for anonymous users."""
-        response = client.get(reverse('memberships:profile'))
-        assert response.status_code == 302
-        assert '/accounts/login/' in response.url
-
-    def test_profile_loads_for_authenticated_user(self, authenticated_client, membership):
-        """Test profile page loads for logged-in user."""
-        response = authenticated_client.get(reverse('memberships:profile'))
-        assert response.status_code == 200
-        assert 'membership' in response.context
-
-    def test_profile_displays_user_info(self, authenticated_client, user, membership):
-        """Test profile displays user information."""
-        response = authenticated_client.get(reverse('memberships:profile'))
-        content = response.content.decode()
-        assert user.email in content
-        assert user.name in content
-
-    def test_profile_no_membership(self, authenticated_client):
-        """Test profile when user has no active membership."""
-        response = authenticated_client.get(reverse('memberships:profile'))
-        assert response.status_code == 200
-        assert response.context['membership'] is None
 
 
 # ============================================================================

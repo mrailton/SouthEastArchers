@@ -1,4 +1,4 @@
-name: Build, Test, and Push Docker Image
+name: Test, Build and Push Docker Image
 
 on:
   push:
@@ -17,8 +17,54 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-test-push:
+  test:
     runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: testpassword
+          MYSQL_DATABASE: test_southeast_archers
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ptestpassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv pip install --system -r pyproject.toml --extra dev
+
+      - name: Run tests
+        env:
+          DEBUG: 'True'
+          SECRET_KEY: 'test-secret-key-for-ci'
+          DB_NAME: 'test_southeast_archers'
+          DB_USER: 'root'
+          DB_PASSWORD: 'testpassword'
+          DB_HOST: '127.0.0.1'
+          DB_PORT: '3306'
+          ALLOWED_HOSTS: 'localhost,127.0.0.1'
+        run: |
+          pytest --cov --cov-report=term-missing
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: test
     permissions:
       contents: read
       packages: write
@@ -26,10 +72,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set lowercase image name
-        id: image
-        run: echo "name=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -59,124 +101,13 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build Docker image (for testing)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          load: true
-          tags: ${{ steps.image.outputs.name }}:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            BUILDTIME=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
-            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
-            REVISION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
-
-      - name: Create Docker network
-        run: docker network create test-network
-
-      - name: Start MySQL for testing
-        run: |
-          docker run -d \
-            --name mysql \
-            --network test-network \
-            -e MYSQL_ROOT_PASSWORD=test_mysql_password \
-            -e MYSQL_DATABASE=test_southeast_archers \
-            --health-cmd="mysqladmin ping -h localhost -ptest_mysql_password" \
-            --health-interval=5s \
-            --health-timeout=5s \
-            --health-retries=10 \
-            mysql:8.0
-
-      - name: Wait for MySQL to be ready
-        run: |
-          echo "Waiting for MySQL to be ready..."
-          timeout 60s bash -c 'until docker exec mysql mysqladmin ping -h localhost -ptest_mysql_password --silent 2>/dev/null; do sleep 2; echo "Waiting..."; done'
-          echo "MySQL is ready!"
-
-      - name: Run database migrations
-        run: |
-          docker run --rm \
-            --network test-network \
-            -e DEBUG=False \
-            -e SECRET_KEY=test-secret-key-for-github-actions-only \
-            -e DB_NAME=test_southeast_archers \
-            -e DB_USER=root \
-            -e DB_PASSWORD=test_mysql_password \
-            -e DB_HOST=mysql \
-            -e DB_PORT=3306 \
-            -e ALLOWED_HOSTS=localhost,127.0.0.1 \
-            ${{ steps.image.outputs.name }}:test \
-            python manage.py migrate --noinput
-
-      - name: Test application startup
-        run: |
-          docker run -d \
-            --name test-app \
-            --network test-network \
-            -e DEBUG=False \
-            -e SECRET_KEY=test-secret-key-for-github-actions-only \
-            -e DB_NAME=test_southeast_archers \
-            -e DB_USER=root \
-            -e DB_PASSWORD=test_mysql_password \
-            -e DB_HOST=mysql \
-            -e DB_PORT=3306 \
-            -e ALLOWED_HOSTS=localhost,127.0.0.1 \
-            -p 8000:8000 \
-            ${{ steps.image.outputs.name }}:test
-
-      - name: Wait for application to be ready
-        run: |
-          echo "Waiting for application to start..."
-          timeout 60s bash -c 'until curl -f http://localhost:8000/health/ 2>/dev/null; do sleep 2; echo "Waiting..."; done'
-          echo "Application is ready!"
-
-      - name: Test health endpoint
-        run: |
-          response=$(curl -s http://localhost:8000/health/)
-          echo "Health check response: $response"
-          if echo "$response" | grep -q "healthy"; then
-            echo "✓ Health check passed"
-          else
-            echo "✗ Health check failed"
-            exit 1
-          fi
-
-      - name: Test homepage
-        run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/)
-          echo "Homepage status: $status"
-          if [ "$status" -eq 200 ]; then
-            echo "✓ Homepage accessible"
-          else
-            echo "✗ Homepage returned status $status"
-            exit 1
-          fi
-
-      - name: Show application logs on failure
-        if: failure()
-        run: |
-          echo "=== Application Logs ==="
-          docker logs test-app || true
-          echo ""
-          echo "=== MySQL Logs ==="
-          docker logs mysql || true
-
-      - name: Cleanup test containers
-        if: always()
-        run: |
-          docker stop test-app mysql 2>/dev/null || true
-          docker rm test-app mysql 2>/dev/null || true
-          docker network rm test-network 2>/dev/null || true
-
-      - name: Build and push multi-arch Docker image
-        if: github.event_name != 'pull_request'
+      - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -188,7 +119,7 @@ jobs:
 
       - name: Image digest
         if: github.event_name != 'pull_request'
-        run: echo ${{ steps.build-and-push.outputs.digest }}
+        run: echo "Digest::" ${{ steps.build-and-push.outputs.digest }}
 
       - name: Summary
         if: github.event_name != 'pull_request'
@@ -202,9 +133,11 @@ jobs:
           echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Digest:** \`${{ steps.build-and-push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ github.repository }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Deploy to Coolify:**" >> $GITHUB_STEP_SUMMARY

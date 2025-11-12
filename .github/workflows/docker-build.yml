@@ -1,4 +1,4 @@
-name: Build and Push Multi-Arch Docker Image
+name: Build, Test, and Push Docker Image
 
 on:
   push:
@@ -17,7 +17,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+  build-test-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -55,12 +55,131 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push Docker image
+      - name: Build Docker image (for testing)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILDTIME=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+            REVISION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
+
+      - name: Create test environment
+        run: |
+          # Create .env file for testing
+          cat > .env.test << EOF
+          DEBUG=False
+          SECRET_KEY=test-secret-key-for-github-actions-only
+          DB_NAME=test_southeast_archers
+          DB_USER=root
+          DB_PASSWORD=test_mysql_password
+          DB_HOST=mysql
+          DB_PORT=3306
+          ALLOWED_HOSTS=localhost,127.0.0.1
+          EOF
+
+      - name: Start MySQL for testing
+        run: |
+          docker run -d \
+            --name mysql \
+            --network bridge \
+            -e MYSQL_ROOT_PASSWORD=test_mysql_password \
+            -e MYSQL_DATABASE=test_southeast_archers \
+            -p 3306:3306 \
+            --health-cmd="mysqladmin ping -h localhost -ptest_mysql_password" \
+            --health-interval=10s \
+            --health-timeout=5s \
+            --health-retries=5 \
+            mysql:8.0
+
+      - name: Wait for MySQL to be ready
+        run: |
+          echo "Waiting for MySQL to be ready..."
+          for i in {1..30}; do
+            if docker exec mysql mysqladmin ping -h localhost -ptest_mysql_password --silent; then
+              echo "MySQL is ready!"
+              break
+            fi
+            echo "Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run database migrations
+        run: |
+          docker run --rm \
+            --network bridge \
+            --env-file .env.test \
+            ${{ env.IMAGE_NAME }}:test \
+            python manage.py migrate --noinput
+
+      - name: Test application startup
+        run: |
+          # Start the application in the background
+          docker run -d \
+            --name test-app \
+            --network bridge \
+            --env-file .env.test \
+            -p 8000:8000 \
+            ${{ env.IMAGE_NAME }}:test
+
+          # Wait for application to be ready
+          echo "Waiting for application to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/health/ > /dev/null 2>&1; then
+              echo "Application is healthy!"
+              break
+            fi
+            echo "Waiting for application... ($i/30)"
+            sleep 2
+          done
+
+      - name: Test health endpoint
+        run: |
+          response=$(curl -s http://localhost:8000/health/)
+          echo "Health check response: $response"
+          if echo "$response" | grep -q "healthy"; then
+            echo "✓ Health check passed"
+          else
+            echo "✗ Health check failed"
+            exit 1
+          fi
+
+      - name: Test homepage
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/)
+          echo "Homepage status: $status"
+          if [ "$status" -eq 200 ]; then
+            echo "✓ Homepage accessible"
+          else
+            echo "✗ Homepage returned status $status"
+            exit 1
+          fi
+
+      - name: Show application logs on failure
+        if: failure()
+        run: |
+          echo "=== Application Logs ==="
+          docker logs test-app || true
+          echo "=== MySQL Logs ==="
+          docker logs mysql || true
+
+      - name: Cleanup test containers
+        if: always()
+        run: |
+          docker stop test-app mysql || true
+          docker rm test-app mysql || true
+
+      - name: Build and push multi-arch Docker image
+        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -71,4 +190,25 @@ jobs:
             REVISION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
 
       - name: Image digest
+        if: github.event_name != 'pull_request'
         run: echo ${{ steps.build-and-push.outputs.digest }}
+
+      - name: Summary
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "## Docker Image Published! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deploy to Coolify:**" >> $GITHUB_STEP_SUMMARY
+          echo "The image is now available in GHCR and ready for deployment!" >> $GITHUB_STEP_SUMMARY

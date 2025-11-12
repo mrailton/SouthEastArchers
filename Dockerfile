@@ -21,7 +21,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock* ./
 
 # Install Python dependencies
-RUN uv pip install --system --no-cache -r pyproject.toml
+RUN uv sync
 
 # Stage 2: Build Tailwind CSS
 FROM python:3.14-slim AS tailwind-builder
@@ -43,14 +43,12 @@ COPY --from=python-builder /usr/local/bin /usr/local/bin
 COPY manage.py ./
 COPY config/ ./config/
 COPY theme/ ./theme/
-COPY templates/ ./templates/
 COPY accounts/ ./accounts/
 COPY core/ ./core/
 COPY events/ ./events/
 COPY memberships/ ./memberships/
 COPY news/ ./news/
 COPY shooting/ ./shooting/
-COPY static/ ./static/
 COPY pyproject.toml ./
 
 # Install Tailwind dependencies and build CSS

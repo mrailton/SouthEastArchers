@@ -22,8 +22,3 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('member/', include('memberships.urls')),
 ]
-
-if settings.DEBUG:
-    urlpatterns += [
-        path("__reload__/", include("django_browser_reload.urls")),
-    ]

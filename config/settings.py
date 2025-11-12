@@ -60,10 +60,6 @@ INSTALLED_APPS = [
     'shooting.apps.ShootingConfig',
 ]
 
-# Add development-only apps
-if DEBUG:
-    INSTALLED_APPS += ['django_browser_reload']
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files efficiently
@@ -74,10 +70,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-# Add development-only middleware
-if DEBUG:
-    MIDDLEWARE += ['django_browser_reload.middleware.BrowserReloadMiddleware']
 
 ROOT_URLCONF = 'config.urls'
 

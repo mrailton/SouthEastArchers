@@ -13,8 +13,8 @@
             </div>
             <div class="px-4 py-4">
                 {% if membership %}
-                <p class="mb-2"><strong>Email:</strong> {{ user.email }}</p>
                 <p class="mb-2"><strong>Name:</strong> {{ user.name }}</p>
+                <p class="mb-2"><strong>Email:</strong> {{ user.email }}</p>
                 <p class="mb-4"><strong>Phone:</strong> {{ user.phone|default:"Not provided" }}</p>
                 <hr class="my-4 border-gray-300">
                 <p class="mb-2"><strong>Status:</strong> {% if membership.is_active %}<span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-green-500 rounded">Active</span>{% else %}<span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded">Inactive</span>{% endif %}</p>

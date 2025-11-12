@@ -28,8 +28,8 @@ WORKDIR /app
 # Copy dependency files
 COPY pyproject.toml uv.lock* ./
 
-# Install Python dependencies
-RUN uv sync --extra dev
+# Install Python dependencies globally (not in venv)
+RUN uv pip install --system -r pyproject.toml --extra dev
 
 # Copy minimal files needed for Tailwind installation
 COPY manage.py ./

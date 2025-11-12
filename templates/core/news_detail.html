@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ news.title }} - South East Archers{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>{{ news.title }}</h1>
+        <p class="text-muted">
+            By {{ news.author.name }} on {{ news.created_at|date:"M d, Y h:i A" }}
+        </p>
+        <hr>
+        <div class="article-content">
+            {{ news.content|linebreaks }}
+        </div>
+        <hr>
+        <a href="{% url 'core:news_list' %}" class="btn btn-outline-primary">Back to News</a>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Article Info</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Author:</strong> {{ news.author.name }}</p>
+                <p><strong>Published:</strong> {{ news.created_at|date:"M d, Y" }}</p>
+                {% if news.updated_at != news.created_at %}
+                <p><strong>Last Updated:</strong> {{ news.updated_at|date:"M d, Y" }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

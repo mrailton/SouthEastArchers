@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - South East Archers{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Welcome, {{ user.name }}</h1>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Your Membership</h5>
+            </div>
+            <div class="card-body">
+                {% if membership %}
+                <p><strong>Status:</strong> {% if membership.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-danger">Inactive</span>{% endif %}</p>
+                <p><strong>Started:</strong> {{ membership.start_date|date:"M d, Y" }}</p>
+                <p><strong>Expires:</strong> {{ membership.end_date|date:"M d, Y" }}</p>
+                <p><strong>Credits:</strong> <span class="badge bg-info">{{ membership.credits_remaining }}</span></p>
+                <a href="{% url 'memberships:purchase_credits' %}" class="btn btn-primary mt-3">Purchase Credits</a>
+                {% else %}
+                <p>You don't have an active membership. Please contact support.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Quick Links</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'memberships:dashboard' %}" class="btn btn-outline-primary btn-sm mb-2 w-100">Member Dashboard</a>
+                <a href="{% url 'memberships:profile' %}" class="btn btn-outline-primary btn-sm mb-2 w-100">My Profile</a>
+                <a href="{% url 'core:news_list' %}" class="btn btn-outline-primary btn-sm mb-2 w-100">View News</a>
+                <a href="{% url 'core:events_list' %}" class="btn btn-outline-primary btn-sm mb-2 w-100">View Events</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

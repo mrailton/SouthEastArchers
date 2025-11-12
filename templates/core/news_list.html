@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}News - South East Archers{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">News</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        {% if news %}
+        {% for article in news %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">{{ article.title }}</h5>
+                <p class="card-text text-muted">
+                    By {{ article.author.name }} on {{ article.created_at|date:"M d, Y" }}
+                </p>
+                <p class="card-text">{{ article.content|truncatewords:50 }}</p>
+                <a href="{% url 'core:news_detail' article.pk %}" class="btn btn-primary">Read More</a>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="alert alert-info">No news articles published yet.</div>
+        {% endif %}
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent News</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for article in news %}
+                <a href="{% url 'core:news_detail' article.pk %}" class="list-group-item list-group-item-action">
+                    {{ article.title }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

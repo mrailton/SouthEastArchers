@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - South East Archers{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>My Profile</h1>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Account Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>Name:</strong> {{ user.name }}</p>
+                <p><strong>Phone:</strong> {{ user.phone|default:"Not provided" }}</p>
+                <p><strong>Member Since:</strong> {{ user.created_at|date:"M d, Y" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'memberships:dashboard' %}" class="btn btn-primary w-100 mb-2">Dashboard</a>
+                <a href="{% url 'memberships:purchase_credits' %}" class="btn btn-success w-100">Purchase Credits</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

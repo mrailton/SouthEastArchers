@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}About - South East Archers{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>About South East Archers</h1>
+
+        <div class="mt-4">
+            <h3>Our Mission</h3>
+            <p>South East Archers is dedicated to promoting the sport of archery and providing a welcoming community for archers of all skill levels.</p>
+        </div>
+
+        <div class="mt-4">
+            <h3>What We Offer</h3>
+            <ul>
+                <li><strong>Regular Shooting Nights:</strong> Join us for shooting events at our various locations including the Hall, Meadow, and Woods.</li>
+                <li><strong>Member Memberships:</strong> Get a membership with included credits for shooting events.</li>
+                <li><strong>Credit System:</strong> Use credits to participate in shooting nights, or purchase additional credits as needed.</li>
+                <li><strong>Community Events:</strong> Participate in special events and competitions throughout the year.</li>
+            </ul>
+        </div>
+
+        <div class="mt-4">
+            <h3>Getting Started</h3>
+            <p>If you're new to archery or want to join our community, here's how to get started:</p>
+            <ol>
+                <li><a href="{% url 'accounts:register' %}">Register an account</a> with your email address.</li>
+                <li>Receive a membership with 20 initial credits.</li>
+                <li>Check out our <a href="{% url 'core:events_list' %}">upcoming events</a> and <a href="{% url 'core:news_list' %}">latest news</a>.</li>
+                <li>Join us for a shooting night!</li>
+            </ol>
+        </div>
+
+        <div class="mt-4">
+            <h3>Contact Us</h3>
+            <p>Have questions? Get in touch with us:</p>
+            <p>Email: <a href="mailto:info@southeastarchers.org">info@southeastarchers.org</a></p>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Get Involved</h5>
+            </div>
+            <div class="card-body">
+                {% if user.is_authenticated %}
+                <p>Welcome, {{ user.name }}!</p>
+                <a href="{% url 'memberships:dashboard' %}" class="btn btn-primary w-100">Go to Dashboard</a>
+                {% else %}
+                <p>Want to join our community?</p>
+                <a href="{% url 'accounts:register' %}" class="btn btn-primary w-100 mb-2">Register</a>
+                <a href="{% url 'accounts:login' %}" class="btn btn-outline-primary w-100">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

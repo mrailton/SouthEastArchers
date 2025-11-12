@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - South East Archers{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Welcome to South East Archers</h1>
+        <p class="lead">Join us for exciting shooting events and competitions.</p>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-6">
+        <h2>Latest News</h2>
+        {% if news %}
+        <div class="list-group">
+            {% for article in news %}
+            <a href="{% url 'core:news_detail' article.pk %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ article.title }}</h5>
+                    <small>{{ article.created_at|date:"M d, Y" }}</small>
+                </div>
+                <p class="mb-1">{{ article.content|truncatewords:20 }}</p>
+            </a>
+            {% endfor %}
+        </div>
+        <a href="{% url 'core:news_list' %}" class="btn btn-outline-primary mt-3">View All News</a>
+        {% else %}
+        <p>No news articles published yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="col-md-6">
+        <h2>Upcoming Events</h2>
+        {% if events %}
+        <div class="list-group">
+            {% for event in events %}
+            <a href="{% url 'core:event_detail' event.pk %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ event.title }}</h5>
+                    <small>{{ event.event_date|date:"M d, Y" }}</small>
+                </div>
+                {% if event.location %}
+                <p class="mb-1">📍 {{ event.location }}</p>
+                {% endif %}
+                <p class="mb-1">{{ event.description|truncatewords:20 }}</p>
+            </a>
+            {% endfor %}
+        </div>
+        <a href="{% url 'core:events_list' %}" class="btn btn-outline-primary mt-3">View All Events</a>
+        {% else %}
+        <p>No upcoming events scheduled.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

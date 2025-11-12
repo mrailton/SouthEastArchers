@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Purchase Credits - South East Archers{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h1 class="mb-4">Purchase Credits</h1>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Credit Pricing</h5>
+                <p>Each credit costs <strong>€{{ credit_cost }}</strong></p>
+                <p class="text-muted">Credits are used to participate in shooting nights.</p>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_credits" class="form-label">Number of Credits *</label>
+                {{ form.credits }}
+                {% if form.credits.errors %}
+                <div class="text-danger mt-1">{{ form.credits.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="alert alert-info">
+                <strong id="total-cost">Total Cost:</strong> <span id="cost-amount">€0.00</span>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100">Purchase Credits</button>
+            <a href="{% url 'memberships:dashboard' %}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('id_credits').addEventListener('change', function() {
+    const credits = parseInt(this.value) || 0;
+    const cost = credits * {{ credit_cost }};
+    document.getElementById('cost-amount').textContent = '€' + cost.toFixed(2);
+});
+
+// Set initial value
+document.getElementById('id_credits').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

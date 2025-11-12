@@ -19,18 +19,18 @@
                     {% endif %}
 
                     <div class="mb-4">
-                        <label for="id_email" class="block text-gray-700 font-medium mb-2">Email *</label>
-                        {{ form.email }}
-                        {% if form.email.errors %}
-                        <div class="text-red-600 text-sm mt-1">{{ form.email.errors }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-4">
                         <label for="id_name" class="block text-gray-700 font-medium mb-2">Full Name *</label>
                         {{ form.name }}
                         {% if form.name.errors %}
                         <div class="text-red-600 text-sm mt-1">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="id_email" class="block text-gray-700 font-medium mb-2">Email *</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.email.errors }}</div>
                         {% endif %}
                     </div>
 

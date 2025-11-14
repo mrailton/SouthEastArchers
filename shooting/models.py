@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 
 class ShootingNight(models.Model):
@@ -61,3 +63,22 @@ class ShootingAttendance(models.Model):
 
     def __str__(self):
         return f'{self.user.email} - {self.shooting_night.date}'
+
+
+@receiver(post_save, sender=ShootingAttendance)
+def deduct_credits_on_attendance(sender, instance, created, **kwargs):
+    """Automatically deduct credits when attendance is created"""
+    if created:
+        membership = instance.user.current_membership
+        if membership and membership.credits_remaining >= instance.credits_deducted:
+            membership.credits_remaining -= instance.credits_deducted
+            membership.save()
+
+
+@receiver(post_delete, sender=ShootingAttendance)
+def refund_credits_on_delete(sender, instance, **kwargs):
+    """Refund credits when attendance is deleted"""
+    membership = instance.user.current_membership
+    if membership:
+        membership.credits_remaining += instance.credits_deducted
+        membership.save()

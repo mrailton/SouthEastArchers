@@ -281,16 +281,79 @@ class TestShootingAttendanceIntegration:
             credits_deducted=1
         )
 
-        # In a real implementation, you might have a signal or method that deducts credits
-        # For now, we just verify the attendance was created
+        # Verify credits were deducted via signal
+        membership.refresh_from_db()
+        assert membership.credits_remaining == initial_credits - 1
         assert attendance.credits_deducted == 1
         assert ShootingAttendance.objects.filter(user=user).count() == 1
 
-        # You could add logic here to actually deduct credits if implemented:
-        # membership.credits_remaining -= attendance.credits_deducted
-        # membership.save()
-        # membership.refresh_from_db()
-        # assert membership.credits_remaining == initial_credits - 1
+    def test_credit_refund_on_attendance_deletion(self, shooting_night, user, membership):
+        """Test credits are refunded when attendance is deleted."""
+        initial_credits = membership.credits_remaining
+
+        # Create attendance (credits deducted)
+        attendance = ShootingAttendance.objects.create(
+            shooting_night=shooting_night,
+            user=user,
+            credits_deducted=1
+        )
+        
+        membership.refresh_from_db()
+        assert membership.credits_remaining == initial_credits - 1
+
+        # Delete attendance (credits refunded)
+        attendance.delete()
+        
+        membership.refresh_from_db()
+        assert membership.credits_remaining == initial_credits
+
+    def test_credit_deduction_with_custom_amount(self, shooting_night, user, membership):
+        """Test attendance with custom credits_deducted amount."""
+        initial_credits = membership.credits_remaining
+        credits_to_deduct = 3
+
+        # Create attendance with custom credit amount
+        attendance = ShootingAttendance.objects.create(
+            shooting_night=shooting_night,
+            user=user,
+            credits_deducted=credits_to_deduct
+        )
+
+        # Verify correct amount was deducted
+        membership.refresh_from_db()
+        assert membership.credits_remaining == initial_credits - credits_to_deduct
+
+    def test_credit_deduction_insufficient_credits(self, shooting_night, user, membership):
+        """Test attendance creation when user has insufficient credits."""
+        # Set credits to less than needed
+        membership.credits_remaining = 0
+        membership.save()
+
+        # Create attendance - should still create but won't deduct
+        attendance = ShootingAttendance.objects.create(
+            shooting_night=shooting_night,
+            user=user,
+            credits_deducted=1
+        )
+
+        # Verify credits weren't deducted (would go negative)
+        membership.refresh_from_db()
+        assert membership.credits_remaining == 0
+        assert attendance.id is not None
+
+    def test_credit_deduction_no_membership(self, shooting_night, user_factory):
+        """Test attendance creation when user has no membership."""
+        user_no_membership = user_factory()
+        
+        # Create attendance - should still create even without membership
+        attendance = ShootingAttendance.objects.create(
+            shooting_night=shooting_night,
+            user=user_no_membership,
+            credits_deducted=1
+        )
+        
+        assert attendance.id is not None
+        assert attendance.user == user_no_membership
 
     def test_multiple_attendees_same_night(self, shooting_night, users):
         """Test multiple users attending same shooting night."""

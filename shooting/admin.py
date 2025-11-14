@@ -5,7 +5,7 @@ from .models import ShootingNight, ShootingAttendance
 class ShootingAttendanceInline(admin.TabularInline):
     model = ShootingAttendance
     extra = 0
-    fields = ('user', 'credits_deducted', 'recorded_at')
+    fields = ('user', 'recorded_at')
     readonly_fields = ('recorded_at',)
 
 
@@ -14,7 +14,7 @@ class ShootingNightAdmin(admin.ModelAdmin):
     list_display = ('date', 'location', 'created_by', 'attendees_count', 'created_at')
     list_filter = ('date', 'location', 'created_at')
     search_fields = ('notes',)
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('created_by', 'created_at', 'updated_at')
     fieldsets = (
         (None, {'fields': ('date', 'location', 'notes')}),
         ('Metadata', {'fields': ('created_by', 'created_at', 'updated_at')}),
@@ -29,11 +29,3 @@ class ShootingNightAdmin(admin.ModelAdmin):
         if not change:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
-
-
-@admin.register(ShootingAttendance)
-class ShootingAttendanceAdmin(admin.ModelAdmin):
-    list_display = ('shooting_night', 'user', 'credits_deducted', 'recorded_at')
-    list_filter = ('shooting_night__date', 'recorded_at')
-    search_fields = ('user__email', 'shooting_night__date')
-    readonly_fields = ('recorded_at',)

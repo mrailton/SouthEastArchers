@@ -59,6 +59,24 @@ def users(db):
 
 
 @pytest.fixture
+def user_factory(db):
+    """Factory to create test users dynamically."""
+    def _create_user(email=None, name=None, **kwargs):
+        import uuid
+        if not email:
+            email = f'user_{uuid.uuid4().hex[:8]}@example.com'
+        if not name:
+            name = f'User {uuid.uuid4().hex[:8]}'
+        return User.objects.create_user(
+            email=email,
+            name=name,
+            password='TestPass123!',
+            **kwargs
+        )
+    return _create_user
+
+
+@pytest.fixture
 def membership(db, user):
     """Create an active membership for a user."""
     from memberships.models import Membership

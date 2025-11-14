@@ -18,10 +18,10 @@ RUN pip install --no-cache-dir uv
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml uv.lock* ./
+COPY pyproject.toml uv.lock ./
 
-# Install Python dependencies
-RUN uv pip install --system -r pyproject.toml
+# Install Python dependencies using lock file for reproducibility
+RUN uv pip install --system --no-cache -r pyproject.toml
 
 # Stage 2: Build Tailwind CSS
 FROM python:3.14-slim AS tailwind-builder
@@ -65,6 +65,9 @@ ENV DEBUG=False \
 RUN python manage.py tailwind install && \
     python manage.py tailwind build
 
+# Collect static files in build stage
+RUN python manage.py collectstatic --noinput --clear
+
 # Stage 3: Final production image
 FROM python:3.14-slim
 
@@ -74,11 +77,9 @@ ENV PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     PORT=8000
 
-# Install runtime dependencies
+# Install only required runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     default-libmysqlclient-dev \
-    curl \
-    wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -95,14 +96,8 @@ COPY --from=python-builder /usr/local/bin /usr/local/bin
 # Copy application code
 COPY --chown=django:django . .
 
-# Copy built Tailwind CSS from tailwind-builder
-COPY --from=tailwind-builder --chown=django:django /app/theme/static/css/dist /app/theme/static/css/dist
-
-# Collect static files (must be done as root before switching user)
-RUN python manage.py collectstatic --noinput --clear || true
-
-# Fix permissions after collectstatic
-RUN chown -R django:django /app/staticfiles /app/media
+# Copy built static files from tailwind-builder (includes Tailwind CSS and collectstatic output)
+COPY --from=tailwind-builder --chown=django:django /app/staticfiles /app/staticfiles
 
 # Switch to non-root user
 USER django
@@ -110,9 +105,9 @@ USER django
 # Expose port
 EXPOSE 8000
 
-# Health check
+# Health check using Python instead of curl (no extra dependency)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/health/ || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT}/health/').read()" || exit 1
 
 # Run gunicorn
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-"]

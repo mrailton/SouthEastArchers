@@ -48,8 +48,8 @@ db.sqlite3-journal
 htmlcov/
 .tox/
 
-# Node (exclude cache but keep node_modules for Tailwind build)
-theme/static_src/node_modules/.cache
+# Node (exclude node_modules entirely - Tailwind is prebuilt in image)
+theme/static_src/node_modules/
 
 # Docker
 docker-compose*.yml

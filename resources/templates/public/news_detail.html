@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ news.title }} - South East Archers{% endblock %}
+{% block content %}
+<article class="bg-white p-8 rounded shadow max-w-2xl">
+    <h1 class="text-4xl font-bold mb-4">{{ news.title }}</h1>
+    <p class="text-gray-600 mb-4">Published: {{ news.published_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    <div class="prose prose-lg text-gray-700">{{ news.content }}</div>
+    <a href="/news" class="text-blue-600 hover:underline mt-6 inline-block">&larr; Back to news</a>
+</article>
+{% endblock %}

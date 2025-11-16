@@ -1,0 +1,51 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: sea_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: sea_db
+      MYSQL_USER: sea_user
+      MYSQL_PASSWORD: sea_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: sea_app
+    environment:
+      FLASK_ENV: development
+      FLASK_APP: wsgi.py
+      DATABASE_URL: mysql+pymysql://sea_user:sea_password@mysql:3306/sea_db
+      MAIL_SERVER: mailhog
+      MAIL_PORT: 1025
+      MAIL_USE_TLS: "False"
+    ports:
+      - "5000:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/__pycache__
+      - /app/.pytest_cache
+    stdin_open: true
+    tty: true
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: sea_mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  mysql_data:

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Create News - Admin{% endblock %}
+{% block content %}
+<div class="max-w-4xl">
+    <h1 class="text-4xl font-bold mb-6">Create News</h1>
+    
+    <form method="POST" class="bg-white p-8 rounded shadow space-y-6">
+        <div>
+            <label class="block text-gray-700 font-bold mb-2">Title</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="text" name="title" required>
+        </div>
+        
+        <div>
+            <label class="block text-gray-700 font-bold mb-2">Summary</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="text" name="summary">
+        </div>
+        
+        <div>
+            <label class="block text-gray-700 font-bold mb-2">Content</label>
+            <textarea class="w-full border border-gray-300 rounded px-3 py-2" 
+                      name="content" rows="8" required></textarea>
+        </div>
+        
+        <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">
+            Create
+        </button>
+    </form>
+</div>
+{% endblock %}

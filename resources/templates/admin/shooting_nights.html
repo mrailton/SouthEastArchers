@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Shooting Nights - Admin{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-4xl font-bold">Shooting Nights</h1>
+    <a href="/admin/shooting-nights/create" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        Create New
+    </a>
+</div>
+
+<div class="space-y-4">
+{% for night in nights %}
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-2xl font-bold">{{ night.location }}</h3>
+        <p class="text-gray-600">{{ night.date.strftime('%Y-%m-%d %H:%M') }}</p>
+        <p class="text-gray-700">Capacity: {{ night.users|length }}/{{ night.capacity }}</p>
+    </div>
+{% endfor %}
+</div>
+{% endblock %}

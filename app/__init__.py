@@ -1,0 +1,64 @@
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_mail import Mail
+from flask_assets import Environment as FlaskAssets
+
+db = SQLAlchemy()
+migrate = Migrate()
+mail = Mail()
+assets = None
+
+
+def create_app(config_name='development'):
+    """Application factory"""
+    from config.config import config
+    
+    app = Flask(
+        __name__,
+        template_folder='../resources/templates',
+        static_folder='../resources/static',
+        static_url_path='/static'
+    )
+    
+    # Load config
+    app.config.from_object(config[config_name])
+    
+    # Initialize extensions
+    db.init_app(app)
+    migrate.init_app(app, db)
+    mail.init_app(app)
+    
+    # Initialize asset pipeline
+    global assets
+    assets = FlaskAssets(app)
+    assets.cache = False  # Disable caching for development
+
+    # Register blueprints
+    from app.routes import public_bp, auth_bp, member_bp, admin_bp, payment_bp
+
+    app.register_blueprint(public_bp.bp)
+    app.register_blueprint(auth_bp.bp)
+    app.register_blueprint(member_bp.bp)
+    app.register_blueprint(admin_bp.bp)
+    app.register_blueprint(payment_bp.bp)
+
+    # Error handlers
+    @app.errorhandler(404)
+    def not_found(e):
+        return 'Page not found', 404
+
+    @app.errorhandler(500)
+    def internal_error(e):
+        db.session.rollback()
+        return 'Internal server error', 500
+
+    # Create database tables on first run
+    with app.app_context():
+        # Import models to register them
+        from app.models import (
+            User, Membership, ShootingNight, Credit, News, Event, Payment
+        )
+        db.create_all()
+
+    return app

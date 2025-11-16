@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Members - Admin{% endblock %}
+{% block content %}
+<h1 class="text-4xl font-bold mb-6">Manage Members</h1>
+
+<div class="bg-white rounded shadow overflow-hidden">
+    <table class="w-full">
+        <thead class="bg-gray-100">
+            <tr>
+                <th class="px-6 py-3 text-left">Name</th>
+                <th class="px-6 py-3 text-left">Email</th>
+                <th class="px-6 py-3 text-left">Status</th>
+                <th class="px-6 py-3 text-left">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for member in members %}
+            <tr class="border-t">
+                <td class="px-6 py-3">{{ member.name }}</td>
+                <td class="px-6 py-3">{{ member.email }}</td>
+                <td class="px-6 py-3">
+                    {% if member.membership.is_active() %}
+                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded">Active</span>
+                    {% else %}
+                        <span class="bg-red-100 text-red-800 px-3 py-1 rounded">Expired</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-3">
+                    <a href="/admin/members/{{ member.id }}" class="text-blue-600 hover:underline">View</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

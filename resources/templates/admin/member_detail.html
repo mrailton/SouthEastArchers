@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ member.name }} - Admin{% endblock %}
+{% block content %}
+<div class="max-w-4xl">
+    <h1 class="text-4xl font-bold mb-6">{{ member.name }}</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded shadow">
+            <h3 class="text-2xl font-bold mb-4">Member Info</h3>
+            <p class="text-gray-700 mb-2"><strong>Email:</strong> {{ member.email }}</p>
+            <p class="text-gray-700 mb-2"><strong>Phone:</strong> {{ member.phone or 'N/A' }}</p>
+            <p class="text-gray-700"><strong>Age:</strong> {{ member.get_age() }}</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded shadow">
+            <h3 class="text-2xl font-bold mb-4">Membership</h3>
+            <p class="text-gray-700 mb-2"><strong>Status:</strong> {{ member.membership.status }}</p>
+            <p class="text-gray-700 mb-2"><strong>Expires:</strong> {{ member.membership.expiry_date.strftime('%Y-%m-%d') }}</p>
+            <p class="text-gray-700 mb-4"><strong>Nights Used:</strong> {{ member.membership.nights_used }}/20</p>
+            
+            {% if not member.membership.is_active() %}
+                <form method="POST" action="/admin/members/{{ member.id }}/membership/renew">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        Renew Membership
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="mt-6">
+        <a href="/admin/members" class="text-blue-600 hover:underline">&larr; Back to members</a>
+    </div>
+</div>
+{% endblock %}

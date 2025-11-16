@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Home - South East Archers{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20 rounded-lg mb-12">
+    <div class="text-center">
+        <h1 class="text-5xl font-bold mb-4">Welcome to South East Archers</h1>
+        <p class="text-xl mb-8">Join our archery club and discover the art of precision shooting</p>
+        
+        {% if not session.user_id %}
+            <div class="space-x-4">
+                <a href="/signup" class="bg-white text-blue-600 px-8 py-3 rounded font-bold hover:bg-gray-100">
+                    Join Now
+                </a>
+                <a href="/membership" class="border-2 border-white text-white px-8 py-3 rounded font-bold hover:bg-white hover:text-blue-600">
+                    Learn More
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+    <div class="bg-white p-8 rounded-lg shadow">
+        <h3 class="text-2xl font-bold mb-4">🏹 Expert Training</h3>
+        <p class="text-gray-700">Learn from experienced instructors in a safe, supportive environment.</p>
+    </div>
+    
+    <div class="bg-white p-8 rounded-lg shadow">
+        <h3 class="text-2xl font-bold mb-4">🌟 Community</h3>
+        <p class="text-gray-700">Meet fellow archers and build lasting friendships with like-minded people.</p>
+    </div>
+    
+    <div class="bg-white p-8 rounded-lg shadow">
+        <h3 class="text-2xl font-bold mb-4">🎯 All Levels</h3>
+        <p class="text-gray-700">Whether you're a beginner or experienced archer, we have something for you.</p>
+    </div>
+</div>
+
+<div class="bg-gray-100 p-8 rounded-lg">
+    <h2 class="text-3xl font-bold mb-6">Upcoming Events</h2>
+    <p class="text-gray-700">Check back soon for upcoming events and news from our club.</p>
+</div>
+{% endblock %}

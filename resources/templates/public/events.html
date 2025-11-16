@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Events - South East Archers{% endblock %}
+{% block content %}
+<h1 class="text-4xl font-bold mb-6">Upcoming Events</h1>
+{% if events %}
+    <div class="space-y-4">
+    {% for event in events %}
+        <div class="bg-white p-4 rounded shadow">
+            <h2 class="text-2xl font-bold">{{ event.title }}</h2>
+            <p class="text-gray-600 text-sm">{{ event.start_date.strftime('%Y-%m-%d %H:%M') }}</p>
+            {% if event.location %}<p class="text-gray-600">Location: {{ event.location }}</p>{% endif %}
+            <p class="text-gray-700">{{ event.description[:200] }}...</p>
+        </div>
+    {% endfor %}
+    </div>
+{% else %}
+    <p class="text-gray-700">No upcoming events.</p>
+{% endif %}
+{% endblock %}

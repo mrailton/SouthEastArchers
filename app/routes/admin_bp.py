@@ -47,7 +47,7 @@ def dashboard():
 @admin_required
 def members():
     """Manage members"""
-    members = User.query.filter_by(is_admin=False).all()
+    members = User.query.all()
     return render_template('admin/members.html', members=members)
 
 
@@ -56,10 +56,6 @@ def members():
 def member_detail(user_id):
     """View member details"""
     member = User.query.get_or_404(user_id)
-    if member.is_admin:
-        flash('Cannot access admin user details.', 'error')
-        return redirect(url_for('admin.members'))
-    
     return render_template('admin/member_detail.html', member=member)
 
 

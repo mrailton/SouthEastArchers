@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, current_app
 from app.models import News, Event
+from app.utils.datetime_utils import utc_now
 from datetime import datetime
 
 bp = Blueprint('public', __name__)

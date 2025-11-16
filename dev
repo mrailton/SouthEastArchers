@@ -52,6 +52,10 @@ COMMANDS:
     user:list       List all users
     user:delete     Delete user
 
+  ASSETS:
+    assets:build    Build CSS and JS assets
+    assets:watch    Watch and rebuild assets on changes
+
   TESTING:
     test            Run test suite
     test:file       Run specific test file
@@ -328,6 +332,22 @@ dev_clean() {
 }
 
 ##############################################################################
+# ASSET COMMANDS
+##############################################################################
+
+assets_build() {
+    section "Building CSS and JS assets"
+    npm run build
+    success "Assets built successfully!"
+}
+
+assets_watch() {
+    section "Watching CSS and JS assets for changes"
+    info "Press Ctrl+C to stop watching"
+    npm run dev
+}
+
+##############################################################################
 # QUICK COMMANDS
 ##############################################################################
 
@@ -407,7 +427,11 @@ main() {
         user:create) shift; user_create "$@"; ;;
         user:list) user_list; ;;
         user:delete) user_delete; ;;
-        
+
+        # Assets
+        assets:build) assets_build; ;;
+        assets:watch) assets_watch; ;;
+
         # Testing
         test) shift; test_run "$@"; ;;
         test:file) shift; test_file "$@"; ;;

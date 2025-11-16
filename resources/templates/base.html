@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}South East Archers{% endblock %}</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Alpine.js for interactive components and dynamic behavior -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
+    <!-- Compiled Tailwind CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.min.css') }}">
+
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50">
@@ -123,6 +120,9 @@
             <p class="text-center text-gray-300">&copy; 2024 South East Archers. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- Compiled Alpine.js and application JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.min.js') }}"></script>
 
     {% block extra_js %}{% endblock %}
 </body>

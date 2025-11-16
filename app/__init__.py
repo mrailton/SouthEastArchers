@@ -2,7 +2,6 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_mail import Mail
-from flask_assets import Environment as FlaskAssets
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -28,11 +27,6 @@ def create_app(config_name='development'):
     db.init_app(app)
     migrate.init_app(app, db)
     mail.init_app(app)
-    
-    # Initialize asset pipeline
-    global assets
-    assets = FlaskAssets(app)
-    assets.cache = False  # Disable caching for development
 
     # Register blueprints
     from app.routes import public_bp, auth_bp, member_bp, admin_bp, payment_bp

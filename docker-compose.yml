@@ -1,7 +1,6 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: sea_mysql
     environment:
       MYSQL_ROOT_PASSWORD: root_password
       MYSQL_DATABASE: sea_db
@@ -20,7 +19,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    container_name: sea_app
     environment:
       FLASK_ENV: development
       FLASK_APP: wsgi.py
@@ -42,7 +40,6 @@ services:
 
   mailhog:
     image: mailhog/mailhog:latest
-    container_name: sea_mailhog
     ports:
       - "1025:1025"
       - "8025:8025"

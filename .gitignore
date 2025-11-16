@@ -57,12 +57,7 @@ htmlcov/
 .tox/
 
 # Asset pipeline
-resources/static/manifest.json
-resources/static/gen/
-resources/static/css/*.min.css
-resources/static/css/*.min.css.map
-resources/static/js/*.min.js
-resources/static/js/*.min.js.map
+resources/static
 
 # Docker
 .docker/

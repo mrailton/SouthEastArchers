@@ -1,17 +1,16 @@
 """Tests for admin forms"""
 import pytest
-from app.forms.admin_forms import ShootingNightForm, NewsForm, EventForm
-from datetime import datetime
+from app.forms.admin_forms import ShootForm, NewsForm, EventForm
+from datetime import date, timedelta
 
 
-class TestShootingNightForm:
+class TestShootForm:
     def test_valid_data(self, app):
         with app.test_request_context():
-            form = ShootingNightForm(data={
-                'date': datetime(2025, 12, 1, 18, 0),
-                'location': 'Main Range',
-                'description': 'Regular shooting night',
-                'capacity': 20
+            form = ShootForm(data={
+                'date': date.today(),
+                'location': 'HALL',
+                'description': 'Test shoot'
             })
             assert form.validate()
 
@@ -33,7 +32,7 @@ class TestEventForm:
             form = EventForm(data={
                 'title': 'Club Championship',
                 'description': 'Annual club championship event',
-                'start_date': datetime(2025, 12, 15, 10, 0),
+                'start_date': date.today() + timedelta(days=30),
                 'location': 'Main Venue'
             })
             assert form.validate()

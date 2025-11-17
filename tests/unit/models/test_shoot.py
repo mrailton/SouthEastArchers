@@ -1,0 +1,58 @@
+"""Tests for shoot model"""
+import pytest
+from app.models import Shoot, User, ShootLocation
+from datetime import date, timedelta
+
+
+class TestShoot:
+    def test_create_shoot(self, app):
+        from app import db
+        shoot = Shoot(
+            date=date.today(),
+            location=ShootLocation.HALL,
+            description='Test shoot'
+        )
+        db.session.add(shoot)
+        db.session.commit()
+        
+        assert shoot.id is not None
+        assert shoot.location == ShootLocation.HALL
+        assert shoot.date == date.today()
+
+    def test_shoot_with_attendees(self, app):
+        """Test shoot with attendees"""
+        from app import db
+        shoot = Shoot(
+            date=date.today(),
+            location=ShootLocation.MEADOW
+        )
+        db.session.add(shoot)
+        db.session.flush()
+        
+        user = User(
+            name='Test User',
+            email='test@example.com',
+            date_of_birth=date(2000, 1, 1)
+        )
+        user.set_password('password')
+        db.session.add(user)
+        db.session.flush()
+        
+        shoot.users.append(user)
+        db.session.commit()
+        
+        assert len(shoot.users) == 1
+        assert shoot.users[0].name == 'Test User'
+
+    def test_shoot_locations(self, app):
+        """Test all shoot locations"""
+        from app import db
+        
+        for location in [ShootLocation.HALL, ShootLocation.MEADOW, ShootLocation.WOODS]:
+            shoot = Shoot(date=date.today(), location=location)
+            db.session.add(shoot)
+        
+        db.session.commit()
+        
+        shoots = Shoot.query.all()
+        assert len(shoots) == 3

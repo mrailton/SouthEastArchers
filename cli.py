@@ -5,7 +5,7 @@ import click
 import os
 from datetime import date, timedelta
 from app import create_app, db
-from app.models import User, Membership, ShootingNight, News, Event
+from app.models import User, Membership, Shoot, News, Event
 from werkzeug.security import generate_password_hash
 
 
@@ -125,8 +125,8 @@ def delete_user(user_id):
 @click.option('--capacity', prompt='Capacity', type=int, default=30, help='Capacity')
 @click.option('--description', default='', help='Description (optional)')
 @init_app_context
-def create_shooting_night(location, date, capacity, description):
-    """Create a shooting night"""
+def create_shoot(location, date, capacity, description):
+    """Create a shoot"""
     try:
         from datetime import datetime
         date_obj = datetime.strptime(date, '%Y-%m-%d %H:%M')
@@ -134,7 +134,7 @@ def create_shooting_night(location, date, capacity, description):
         click.echo('Error: Invalid date format. Use YYYY-MM-DD HH:MM')
         return
     
-    night = ShootingNight(
+    night = Shoot(
         date=date_obj,
         location=location,
         capacity=capacity,
@@ -155,8 +155,8 @@ def show_stats():
     total_members = User.query.filter_by(is_admin=False).count()
     total_admins = User.query.filter_by(is_admin=True).count()
     active_memberships = Membership.query.filter_by(status='active').count()
-    upcoming_nights = ShootingNight.query.filter(
-        ShootingNight.date > db.func.now()
+    upcoming_nights = Shoot.query.filter(
+        Shoot.date > db.func.now()
     ).count()
     
     click.echo('\n=== South East Archers Statistics ===')
@@ -164,7 +164,7 @@ def show_stats():
     click.echo(f'Total members: {total_members}')
     click.echo(f'Total admins: {total_admins}')
     click.echo(f'Active memberships: {active_memberships}')
-    click.echo(f'Upcoming shooting nights: {upcoming_nights}')
+    click.echo(f'Upcoming shoots: {upcoming_nights}')
 
 
 if __name__ == '__main__':

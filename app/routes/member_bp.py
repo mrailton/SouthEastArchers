@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from functools import wraps
 from app import db
 from app.utils.datetime_utils import utc_now
-from app.models import User, Membership, ShootingNight, Credit, Payment
+from app.models import User, Membership, Shoot, Credit, Payment
 from datetime import datetime
 
 bp = Blueprint('member', __name__, url_prefix='/member')
@@ -25,80 +25,28 @@ def dashboard():
     """Member dashboard"""
     user = db.session.get(User, session['user_id'])
     membership = user.membership
-    credits = Credit.query.filter_by(user_id=user.id).all()
-    available_credits = sum(c.balance() for c in credits if not c.is_expired())
+    
+    # Get shoot count
+    shoots_attended = len(user.shoots)
     
     return render_template(
         'member/dashboard.html',
         user=user,
         membership=membership,
-        available_credits=available_credits
+        shoots_attended=shoots_attended
     )
 
 
-@bp.route('/shooting-nights')
+@bp.route('/shoots')
 @login_required
-def shooting_nights():
-    """View available shooting nights"""
+def shoots():
+    """View shoot history"""
     user = db.session.get(User, session['user_id'])
     
-    # Get upcoming shooting nights
-    nights = ShootingNight.query.filter(
-        ShootingNight.date >= utc_now()
-    ).order_by(ShootingNight.date).all()
+    # Get user's shoot history
+    user_shoots = Shoot.query.join(Shoot.users).filter(User.id == user.id).order_by(Shoot.date.desc()).all()
     
-    # Get user's registered nights
-    user_night_ids = [n.id for n in user.shooting_nights]
-    
-    return render_template(
-        'member/shooting_nights.html',
-        nights=nights,
-        user_night_ids=user_night_ids
-    )
-
-
-@bp.route('/shooting-nights/<int:night_id>/register', methods=['POST'])
-@login_required
-def register_shooting_night(night_id):
-    """Register for a shooting night"""
-    user = db.session.get(User, session['user_id'])
-    night = db.session.get(ShootingNight, night_id)
-    if not night:
-        from flask import abort
-        abort(404)
-    
-    # Check if already registered
-    if night in user.shooting_nights:
-        flash('You are already registered for this night.', 'warning')
-        return redirect(url_for('member.shooting_nights'))
-    
-    # Check capacity
-    if night.is_full():
-        flash('This shooting night is full.', 'error')
-        return redirect(url_for('member.shooting_nights'))
-    
-    # Check credits/membership
-    membership = user.membership
-    credits = Credit.query.filter_by(user_id=user.id).all()
-    available_credits = sum(c.balance() for c in credits if not c.is_expired())
-    
-    if membership.nights_remaining() > 0:
-        membership.nights_used += 1
-    elif available_credits > 0:
-        # Use a credit
-        for credit in credits:
-            if credit.balance() > 0 and not credit.is_expired():
-                credit.used += 1
-                break
-    else:
-        flash('No available credits. Please purchase additional credits.', 'error')
-        return redirect(url_for('member.shooting_nights'))
-    
-    user.shooting_nights.append(night)
-    db.session.commit()
-    
-    flash('Successfully registered for this shooting night!', 'success')
-    return redirect(url_for('member.shooting_nights'))
+    return render_template('member/shoots.html', shoots=user_shoots, user=user)
 
 
 @bp.route('/credits')

@@ -43,9 +43,10 @@ def test_user(app):
     user.set_password('password123')
     
     membership = Membership(
-        user_id=None,  # Will be set after user is added
-        start_date=date.today() - timedelta(days=365),
-        expiry_date=date.today(),
+        user_id=None,
+        start_date=date.today() - timedelta(days=30),
+        expiry_date=date.today() + timedelta(days=335),
+        credits=20,
         status='active'
     )
     
@@ -89,4 +90,3 @@ def admin_user(app):
     db.session.commit()
     
     return user
-

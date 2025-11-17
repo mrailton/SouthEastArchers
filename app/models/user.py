@@ -22,7 +22,7 @@ class User(db.Model):
     # Relationships
     membership = db.relationship('Membership', backref='user', uselist=False, cascade='all, delete-orphan')
     credits = db.relationship('Credit', backref='user', cascade='all, delete-orphan')
-    shooting_nights = db.relationship('ShootingNight', secondary='user_shooting_nights', backref='users')
+    shoots = db.relationship('Shoot', secondary='user_shoots', backref='users')
     payments = db.relationship('Payment', backref='user', cascade='all, delete-orphan')
     
     def set_password(self, password):

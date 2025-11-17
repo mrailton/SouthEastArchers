@@ -1,15 +1,19 @@
-from wtforms import StringField, TextAreaField, IntegerField, SubmitField, DateTimeField
+from wtforms import StringField, TextAreaField, IntegerField, SubmitField, DateField, SelectField, SelectMultipleField
 from wtforms.validators import DataRequired, Optional, Length
 from flask_wtf import FlaskForm
 
 
-class ShootingNightForm(FlaskForm):
-    """Create/edit shooting night form"""
-    location = StringField('Location', validators=[DataRequired(), Length(min=2)])
-    date = DateTimeField('Date & Time', validators=[DataRequired()])
-    capacity = IntegerField('Capacity', default=30)
+class ShootForm(FlaskForm):
+    """Create/edit shoot form"""
+    date = DateField('Date', validators=[DataRequired()])
+    location = SelectField('Location', choices=[
+        ('HALL', 'Hall'),
+        ('MEADOW', 'Meadow'),
+        ('WOODS', 'Woods')
+    ], validators=[DataRequired()])
     description = TextAreaField('Description', validators=[Optional()])
-    submit = SubmitField('Create')
+    attendees = SelectMultipleField('Attendees', coerce=int, validators=[Optional()])
+    submit = SubmitField('Create Shoot')
 
 
 class NewsForm(FlaskForm):
@@ -24,6 +28,6 @@ class EventForm(FlaskForm):
     """Create/edit event form"""
     title = StringField('Title', validators=[DataRequired(), Length(min=5)])
     description = TextAreaField('Description', validators=[DataRequired()])
-    start_date = DateTimeField('Start Date', validators=[DataRequired()])
+    start_date = DateField('Start Date', validators=[DataRequired()])
     location = StringField('Location', validators=[Optional()])
     submit = SubmitField('Create')

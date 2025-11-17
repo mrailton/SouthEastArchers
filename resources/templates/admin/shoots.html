@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">Shoots</h1>
+        <a href="{{ url_for('admin.create_shoot') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Create Shoot
+        </a>
+    </div>
+    
+    {% if shoots %}
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul class="divide-y divide-gray-200">
+            {% for shoot in shoots %}
+            <li class="px-6 py-4 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center">
+                            <h3 class="text-lg font-medium text-gray-900">
+                                {{ shoot.date.strftime('%d %b %Y') }} - {{ shoot.location.value }}
+                            </h3>
+                        </div>
+                        {% if shoot.description %}
+                        <p class="mt-1 text-sm text-gray-600">{{ shoot.description }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">
+                            {{ shoot.users|length }} attendees
+                            {% if shoot.users %}
+                            <span class="ml-2">
+                                ({{ shoot.users|map(attribute='name')|join(', ') }})
+                            </span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('admin.edit_shoot', shoot_id=shoot.id) }}" 
+                           class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Edit
+                        </a>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <p class="text-gray-600">No shoots recorded yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

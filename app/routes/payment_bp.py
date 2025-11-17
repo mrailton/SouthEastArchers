@@ -65,7 +65,7 @@ def membership_payment():
 
 @bp.route('/credits', methods=['GET', 'POST'])
 @login_required
-def credit_payment():
+def credits():
     """Purchase additional shooting credits"""
     if request.method == 'POST':
         user = db.session.get(User, session['user_id'])

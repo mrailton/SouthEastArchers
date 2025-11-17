@@ -47,12 +47,9 @@ def create_app(config_name='development'):
         db.session.rollback()
         return 'Internal server error', 500
 
-    # Create database tables on first run
     with app.app_context():
-        # Import models to register them
         from app.models import (
-            User, Membership, ShootingNight, Credit, News, Event, Payment
+            User, Membership, Shoot, Credit, News, Event, Payment
         )
-        db.create_all()
 
     return app

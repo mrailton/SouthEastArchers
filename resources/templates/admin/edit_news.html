@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Edit News</h1>
+    
+    <form method="POST" class="space-y-6">
+        <div>
+            <label for="title" class="block text-sm font-medium text-gray-700">Title *</label>
+            <input type="text" name="title" id="title" value="{{ news.title }}" required
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+        
+        <div>
+            <label for="summary" class="block text-sm font-medium text-gray-700">Summary</label>
+            <input type="text" name="summary" id="summary" value="{{ news.summary or '' }}" maxlength="500"
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+        
+        <div>
+            <label for="content" class="block text-sm font-medium text-gray-700">Content *</label>
+            <textarea name="content" id="content" rows="10" required
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ news.content }}</textarea>
+        </div>
+        
+        <div class="flex items-center">
+            <input type="checkbox" name="published" id="published" {% if news.published %}checked{% endif %}
+                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+            <label for="published" class="ml-2 text-sm text-gray-700">Published</label>
+        </div>
+        
+        <div class="flex gap-4">
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
+                Update News
+            </button>
+            <a href="{{ url_for('admin.news') }}" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

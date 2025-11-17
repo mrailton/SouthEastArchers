@@ -1,38 +1,46 @@
-from datetime import datetime, timedelta
-from app import db
+from datetime import date, timedelta
 from app.utils.datetime_utils import utc_now
+from app import db
 
 
 class Membership(db.Model):
-    """Membership model to track user membership status and renewal"""
+    """Annual membership with included credits"""
     __tablename__ = 'memberships'
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True, index=True)
     start_date = db.Column(db.Date, nullable=False)
     expiry_date = db.Column(db.Date, nullable=False)
-    nights_used = db.Column(db.Integer, default=0)
-    status = db.Column(db.Enum('active', 'expired', 'cancelled'), default='active')
+    credits = db.Column(db.Integer, default=20)  # Credits available (starts at 20)
+    status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
     
     def is_active(self):
         """Check if membership is currently active"""
-        from datetime import date
         return self.status == 'active' and self.expiry_date >= date.today()
     
-    def nights_remaining(self):
-        """Get remaining nights in annual membership"""
-        from config.config import Config
-        return max(0, Config.MEMBERSHIP_NIGHTS_INCLUDED - self.nights_used)
+    def credits_remaining(self):
+        """Get remaining credits"""
+        return max(0, self.credits)
+    
+    def use_credit(self):
+        """Deduct one credit"""
+        if self.credits > 0:
+            self.credits -= 1
+            return True
+        return False
+    
+    def add_credits(self, amount):
+        """Add credits (from purchase)"""
+        self.credits += amount
     
     def renew(self):
         """Renew membership for another year"""
-        from datetime import date
         self.start_date = date.today()
-        self.expiry_date = self.start_date + timedelta(days=365)
-        self.nights_used = 0
+        self.expiry_date = date.today() + timedelta(days=365)
+        self.credits = 20  # Reset to 20 credits
         self.status = 'active'
     
     def __repr__(self):
-        return f'<Membership user_id={self.user_id} status={self.status}>'
+        return f'<Membership user_id={self.user_id} credits={self.credits}>'

@@ -1,33 +1,63 @@
 {% extends "base.html" %}
-{% block title %}Dashboard - South East Archers{% endblock %}
+
 {% block content %}
-<div class="mb-8">
-    <h1 class="text-4xl font-bold mb-6">Member Dashboard</h1>
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
     
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <!-- Membership Card -->
-        <div class="bg-white p-6 rounded shadow">
-            <h3 class="text-xl font-bold mb-4">Your Membership</h3>
-            <p class="text-gray-700 mb-2"><strong>Status:</strong> {% if membership.is_active() %}Active{% else %}Expired{% endif %}</p>
-            <p class="text-gray-700 mb-2"><strong>Expires:</strong> {{ membership.expiry_date.strftime('%Y-%m-%d') }}</p>
-            <p class="text-gray-700"><strong>Nights Remaining:</strong> {{ membership.nights_remaining() }}/20</p>
-        </div>
-        
-        <!-- Credits Card -->
-        <div class="bg-white p-6 rounded shadow">
-            <h3 class="text-xl font-bold mb-4">Available Credits</h3>
-            <p class="text-3xl font-bold text-blue-600 mb-4">{{ available_credits }}</p>
-            <a href="/member/credits" class="text-blue-600 hover:underline">Purchase credits</a>
-        </div>
-        
-        <!-- Quick Actions Card -->
-        <div class="bg-white p-6 rounded shadow">
-            <h3 class="text-xl font-bold mb-4">Quick Actions</h3>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Membership</h2>
+            {% if membership %}
             <div class="space-y-2">
-                <a href="/member/shooting-nights" class="block text-blue-600 hover:underline">View shooting nights</a>
-                <a href="/member/profile" class="block text-blue-600 hover:underline">Edit profile</a>
-                <a href="/member/change-password" class="block text-blue-600 hover:underline">Change password</a>
+                <p><span class="font-medium">Status:</span> 
+                    <span class="{% if membership.is_active() %}text-green-600{% else %}text-red-600{% endif %}">
+                        {{ membership.status|title }}
+                    </span>
+                </p>
+                <p><span class="font-medium">Expires:</span> {{ membership.expiry_date.strftime('%d %b %Y') }}</p>
+                <p><span class="font-medium">Credits Remaining:</span> 
+                    <span class="text-2xl font-bold text-blue-600">{{ membership.credits_remaining() }}</span>
+                </p>
             </div>
+            {% else %}
+            <p class="text-gray-600">No active membership</p>
+            <a href="{{ url_for('payment.membership') }}" class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Purchase Membership
+            </a>
+            {% endif %}
+        </div>
+        
+        <!-- Activity Card -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Activity</h2>
+            <div class="space-y-2">
+                <p><span class="font-medium">Shoots Attended:</span> 
+                    <span class="text-2xl font-bold text-green-600">{{ shoots_attended }}</span>
+                </p>
+                <a href="{{ url_for('member.shoots') }}" class="block text-blue-600 hover:underline mt-4">
+                    View shoot history →
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="{{ url_for('member.profile') }}" class="text-center p-4 border border-gray-300 rounded hover:bg-gray-50">
+                <div class="text-2xl mb-2">👤</div>
+                <div>Edit Profile</div>
+            </a>
+            <a href="{{ url_for('payment.credits') }}" class="text-center p-4 border border-gray-300 rounded hover:bg-gray-50">
+                <div class="text-2xl mb-2">💳</div>
+                <div>Purchase Credits</div>
+            </a>
+            <a href="{{ url_for('member.shoots') }}" class="text-center p-4 border border-gray-300 rounded hover:bg-gray-50">
+                <div class="text-2xl mb-2">🎯</div>
+                <div>Shoot History</div>
+            </a>
         </div>
     </div>
 </div>

@@ -1,36 +1,59 @@
 {% extends "base.html" %}
-{% block title %}Members - Admin{% endblock %}
-{% block content %}
-<h1 class="text-4xl font-bold mb-6">Manage Members</h1>
 
-<div class="bg-white rounded shadow overflow-hidden">
-    <table class="w-full">
-        <thead class="bg-gray-100">
-            <tr>
-                <th class="px-6 py-3 text-left">Name</th>
-                <th class="px-6 py-3 text-left">Email</th>
-                <th class="px-6 py-3 text-left">Status</th>
-                <th class="px-6 py-3 text-left">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for member in members %}
-            <tr class="border-t">
-                <td class="px-6 py-3">{{ member.name }}</td>
-                <td class="px-6 py-3">{{ member.email }}</td>
-                <td class="px-6 py-3">
-                    {% if member.membership.is_active() %}
-                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded">Active</span>
-                    {% else %}
-                        <span class="bg-red-100 text-red-800 px-3 py-1 rounded">Expired</span>
-                    {% endif %}
-                </td>
-                <td class="px-6 py-3">
-                    <a href="/admin/members/{{ member.id }}" class="text-blue-600 hover:underline">View</a>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">Members</h1>
+        <a href="{{ url_for('admin.create_member') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Create Member
+        </a>
+    </div>
+    
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul class="divide-y divide-gray-200">
+            {% for member in members %}
+            <li class="px-6 py-4 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center">
+                            <h3 class="text-lg font-medium text-gray-900">
+                                {{ member.name }}
+                                {% if member.is_admin %}
+                                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    Admin
+                                </span>
+                                {% endif %}
+                                {% if not member.is_active %}
+                                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Inactive
+                                </span>
+                                {% endif %}
+                            </h3>
+                        </div>
+                        <p class="mt-1 text-sm text-gray-600">{{ member.email }}</p>
+                        {% if member.membership %}
+                        <p class="mt-1 text-sm text-gray-500">
+                            Membership: {{ member.membership.status|title }} | 
+                            Credits: {{ member.membership.credits_remaining() }}
+                        </p>
+                        {% else %}
+                        <p class="mt-1 text-sm text-gray-500">No membership</p>
+                        {% endif %}
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="{{ url_for('admin.member_detail', user_id=member.id) }}" 
+                           class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            View
+                        </a>
+                        <a href="{{ url_for('admin.edit_member', user_id=member.id) }}" 
+                           class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Edit
+                        </a>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
 </div>
 {% endblock %}

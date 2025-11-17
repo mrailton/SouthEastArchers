@@ -38,7 +38,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Copy built assets from builder stage
+# Copy built assets from builder stage (overwrites empty static folder)
 COPY --from=builder /app/resources/static ./resources/static
 
 # Create non-root user

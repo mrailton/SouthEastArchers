@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache
+*.egg-info
+
+# Node
+node_modules
+
+# Built assets (will be copied from builder stage)
+resources/static/css
+resources/static/js
+
+# Development
+.env
+.env.example
+*.log
+
+# IDE
+.vscode
+.idea
+
+# Docs
+README.md

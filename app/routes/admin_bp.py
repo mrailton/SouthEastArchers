@@ -29,7 +29,7 @@ def admin_required(f):
 @admin_required
 def dashboard():
     """Admin dashboard"""
-    total_members = User.query.filter_by(is_admin=False).count()
+    total_members = User.query.count()
     active_memberships = Membership.query.filter_by(status='active').count()
     upcoming_nights = ShootingNight.query.filter(
         ShootingNight.date >= utc_now()
@@ -55,7 +55,10 @@ def members():
 @admin_required
 def member_detail(user_id):
     """View member details"""
-    member = User.query.get_or_404(user_id)
+    member = db.session.get(User, user_id)
+    if not member:
+        from flask import abort
+        abort(404)
     return render_template('admin/member_detail.html', member=member)
 
 
@@ -63,7 +66,10 @@ def member_detail(user_id):
 @admin_required
 def renew_membership(user_id):
     """Renew a member's membership"""
-    member = User.query.get_or_404(user_id)
+    member = db.session.get(User, user_id)
+    if not member:
+        from flask import abort
+        abort(404)
     member.membership.renew()
     db.session.commit()
     

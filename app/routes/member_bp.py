@@ -62,7 +62,10 @@ def shooting_nights():
 def register_shooting_night(night_id):
     """Register for a shooting night"""
     user = db.session.get(User, session['user_id'])
-    night = ShootingNight.query.get_or_404(night_id)
+    night = db.session.get(ShootingNight, night_id)
+    if not night:
+        from flask import abort
+        abort(404)
     
     # Check if already registered
     if night in user.shooting_nights:

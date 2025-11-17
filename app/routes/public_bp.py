@@ -28,7 +28,10 @@ def news_list():
 @bp.route('/news/<int:news_id>')
 def news_detail(news_id):
     """News detail page"""
-    news = News.query.get_or_404(news_id)
+    news = db.session.get(News, news_id)
+    if not news:
+        from flask import abort
+        abort(404)
     if not news.published:
         return render_template('errors/404.html'), 404
     return render_template('public/news_detail.html', news=news)

@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from whitenoise import WhiteNoise
 
 load_dotenv()
 
@@ -7,10 +8,12 @@ from app import create_app, db
 
 app = create_app(os.environ.get('FLASK_ENV', 'development'))
 
-# Add WhiteNoise for serving static files in production
-if os.environ.get('FLASK_ENV') == 'production':
-    from whitenoise import WhiteNoise
-    app.wsgi_app = WhiteNoise(app.wsgi_app, root='resources/static', prefix='static/')
+# Add WhiteNoise for serving static files
+app.wsgi_app = WhiteNoise(
+    app.wsgi_app, 
+    root=os.path.join(os.path.dirname(__file__), 'resources/static'),
+    prefix='static/'
+)
 
 
 @app.shell_context_processor

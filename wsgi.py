@@ -10,8 +10,8 @@ app = create_app(os.environ.get('FLASK_ENV', 'development'))
 
 # Add WhiteNoise for serving static files
 app.wsgi_app = WhiteNoise(
-    app.wsgi_app, 
-    root=os.path.join(os.path.dirname(__file__), 'resources/static'),
+    app.wsgi_app,
+    root='/app/resources/static',
     prefix='static/'
 )
 

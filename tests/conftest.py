@@ -13,8 +13,10 @@ def app():
     with app.app_context():
         db.create_all()
         yield app
+        db.session.close()
         db.session.remove()
         db.drop_all()
+        db.engine.dispose()
 
 
 @pytest.fixture
@@ -71,3 +73,20 @@ def test_admin(app):
     db.session.commit()
     
     return user
+
+
+@pytest.fixture
+def admin_user(app):
+    """Alias for test_admin for consistency"""
+    user = User(
+        name='Admin User',
+        email='admin@example.com',
+        date_of_birth=date(2000, 1, 1),
+        is_admin=True
+    )
+    user.set_password('adminpass')
+    db.session.add(user)
+    db.session.commit()
+    
+    return user
+

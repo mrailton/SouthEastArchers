@@ -1,10 +1,30 @@
-"""Tests for admin CRUD operations"""
+"""Tests for admin member management"""
 import pytest
-from datetime import date, timedelta
-from app.models import User, News, Event, Shoot, ShootLocation, Membership
+from datetime import date
+from app.models import User, Membership
 
 
-class TestAdminMemberCRUD:
+class TestAdminMembers:
+    def test_members_list(self, client, admin_user):
+        """Test viewing members list"""
+        client.post('/auth/login', data={
+            'email': admin_user.email,
+            'password': 'adminpass'
+        })
+        
+        response = client.get('/admin/members')
+        assert response.status_code == 200
+
+    def test_member_detail(self, client, admin_user, test_user):
+        """Test viewing member detail"""
+        client.post('/auth/login', data={
+            'email': admin_user.email,
+            'password': 'adminpass'
+        })
+        
+        response = client.get(f'/admin/members/{test_user.id}')
+        assert response.status_code == 200
+
     def test_create_member_page(self, client, admin_user):
         """Test accessing create member page"""
         client.post('/auth/login', data={
@@ -118,207 +138,6 @@ class TestAdminMemberCRUD:
         db.session.refresh(test_user)
         assert test_user.check_password('newpassword123')
 
-
-class TestAdminNewsCRUD:
-    def test_edit_news_page(self, client, admin_user, app):
-        """Test accessing edit news page"""
-        from app import db
-        
-        news = News(
-            title='Test News',
-            content='Test content here',
-            published=False
-        )
-        db.session.add(news)
-        db.session.commit()
-        
-        client.post('/auth/login', data={
-            'email': admin_user.email,
-            'password': 'adminpass'
-        })
-        
-        response = client.get(f'/admin/news/{news.id}/edit')
-        assert response.status_code == 200
-        assert b'Edit News' in response.data
-        assert b'Test News' in response.data
-
-    def test_edit_news_success(self, client, admin_user, app):
-        """Test updating news article"""
-        from app import db
-        
-        news = News(
-            title='Original Title',
-            content='Original content',
-            published=False
-        )
-        db.session.add(news)
-        db.session.commit()
-        news_id = news.id
-        
-        client.post('/auth/login', data={
-            'email': admin_user.email,
-            'password': 'adminpass'
-        })
-        
-        response = client.post(f'/admin/news/{news_id}/edit', data={
-            'title': 'Updated Title',
-            'summary': 'Updated summary',
-            'content': 'Updated content here with more text',
-            'published': 'on'
-        }, follow_redirects=True)
-        
-        assert response.status_code == 200
-        
-        # Verify changes
-        updated_news = db.session.get(News, news_id)
-        assert updated_news.title == 'Updated Title'
-        assert updated_news.published is True
-        assert updated_news.published_at is not None
-
-    def test_edit_news_not_found(self, client, admin_user):
-        """Test editing non-existent news"""
-        client.post('/auth/login', data={
-            'email': admin_user.email,
-            'password': 'adminpass'
-        })
-        
-        response = client.get('/admin/news/99999/edit')
-        assert response.status_code == 404
-
-
-class TestAdminEventCRUD:
-    def test_edit_event_page(self, client, admin_user, app):
-        """Test accessing edit event page"""
-        from app import db
-        from datetime import datetime
-        
-        event = Event(
-            title='Test Event',
-            description='Test description',
-            start_date=datetime.now(),
-            published=False
-        )
-        db.session.add(event)
-        db.session.commit()
-        
-        client.post('/auth/login', data={
-            'email': admin_user.email,
-            'password': 'adminpass'
-        })
-        
-        response = client.get(f'/admin/events/{event.id}/edit')
-        assert response.status_code == 200
-        assert b'Edit Event' in response.data
-        assert b'Test Event' in response.data
-
-    def test_edit_event_success(self, client, admin_user, app):
-        """Test updating event"""
-        from app import db
-        from datetime import datetime
-        
-        event = Event(
-            title='Original Event',
-            description='Original description',
-            start_date=datetime.now(),
-            published=False
-        )
-        db.session.add(event)
-        db.session.commit()
-        event_id = event.id
-        
-        client.post('/auth/login', data={
-            'email': admin_user.email,
-            'password': 'adminpass'
-        })
-        
-        new_date = datetime.now().strftime('%Y-%m-%dT%H:%M')
-        response = client.post(f'/admin/events/{event_id}/edit', data={
-            'title': 'Updated Event',
-            'description': 'Updated description',
-            'start_date': new_date,
-            'location': 'New Location',
-            'published': 'on'
-        }, follow_redirects=True)
-        
-        assert response.status_code == 200
-        
-        # Verify changes
-        updated_event = db.session.get(Event, event_id)
-        assert updated_event.title == 'Updated Event'
-        assert updated_event.location == 'New Location'
-        assert updated_event.published is True
-
-    def test_edit_event_not_found(self, client, admin_user):
-        """Test editing non-existent event"""
-        client.post('/auth/login', data={
-            'email': admin_user.email,
-            'password': 'adminpass'
-        })
-        
-        response = client.get('/admin/events/99999/edit')
-        assert response.status_code == 404
-
-
-class TestAdminPermissions:
-    def test_create_member_requires_admin(self, client, test_user):
-        """Test that create member requires admin"""
-        client.post('/auth/login', data={
-            'email': test_user.email,
-            'password': 'password123'
-        })
-        
-        response = client.get('/admin/members/create')
-        assert response.status_code in [302, 403]
-
-    def test_edit_member_requires_admin(self, client, test_user):
-        """Test that edit member requires admin"""
-        client.post('/auth/login', data={
-            'email': test_user.email,
-            'password': 'password123'
-        })
-        
-        response = client.get(f'/admin/members/{test_user.id}/edit')
-        assert response.status_code in [302, 403]
-
-    def test_edit_news_requires_admin(self, client, test_user, app):
-        """Test that edit news requires admin"""
-        from app import db
-        
-        news = News(title='Test', content='Test content')
-        db.session.add(news)
-        db.session.commit()
-        
-        client.post('/auth/login', data={
-            'email': test_user.email,
-            'password': 'password123'
-        })
-        
-        response = client.get(f'/admin/news/{news.id}/edit')
-        assert response.status_code in [302, 403]
-
-    def test_edit_event_requires_admin(self, client, test_user, app):
-        """Test that edit event requires admin"""
-        from app import db
-        from datetime import datetime
-        
-        event = Event(
-            title='Test',
-            description='Test',
-            start_date=datetime.now()
-        )
-        db.session.add(event)
-        db.session.commit()
-        
-        client.post('/auth/login', data={
-            'email': test_user.email,
-            'password': 'password123'
-        })
-        
-        response = client.get(f'/admin/events/{event.id}/edit')
-        assert response.status_code in [302, 403]
-
-
-class TestAdminMembershipEdit:
     def test_edit_member_membership_dates(self, client, admin_user, test_user):
         """Test updating membership dates"""
         client.post('/auth/login', data={
@@ -326,7 +145,7 @@ class TestAdminMembershipEdit:
             'password': 'adminpass'
         })
         
-        from datetime import date, timedelta
+        from datetime import timedelta
         new_start = date.today() - timedelta(days=10)
         new_expiry = date.today() + timedelta(days=355)
         
@@ -402,3 +221,13 @@ class TestAdminMembershipEdit:
         # Verify name was updated even without membership
         db.session.refresh(user)
         assert user.name == 'Updated Name'
+
+    def test_members_requires_admin(self, client, test_user):
+        """Test that members list requires admin"""
+        client.post('/auth/login', data={
+            'email': test_user.email,
+            'password': 'password123'
+        })
+        
+        response = client.get('/admin/members')
+        assert response.status_code in [302, 403]

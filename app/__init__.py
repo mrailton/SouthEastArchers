@@ -31,11 +31,11 @@ def create_app(config_name='development'):
     # Register blueprints
     from app.routes import public_bp, auth_bp, member_bp, admin_bp, payment_bp
 
-    app.register_blueprint(public_bp.bp)
-    app.register_blueprint(auth_bp.bp)
-    app.register_blueprint(member_bp.bp)
-    app.register_blueprint(admin_bp.bp)
-    app.register_blueprint(payment_bp.bp)
+    app.register_blueprint(public_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(member_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(payment_bp)
 
     # Error handlers
     @app.errorhandler(404)

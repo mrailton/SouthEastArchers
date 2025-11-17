@@ -1,12 +1,33 @@
+FROM python:3.14-slim as builder
+
+WORKDIR /app
+
+# Install Node.js for building assets
+RUN apt-get update && apt-get install -y \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files and install ALL dependencies (including devDependencies)
+COPY package*.json ./
+RUN npm ci
+
+# Copy source files needed for build
+COPY resources ./resources
+COPY postcss.config.js tailwind.config.js ./
+
+# Build assets
+RUN npm run build
+
+# Final stage
 FROM python:3.14-slim
 
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     default-libmysqlclient-dev \
-    pkg-config \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
@@ -16,6 +37,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
+
+# Copy built assets from builder stage
+COPY --from=builder /app/resources/static ./resources/static
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app

@@ -44,5 +44,15 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  assets:
+    image: node:lts-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm run build && npm run dev"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+
 volumes:
   mysql_data:

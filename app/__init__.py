@@ -86,6 +86,24 @@ def create_app(config_name='development'):
         db.session.rollback()
         return 'Internal server error', 500
 
+    # Cache busting for static assets
+    # Automatically appends ?v=<timestamp> to static file URLs based on file modification time
+    # This ensures browsers fetch new versions when files change
+    @app.context_processor
+    def override_url_for():
+        from flask import url_for as flask_url_for
+        
+        def dated_url_for(endpoint, **values):
+            if endpoint == 'static':
+                filename = values.get('filename', None)
+                if filename:
+                    file_path = os.path.join(app.static_folder, filename)
+                    if os.path.exists(file_path):
+                        values['v'] = int(os.stat(file_path).st_mtime)
+            return flask_url_for(endpoint, **values)
+        
+        return dict(url_for=dated_url_for)
+
     with app.app_context():
         from app.models import (
             User, Membership, Shoot, Credit, News, Event, Payment

@@ -25,15 +25,18 @@ FROM python:3.14-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies and UV
 RUN apt-get update && apt-get install -y --no-install-recommends \
     default-libmysqlclient-dev \
     wget \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir uv
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy dependency files
+COPY pyproject.toml .
+
+# Install Python dependencies (production only)
+RUN uv pip install --system --no-cache -r pyproject.toml
 
 # Copy application code
 COPY . .

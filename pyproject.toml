@@ -2,7 +2,7 @@
 name = "south-east-archers"
 version = "1.0.0"
 description = "South East Archers Club Website"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
     "Flask==3.1.2",
     "Flask-SQLAlchemy==3.1.1",

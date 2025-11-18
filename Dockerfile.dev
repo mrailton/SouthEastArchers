@@ -7,38 +7,23 @@ RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
     pkg-config \
-    curl \
-    git \
-    nodejs \
-    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy application code and requirements first
 COPY . .
 
-# Install and build assets
-RUN npm install && npm run build
-
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install development tools
-RUN pip install --no-cache-dir \
-    flask-shell-ipython \
-    ipdb \
-    watchdog[watchmedo]
+RUN pip install --no-cache-dir flask-shell-ipython
 
 # Expose port
 EXPOSE 5000
 
 # Enable Flask development mode with auto-reload
-ENV FLASK_ENV=development
 ENV FLASK_APP=wsgi.py
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_DEBUG=1
-ENV TEMPLATES_AUTO_RELOAD=1
-# Force watchdog to use polling instead of inotify for Docker volume compatibility
-ENV WATCHDOG_IGNORE_PATTERNS=".git,.pytest_cache,__pycache__,*.pyc,*.pyo"
 
-# Run Flask app with auto-reload enabled using explicit polling via watchdog
 CMD ["flask", "run", "--host=0.0.0.0"]

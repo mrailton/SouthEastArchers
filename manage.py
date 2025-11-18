@@ -5,6 +5,10 @@ import click
 import os
 import sys
 from datetime import date, timedelta, datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 @click.group()
@@ -465,7 +469,7 @@ def stats():
         ).count()
         total_news = News.query.count()
         upcoming_events = Event.query.filter(
-            Event.date > datetime.now()
+            Event.start_date > datetime.now()
         ).count()
         
         click.echo('\n╔══════════════════════════════════════════╗')

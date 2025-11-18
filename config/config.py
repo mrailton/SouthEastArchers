@@ -48,7 +48,7 @@ class DevelopmentConfig(Config):
     TEMPLATES_AUTO_RELOAD = True
     JINJA_AUTO_RELOAD = True
     SESSION_COOKIE_SECURE = False
-    SQLALCHEMY_ECHO = True
+    SQLALCHEMY_ECHO = False
     MAIL_USE_TLS = False
     MAIL_USE_SSL = False
 

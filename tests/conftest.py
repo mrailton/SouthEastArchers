@@ -5,7 +5,7 @@ from app.models import User, Membership
 from datetime import date, timedelta
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def app():
     """Create application for testing"""
     app = create_app('testing')
@@ -13,10 +13,8 @@ def app():
     with app.app_context():
         db.create_all()
         yield app
-        db.session.close()
         db.session.remove()
         db.drop_all()
-        db.engine.dispose()
 
 
 @pytest.fixture

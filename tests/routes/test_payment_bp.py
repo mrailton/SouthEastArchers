@@ -9,10 +9,11 @@ class TestPaymentRoutes:
         assert b'Login' in response.data
 
     def test_credits_page_logged_in(self, client, test_user):
-        client.post('/auth/login', data={
-            'email': test_user.email,
-            'password': 'password123'
-        })
-        
-        response = client.get('/payment/credits')
-        assert response.status_code == 200
+        with client:
+            client.post('/auth/login', data={
+                'email': test_user.email,
+                'password': 'password123'
+            })
+            
+            response = client.get('/payment/credits')
+            assert response.status_code == 200

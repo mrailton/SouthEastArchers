@@ -25,12 +25,15 @@ services:
       DATABASE_URL: mysql+pymysql://sea_user:sea_password@mysql:3306/sea_db
       MAIL_SERVER: mailhog
       MAIL_PORT: 1025
-      MAIL_USE_TLS: "False"
+      MAIL_USE_TLS: "false"
+      MAIL_USE_SSL: "false"
     ports:
       - "5000:5000"
     depends_on:
       mysql:
         condition: service_healthy
+      mailhog:
+        condition: service_started
     volumes:
       - .:/app
       - /app/__pycache__

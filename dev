@@ -249,8 +249,9 @@ test_run() {
 
     while [[ $# -gt 0 ]]; do
         case $1 in
-            -c|--coverage) flags="$flags --cov=app --cov-report=term-missing --no-cov-on-fail"; has_coverage=true; shift ;;
+            -c|--coverage) flags="$flags --cov=app --cov-report=term-missing --no-cov-on-fail -n 0"; has_coverage=true; shift ;;
             -v|--verbose) flags="$flags -v"; shift ;;
+            -s|--serial) flags="$flags -n 0"; shift ;;
             *) shift ;;
         esac
     done
@@ -276,7 +277,7 @@ test_file() {
 test_coverage() {
     check_docker
     section "Coverage report"
-    docker_exec app bash -c "pytest --cov=app --cov-report=term-missing && rm -f .coverage"
+    docker_exec app bash -c "pytest --cov=app --cov-report=term-missing -n 0 && rm -f .coverage"
 }
 
 test_lint() {

@@ -36,9 +36,9 @@
                     <a href="/news" class="text-gray-700 hover:text-blue-600">News</a>
                     <a href="/events" class="text-gray-700 hover:text-blue-600">Events</a>
 
-                    {% if session.user_id %}
+                    {% if current_user.is_authenticated %}
                         <a href="/member/dashboard" class="text-gray-700 hover:text-blue-600">Dashboard</a>
-                        {% if session.get('is_admin') %}
+                        {% if current_user.is_admin %}
                             <a href="/admin/dashboard" class="text-gray-700 hover:text-purple-600">Admin</a>
                         {% endif %}
                         <a href="/auth/logout" class="text-red-700 hover:text-purple-700">Logout</a>
@@ -56,15 +56,15 @@
                 <a href="/about" class="block py-2 text-gray-700">About</a>
                 <a href="/news" class="block py-2 text-gray-700">News</a>
                 <a href="/events" class="block py-2 text-gray-700">Events</a>
-                <a href="/membership" class="block py-2 text-gray-700">Membership</a>
 
-                {% if session.user_id %}
+                {% if current_user.is_authenticated %}
                     <a href="/member/dashboard" class="block py-2 text-gray-700">Dashboard</a>
-                    {% if session.get('is_admin') %}
+                    {% if current_user.is_admin %}
                         <a href="/admin/dashboard" class="block py-2 text-purple-600 font-semibold">Admin</a>
                     {% endif %}
                     <a href="/auth/logout" class="block py-2 text-red-600">Logout</a>
                 {% else %}
+                    <a href="/membership" class="block py-2 text-gray-700">Membership</a>
                     <a href="/auth/login" class="block py-2 text-gray-700">Login</a>
                     <a href="/auth/signup" class="block py-2 text-blue-600">Sign Up</a>
                 {% endif %}

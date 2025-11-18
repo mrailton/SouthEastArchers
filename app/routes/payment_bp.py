@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
-from functools import wraps
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask_login import login_required, current_user
 from app import db
 from app.models import User, Payment, Credit, Membership
 from app.services import SumUpService
@@ -9,25 +9,14 @@ import secrets
 bp = Blueprint('payment', __name__, url_prefix='/payment')
 
 
-def login_required(f):
-    """Login required decorator"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Please log in first.', 'warning')
-            return redirect(url_for('auth.login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-
 @bp.route('/membership', methods=['GET', 'POST'])
 def membership_payment():
     """Membership payment page"""
     if request.method == 'POST':
-        if 'user_id' not in session:
+        if not current_user.is_authenticated:
             return redirect(url_for('auth.login'))
         
-        user = db.session.get(User, session['user_id'])
+        user = current_user
         amount = current_app.config['ANNUAL_MEMBERSHIP_COST']
         
         # Create payment record
@@ -68,7 +57,7 @@ def membership_payment():
 def credits():
     """Purchase additional shooting credits"""
     if request.method == 'POST':
-        user = db.session.get(User, session['user_id'])
+        user = current_user
         quantity = int(request.form.get('quantity', 1))
         amount = quantity * current_app.config['ADDITIONAL_NIGHT_COST']
         
@@ -198,7 +187,7 @@ def credit_callback():
 @login_required
 def history():
     """View payment history"""
-    user = db.session.get(User, session['user_id'])
+    user = current_user
     payments = Payment.query.filter_by(
         user_id=user.id
     ).order_by(Payment.created_at.desc()).all()

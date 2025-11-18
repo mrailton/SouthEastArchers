@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from functools import wraps
+from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask_login import login_required, current_user
 from app import db
 from app.utils.datetime_utils import utc_now
 from app.models import User, Membership, Shoot, Credit, Payment
@@ -8,22 +8,11 @@ from datetime import datetime
 bp = Blueprint('member', __name__, url_prefix='/member')
 
 
-def login_required(f):
-    """Login required decorator"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Please log in first.', 'warning')
-            return redirect(url_for('auth.login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-
 @bp.route('/dashboard')
 @login_required
 def dashboard():
     """Member dashboard"""
-    user = db.session.get(User, session['user_id'])
+    user = current_user
     membership = user.membership
     
     # Get shoot count
@@ -41,7 +30,7 @@ def dashboard():
 @login_required
 def shoots():
     """View shoot history"""
-    user = db.session.get(User, session['user_id'])
+    user = current_user
     
     # Get user's shoot history
     user_shoots = Shoot.query.join(Shoot.users).filter(User.id == user.id).order_by(Shoot.date.desc()).all()
@@ -53,7 +42,7 @@ def shoots():
 @login_required
 def credits():
     """View and purchase credits"""
-    user = db.session.get(User, session['user_id'])
+    user = current_user
     credits = Credit.query.filter_by(user_id=user.id).all()
     
     return render_template('member/credits.html', credits=credits, user=user)
@@ -63,7 +52,7 @@ def credits():
 @login_required
 def profile():
     """User profile page"""
-    user = db.session.get(User, session['user_id'])
+    user = current_user
     return render_template('member/profile.html', user=user)
 
 
@@ -71,7 +60,7 @@ def profile():
 @login_required
 def update_profile():
     """Update user profile"""
-    user = db.session.get(User, session['user_id'])
+    user = current_user
     
     user.name = request.form.get('name', user.name)
     user.phone = request.form.get('phone', user.phone)
@@ -86,7 +75,7 @@ def update_profile():
 def change_password():
     """Change password"""
     if request.method == 'POST':
-        user = db.session.get(User, session['user_id'])
+        user = current_user
         current_password = request.form.get('current_password')
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')

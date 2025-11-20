@@ -34,6 +34,7 @@ class Config:
     
     # Payment
     SUMUP_API_KEY = os.environ.get('SUMUP_API_KEY')
+    SUMUP_MERCHANT_CODE = os.environ.get('SUMUP_MERCHANT_CODE')
     SUMUP_API_URL = 'https://api.sumup.com'
     
     # Membership

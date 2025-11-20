@@ -50,8 +50,7 @@ def create_app(config_name='development'):
     stream_handler.setLevel(logging.INFO)
     app.logger.addHandler(stream_handler)
     app.logger.setLevel(logging.INFO)
-    app.logger.info('SouthEastArchers startup')
-    
+
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)

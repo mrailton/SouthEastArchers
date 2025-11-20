@@ -12,6 +12,7 @@ class Payment(db.Model):
     amount = db.Column(db.Float, nullable=False)
     currency = db.Column(db.String(3), default='EUR')
     payment_type = db.Column(db.Enum('membership', 'credits'), nullable=False)
+    payment_method = db.Column(db.Enum('cash', 'online'), nullable=False, default='online')
     status = db.Column(db.Enum('pending', 'completed', 'failed', 'cancelled'), default='pending', index=True)
     sumup_transaction_id = db.Column(db.String(255), unique=True, nullable=True, index=True)
     sumup_receipt_url = db.Column(db.String(500))

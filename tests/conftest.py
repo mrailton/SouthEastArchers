@@ -1,5 +1,6 @@
 import pytest
 import os
+import shutil
 from app import create_app, db
 from app.models import User, Membership
 from datetime import date, timedelta
@@ -13,8 +14,25 @@ def app():
     with app.app_context():
         db.create_all()
         yield app
+        # Properly clean up database connections
         db.session.remove()
         db.drop_all()
+        db.engine.dispose()
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Clean up coverage artifacts after test session finishes"""
+    # Remove coverage database
+    if os.path.exists('.coverage'):
+        os.remove('.coverage')
+    
+    # Remove htmlcov directory
+    if os.path.exists('htmlcov'):
+        shutil.rmtree('htmlcov')
+    
+    # Remove coverage.db if it exists
+    if os.path.exists('coverage.db'):
+        os.remove('coverage.db')
 
 
 @pytest.fixture

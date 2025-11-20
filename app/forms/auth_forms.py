@@ -1,4 +1,4 @@
-from wtforms import StringField, PasswordField, SubmitField, DateField
+from wtforms import StringField, PasswordField, SubmitField, DateField, RadioField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 from flask_wtf import FlaskForm
 
@@ -19,6 +19,10 @@ class SignupForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     password_confirm = PasswordField('Confirm Password', 
                                      validators=[DataRequired(), EqualTo('password')])
+    payment_method = RadioField('Payment Method', 
+                                choices=[('cash', 'Cash'), ('online', 'Online Payment')],
+                                validators=[DataRequired()],
+                                default='online')
     submit = SubmitField('Create Account')
 
 

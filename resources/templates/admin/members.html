@@ -12,7 +12,7 @@
     <div class="bg-white shadow overflow-hidden sm:rounded-md">
         <ul class="divide-y divide-gray-200">
             {% for member in members %}
-            <li class="px-6 py-4 hover:bg-gray-50">
+            <li class="px-6 py-4 hover:bg-gray-50 {% if member.membership and member.membership.status == 'pending' %}bg-yellow-50{% endif %}">
                 <div class="flex items-center justify-between">
                     <div class="flex-1">
                         <div class="flex items-center">
@@ -28,13 +28,21 @@
                                     Inactive
                                 </span>
                                 {% endif %}
+                                {% if member.membership and member.membership.status == 'pending' %}
+                                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    ⚠ Pending Payment
+                                </span>
+                                {% endif %}
                             </h3>
                         </div>
                         <p class="mt-1 text-sm text-gray-600">{{ member.email }}</p>
                         {% if member.membership %}
                         <p class="mt-1 text-sm text-gray-500">
-                            Membership: {{ member.membership.status|title }} | 
-                            Credits: {{ member.membership.credits_remaining() }}
+                            Membership: 
+                            <span class="font-medium {% if member.membership.status == 'active' %}text-green-600{% elif member.membership.status == 'pending' %}text-yellow-600{% else %}text-gray-600{% endif %}">
+                                {{ member.membership.status|title }}
+                            </span>
+                            | Credits: {{ member.membership.credits_remaining() }}
                         </p>
                         {% else %}
                         <p class="mt-1 text-sm text-gray-500">No membership</p>

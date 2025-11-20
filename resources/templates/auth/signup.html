@@ -8,25 +8,25 @@
         <div>
             <label class="block text-gray-700 font-bold mb-2">Full Name *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="text" name="name" required>
+                   type="text" name="name" value="{{ name or '' }}" required>
         </div>
         
         <div>
             <label class="block text-gray-700 font-bold mb-2">Email Address *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="email" name="email" required>
+                   type="email" name="email" value="{{ email or '' }}" required>
         </div>
         
         <div>
             <label class="block text-gray-700 font-bold mb-2">Phone Number (optional)</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="tel" name="phone">
+                   type="tel" name="phone" value="{{ phone or '' }}">
         </div>
         
         <div>
             <label class="block text-gray-700 font-bold mb-2">Date of Birth *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="date" name="date_of_birth" required>
+                   type="date" name="date_of_birth" value="{{ date_of_birth or '' }}" required>
         </div>
         
         <div>
@@ -39,6 +39,46 @@
             <label class="block text-gray-700 font-bold mb-2">Confirm Password *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
                    type="password" name="password_confirm" required>
+        </div>
+        
+        <!-- Payment Method Selection -->
+        <div class="border-t pt-4 mt-4">
+            <label class="block text-gray-700 font-bold mb-3">Payment Method *</label>
+            <div class="space-y-3">
+                <div class="flex items-start">
+                    <input type="radio" 
+                           id="payment_online" 
+                           name="payment_method" 
+                           value="online" 
+                           class="mt-1 mr-3" 
+                           {% if not payment_method or payment_method == 'online' %}checked{% endif %}>
+                    <div>
+                        <label for="payment_online" class="font-semibold text-gray-900 cursor-pointer">
+                            Online Payment (€100)
+                        </label>
+                        <p class="text-sm text-gray-600">
+                            Pay securely with credit/debit card via SumUp. Your membership will be activated immediately upon successful payment.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start">
+                    <input type="radio" 
+                           id="payment_cash" 
+                           name="payment_method" 
+                           value="cash" 
+                           class="mt-1 mr-3"
+                           {% if payment_method == 'cash' %}checked{% endif %}>
+                    <div>
+                        <label for="payment_cash" class="font-semibold text-gray-900 cursor-pointer">
+                            Cash Payment (€100)
+                        </label>
+                        <p class="text-sm text-gray-600">
+                            Pay in person at the club. Your membership will be activated by an admin once payment is received.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700">

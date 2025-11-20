@@ -49,7 +49,8 @@ class TestAuthRoutes:
             'phone': '1234567890',
             'date_of_birth': '2000-01-01',
             'password': 'password123',
-            'password_confirm': 'password123'
+            'password_confirm': 'password123',
+            'payment_method': 'cash'
         }, follow_redirects=True)
         assert response.status_code == 200
 
@@ -61,7 +62,8 @@ class TestAuthRoutes:
             'phone': '1234567890',
             'date_of_birth': '2000-01-01',
             'password': 'password123',
-            'password_confirm': 'password123'
+            'password_confirm': 'password123',
+            'payment_method': 'cash'
         })
         assert response.status_code == 200
 

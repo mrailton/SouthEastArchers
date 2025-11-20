@@ -1,11 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
 from flask_login import login_user, logout_user, login_required
 from flask_mail import Message
 from app import db, mail
-from app.models import User, Membership
+from app.models import User, Membership, Payment
+from app.services import SumUpService
 from datetime import date, timedelta
 import secrets
-import logging
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -41,25 +41,46 @@ def signup():
         dob_str = request.form.get('date_of_birth')
         password = request.form.get('password')
         password_confirm = request.form.get('password_confirm')
+        payment_method = request.form.get('payment_method', 'online')
         
         # Validation
-        if not all([name, email, dob_str, password]):
+        if not all([name, email, dob_str, password, payment_method]):
             flash('All required fields must be filled.', 'error')
-            return render_template('auth/signup.html')
+            return render_template('auth/signup.html', 
+                                 name=name, 
+                                 email=email, 
+                                 phone=phone, 
+                                 date_of_birth=dob_str,
+                                 payment_method=payment_method)
         
         if password != password_confirm:
             flash('Passwords do not match.', 'error')
-            return render_template('auth/signup.html')
+            return render_template('auth/signup.html',
+                                 name=name,
+                                 email=email,
+                                 phone=phone,
+                                 date_of_birth=dob_str,
+                                 payment_method=payment_method)
         
         if User.query.filter_by(email=email).first():
             flash('Email already registered.', 'error')
-            return render_template('auth/signup.html')
+            return render_template('auth/signup.html',
+                                 name=name,
+                                 email=email,
+                                 phone=phone,
+                                 date_of_birth=dob_str,
+                                 payment_method=payment_method)
         
         try:
             dob = date.fromisoformat(dob_str)
         except ValueError:
             flash('Invalid date of birth.', 'error')
-            return render_template('auth/signup.html')
+            return render_template('auth/signup.html',
+                                 name=name,
+                                 email=email,
+                                 phone=phone,
+                                 date_of_birth=dob_str,
+                                 payment_method=payment_method)
         
         # Create user
         user = User(
@@ -73,18 +94,61 @@ def signup():
         db.session.add(user)
         db.session.flush()
         
-        # Create membership
+        # Create membership (pending by default)
         membership = Membership(
             user_id=user.id,
             start_date=date.today(),
             expiry_date=date.today() + timedelta(days=365),
-            status='active'
+            status='pending'
         )
         db.session.add(membership)
+        
+        # Create payment record
+        amount = current_app.config['ANNUAL_MEMBERSHIP_COST']
+        payment = Payment(
+            user_id=user.id,
+            amount=amount,
+            currency='EUR',
+            payment_type='membership',
+            payment_method=payment_method,
+            description=f'Annual Membership for {name}',
+            status='pending'
+        )
+        db.session.add(payment)
         db.session.commit()
         
-        flash('Account created successfully! Please login.', 'success')
-        return redirect(url_for('auth.login'))
+        # Handle payment method
+        if payment_method == 'online':
+            # Create SumUp checkout
+            sumup_service = SumUpService()
+            
+            # Generate unique checkout reference
+            checkout_reference = f'membership_{user.id}_{payment.id}'
+            
+            # Include user name in description for easy matching in SumUp
+            checkout = sumup_service.create_checkout(
+                amount=amount,
+                currency='EUR',
+                description=f'Annual Membership - {name}',
+                checkout_reference=checkout_reference
+            )
+            
+            if checkout:
+                # Store info in session for payment processing
+                session['signup_user_id'] = user.id
+                session['signup_payment_id'] = payment.id
+                session['checkout_amount'] = float(amount)
+                session['checkout_description'] = f'Annual Membership - {name}'
+                
+                # Redirect to our custom payment form
+                return redirect(url_for('payment.show_checkout', checkout_id=checkout.get('id')))
+            else:
+                flash('Error creating payment. Please contact us to complete registration.', 'error')
+                return redirect(url_for('auth.login'))
+        else:
+            # Cash payment - membership remains pending until admin activates
+            flash('Account created! Your membership will be activated once payment is received.', 'info')
+            return redirect(url_for('auth.login'))
     
     return render_template('auth/signup.html')
 

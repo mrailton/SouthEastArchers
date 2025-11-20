@@ -44,6 +44,53 @@ def renew_membership(user_id):
     return redirect(url_for('admin.member_detail', user_id=user_id))
 
 
+@bp.route('/members/<int:user_id>/membership/activate', methods=['POST'])
+@admin_required
+def activate_membership(user_id):
+    """Activate a pending membership (for cash payments)"""
+    member = db.session.get(User, user_id)
+    if not member:
+        from flask import abort
+        abort(404)
+    
+    if not member.membership:
+        flash('No membership found.', 'error')
+        return redirect(url_for('admin.member_detail', user_id=user_id))
+    
+    if member.membership.status == 'active':
+        flash('Membership is already active.', 'info')
+        return redirect(url_for('admin.member_detail', user_id=user_id))
+    
+    # Find the pending cash payment
+    from app.models import Payment
+    pending_payment = Payment.query.filter_by(
+        user_id=user_id,
+        payment_type='membership',
+        payment_method='cash',
+        status='pending'
+    ).first()
+    
+    if pending_payment:
+        # Mark payment as completed
+        pending_payment.mark_completed()
+    
+    # Activate membership
+    member.membership.activate()
+    db.session.commit()
+    
+    # Send payment receipt email
+    if pending_payment:
+        from app.utils.email import send_payment_receipt
+        try:
+            send_payment_receipt(member, pending_payment, member.membership)
+        except Exception as e:
+            from flask import current_app
+            current_app.logger.error(f'Failed to send receipt email: {str(e)}')
+    
+    flash(f'Membership activated for {member.name}! Receipt email sent.', 'success')
+    return redirect(url_for('admin.member_detail', user_id=user_id))
+
+
 @bp.route('/members/create', methods=['GET', 'POST'])
 @admin_required
 def create_member():

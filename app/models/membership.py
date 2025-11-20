@@ -12,7 +12,7 @@ class Membership(db.Model):
     start_date = db.Column(db.Date, nullable=False)
     expiry_date = db.Column(db.Date, nullable=False)
     credits = db.Column(db.Integer, default=20)  # Credits available (starts at 20)
-    status = db.Column(db.String(20), default='active')
+    status = db.Column(db.String(20), default='pending')
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
     
@@ -40,6 +40,10 @@ class Membership(db.Model):
         self.start_date = date.today()
         self.expiry_date = date.today() + timedelta(days=365)
         self.credits = 20  # Reset to 20 credits
+        self.status = 'active'
+    
+    def activate(self):
+        """Activate a pending membership"""
         self.status = 'active'
     
     def __repr__(self):

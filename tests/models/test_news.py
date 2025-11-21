@@ -117,8 +117,6 @@ class TestNews:
         db.session.add(news)
         db.session.commit()
 
-        original_updated = news.updated_at
-
         # Small delay to ensure timestamp difference
         time.sleep(0.1)
 

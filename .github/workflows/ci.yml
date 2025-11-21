@@ -48,11 +48,8 @@ jobs:
       - name: Install dependencies
         run: make install
       
-      - name: Check code formatting
+      - name: Check code quality and formatting
         run: make format-check
-      
-      - name: Run linting
-        run: make lint
       
       - name: Build assets
         run: make build

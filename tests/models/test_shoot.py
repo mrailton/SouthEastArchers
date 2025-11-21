@@ -54,3 +54,15 @@ class TestShoot:
 
         shoots = Shoot.query.all()
         assert len(shoots) == 3
+
+    def test_shoot_repr(self, app):
+        """Test shoot string representation"""
+        from app import db
+
+        shoot = Shoot(date=date.today(), location=ShootLocation.HALL)
+        db.session.add(shoot)
+        db.session.commit()
+
+        repr_str = repr(shoot)
+        assert "Shoot" in repr_str
+        assert "Hall" in repr_str  # The enum value is displayed as "Hall", not "HALL"

@@ -31,3 +31,9 @@ class TestUser:
         age = test_user.get_age()
         assert isinstance(age, int)
         assert age >= 23  # Test user was born in 2000
+
+    def test_user_repr(self, test_user):
+        """Test user string representation"""
+        repr_str = repr(test_user)
+        assert "User" in repr_str
+        assert test_user.email in repr_str

@@ -1,4 +1,4 @@
-.PHONY: help install dev run test test-cov lint format format-check clean db-upgrade db-migrate shell build assets assets-watch
+.PHONY: help install dev run test test-cov format format-check clean db-upgrade db-migrate shell build assets assets-watch
 
 # Default target
 help:
@@ -25,9 +25,8 @@ help:
 	@echo "  make test-parallel    Run tests in parallel"
 	@echo ""
 	@echo "Code Quality:"
-	@echo "  make lint             Run linting (flake8)"
 	@echo "  make format           Format code with black and isort"
-	@echo "  make format-check     Check if code needs formatting"
+	@echo "  make format-check     Check formatting and code quality"
 	@echo ""
 	@echo "Database:"
 	@echo "  make db-upgrade       Apply database migrations"
@@ -78,16 +77,17 @@ test-parallel:
 	uv run pytest -n auto
 
 # Code Quality
-lint:
-	uv run flake8 app/ tests/
-
 format:
 	uv run isort app/ tests/
 	uv run black app/ tests/
 
 format-check:
-	uv run isort --check-only app/ tests/
-	uv run black --check app/ tests/
+	@echo "Checking import order..."
+	@uv run isort --check-only app/ tests/
+	@echo "Checking code formatting..."
+	@uv run black --check app/ tests/
+	@echo "Running code quality checks..."
+	@uv run flake8 app/ tests/
 
 # Database
 db-upgrade:

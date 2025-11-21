@@ -103,8 +103,6 @@ class TestAdminShoots:
             "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
         )
 
-        initial_credits = test_user.membership.credits
-
         response = client.post(
             "/admin/shoots/create",
             data={
@@ -131,8 +129,6 @@ class TestAdminShoots:
         db.session.add(shoot)
         db.session.commit()
         shoot_id = shoot.id
-
-        initial_credits = test_user.membership.credits
 
         client.post(
             "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
@@ -165,11 +161,9 @@ class TestAdminShoots:
 
         # Add attendee and deduct credit
         shoot.users.append(test_user)
-        initial_credits = test_user.membership.credits
         test_user.membership.use_credit()
         db.session.commit()
 
-        credits_after_attendance = test_user.membership.credits
         shoot_id = shoot.id
 
         client.post(
@@ -308,3 +302,41 @@ class TestAdminShoots:
         assert response.status_code == 200
         # Should show both shoots
         assert b"First shoot" in response.data or b"Second shoot" in response.data
+
+    def test_edit_shoot_add_attendee_no_credits(
+        self, client, admin_user, test_user, app
+    ):
+        """Test adding attendee when they have no credits shows warning"""
+        from app import db
+
+        # Set user to have no credits
+        test_user.membership.credits = 0
+        db.session.commit()
+
+        # Create a shoot
+        shoot = Shoot(
+            date=date.today(), location=ShootLocation.HALL, description="Test shoot"
+        )
+        db.session.add(shoot)
+        db.session.commit()
+        shoot_id = shoot.id
+
+        client.post(
+            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
+        )
+
+        response = client.post(
+            f"/admin/shoots/{shoot_id}/edit",
+            data={
+                "date": date.today().isoformat(),
+                "location": "HALL",
+                "description": "Updated shoot",
+                "attendees": [str(test_user.id)],
+                "csrf_token": "test",
+            },
+            follow_redirects=True,
+        )
+
+        assert response.status_code == 200
+        # Check for warning about no credits
+        assert b"no credits" in response.data.lower() or b"Warning" in response.data

@@ -176,9 +176,6 @@ class TestMemberRoutes:
             "/auth/login", data={"email": test_user.email, "password": "password123"}
         )
 
-        original_name = test_user.name
-        original_phone = test_user.phone
-
         # Only update name
         response = client.post(
             "/member/profile/update",

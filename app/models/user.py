@@ -66,7 +66,7 @@ class User(UserMixin, db.Model):
         try:
             email = serializer.loads(token, salt="password-reset-salt", max_age=max_age)
             return User.query.filter_by(email=email).first()
-        except:
+        except Exception:
             return None
 
     def __repr__(self):

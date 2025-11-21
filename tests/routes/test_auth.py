@@ -240,7 +240,7 @@ class TestAuthRoutes:
         """Test forgot password with existing user"""
         from unittest.mock import patch
 
-        with patch("app.routes.auth.mail.send") as mock_send:
+        with patch("app.routes.auth.mail.send"):
             response = client.post(
                 "/auth/forgot-password",
                 data={"email": test_user.email},

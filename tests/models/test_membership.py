@@ -44,3 +44,17 @@ class TestMembership:
         assert test_user.membership.start_date == date.today()
         assert test_user.membership.credits == 20
         assert test_user.membership.status == "active"
+
+    def test_activate(self, test_user):
+        """Test activating a pending membership"""
+        test_user.membership.status = "pending"
+        test_user.membership.activate()
+
+        assert test_user.membership.status == "active"
+
+    def test_membership_repr(self, test_user):
+        """Test membership string representation"""
+        repr_str = repr(test_user.membership)
+
+        assert "Membership" in repr_str
+        assert str(test_user.id) in repr_str

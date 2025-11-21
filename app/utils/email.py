@@ -77,14 +77,6 @@ def send_welcome_email(user, membership):
         membership: Membership object
     """
     try:
-        template_data = {
-            "name": user.name,
-            "membership_start": membership.start_date.strftime("%d %B %Y"),
-            "membership_expiry": membership.expiry_date.strftime("%d %B %Y"),
-            "credits": membership.credits,
-            "login_url": url_for("auth.login", _external=True),
-        }
-
         # You can create welcome email templates later
         # For now, we'll just use a simple message
         html_body = f"""

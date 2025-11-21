@@ -7,12 +7,12 @@ from .event import Event
 from .payment import Payment
 
 __all__ = [
-    'User',
-    'Membership',
-    'Shoot',
-    'ShootLocation',
-    'Credit',
-    'News',
-    'Event',
-    'Payment'
+    "User",
+    "Membership",
+    "Shoot",
+    "ShootLocation",
+    "Credit",
+    "News",
+    "Event",
+    "Payment",
 ]

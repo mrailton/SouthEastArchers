@@ -3,11 +3,11 @@ from .member_forms import ProfileForm
 from .admin_forms import ShootForm, NewsForm, EventForm
 
 __all__ = [
-    'LoginForm',
-    'SignupForm', 
-    'ForgotPasswordForm',
-    'ProfileForm',
-    'ShootForm',
-    'NewsForm',
-    'EventForm'
+    "LoginForm",
+    "SignupForm",
+    "ForgotPasswordForm",
+    "ProfileForm",
+    "ShootForm",
+    "NewsForm",
+    "EventForm",
 ]

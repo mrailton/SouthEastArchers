@@ -266,9 +266,7 @@ class TestAuthRoutes:
         """Test forgot password when email sending fails"""
         from unittest.mock import patch
 
-        with patch(
-            "app.routes.auth.mail.send", side_effect=Exception("Email error")
-        ):
+        with patch("app.routes.auth.mail.send", side_effect=Exception("Email error")):
             response = client.post(
                 "/auth/forgot-password", data={"email": test_user.email}
             )

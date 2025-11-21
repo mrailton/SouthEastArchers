@@ -5,8 +5,9 @@ from app import db
 
 class Event(db.Model):
     """Club events"""
-    __tablename__ = 'events'
-    
+
+    __tablename__ = "events"
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
@@ -17,7 +18,7 @@ class Event(db.Model):
     published = db.Column(db.Boolean, default=False, index=True)
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
-    
+
     def is_upcoming(self):
         """Check if event is in the future"""
         now = utc_now()
@@ -28,10 +29,10 @@ class Event(db.Model):
         if now.tzinfo is None:
             now = now.replace(tzinfo=timezone.utc)
         return start > now
-    
+
     def publish(self):
         """Publish the event"""
         self.published = True
-    
+
     def __repr__(self):
-        return f'<Event {self.title} on {self.start_date}>'
+        return f"<Event {self.title} on {self.start_date}>"

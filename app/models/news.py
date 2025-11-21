@@ -5,8 +5,9 @@ from app import db
 
 class News(db.Model):
     """News articles for the club"""
-    __tablename__ = 'news'
-    
+
+    __tablename__ = "news"
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
@@ -15,11 +16,11 @@ class News(db.Model):
     published_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
-    
+
     def publish(self):
         """Publish the news article"""
         self.published = True
         self.published_at = utc_now()
-    
+
     def __repr__(self):
-        return f'<News {self.title}>'
+        return f"<News {self.title}>"

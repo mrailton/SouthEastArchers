@@ -5,28 +5,34 @@ from flask_wtf import FlaskForm
 
 class LoginForm(FlaskForm):
     """User login form"""
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    submit = SubmitField('Login')
+
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Login")
 
 
 class SignupForm(FlaskForm):
     """User registration form"""
-    name = StringField('Full Name', validators=[DataRequired(), Length(min=2)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    phone = StringField('Phone (optional)', validators=[Optional()])
-    date_of_birth = DateField('Date of Birth', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
-    password_confirm = PasswordField('Confirm Password', 
-                                     validators=[DataRequired(), EqualTo('password')])
-    payment_method = RadioField('Payment Method', 
-                                choices=[('cash', 'Cash'), ('online', 'Online Payment')],
-                                validators=[DataRequired()],
-                                default='online')
-    submit = SubmitField('Create Account')
+
+    name = StringField("Full Name", validators=[DataRequired(), Length(min=2)])
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    phone = StringField("Phone (optional)", validators=[Optional()])
+    date_of_birth = DateField("Date of Birth", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired(), Length(min=6)])
+    password_confirm = PasswordField(
+        "Confirm Password", validators=[DataRequired(), EqualTo("password")]
+    )
+    payment_method = RadioField(
+        "Payment Method",
+        choices=[("cash", "Cash"), ("online", "Online Payment")],
+        validators=[DataRequired()],
+        default="online",
+    )
+    submit = SubmitField("Create Account")
 
 
 class ForgotPasswordForm(FlaskForm):
     """Forgot password form"""
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    submit = SubmitField('Request Password Reset')
+
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    submit = SubmitField("Request Password Reset")

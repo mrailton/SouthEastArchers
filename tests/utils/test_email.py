@@ -1,10 +1,12 @@
 """Tests for email utility functions"""
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from app.utils.email import send_payment_receipt, send_welcome_email
-from app.models import User, Payment, Membership
 from datetime import date, timedelta
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+
+from app.models import Membership, Payment, User
+from app.utils.email import send_payment_receipt, send_welcome_email
 
 
 class TestSendPaymentReceipt:

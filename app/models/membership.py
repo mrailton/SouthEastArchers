@@ -1,6 +1,7 @@
 from datetime import date, timedelta
-from app.utils.datetime_utils import utc_now
+
 from app import db
+from app.utils.datetime_utils import utc_now
 
 
 class Membership(db.Model):

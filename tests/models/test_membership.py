@@ -1,7 +1,8 @@
 """Tests for membership model"""
 
-import pytest
 from datetime import date, timedelta
+
+import pytest
 
 
 class TestMembership:

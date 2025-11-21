@@ -1,9 +1,11 @@
-import pytest
 import os
 import shutil
-from app import create_app, db
-from app.models import User, Membership
 from datetime import date, timedelta
+
+import pytest
+
+from app import create_app, db
+from app.models import Membership, User
 
 
 @pytest.fixture(scope="function")

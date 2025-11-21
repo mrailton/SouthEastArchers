@@ -1,7 +1,9 @@
 """Tests for SumUp service"""
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+
 from app.services.sumup_service import SumUpService
 
 

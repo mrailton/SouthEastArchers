@@ -1,9 +1,12 @@
 """Admin dashboard routes"""
 
 from datetime import date, timedelta
+
 from flask import render_template
-from . import bp, admin_required
-from app.models import User, Membership, Shoot
+
+from app.models import Membership, Shoot, User
+
+from . import admin_required, bp
 
 
 @bp.route("/dashboard")

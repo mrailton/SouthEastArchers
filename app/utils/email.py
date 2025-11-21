@@ -1,9 +1,11 @@
 """Email utility functions"""
 
-from flask import render_template, current_app, url_for
-from flask_mail import Message
-from app import mail
 from datetime import datetime
+
+from flask import current_app, render_template, url_for
+from flask_mail import Message
+
+from app import mail
 
 
 def send_payment_receipt(user, payment, membership):

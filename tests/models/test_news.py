@@ -1,8 +1,10 @@
 """Tests for news model"""
 
-import pytest
-from app.models import News
 from datetime import datetime
+
+import pytest
+
+from app.models import News
 from app.utils.datetime_utils import utc_now
 
 
@@ -107,8 +109,9 @@ class TestNews:
 
     def test_updated_at_changes(self, app):
         """Test that updated_at changes when news is modified"""
-        from app import db
         import time
+
+        from app import db
 
         news = News(title="Original Title", content="Original content", published=False)
         db.session.add(news)

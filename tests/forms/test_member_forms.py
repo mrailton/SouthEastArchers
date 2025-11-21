@@ -1,6 +1,7 @@
 """Tests for member forms"""
 
 import pytest
+
 from app.forms.member_forms import ProfileForm
 
 

@@ -1,8 +1,10 @@
 """Tests for credit model"""
 
-import pytest
-from app.models import User, Credit
 from datetime import date
+
+import pytest
+
+from app.models import Credit, User
 
 
 class TestCredit:

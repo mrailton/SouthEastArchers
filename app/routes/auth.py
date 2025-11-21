@@ -1,20 +1,22 @@
+import secrets
+from datetime import date, timedelta
+
 from flask import (
     Blueprint,
+    current_app,
+    flash,
+    redirect,
     render_template,
     request,
-    redirect,
-    url_for,
-    flash,
-    current_app,
     session,
+    url_for,
 )
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_required, login_user, logout_user
 from flask_mail import Message
+
 from app import db, mail
-from app.models import User, Membership, Payment
+from app.models import Membership, Payment, User
 from app.services import SumUpService
-from datetime import date, timedelta
-import secrets
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 

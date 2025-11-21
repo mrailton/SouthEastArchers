@@ -1,6 +1,7 @@
 from datetime import datetime
-from app.utils.datetime_utils import utc_now
+
 from app import db
+from app.utils.datetime_utils import utc_now
 
 
 class Credit(db.Model):

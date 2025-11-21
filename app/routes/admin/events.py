@@ -1,10 +1,13 @@
 """Admin event management routes"""
 
-from flask import render_template, request, redirect, url_for, flash
 from datetime import datetime
-from . import bp, admin_required
+
+from flask import flash, redirect, render_template, request, url_for
+
 from app import db
 from app.models import Event
+
+from . import admin_required, bp
 
 
 @bp.route("/events")

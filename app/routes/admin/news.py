@@ -1,11 +1,14 @@
 """Admin news management routes"""
 
-from flask import render_template, request, redirect, url_for, flash
 from datetime import datetime
-from . import bp, admin_required
+
+from flask import flash, redirect, render_template, request, url_for
+
 from app import db
 from app.models import News
 from app.utils.datetime_utils import utc_now
+
+from . import admin_required, bp
 
 
 @bp.route("/news")

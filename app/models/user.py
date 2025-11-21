@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
+
+from flask import current_app
 from flask_login import UserMixin
 from itsdangerous import URLSafeTimedSerializer
-from flask import current_app
-from app import db, bcrypt
+
+from app import bcrypt, db
 from app.utils.datetime_utils import utc_now
 
 

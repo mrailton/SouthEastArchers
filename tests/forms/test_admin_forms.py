@@ -1,8 +1,10 @@
 """Tests for admin forms"""
 
-import pytest
-from app.forms.admin_forms import ShootForm, NewsForm, EventForm
 from datetime import date, timedelta
+
+import pytest
+
+from app.forms.admin_forms import EventForm, NewsForm, ShootForm
 
 
 class TestShootForm:

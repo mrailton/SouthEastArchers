@@ -1,14 +1,14 @@
+from flask_wtf import FlaskForm
 from wtforms import (
-    StringField,
-    TextAreaField,
-    IntegerField,
-    SubmitField,
     DateField,
+    IntegerField,
     SelectField,
     SelectMultipleField,
+    StringField,
+    SubmitField,
+    TextAreaField,
 )
-from wtforms.validators import DataRequired, Optional, Length
-from flask_wtf import FlaskForm
+from wtforms.validators import DataRequired, Length, Optional
 
 
 class ShootForm(FlaskForm):

@@ -1,10 +1,12 @@
 """Tests for signup payment functionality"""
 
-import pytest
 from datetime import date, timedelta
-from unittest.mock import patch, MagicMock
-from app.models import User, Membership, Payment
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from app import db
+from app.models import Membership, Payment, User
 
 
 class TestSignupWithCashPayment:

@@ -1,8 +1,10 @@
 """Tests for event model"""
 
-import pytest
-from app.models import Event
 from datetime import datetime, timedelta
+
+import pytest
+
+from app.models import Event
 from app.utils.datetime_utils import utc_now
 
 
@@ -80,8 +82,9 @@ class TestEvent:
 
     def test_is_upcoming_future_event(self, app):
         """Test is_upcoming returns True for future event"""
-        from app import db
         from datetime import datetime
+
+        from app import db
 
         # Use a date far in the future to avoid timezone issues
         future_date = datetime(2030, 12, 31, 12, 0, 0)
@@ -98,8 +101,9 @@ class TestEvent:
 
     def test_is_upcoming_past_event(self, app):
         """Test is_upcoming returns False for past event"""
-        from app import db
         from datetime import datetime
+
+        from app import db
 
         # Use a date in the past
         past_date = datetime(2020, 1, 1, 12, 0, 0)

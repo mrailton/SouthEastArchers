@@ -1,12 +1,14 @@
 """Tests for app factory and initialization"""
 
-import pytest
 import os
-from flask import url_for, abort
+from datetime import date
+from unittest.mock import MagicMock, patch
+
+import pytest
+from flask import abort, url_for
+
 from app import create_app, db, login_manager
 from app.models import User
-from datetime import date
-from unittest.mock import patch, MagicMock
 
 
 class TestAppFactory:
@@ -216,7 +218,7 @@ class TestModelsImport:
         """Test that models are properly imported in app context"""
         with app.app_context():
             # Try to import and use models
-            from app.models import User, Membership, Shoot, Credit, News, Event, Payment
+            from app.models import Credit, Event, Membership, News, Payment, Shoot, User
 
             # Verify they're all accessible
             assert User is not None

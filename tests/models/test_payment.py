@@ -1,8 +1,10 @@
 """Tests for payment model"""
 
-import pytest
-from app.models import User, Payment
 from datetime import date
+
+import pytest
+
+from app.models import Payment, User
 
 
 class TestPayment:

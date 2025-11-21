@@ -1,10 +1,12 @@
 """Tests for payment routes"""
 
-import pytest
-from unittest.mock import Mock, patch
-from app import db
-from app.models import Payment, Credit, Membership, User
 from datetime import date, timedelta
+from unittest.mock import Mock, patch
+
+import pytest
+
+from app import db
+from app.models import Credit, Membership, Payment, User
 
 
 class TestShowCheckout:

@@ -1,9 +1,10 @@
 """SumUp payment service using official SumUp Python SDK"""
 
-from flask import current_app
-from sumup import Sumup, APIError
-from sumup.checkouts import CreateCheckoutBody
 import uuid
+
+from flask import current_app
+from sumup import APIError, Sumup
+from sumup.checkouts import CreateCheckoutBody
 
 
 class SumUpService:

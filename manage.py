@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 """Management script for South East Archers"""
 
-import click
 import os
 import sys
-from datetime import date, timedelta, datetime
+from datetime import date, datetime, timedelta
+
+import click
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -44,7 +45,7 @@ def runserver(host, port, debug):
 def shell():
     """Open an interactive Python shell with app context"""
     from app import create_app, db
-    from app.models import User, Membership, Shoot, News, Event
+    from app.models import Event, Membership, News, Shoot, User
 
     app = create_app()
     with app.app_context():
@@ -116,7 +117,8 @@ def downgrade():
 def reset():
     """Reset database (WARNING: Deletes all data)"""
     if click.confirm("WARNING: This will delete all data. Continue?"):
-        from app import create_app, db as database
+        from app import create_app
+        from app import db as database
 
         app = create_app()
         with app.app_context():
@@ -160,7 +162,7 @@ def user():
 def user_create(name, email, password, phone, dob, admin, with_membership):
     """Create a new user"""
     from app import create_app, db
-    from app.models import User, Membership
+    from app.models import Membership, User
 
     app = create_app()
     with app.app_context():
@@ -278,7 +280,7 @@ def user_delete(user_id):
 def create_admin(name, email, password, phone, dob):
     """Create an admin user with membership (shortcut)"""
     from app import create_app, db
-    from app.models import User, Membership
+    from app.models import Membership, User
 
     app = create_app()
     with app.app_context():
@@ -499,7 +501,7 @@ def shoot_list(upcoming):
 def stats():
     """Show application statistics"""
     from app import create_app, db
-    from app.models import User, Membership, Shoot, News, Event
+    from app.models import Event, Membership, News, Shoot, User
 
     app = create_app()
     with app.app_context():

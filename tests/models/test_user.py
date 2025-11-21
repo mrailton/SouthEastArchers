@@ -1,8 +1,10 @@
 """Tests for user model"""
 
-import pytest
-from app.models import User
 from datetime import date
+
+import pytest
+
+from app.models import User
 
 
 class TestUser:

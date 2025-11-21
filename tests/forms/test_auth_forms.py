@@ -1,8 +1,10 @@
 """Tests for auth forms"""
 
-import pytest
-from app.forms.auth_forms import LoginForm, SignupForm, ForgotPasswordForm
 from datetime import datetime
+
+import pytest
+
+from app.forms.auth_forms import ForgotPasswordForm, LoginForm, SignupForm
 
 
 class TestLoginForm:

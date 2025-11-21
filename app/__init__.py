@@ -1,12 +1,13 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_mail import Mail
-from flask_login import LoginManager
-from flask_bcrypt import Bcrypt
 import logging
-from logging.handlers import RotatingFileHandler
 import os
+from logging.handlers import RotatingFileHandler
+
+from flask import Flask
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager
+from flask_mail import Mail
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -74,7 +75,7 @@ def create_app(config_name="development"):
         return db.session.get(User, int(user_id))
 
     # Register blueprints
-    from app.routes import public_bp, auth_bp, member_bp, admin_bp, payment_bp
+    from app.routes import admin_bp, auth_bp, member_bp, payment_bp, public_bp
 
     app.register_blueprint(public_bp)
     app.register_blueprint(auth_bp)
@@ -111,6 +112,6 @@ def create_app(config_name="development"):
         return dict(url_for=dated_url_for)
 
     with app.app_context():
-        from app.models import User, Membership, Shoot, Credit, News, Event, Payment
+        from app.models import Credit, Event, Membership, News, Payment, Shoot, User
 
     return app

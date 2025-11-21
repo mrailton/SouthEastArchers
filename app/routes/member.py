@@ -1,9 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
-from app import db
-from app.utils.datetime_utils import utc_now
-from app.models import User, Membership, Shoot, Credit, Payment
 from datetime import datetime
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+
+from app import db
+from app.models import Credit, Membership, Payment, Shoot, User
+from app.utils.datetime_utils import utc_now
 
 bp = Blueprint("member", __name__, url_prefix="/member")
 

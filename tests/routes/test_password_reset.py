@@ -1,7 +1,8 @@
 import pytest
 from flask import url_for
-from app.models import User
+
 from app import db
+from app.models import User
 
 
 class TestPasswordReset:

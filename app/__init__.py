@@ -1,12 +1,13 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_mail import Mail
-from flask_login import LoginManager
-from flask_bcrypt import Bcrypt
 import logging
-from logging.handlers import RotatingFileHandler
 import os
+from logging.handlers import RotatingFileHandler
+
+from flask import Flask
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager
+from flask_mail import Mail
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -16,59 +17,65 @@ bcrypt = Bcrypt()
 assets = None
 
 
-def create_app(config_name='development'):
+def create_app(config_name="development"):
     """Application factory"""
     from config.config import config
-    
+
     app = Flask(
         __name__,
-        template_folder='../resources/templates',
-        static_folder='../resources/static',
-        static_url_path='/static'
+        template_folder="../resources/templates",
+        static_folder="../resources/static",
+        static_url_path="/static",
     )
-    
+
     # Load config
     app.config.from_object(config[config_name])
-    
+
     # Configure logging
     if not app.debug and not app.testing:
         # File handler
-        if not os.path.exists('logs'):
-            os.mkdir('logs')
-        file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240000, backupCount=10)
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-        ))
+        if not os.path.exists("logs"):
+            os.mkdir("logs")
+        file_handler = RotatingFileHandler(
+            "logs/app.log", maxBytes=10240000, backupCount=10
+        )
+        file_handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+            )
+        )
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
-    
+
     # Also log to stdout for Docker
     stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-    ))
+    stream_handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+        )
+    )
     stream_handler.setLevel(logging.INFO)
     app.logger.addHandler(stream_handler)
     app.logger.setLevel(logging.INFO)
-    app.logger.info('SouthEastArchers startup')
-    
+
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
     mail.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'Please log in to access this page.'
-    login_manager.login_message_category = 'warning'
-    
+    login_manager.login_view = "auth.login"
+    login_manager.login_message = "Please log in to access this page."
+    login_manager.login_message_category = "warning"
+
     @login_manager.user_loader
     def load_user(user_id):
         from app.models import User
+
         return db.session.get(User, int(user_id))
 
     # Register blueprints
-    from app.routes import public_bp, auth_bp, member_bp, admin_bp, payment_bp
+    from app.routes import admin_bp, auth_bp, member_bp, payment_bp, public_bp
 
     app.register_blueprint(public_bp)
     app.register_blueprint(auth_bp)
@@ -79,12 +86,12 @@ def create_app(config_name='development'):
     # Error handlers
     @app.errorhandler(404)
     def not_found(e):
-        return 'Page not found', 404
+        return "Page not found", 404
 
     @app.errorhandler(500)
     def internal_error(e):
         db.session.rollback()
-        return 'Internal server error', 500
+        return "Internal server error", 500
 
     # Cache busting for static assets
     # Automatically appends ?v=<timestamp> to static file URLs based on file modification time
@@ -92,21 +99,19 @@ def create_app(config_name='development'):
     @app.context_processor
     def override_url_for():
         from flask import url_for as flask_url_for
-        
+
         def dated_url_for(endpoint, **values):
-            if endpoint == 'static':
-                filename = values.get('filename', None)
+            if endpoint == "static":
+                filename = values.get("filename", None)
                 if filename:
                     file_path = os.path.join(app.static_folder, filename)
                     if os.path.exists(file_path):
-                        values['v'] = int(os.stat(file_path).st_mtime)
+                        values["v"] = int(os.stat(file_path).st_mtime)
             return flask_url_for(endpoint, **values)
-        
+
         return dict(url_for=dated_url_for)
 
     with app.app_context():
-        from app.models import (
-            User, Membership, Shoot, Credit, News, Event, Payment
-        )
+        from app.models import Credit, Event, Membership, News, Payment, Shoot, User
 
     return app

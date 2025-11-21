@@ -34,15 +34,45 @@
         <div class="bg-white p-6 rounded shadow">
             <h3 class="text-2xl font-bold mb-4">Membership</h3>
             {% if member.membership %}
-                <p class="text-gray-700 mb-2"><strong>Status:</strong> {{ member.membership.status|title }}</p>
+                <p class="text-gray-700 mb-2">
+                    <strong>Status:</strong> 
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                        {% if member.membership.status == 'active' %}bg-green-100 text-green-800
+                        {% elif member.membership.status == 'pending' %}bg-yellow-100 text-yellow-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ member.membership.status|title }}
+                    </span>
+                </p>
                 <p class="text-gray-700 mb-2"><strong>Start Date:</strong> {{ member.membership.start_date.strftime('%d %b %Y') }}</p>
                 <p class="text-gray-700 mb-2"><strong>Expires:</strong> {{ member.membership.expiry_date.strftime('%d %b %Y') }}</p>
                 <p class="text-gray-700 mb-4"><strong>Credits:</strong> {{ member.membership.credits }}</p>
                 
-                {% if not member.membership.is_active() %}
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                        Renew Membership
-                    </button>
+                {% if member.membership.status == 'pending' %}
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-yellow-700">
+                                    Membership is pending payment confirmation.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin.activate_membership', user_id=member.id) }}" onsubmit="return confirm('Are you sure you want to activate this membership?');">
+                        <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold">
+                            ✓ Activate Membership
+                        </button>
+                    </form>
+                {% elif not member.membership.is_active() %}
+                    <form method="POST" action="{{ url_for('admin.renew_membership', user_id=member.id) }}" onsubmit="return confirm('Are you sure you want to renew this membership?');">
+                        <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-semibold">
+                            Renew Membership
+                        </button>
+                    </form>
                 {% endif %}
             {% else %}
                 <p class="text-gray-600 mb-4">No active membership</p>
@@ -50,6 +80,57 @@
             {% endif %}
         </div>
     </div>
+    
+    <!-- Payment History Section -->
+    {% if member.payments %}
+    <div class="mt-6 bg-white p-6 rounded shadow">
+        <h3 class="text-2xl font-bold mb-4">Payment History</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for payment in member.payments|sort(attribute='created_at', reverse=True) %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ payment.created_at.strftime('%d %b %Y') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ payment.payment_type|title }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if payment.payment_method == 'online' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ payment.payment_method|title }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            €{{ "%.2f"|format(payment.amount) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if payment.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif payment.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% elif payment.status == 'failed' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ payment.status|title }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
     
     <div class="mt-6 bg-white p-6 rounded shadow">
         <h3 class="text-2xl font-bold mb-4">Shoot History</h3>
@@ -68,4 +149,5 @@
             <p class="text-gray-600">No shoots attended yet</p>
         {% endif %}
     </div>
+</div>
 {% endblock %}

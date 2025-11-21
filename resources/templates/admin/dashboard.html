@@ -3,7 +3,7 @@
 {% block content %}
 <h1 class="text-4xl font-bold mb-6">Admin Dashboard</h1>
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <div class="bg-white p-6 rounded shadow">
         <h3 class="text-gray-600 text-sm font-bold">Total Members</h3>
         <p class="text-3xl font-bold">{{ total_members }}</p>
@@ -15,13 +15,8 @@
     </div>
     
     <div class="bg-white p-6 rounded shadow">
-        <h3 class="text-gray-600 text-sm font-bold">Upcoming Nights</h3>
-        <p class="text-3xl font-bold">{{ upcoming_nights }}</p>
-    </div>
-    
-    <div class="bg-white p-6 rounded shadow">
-        <h3 class="text-gray-600 text-sm font-bold">Recent Activity</h3>
-        <p class="text-gray-700">Last 7 days</p>
+        <h3 class="text-gray-600 text-sm font-bold">Memberships Expiring in 30 Days</h3>
+        <p class="text-3xl font-bold">{{ expiring_soon }}</p>
     </div>
 </div>
 
@@ -37,12 +32,19 @@
     </div>
     
     <div class="bg-white p-6 rounded shadow">
-        <h3 class="text-xl font-bold mb-4">Quick Actions</h3>
+        <h3 class="text-xl font-bold mb-4">Recent Members</h3>
+        {% if recent_members %}
         <ul class="space-y-2">
-            <li><a href="/admin/shoots/create" class="text-blue-600 hover:underline">Create Shoot</a></li>
-            <li><a href="/admin/news/create" class="text-blue-600 hover:underline">Create News</a></li>
-            <li><a href="/admin/events/create" class="text-blue-600 hover:underline">Create Event</a></li>
+            {% for member in recent_members %}
+            <li class="text-gray-700">
+                <a href="/admin/members/{{ member.id }}" class="text-blue-600 hover:underline">{{ member.name }}</a>
+                <span class="text-sm text-gray-500">- {{ member.created_at.strftime('%d/%m/%Y') }}</span>
+            </li>
+            {% endfor %}
         </ul>
+        {% else %}
+        <p class="text-gray-500">No recent members</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

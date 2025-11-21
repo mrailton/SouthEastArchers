@@ -1,4 +1,5 @@
 """Datetime utility functions"""
+
 from datetime import datetime, timezone
 
 

@@ -2,23 +2,26 @@ FROM python:3.14-slim as builder
 
 WORKDIR /app
 
-# Install Node.js for building assets
+# Install Node.js and make for building assets
 RUN apt-get update && apt-get install -y \
     curl \
+    make \
     && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files and install ALL dependencies (including devDependencies)
-COPY package*.json ./
-RUN npm ci
+# Copy build configuration files
+COPY package*.json Makefile ./
+
+# Install Node dependencies
+RUN make install-node
 
 # Copy source files needed for build
 COPY resources ./resources
 COPY postcss.config.js tailwind.config.js ./
 
 # Build assets
-RUN npm run build
+RUN make build
 
 # Final stage
 FROM python:3.14-slim

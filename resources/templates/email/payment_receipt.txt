@@ -1,0 +1,47 @@
+PAYMENT RECEIPT
+South East Archers
+=====================================
+
+Dear {{ name }},
+
+Thank you for your payment! Your membership with South East Archers is now ACTIVE.
+
+✓ PAYMENT SUCCESSFUL
+
+RECEIPT DETAILS
+=====================================
+
+Receipt Number:    #{{ receipt_number }}
+Date:              {{ payment_date }}
+Description:       {{ description }}
+Payment Method:    {{ payment_method }}
+{% if transaction_id %}Transaction ID:    {{ transaction_id }}
+{% endif %}
+Amount Paid:       €{{ "%.2f"|format(amount) }}
+
+MEMBERSHIP DETAILS
+=====================================
+
+Start Date:        {{ membership_start }}
+Expiry Date:       {{ membership_expiry }}
+Included Credits:  {{ credits }} shooting nights
+
+WHAT'S NEXT?
+=====================================
+
+* You can now attend any of our shooting nights
+* Book your first session through your member dashboard
+* Check the calendar for upcoming events
+* Purchase additional credits as needed
+
+Login to your account: {{ login_url }}
+
+If you have any questions, please don't hesitate to contact us.
+
+Best regards,
+South East Archers
+
+---
+South East Archers
+Email: info@southeastarchers.ie
+This is an automated receipt. Please keep for your records.

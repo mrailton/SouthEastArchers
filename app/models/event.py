@@ -1,12 +1,14 @@
-from datetime import datetime
-from app.utils.datetime_utils import utc_now
+from datetime import datetime, timezone
+
 from app import db
+from app.utils.datetime_utils import utc_now
 
 
 class Event(db.Model):
     """Club events"""
-    __tablename__ = 'events'
-    
+
+    __tablename__ = "events"
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
@@ -17,14 +19,21 @@ class Event(db.Model):
     published = db.Column(db.Boolean, default=False, index=True)
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
-    
+
     def is_upcoming(self):
         """Check if event is in the future"""
-        return self.start_date > utc_now()
-    
+        now = utc_now()
+        # Handle timezone-naive datetimes from database
+        start = self.start_date
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=timezone.utc)
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        return start > now
+
     def publish(self):
         """Publish the event"""
         self.published = True
-    
+
     def __repr__(self):
-        return f'<Event {self.title} on {self.start_date}>'
+        return f"<Event {self.title} on {self.start_date}>"

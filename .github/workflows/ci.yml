@@ -43,20 +43,22 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc default-libmysqlclient-dev pkg-config
+          sudo apt-get install -y gcc default-libmysqlclient-dev pkg-config make
       
-      - name: Install Python dependencies with uv
-        run: |
-          uv sync
+      - name: Install dependencies
+        run: make install
       
-      - name: Install Node dependencies
-        run: npm install
+      - name: Check code formatting
+        run: make format-check
+      
+      - name: Run linting
+        run: make lint
       
       - name: Build assets
-        run: npm run build
+        run: make build
       
-      - name: Run tests
-        run: uv run pytest -v
+      - name: Run tests with coverage
+        run: make test-parallel
 
   build-and-push:
     needs: test

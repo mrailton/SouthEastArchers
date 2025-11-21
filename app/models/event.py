@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.utils.datetime_utils import utc_now
 from app import db
 
@@ -20,7 +20,14 @@ class Event(db.Model):
     
     def is_upcoming(self):
         """Check if event is in the future"""
-        return self.start_date > utc_now()
+        now = utc_now()
+        # Handle timezone-naive datetimes from database
+        start = self.start_date
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=timezone.utc)
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        return start > now
     
     def publish(self):
         """Publish the event"""

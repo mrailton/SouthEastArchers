@@ -181,7 +181,7 @@ class TestAuthRoutes:
         """Test signup with online payment method"""
         from unittest.mock import Mock, patch
 
-        with patch("app.routes.auth_bp.SumUpService") as mock_service_class:
+        with patch("app.routes.auth.SumUpService") as mock_service_class:
             mock_service = Mock()
             mock_checkout = {"id": "checkout_signup", "status": "PENDING"}
             mock_service.create_checkout.return_value = mock_checkout
@@ -208,7 +208,7 @@ class TestAuthRoutes:
         """Test signup when online payment checkout creation fails"""
         from unittest.mock import Mock, patch
 
-        with patch("app.routes.auth_bp.SumUpService") as mock_service_class:
+        with patch("app.routes.auth.SumUpService") as mock_service_class:
             mock_service = Mock()
             mock_service.create_checkout.return_value = None
             mock_service_class.return_value = mock_service
@@ -240,7 +240,7 @@ class TestAuthRoutes:
         """Test forgot password with existing user"""
         from unittest.mock import patch
 
-        with patch("app.routes.auth_bp.mail.send") as mock_send:
+        with patch("app.routes.auth.mail.send") as mock_send:
             response = client.post(
                 "/auth/forgot-password",
                 data={"email": test_user.email},
@@ -267,7 +267,7 @@ class TestAuthRoutes:
         from unittest.mock import patch
 
         with patch(
-            "app.routes.auth_bp.mail.send", side_effect=Exception("Email error")
+            "app.routes.auth.mail.send", side_effect=Exception("Email error")
         ):
             response = client.post(
                 "/auth/forgot-password", data={"email": test_user.email}

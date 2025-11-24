@@ -128,16 +128,3 @@ jobs:
           labels: ${{ steps.meta-worker.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    steps:
-      - name: Deploy Web to Coolify
-        run: |
-          curl --request GET '${{ secrets.COOLIFY_WEB_WEBHOOK_URL }}' --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
-      - name: Deploy Worker to Coolify
-        run: |
-          curl --request GET '${{ secrets.COOLIFY_WORKER_WEBHOOK_URL }}' --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'

@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  web:
+    image: ghcr.io/mrailton/southeastarchers:latest
+    container_name: sea-web
+    restart: unless-stopped
+    networks:
+      - traefik
+      - sea-internal
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379/0
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USE_TLS=${MAIL_USE_TLS}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+      - SUMUP_API_KEY=${SUMUP_API_KEY}
+      - SUMUP_MERCHANT_CODE=${SUMUP_MERCHANT_CODE}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sea-web.entrypoints=http"
+      - "traefik.http.routers.sea-web.rule=Host(`sea.markrailton.com`)"
+      - "traefik.http.middlewares.sea-web-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.sea-web.middlewares=sea-web-https-redirect"
+      - "traefik.http.routers.sea-web-secure.entrypoints=https"
+      - "traefik.http.routers.sea-web-secure.rule=Host(`sea.markrailton.com`)"
+      - "traefik.http.routers.sea-web-secure.tls=true"
+      - "traefik.http.routers.sea-web-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.sea-web-secure.service=sea-web"
+      - "traefik.http.services.sea-web.loadbalancer.server.port=5000"
+      - "traefik.docker.network=traefik"
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    image: ghcr.io/mrailton/southeastarchers-worker:latest
+    container_name: sea-worker
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+    networks:
+      - sea-internal
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379/0
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USE_TLS=${MAIL_USE_TLS}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+    depends_on:
+      - db
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: sea-redis
+    restart: unless-stopped
+    networks:
+      - sea-internal
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  db:
+    image: mysql:8.4
+    container_name: sea-db
+    restart: unless-stopped
+    networks:
+      - sea-internal
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=southeastarchers
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: sea-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_REVIVE_STOPPED=false
+      - WATCHTOWER_LABEL_ENABLE=true
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    command: --label-enable
+
+networks:
+  traefik:
+    external: true
+  sea-internal:
+    driver: bridge
+
+volumes:
+  redis_data:
+  db_data:

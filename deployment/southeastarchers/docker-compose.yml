@@ -38,7 +38,6 @@ services:
 
   worker:
     image: ghcr.io/mrailton/southeastarchers-worker:latest
-    container_name: sea-worker
     restart: unless-stopped
     deploy:
       replicas: 2

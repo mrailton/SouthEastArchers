@@ -35,17 +35,21 @@ touch acme.json
 chmod 600 acme.json
 echo "✅ Created acme.json for SSL certificates"
 
-# Copy .env.example if .env doesn't exist
-if [ ! -f ../.env ]; then
-    echo "📝 Creating .env file from example..."
-    cp ../.env.example ../.env
-    echo "⚠️  Please edit deployment/.env with your configuration"
-    echo ""
+# Check if .env exists
+if [ ! -f .env ]; then
+    if [ -f ../.env ]; then
+        echo "📝 Copying .env to traefik directory..."
+        cp ../.env .env
+    else
+        echo "❌ .env file not found! Please create deployment/.env first"
+        echo "   Example: cp deployment/.env.example deployment/.env"
+        exit 1
+    fi
 fi
 
 # Start Traefik
 echo "🚀 Starting Traefik..."
-docker compose up -d
+docker compose --env-file .env up -d
 echo "✅ Traefik is running"
 echo ""
 
@@ -55,9 +59,20 @@ cd ..
 echo "🏹 Setting up South East Archers application..."
 cd southeastarchers
 
+# Check if .env exists
+if [ ! -f .env ]; then
+    if [ -f ../.env ]; then
+        echo "📝 Copying .env to southeastarchers directory..."
+        cp ../.env .env
+    else
+        echo "❌ .env file not found! Please create deployment/.env first"
+        exit 1
+    fi
+fi
+
 # Start application
 echo "🚀 Starting South East Archers services..."
-docker compose up -d
+docker compose --env-file .env up -d
 echo "✅ Application services are running"
 echo ""
 

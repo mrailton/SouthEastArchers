@@ -74,7 +74,10 @@ CLOUDFLARE_EMAIL=your@email.com
 CLOUDFLARE_DNS_API_TOKEN=your-api-token
 
 # Traefik dashboard password
-# Generate with: echo $(htpasswd -nB admin) | sed -e s/\\$/\\$\\$/g
+# Generate with:
+chmod +x generate-traefik-auth.sh
+./generate-traefik-auth.sh
+# Then copy the output to .env file
 TRAEFIK_DASHBOARD_CREDENTIALS=admin:$$2y$$05$$...
 
 # Application secrets

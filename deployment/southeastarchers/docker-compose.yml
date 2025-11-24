@@ -1,6 +1,6 @@
 services:
   web:
-    image: ghcr.io/mrailton/southeastarchers:latest
+    image: ghcr.io/mrailton/southeastarchers-web:latest
     container_name: sea-web
     restart: unless-stopped
     networks:

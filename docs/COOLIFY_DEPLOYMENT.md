@@ -1,328 +1,563 @@
 # Coolify Deployment Guide for South East Archers
+## Deploying with GitHub Actions + GHCR
 
-This guide explains how to deploy the application to Coolify with RQ background workers.
+This guide explains how to deploy the application to Coolify using pre-built Docker images from GitHub Container Registry (GHCR).
 
 ## Architecture Overview
 
-The application consists of 3 main services:
+The application consists of 4 main services:
 1. **web** - Flask application (handles HTTP requests)
 2. **worker** - RQ worker processes (handles background jobs)
 3. **redis** - Redis server (job queue storage)
+4. **mysql** - MySQL database (persistent storage)
 
-Plus an external MySQL database (managed by Coolify).
+```
+┌───────────────────────────────────────────────────────────┐
+│                    Coolify Server                         │
+├───────────────────────────────────────────────────────────┤
+│                                                           │
+│  ┌─────────────────┐         ┌──────────────────────┐   │
+│  │ GitHub Actions  │         │  GHCR Registry       │   │
+│  │ - Build images  │────────▶│  - Web image         │   │
+│  │ - Run tests     │         │  - Worker image      │   │
+│  │ - Push to GHCR  │         └──────┬───────────────┘   │
+│  └─────────────────┘                │                    │
+│                                     │ pull              │
+│                                     ▼                    │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐             │
+│  │   Web    │  │  Worker  │  │  Worker  │             │
+│  │  :5000   │  │  (RQ)    │  │  (RQ)    │             │
+│  │ (GHCR)   │  │ (GHCR)   │  │ (GHCR)   │             │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘             │
+│       │             │               │                    │
+│       └─────────────┴───────────────┘                    │
+│                     │                                    │
+│            ┌────────┴────────┐                           │
+│            │                 │                           │
+│       ┌────▼─────┐    ┌─────▼────┐                     │
+│       │  Redis   │    │  MySQL   │                     │
+│       │  :6379   │    │  :3306   │                     │
+│       │(Coolify) │    │(Coolify) │                     │
+│       └──────────┘    └──────────┘                     │
+│                                                           │
+└───────────────────────────────────────────────────────────┘
+```
 
-## Deployment Options
+## Prerequisites
 
-### Option 1: Using Docker Compose (Recommended for Coolify)
+1. **Coolify Instance**: Running and accessible
+2. **GitHub Repository**: Connected to Coolify
+3. **GitHub Actions**: Configured (already done in `.github/workflows/ci.yml`)
+4. **GHCR Access**: Repository packages are public or Coolify has access
 
-Coolify has excellent docker-compose support. This is the simplest approach.
+## Deployment Steps
 
-#### Steps:
+### Step 1: Set Up GitHub Secrets
 
-1. **Create a new project in Coolify**
-   - Go to your Coolify dashboard
-   - Click "New Resource" → "Docker Compose"
-   - Connect your GitHub repository
+Configure these secrets in your GitHub repository:
 
-2. **Configure Environment Variables**
-   
-   In Coolify, add these environment variables:
-   
+```
+Settings → Secrets and Variables → Actions → New repository secret
+```
+
+Add:
+- `COOLIFY_WEBHOOK_URL`: Webhook URL from Coolify (see Step 5)
+- `COOLIFY_TOKEN`: Your Coolify API token (optional, for advanced webhooks)
+
+### Step 2: Create MySQL Database
+
+1. In Coolify Dashboard:
+   ```
+   New Resource → Database → MySQL
+   ```
+
+2. Configure:
+   - **Name**: `southeastarchers-db`
+   - **Version**: 8.4
+   - **Database**: `southeastarchers`
+   - **Username**: Your choice
+   - **Password**: Generate strong password
+
+3. Note the internal connection URL:
+   ```
+   mysql+pymysql://username:password@<internal-host>:3306/southeastarchers
+   ```
+
+### Step 3: Create Redis Service
+
+1. In Coolify Dashboard:
+   ```
+   New Resource → Database → Redis
+   ```
+
+2. Configure:
+   - **Name**: `southeastarchers-redis`
+   - **Version**: 7-alpine
+
+3. Note the internal connection URL:
+   ```
+   redis://<internal-host>:6379/0
+   ```
+
+### Step 4: Create Web Application Service
+
+1. In Coolify Dashboard:
+   ```
+   New Resource → Application → Docker Image
+   ```
+
+2. Configure:
+   - **Name**: `southeastarchers-web`
+   - **Image**: `ghcr.io/mrailton/southeastarchers:latest`
+   - **Port**: `5000`
+   - **Exposed Port**: Map to your domain
+
+3. Add Environment Variables:
    ```bash
-   # Flask
-   SECRET_KEY=your-random-secret-key-here
    FLASK_ENV=production
-   
-   # Database (Coolify MySQL)
-   DATABASE_URL=mysql+pymysql://user:password@mysql-host:3306/database
-   
-   # Redis (internal service)
-   REDIS_URL=redis://redis:6379/0
-   
-   # Email
+   SECRET_KEY=<generate-random-32-char-string>
+   DATABASE_URL=mysql+pymysql://user:pass@<mysql-internal-host>:3306/southeastarchers
+   REDIS_URL=redis://<redis-internal-host>:6379/0
    MAIL_SERVER=smtp.gmail.com
    MAIL_PORT=587
    MAIL_USE_TLS=True
    MAIL_USERNAME=your-email@gmail.com
-   MAIL_PASSWORD=your-app-password
+   MAIL_PASSWORD=<your-app-password>
    MAIL_DEFAULT_SENDER=noreply@southeastarchers.ie
-   
-   # SumUp Payment
-   SUMUP_API_KEY=your-sumup-api-key
-   SUMUP_MERCHANT_CODE=your-merchant-code
-   
-   # Optional
-   PORT=5000
+   SUMUP_API_KEY=<your-sumup-key>
+   SUMUP_MERCHANT_CODE=<your-merchant-code>
    ```
 
-3. **Deploy**
-   - Coolify will automatically detect `docker-compose.yml`
+4. Configure Domain (optional):
+   - Add your domain in Coolify
+   - SSL will be auto-configured via Let's Encrypt
+
+5. Deploy:
    - Click "Deploy"
-   - Coolify will build and start all services:
-     - MySQL database (if added as separate service)
-     - Redis (from docker-compose)
-     - Web application (from docker-compose)
-     - Worker process (from docker-compose)
+   - Coolify pulls image from GHCR and starts the service
 
-4. **Verify Deployment**
-   ```bash
-   # Check services are running
-   docker ps
-   
-   # Check worker logs
-   docker logs <worker-container-name>
-   
-   # Check Redis connection
-   docker exec <redis-container> redis-cli ping
+### Step 5: Create Worker Service(s)
+
+1. In Coolify Dashboard:
+   ```
+   New Resource → Application → Docker Image
    ```
 
-### Option 2: Separate Services (More Control)
+2. Configure:
+   - **Name**: `southeastarchers-worker`
+   - **Image**: `ghcr.io/mrailton/southeastarchers-worker:latest`
+   - **No port mapping needed**
 
-If you want more granular control, deploy each service separately in Coolify:
+3. Add Environment Variables (same as web service):
+   ```bash
+   FLASK_ENV=production
+   SECRET_KEY=<same-as-web-service>
+   DATABASE_URL=<same-as-web-service>
+   REDIS_URL=<same-as-web-service>
+   MAIL_SERVER=smtp.gmail.com
+   MAIL_PORT=587
+   MAIL_USE_TLS=True
+   MAIL_USERNAME=<same-as-web-service>
+   MAIL_PASSWORD=<same-as-web-service>
+   MAIL_DEFAULT_SENDER=<same-as-web-service>
+   ```
 
-#### 2.1 Deploy MySQL Database
-1. Add new service → Database → MySQL 8.4
-2. Note the connection details
+4. Scale Workers (optional):
+   - Default: 1 replica
+   - For production: 2-3 replicas recommended
+   - Settings → Replicas → Set to 2
 
-#### 2.2 Deploy Redis
-1. Add new service → Database → Redis 7
-2. No special configuration needed
+5. Deploy:
+   - Click "Deploy"
+   - Coolify pulls worker image and starts processing jobs
 
-#### 2.3 Deploy Web Application
-1. Add new service → Application → Dockerfile
-2. Set Dockerfile path: `Dockerfile`
-3. Set port: `5000`
-4. Add environment variables (see above)
-5. Set command: `gunicorn --bind 0.0.0.0:5000 --workers 4 wsgi:app`
+### Step 6: Configure Auto-Deploy Webhook
 
-#### 2.4 Deploy Worker(s)
-1. Add new service → Application → Dockerfile
-2. Set Dockerfile path: `Dockerfile`
-3. Add environment variables (same as web)
-4. Set command: `uv run python worker.py`
-5. **Important**: No port mapping needed (workers don't serve HTTP)
-6. Scale to 2-3 instances for production
+1. In Coolify (for web service):
+   ```
+   southeastarchers-web → Webhooks → Create Webhook
+   ```
+   - Copy the webhook URL
 
-## Scaling Workers
+2. In Coolify (for worker service):
+   ```
+   southeastarchers-worker → Webhooks → Create Webhook
+   ```
+   - Copy the webhook URL
 
-### In docker-compose:
+3. In GitHub Repository:
+   ```
+   Settings → Secrets and Variables → Actions
+   ```
+   - Add `COOLIFY_WEBHOOK_URL` with the webhook URL(s)
+   - Note: For multiple services, you can add separate secrets or call both webhooks
+
+4. Webhook is already configured in `.github/workflows/ci.yml`:
+   ```yaml
+   - name: Deploy to Coolify
+     run: |
+       curl --request GET '${{ secrets.COOLIFY_WEBHOOK_URL }}'
+   ```
+
+### Step 7: Initial Database Setup
+
+1. Run migrations via Coolify terminal (web service):
+   ```bash
+   flask db upgrade
+   ```
+
+2. Create admin user:
+   ```bash
+   python manage.py create-admin
+   ```
+
+3. Verify database connection:
+   ```bash
+   python -c "from app import db; print(db.engine)"
+   ```
+
+## Post-Deployment
+
+### Verify Services
+
+**Check Web Service:**
 ```bash
-# Scale to 3 worker instances
-docker-compose up -d --scale worker=3
+curl https://your-domain.com/
+# Should return 200 OK
 ```
 
-### In Coolify Dashboard:
-1. Go to worker service
-2. Click "Scale"
-3. Set replicas to desired number (2-3 recommended)
+**Check Worker Logs:**
+```
+Coolify → southeastarchers-worker → Logs
+# Should show: "Starting RQ worker on queue: default"
+```
+
+**Check Redis:**
+```
+Coolify → southeastarchers-redis → Terminal
+redis-cli ping
+# Should return: PONG
+```
+
+**Check Job Queue:**
+```
+Coolify → southeastarchers-redis → Terminal
+redis-cli LLEN rq:queue:default
+# Shows number of pending jobs
+```
+
+### Test Background Jobs
+
+1. Sign up a new test member on your site
+2. Check worker logs for email job processing
+3. Verify email was sent (check logs or inbox)
+
+## Scaling
+
+### Scale Workers
+
+```
+Coolify → southeastarchers-worker → Settings → Replicas
+Set to 3 for higher traffic
+```
+
+Recommended scaling based on traffic:
+- **Low traffic** (< 100 users/day): 1 worker
+- **Medium traffic** (100-1000 users/day): 2 workers
+- **High traffic** (> 1000 users/day): 3+ workers
+
+### Monitor Queue Length
+
+```bash
+# In Redis terminal
+redis-cli LLEN rq:queue:default
+```
+
+If queue consistently > 10, add more workers.
+
+## Continuous Deployment Workflow
+
+1. **Push to main branch**
+   ```bash
+   git push origin main
+   ```
+
+2. **GitHub Actions automatically**:
+   - Runs tests
+   - Builds Docker images (web and worker)
+   - Pushes images to GHCR
+   - Triggers Coolify webhook
+
+3. **Coolify automatically**:
+   - Pulls latest images
+   - Restarts services with zero downtime
+   - Health checks ensure smooth rollout
+
+## Environment Variables Reference
+
+### Required for All Services
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `FLASK_ENV` | Flask environment | `production` |
+| `SECRET_KEY` | Flask secret key (32+ chars) | Generate with `python -c 'import secrets; print(secrets.token_hex(32))'` |
+| `DATABASE_URL` | MySQL connection string | `mysql+pymysql://user:pass@host:3306/db` |
+| `REDIS_URL` | Redis connection string | `redis://host:6379/0` |
+
+### Email Configuration
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `MAIL_SERVER` | SMTP server | `smtp.gmail.com` |
+| `MAIL_PORT` | SMTP port | `587` |
+| `MAIL_USE_TLS` | Use TLS | `True` |
+| `MAIL_USERNAME` | Email username | `your-email@gmail.com` |
+| `MAIL_PASSWORD` | Email password or app password | Your app password |
+| `MAIL_DEFAULT_SENDER` | Default from address | `noreply@southeastarchers.ie` |
+
+### Payment Configuration
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `SUMUP_API_KEY` | SumUp API key | Your API key |
+| `SUMUP_MERCHANT_CODE` | SumUp merchant code | Your merchant code |
 
 ## Monitoring
 
-### Worker Health Check
+### View Service Logs
+
+```
+Coolify → Service → Logs
+```
+
+### Check Active Workers
+
 ```bash
-# SSH into your server
-ssh user@your-server
-
-# Check worker logs
-docker logs coolify-worker-<id> -f
-
-# Check Redis queue status
-docker exec coolify-redis-<id> redis-cli LLEN rq:queue:default
+# In Redis terminal
+redis-cli SMEMBERS rq:workers
 ```
 
-### Application Logs
+### View Failed Jobs
+
 ```bash
-# Web application logs
-docker logs coolify-web-<id> -f
-
-# All services
-docker-compose logs -f
+# In Redis terminal
+redis-cli LRANGE rq:queue:failed 0 -1
 ```
 
-### Redis Queue Inspection
-```bash
-# Connect to Redis
-docker exec -it coolify-redis-<id> redis-cli
+### Monitor Resource Usage
 
-# Check queue length
-LLEN rq:queue:default
-
-# Check failed jobs
-LRANGE rq:queue:failed 0 -1
-
-# Check workers
-SMEMBERS rq:workers
 ```
-
-## Coolify-Specific Tips
-
-### 1. Database Connection
-Coolify provides a MySQL service. Use the internal hostname:
-```
-DATABASE_URL=mysql+pymysql://user:pass@mysql-service:3306/dbname
-```
-
-### 2. Redis Connection
-If using docker-compose, Redis is accessible at:
-```
-REDIS_URL=redis://redis:6379/0
-```
-
-If using separate Redis service:
-```
-REDIS_URL=redis://coolify-redis-<service-name>:6379/0
-```
-
-### 3. Persistent Storage
-Coolify handles volumes automatically. Your Redis data will persist across deployments.
-
-### 4. Zero-Downtime Deployments
-- Web service: Coolify handles rolling updates
-- Workers: Will restart automatically
-- Redis: Persists data in volumes
-
-### 5. Health Checks
-The `docker-compose.yml` includes health checks for:
-- Redis: `redis-cli ping`
-- MySQL: `mysqladmin ping`
-- Web: Coolify can check HTTP endpoint
-
-## Environment-Specific Configuration
-
-### Development
-```bash
-FLASK_ENV=development
-REDIS_URL=redis://localhost:6379/0
-```
-
-### Staging
-```bash
-FLASK_ENV=production
-REDIS_URL=redis://redis:6379/0
-```
-
-### Production
-```bash
-FLASK_ENV=production
-REDIS_URL=redis://redis:6379/0
-# Add monitoring, backup configs
+Coolify → Service → Metrics
+View CPU, memory, and network usage
 ```
 
 ## Troubleshooting
 
-### Workers not processing jobs
-1. Check worker is running: `docker ps | grep worker`
-2. Check Redis connection: `docker exec worker-container redis-cli -h redis ping`
-3. Check worker logs: `docker logs worker-container`
-4. Verify environment variables match web service
+### Service Won't Start
 
-### Redis connection refused
-1. Ensure Redis service is running
-2. Check REDIS_URL environment variable
-3. Verify network connectivity between services
-4. Check Redis logs: `docker logs redis-container`
-
-### Jobs stuck in queue
-1. Check worker logs for errors
-2. Restart worker: `docker restart worker-container`
-3. Inspect queue: `redis-cli LLEN rq:queue:default`
-4. Check failed jobs: `redis-cli LRANGE rq:queue:failed 0 -1`
-
-### Database migrations
-```bash
-# SSH into web container
-docker exec -it web-container bash
-
-# Run migrations
-uv run flask db upgrade
+**Check logs:**
 ```
+Coolify → Service → Logs
+```
+
+**Common issues:**
+- Missing environment variables
+- Invalid DATABASE_URL or REDIS_URL
+- Image pull failed (check GHCR access)
+
+**Solution:**
+```
+1. Verify all environment variables are set
+2. Check internal hostnames for MySQL and Redis
+3. Ensure GHCR images are public or Coolify has access
+```
+
+### Workers Not Processing Jobs
+
+**Check worker status:**
+```
+Coolify → southeastarchers-worker → Status
+Should show "Running"
+```
+
+**Check worker logs:**
+```
+Coolify → southeastarchers-worker → Logs
+Should show "Starting RQ worker..."
+```
+
+**Check Redis connection:**
+```bash
+# In worker terminal
+env | grep REDIS_URL
+```
+
+**Solution:**
+- Restart worker service
+- Verify REDIS_URL matches Redis internal hostname
+- Check Redis service is running
+
+### Database Connection Errors
+
+**Check DATABASE_URL:**
+```bash
+# In web or worker terminal
+env | grep DATABASE_URL
+```
+
+**Verify format:**
+```
+mysql+pymysql://username:password@internal-host:3306/database
+```
+
+**Solution:**
+- Use Coolify's internal hostname for MySQL
+- Verify credentials
+- Check MySQL service is running
+
+### Jobs Failing
+
+**View failed jobs:**
+```bash
+# In Redis terminal
+redis-cli LRANGE rq:queue:failed 0 -1
+```
+
+**Check job errors:**
+```
+Coolify → southeastarchers-worker → Logs
+Look for stack traces
+```
+
+**Common causes:**
+- Missing email configuration
+- Template not found
+- Database connection timeout
+
+### Images Not Updating
+
+**Check GitHub Actions:**
+```
+GitHub → Actions → Latest workflow
+Verify build completed successfully
+```
+
+**Check GHCR:**
+```
+GitHub → Packages → southeastarchers
+Verify latest tag timestamp
+```
+
+**Force update in Coolify:**
+```
+Service → Force Redeploy
+```
+
+**Solution:**
+1. Verify GitHub Actions completed
+2. Check images pushed to GHCR
+3. Manually trigger webhook or redeploy
+4. Check webhook URL in GitHub secrets
 
 ## Performance Tuning
 
-### Worker Count
-- **Low traffic**: 1 worker
-- **Medium traffic**: 2-3 workers
-- **High traffic**: 5+ workers
+### Web Service
+
+**Adjust Gunicorn workers:**
+Edit Dockerfile.web:
+```dockerfile
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "8", "--timeout", "120", "wsgi:app"]
+```
+
+**Formula:** `workers = (2 × CPU cores) + 1`
+
+### Worker Service
+
+**Adjust number of replicas:**
+```
+Coolify → southeastarchers-worker → Settings → Replicas
+```
+
+**Monitor queue length to determine if more workers needed.**
 
 ### Redis Memory
-Default Redis config is fine for most use cases. For high volume:
-```yaml
-redis:
-  command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+**Check memory usage:**
+```bash
+redis-cli INFO memory
 ```
 
-### Gunicorn Workers (Web)
-```dockerfile
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "wsgi:app"]
+**Increase if needed:**
+```
+Coolify → southeastarchers-redis → Settings
+Adjust memory limit
 ```
 
-- **workers**: Number of processes (2-4 × CPU cores)
-- **timeout**: Request timeout in seconds
+## Security Best Practices
 
-## Scheduled Jobs
+- ✅ Use strong SECRET_KEY (32+ characters, random)
+- ✅ Store secrets in Coolify environment variables (not in code)
+- ✅ Use app passwords for email (not main account password)
+- ✅ Restrict database access to internal network only
+- ✅ Enable HTTPS via Coolify (automatic with Let's Encrypt)
+- ✅ Regularly update Docker images (automatic via GitHub Actions)
+- ✅ Keep dependencies up to date (`make upgrade-deps`)
+- ✅ Monitor logs for suspicious activity
+- ✅ Use different SECRET_KEY for each environment
 
-For daily membership expiry checks, add a cron job in Coolify:
+## Backup and Recovery
 
-1. Go to web service → Scheduled Tasks
-2. Add cron job:
-   ```bash
-   0 9 * * * cd /app && uv run python -c "from app.services.background_jobs import check_expiring_memberships_job; check_expiring_memberships_job()"
-   ```
+### Database Backups
 
-Or use external cron service (like cron-job.org) to hit an endpoint.
+Coolify automatically backs up managed databases.
 
-## Backup Strategy
+**Manual backup:**
+```bash
+# In MySQL service terminal
+mysqldump -u username -p database > backup.sql
+```
 
-### Database
-Coolify automatically backs up MySQL databases.
+### Restore from Backup
 
-### Redis (Queue Data)
-Redis data is ephemeral (jobs in queue). No backup needed.
-If Redis crashes, queued jobs are lost but can be retried.
+```bash
+# In MySQL service terminal
+mysql -u username -p database < backup.sql
+```
 
-### Application Files
-Your code is in Git. No need to backup application files.
+### Redis Backups
+
+Redis uses RDB persistence (automatic).
+
+**Manual save:**
+```bash
+redis-cli SAVE
+```
 
 ## Cost Optimization
 
-### Single Worker
-For low-traffic sites, 1 worker is sufficient:
-```yaml
-deploy:
-  replicas:
-    worker: 1
-```
+1. **Right-size services**: Start with 1 web, 2 workers, scale as needed
+2. **Monitor resources**: Use Coolify metrics to identify underutilized services
+3. **Image cleanup**: Regularly prune old GHCR images (GitHub retention policies)
+4. **Database optimization**: Index frequently queried columns
+5. **Redis memory**: Monitor and adjust based on queue size
 
-### Shared Redis
-Use the same Redis instance for sessions + job queue (already configured).
+## Additional Resources
 
-## Security Checklist
-
-- ✅ SECRET_KEY set to random value
-- ✅ DATABASE_URL uses strong password
-- ✅ MAIL_PASSWORD stored as Coolify secret
-- ✅ SUMUP_API_KEY stored as Coolify secret
-- ✅ Redis not exposed to public internet
-- ✅ MySQL not exposed to public internet
-
-## Next Steps
-
-1. Deploy to Coolify using docker-compose.yml
-2. Verify all services are healthy
-3. Test background job: Sign up a new member (triggers email)
-4. Monitor worker logs to see job processing
-5. Scale workers based on load
-6. Set up monitoring alerts
+- [Coolify Documentation](https://coolify.io/docs)
+- [RQ Documentation](https://python-rq.org/)
+- [GHCR Documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+- [Flask Deployment Guide](https://flask.palletsprojects.com/en/stable/deploying/)
 
 ## Support
 
-For issues:
-- Check Coolify logs
-- Review worker logs
-- Inspect Redis queue
-- Check application logs
+For issues specific to this deployment setup:
+1. Check Coolify service logs
+2. Review GitHub Actions workflow logs
+3. Verify environment variables
+4. Check GHCR image availability
+5. Test connectivity between services
 
-Common log locations in Coolify:
-- Web: `/var/log/coolify/web/`
-- Worker: `/var/log/coolify/worker/`
-- Redis: `/var/log/coolify/redis/`
+For application issues:
+- Review application logs in Coolify
+- Check test coverage: `make test`
+- Run locally: `make dev`

@@ -43,48 +43,47 @@ make worker-dev
 make dev
 ```
 
-### Docker Compose
-
-```bash
-# Start all services (web, worker, redis, db)
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
+Visit http://localhost:5000
 
 ## Deployment
 
-### Coolify (Recommended)
+### Coolify with GitHub Actions + GHCR (Recommended)
 
-Full deployment guide: [docs/COOLIFY_DEPLOYMENT.md](docs/COOLIFY_DEPLOYMENT.md)
+Images are automatically built and pushed to GitHub Container Registry (GHCR) on every push to main.
+
+**Full deployment guide**: [docs/COOLIFY_DEPLOYMENT.md](docs/COOLIFY_DEPLOYMENT.md)
+
+**Quick Reference**: [COOLIFY_QUICK_DEPLOY.md](COOLIFY_QUICK_DEPLOY.md)
 
 **Quick Deploy:**
-1. Create new project in Coolify → Docker Compose
-2. Connect your GitHub repository
-3. Add environment variables (see `.env.example`)
-4. Deploy!
+1. Create 4 services in Coolify:
+   - MySQL Database (managed)
+   - Redis Database (managed)
+   - Web Application (Docker Image: `ghcr.io/mrailton/southeastarchers-web:latest`)
+   - Worker (Docker Image: `ghcr.io/mrailton/southeastarchers-worker:latest`)
+2. Add environment variables to each service (see `.env.example`)
+3. Configure webhook for auto-deploy
+4. Push to main → GitHub Actions builds → Coolify deploys!
 
-Coolify will automatically deploy:
-- Web application (Flask + Gunicorn)
-- Background workers (RQ)
-- Redis (job queue)
-- MySQL database (separate service)
+**What happens on deployment:**
+- GitHub Actions runs tests
+- Builds Docker images for web and worker
+- Pushes images to GHCR
+- Triggers Coolify webhook
+- Coolify pulls latest images and restarts services
 
 ### Manual Docker
 
 ```bash
-# Build image
-docker build -t sea-app .
+# Build images
+docker build -f Dockerfile.web -t sea-app .
+docker build -f Dockerfile.worker -t sea-worker .
 
 # Run web server
 docker run -p 5000:5000 --env-file .env sea-app
 
 # Run worker
-docker run --env-file .env sea-app uv run python worker.py
+docker run --env-file .env sea-worker
 ```
 
 ## Development Commands

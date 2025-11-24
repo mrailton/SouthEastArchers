@@ -1,54 +1,111 @@
-# Coolify Deployment Configuration
-# This file tells Coolify how to deploy your application
+# Coolify Service Configuration - Separate Services
+#
+# This file is for reference only when deploying as separate services in Coolify.
+# Each service should be configured individually in the Coolify dashboard.
+#
+# Images are built by GitHub Actions and stored in GHCR:
+#   - ghcr.io/mrailton/southeastarchers:latest (web)
+#   - ghcr.io/mrailton/southeastarchers-worker:latest (worker)
+#
+# Services to create in Coolify:
+# 1. Web Application (southeastarchers-web)
+#    - Type: Application → Docker Image
+#    - Image: ghcr.io/mrailton/southeastarchers:latest
+#    - Port: 5000
+#    - Domain: Configure in Coolify
+#
+# 2. Worker(s) (southeastarchers-worker)
+#    - Type: Application → Docker Image
+#    - Image: ghcr.io/mrailton/southeastarchers-worker:latest
+#    - Replicas: 2
+#    - No port needed
+#
+# 3. Redis (southeastarchers-redis)
+#    - Type: Database → Redis
+#    - Version: 7-alpine
+#    - Internal only
+#
+# 4. MySQL Database (southeastarchers-db)
+#    - Type: Database → MySQL
+#    - Version: 8.4
+#    - Internal only
+#
+# Environment Variables (set in Coolify for each service):
+# Web & Worker services need:
+#   - FLASK_ENV=production
+#   - DATABASE_URL=mysql+pymysql://user:pass@<db-internal-host>:3306/dbname
+#   - SECRET_KEY=<random-32-chars>
+#   - REDIS_URL=redis://<redis-internal-host>:6379/0
+#   - MAIL_SERVER, MAIL_PORT, MAIL_USE_TLS, MAIL_USERNAME, MAIL_PASSWORD
+#   - MAIL_DEFAULT_SENDER
+#   - SUMUP_API_KEY, SUMUP_MERCHANT_CODE
+#
+# Deployment:
+# 1. Push to main branch
+# 2. GitHub Actions builds & pushes images to GHCR
+# 3. Coolify webhook triggers service updates
+# 4. Services pull new images and restart
 
-# Service definitions
 services:
-  - name: web
-    type: dockerfile
-    dockerfile: Dockerfile
-    port: 5000
+  # Web Application Service
+  web:
+    image: ghcr.io/mrailton/southeastarchers:latest
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
     environment:
-      FLASK_ENV: production
-      REDIS_URL: redis://redis:6379/0
-    healthcheck:
-      path: /
+      - FLASK_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - REDIS_URL=${REDIS_URL}
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USE_TLS=${MAIL_USE_TLS}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+      - SUMUP_API_KEY=${SUMUP_API_KEY}
+      - SUMUP_MERCHANT_CODE=${SUMUP_MERCHANT_CODE}
+    healthCheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
       interval: 30s
       timeout: 10s
       retries: 3
-    
-  - name: worker
-    type: dockerfile
-    dockerfile: Dockerfile
-    command: ["uv", "run", "python", "worker.py"]
+      startPeriod: 40s
+    deploy:
+      replicas: 1
+  
+  # Worker Service (for background jobs)
+  worker:
+    image: ghcr.io/mrailton/southeastarchers-worker:latest
+    restart: unless-stopped
     environment:
-      FLASK_ENV: production
-      REDIS_URL: redis://redis:6379/0
-    # No healthcheck for worker
-    
-  - name: redis
-    type: image
+      - FLASK_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - REDIS_URL=${REDIS_URL}
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USE_TLS=${MAIL_USE_TLS}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+    deploy:
+      replicas: 2
+  
+  # Redis Service
+  redis:
     image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
     volumes:
       - redis_data:/data
-    healthcheck:
-      command: redis-cli ping
+    healthCheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 3
 
-# Persistent volumes
 volumes:
-  - redis_data
-
-# Build arguments
-build:
-  args: {}
-
-# Deployment strategy
-deploy:
-  replicas:
-    web: 1
-    worker: 2  # Run 2 worker instances
-    redis: 1
-  
-  restart_policy: unless-stopped
+  redis_data:

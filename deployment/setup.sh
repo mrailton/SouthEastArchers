@@ -6,6 +6,17 @@ set -e
 echo "🚀 Setting up Docker Compose + Traefik deployment"
 echo ""
 
+# Check if logged into GHCR
+if ! docker login ghcr.io --password-stdin < /dev/null 2>&1 | grep -q "Login Succeeded"; then
+    if [ ! -f ~/.docker/config.json ] || ! grep -q "ghcr.io" ~/.docker/config.json; then
+        echo "❌ Not logged into GitHub Container Registry (GHCR)"
+        echo ""
+        echo "Run this first: ./login-ghcr.sh"
+        echo ""
+        exit 1
+    fi
+fi
+
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
     echo "❌ Docker is not installed. Please install Docker first."

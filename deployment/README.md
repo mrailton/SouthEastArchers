@@ -51,7 +51,12 @@ cd /opt
 git clone https://github.com/mrailton/SouthEastArchers.git
 cd SouthEastArchers/deployment
 
-# Copy and edit environment file
+# Login to GHCR (GitHub Container Registry)
+chmod +x login-ghcr.sh
+./login-ghcr.sh
+# Enter your GitHub username and Personal Access Token
+
+# Configure
 cp .env.example .env
 nano .env
 ```

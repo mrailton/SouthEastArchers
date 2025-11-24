@@ -8,6 +8,8 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from redis import Redis
+from rq import Queue
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -15,6 +17,8 @@ mail = Mail()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
 assets = None
+redis_client = None
+task_queue = None
 
 
 def create_app(config_name="development"):
@@ -67,6 +71,21 @@ def create_app(config_name="development"):
     login_manager.login_view = "auth.login"
     login_manager.login_message = "Please log in to access this page."
     login_manager.login_message_category = "warning"
+
+    # Initialize Redis and RQ for background jobs
+    global redis_client, task_queue
+    try:
+        redis_client = Redis.from_url(
+            app.config.get("REDIS_URL", "redis://localhost:6379/0")
+        )
+        task_queue = Queue(connection=redis_client, default_timeout=600)
+        app.logger.info("Redis connection established for background jobs")
+    except Exception as e:
+        app.logger.warning(
+            f"Redis connection failed: {str(e)}. Background jobs disabled."
+        )
+        redis_client = None
+        task_queue = None
 
     @login_manager.user_loader
     def load_user(user_id):

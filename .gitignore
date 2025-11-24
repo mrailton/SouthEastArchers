@@ -65,3 +65,10 @@ docker-compose.override.yml
 
 # Node modules
 node_modules/
+
+# Logs
+logs/
+*.log
+
+# Coolify
+.coolify/

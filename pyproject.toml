@@ -24,6 +24,8 @@ dependencies = [
     "gunicorn==23.0.0",
     "whitenoise==6.8.2",
     "sumup==0.0.13",
+    "redis==5.2.1",
+    "rq==2.0.0",
 ]
 
 [dependency-groups]

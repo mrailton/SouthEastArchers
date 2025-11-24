@@ -4,14 +4,38 @@ from datetime import date, timedelta
 
 from flask import current_app, flash, redirect, session, url_for
 
-from app import db
+from app import db, task_queue
 from app.models import Credit, Membership, Payment, User
-from app.utils.email import send_payment_receipt
 from app.utils.session import clear_session_keys
 
 
 class PaymentProcessingService:
     """Service for processing different types of payments"""
+
+    @staticmethod
+    def queue_payment_receipt(user_id, payment_id):
+        """Queue background job to send payment receipt email"""
+        if task_queue:
+            from app.services.background_jobs import send_payment_receipt_job
+
+            try:
+                task_queue.enqueue(send_payment_receipt_job, user_id, payment_id)
+                current_app.logger.info(
+                    f"Queued payment receipt email for user {user_id}, payment {payment_id}"
+                )
+            except Exception as e:
+                current_app.logger.error(f"Failed to queue receipt email: {str(e)}")
+        else:
+            # Fallback to synchronous email if Redis is not available
+            from app.utils.email import send_payment_receipt
+
+            try:
+                user = db.session.get(User, user_id)
+                payment = db.session.get(Payment, payment_id)
+                if user and payment:
+                    send_payment_receipt(user, payment, user.membership)
+            except Exception as e:
+                current_app.logger.error(f"Failed to send receipt email: {str(e)}")
 
     @staticmethod
     def validate_card_details(card_number, card_name, expiry_month, expiry_year, cvv):
@@ -34,11 +58,8 @@ class PaymentProcessingService:
             user.membership.activate()
         db.session.commit()
 
-        # Send payment receipt email
-        try:
-            send_payment_receipt(user, payment, user.membership)
-        except Exception as e:
-            current_app.logger.error(f"Failed to send receipt email: {str(e)}")
+        # Queue payment receipt email as background job
+        PaymentProcessingService.queue_payment_receipt(user.id, payment.id)
 
         clear_session_keys(
             "signup_user_id",
@@ -80,11 +101,8 @@ class PaymentProcessingService:
 
         db.session.commit()
 
-        # Send payment receipt
-        try:
-            send_payment_receipt(user, payment, user.membership)
-        except Exception as e:
-            current_app.logger.error(f"Failed to send receipt email: {str(e)}")
+        # Queue payment receipt email as background job
+        PaymentProcessingService.queue_payment_receipt(user.id, payment.id)
 
         clear_session_keys(
             "membership_renewal_user_id",

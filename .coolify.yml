@@ -1,0 +1,54 @@
+# Coolify Deployment Configuration
+# This file tells Coolify how to deploy your application
+
+# Service definitions
+services:
+  - name: web
+    type: dockerfile
+    dockerfile: Dockerfile
+    port: 5000
+    environment:
+      FLASK_ENV: production
+      REDIS_URL: redis://redis:6379/0
+    healthcheck:
+      path: /
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+  - name: worker
+    type: dockerfile
+    dockerfile: Dockerfile
+    command: ["uv", "run", "python", "worker.py"]
+    environment:
+      FLASK_ENV: production
+      REDIS_URL: redis://redis:6379/0
+    # No healthcheck for worker
+    
+  - name: redis
+    type: image
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      command: redis-cli ping
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+# Persistent volumes
+volumes:
+  - redis_data
+
+# Build arguments
+build:
+  args: {}
+
+# Deployment strategy
+deploy:
+  replicas:
+    web: 1
+    worker: 2  # Run 2 worker instances
+    redis: 1
+  
+  restart_policy: unless-stopped

@@ -24,6 +24,10 @@ help:
 	@echo "  make test-cov         Run tests with coverage report"
 	@echo "  make test-parallel    Run tests in parallel"
 	@echo ""
+	@echo "Background Jobs:"
+	@echo "  make worker           Start RQ worker for background jobs"
+	@echo "  make worker-dev       Start RQ worker with auto-reload"
+	@echo ""
 	@echo "Code Quality:"
 	@echo "  make format           Format code with black and isort"
 	@echo "  make format-check     Check formatting and code quality"
@@ -75,6 +79,14 @@ test-cov:
 
 test-parallel:
 	uv run pytest -n auto
+
+# Background Jobs
+worker:
+	uv run python worker.py
+
+worker-dev:
+	@echo "Starting RQ worker with auto-reload..."
+	@watchmedo auto-restart --directory=./app --pattern=*.py --recursive -- uv run python worker.py
 
 # Code Quality
 format:

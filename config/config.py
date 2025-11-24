@@ -52,6 +52,10 @@ class Config:
     MEMBERSHIP_NIGHTS_INCLUDED = 20
     ADDITIONAL_NIGHT_COST = 5  # EUR per night
 
+    # Redis & Background Jobs
+    REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    RQ_REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
 
 class DevelopmentConfig(Config):
     """Development configuration"""

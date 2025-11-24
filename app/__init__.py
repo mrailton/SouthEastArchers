@@ -1,8 +1,12 @@
 import logging
 import os
+import warnings
 from logging.handlers import RotatingFileHandler
 
 from flask import Flask
+
+# Suppress SyntaxWarning from sumup library (incompatible with Python 3.14)
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="sumup")
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from flask_mail import Mail

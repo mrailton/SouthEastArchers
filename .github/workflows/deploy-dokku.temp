@@ -1,0 +1,37 @@
+name: Deploy to Dokku
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Deploy to Dokku via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DOKKU_HOST }}
+          username: dokku
+          key: ${{ secrets.DOKKU_SSH_KEY }}
+          script: |
+            # Pull and deploy latest images from GHCR
+            docker pull ghcr.io/mrailton/southeastarchers:latest
+            docker pull ghcr.io/mrailton/southeastarchers-worker:latest
+            
+            # Deploy web app
+            dokku git:from-image sea-web ghcr.io/mrailton/southeastarchers:latest
+            
+            # Deploy worker app
+            dokku git:from-image sea-worker ghcr.io/mrailton/southeastarchers-worker:latest
+            
+            # Ensure workers are scaled
+            dokku ps:scale sea-worker worker=2
+            
+            echo "✅ Deployment complete!"

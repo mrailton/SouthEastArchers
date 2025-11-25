@@ -33,8 +33,10 @@ services:
       - "traefik.http.services.sea-web.loadbalancer.server.port=5000"
       - "traefik.docker.network=traefik"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   worker:
     image: ghcr.io/mrailton/southeastarchers-worker:latest
@@ -82,6 +84,12 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     command: --mysql-native-password=ON
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   watchtower:
     image: containrrr/watchtower

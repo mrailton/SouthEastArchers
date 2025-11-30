@@ -53,6 +53,7 @@ dev:
 	@echo "Starting development servers..."
 	@trap 'kill 0' INT; \
 	npm run dev & \
+	watchmedo auto-restart --directory=./app --pattern=*.py --recursive -- uv run python worker.py & \
 	uv run flask run --debug
 
 run:

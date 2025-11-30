@@ -3,7 +3,7 @@ name: Build and Push to GHCR
 on:
   push:
     branches:
-      - '**'
+      - "**"
   pull_request:
     branches:
       - main
@@ -20,40 +20,40 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
           version: "latest"
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
-      
+          python-version: "3.14"
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      
+          node-version: "20"
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc default-libmysqlclient-dev pkg-config make
-      
+
       - name: Install dependencies
         run: make install
-      
+
       - name: Check code quality and formatting
         run: make format-check
-      
+
       - name: Build assets
         run: make build
-      
+
       - name: Run tests with coverage
         run: make test-parallel
 
@@ -64,18 +64,18 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Extract metadata for Web
         id: meta
         uses: docker/metadata-action@v5
@@ -88,10 +88,10 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Build and push Web Docker image
         uses: docker/build-push-action@v5
         with:
@@ -103,7 +103,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
+
       - name: Extract metadata for Worker
         id: meta-worker
         uses: docker/metadata-action@v5
@@ -116,7 +116,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
-      
+
       - name: Build and push Worker Docker image
         uses: docker/build-push-action@v5
         with:
@@ -128,7 +128,7 @@ jobs:
           labels: ${{ steps.meta-worker.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-    
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -136,20 +136,22 @@ jobs:
     steps:
       - name: Deploy Web to Dokploy
         run: |
-          curl --request POST \
-            --url ${{ secrets.DOKPLOY_URL }}/api/application.deploy \
-            --header 'Authorization: Bearer ${{ secrets.DOKPLOY_TOKEN }}' \
-            --header 'Content-Type: application/json' \
-            --data '{
+          curl -X POST \
+            ${{ secrets.DOKPLOY_URL }}/api/application.deploy \
+            -H 'accept: application/json' \
+            -H 'x-api-key ${{ secrets.DOKPLOY_TOKEN }}' \
+            -H 'Content-Type: application/json' \
+            -d '{
               "applicationId": "${{ secrets.DOKPLOY_WEB_APP_ID }}"
             }'
-      
+
       - name: Deploy Worker to Dokploy
         run: |
-          curl --request POST \
-            --url ${{ secrets.DOKPLOY_URL }}/api/application.deploy \
-            --header 'Authorization: Bearer ${{ secrets.DOKPLOY_TOKEN }}' \
-            --header 'Content-Type: application/json' \
-            --data '{
+          curl -X POST \
+            ${{ secrets.DOKPLOY_URL }}/api/application.deploy \
+            -H 'accept: application/json' \
+            -H 'x-api-key ${{ secrets.DOKPLOY_TOKEN }}' \
+            -H 'Content-Type: application/json' \
+            -d '{
               "applicationId": "${{ secrets.DOKPLOY_WORKER_APP_ID }}"
             }'

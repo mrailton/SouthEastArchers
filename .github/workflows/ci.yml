@@ -139,7 +139,7 @@ jobs:
           curl -X POST \
             ${{ secrets.DOKPLOY_URL }}/api/application.deploy \
             -H 'accept: application/json' \
-            -H 'x-api-key ${{ secrets.DOKPLOY_TOKEN }}' \
+            -H 'x-api-key: ${{ secrets.DOKPLOY_TOKEN }}' \
             -H 'Content-Type: application/json' \
             -d '{
               "applicationId": "${{ secrets.DOKPLOY_WEB_APP_ID }}"
@@ -150,7 +150,7 @@ jobs:
           curl -X POST \
             ${{ secrets.DOKPLOY_URL }}/api/application.deploy \
             -H 'accept: application/json' \
-            -H 'x-api-key ${{ secrets.DOKPLOY_TOKEN }}' \
+            -H 'x-api-key: ${{ secrets.DOKPLOY_TOKEN }}' \
             -H 'Content-Type: application/json' \
             -d '{
               "applicationId": "${{ secrets.DOKPLOY_WORKER_APP_ID }}"

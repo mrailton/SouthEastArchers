@@ -1,4 +1,4 @@
-name: Build and Push to GHCR
+name: Build and Push to DockerHub
 
 on:
   push:
@@ -14,8 +14,7 @@ permissions:
   packages: write
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/southeastarchers
+  DOCKERHUB_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/southeastarchers
 
 jobs:
   test:
@@ -69,21 +68,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Log in to GitHub Container Registry
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       
-      - name: Extract metadata
+      - name: Extract metadata for Web
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web
+          images: ${{ env.DOCKERHUB_IMAGE_NAME }}-web
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
@@ -108,10 +105,9 @@ jobs:
         id: meta-worker
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-worker
+          images: ${{ env.DOCKERHUB_IMAGE_NAME }}-worker
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
@@ -134,16 +130,12 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: Deploy Web to Dokploy
+      - name: Trigger Dokploy Webhook - Web
         if: success()
         run: |
-          curl -X POST "${{ secrets.DOKPLOY_WEB_WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d '{"image": "ghcr.io/mrailton/southeastarchers-web:latest"}'
+          curl -X POST "${{ secrets.DOKPLOY_WEB_WEBHOOK_URL }}"
       
-      - name: Deploy Worker to Dokploy
+      - name: Trigger Dokploy Webhook - Worker
         if: success()
         run: |
-          curl -X POST "${{ secrets.DOKPLOY_WORKER_WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d '{"image": "ghcr.io/mrailton/southeastarchers-worker:latest"}'
+          curl -X POST "${{ secrets.DOKPLOY_WORKER_WEBHOOK_URL }}"

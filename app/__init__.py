@@ -83,7 +83,6 @@ def create_app(config_name="development"):
             app.config.get("REDIS_URL", "redis://localhost:6379/0")
         )
         task_queue = Queue(connection=redis_client, default_timeout=600)
-        app.logger.info("Redis connection established for background jobs")
     except Exception as e:
         app.logger.warning(
             f"Redis connection failed: {str(e)}. Background jobs disabled."

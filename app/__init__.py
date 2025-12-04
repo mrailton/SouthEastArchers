@@ -44,14 +44,17 @@ def create_app(config_name="development"):
         # File handler
         if not os.path.exists("logs"):
             os.mkdir("logs")
+
         file_handler = RotatingFileHandler(
             "logs/app.log", maxBytes=10240000, backupCount=10
         )
+
         file_handler.setFormatter(
             logging.Formatter(
                 "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
             )
         )
+
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
 
@@ -62,6 +65,7 @@ def create_app(config_name="development"):
             "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
         )
     )
+
     stream_handler.setLevel(logging.INFO)
     app.logger.addHandler(stream_handler)
     app.logger.setLevel(logging.INFO)
@@ -71,6 +75,7 @@ def create_app(config_name="development"):
     migrate.init_app(app, db)
     mail.init_app(app)
     bcrypt.init_app(app)
+
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
     login_manager.login_message = "Please log in to access this page."
@@ -78,15 +83,18 @@ def create_app(config_name="development"):
 
     # Initialize Redis and RQ for background jobs
     global redis_client, task_queue
+
     try:
         redis_client = Redis.from_url(
             app.config.get("REDIS_URL", "redis://localhost:6379/0")
         )
+
         task_queue = Queue(connection=redis_client, default_timeout=600)
     except Exception as e:
         app.logger.warning(
             f"Redis connection failed: {str(e)}. Background jobs disabled."
         )
+
         redis_client = None
         task_queue = None
 
@@ -129,6 +137,7 @@ def create_app(config_name="development"):
                     file_path = os.path.join(app.static_folder, filename)
                     if os.path.exists(file_path):
                         values["v"] = int(os.stat(file_path).st_mtime)
+
             return flask_url_for(endpoint, **values)
 
         return dict(url_for=dated_url_for)

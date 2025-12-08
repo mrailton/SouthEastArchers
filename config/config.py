@@ -31,18 +31,11 @@ class Config:
     # Email
     MAIL_SERVER = os.environ.get("MAIL_SERVER", "localhost")
     MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
-    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "True").lower() in (
-        "true",
-        "1",
-        "yes",
-        "on",
-    )
-    MAIL_USE_SSL = os.environ.get("MAIL_USE_SSL", "False").lower() in (
-        "true",
-        "1",
-        "yes",
-        "on",
-    )
+    # Force proper boolean conversion for TLS/SSL settings
+    mail_use_tls = os.environ.get("MAIL_USE_TLS", "True")
+    MAIL_USE_TLS = mail_use_tls.lower() in ("true", "1", "yes", "on") if isinstance(mail_use_tls, str) else bool(mail_use_tls)
+    mail_use_ssl = os.environ.get("MAIL_USE_SSL", "False")
+    MAIL_USE_SSL = mail_use_ssl.lower() in ("true", "1", "yes", "on") if isinstance(mail_use_ssl, str) else bool(mail_use_ssl)
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = os.environ.get(

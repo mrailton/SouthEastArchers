@@ -20,6 +20,10 @@ def main():
     # Get Redis URL from environment
     redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
+    # Debug: Print mail configuration
+    print(f"MAIL_USE_TLS environment variable: {os.environ.get('MAIL_USE_TLS')}")
+    print(f"MAIL_USE_SSL environment variable: {os.environ.get('MAIL_USE_SSL')}")
+    
     # Connect to Redis
     redis_conn = Redis.from_url(redis_url)
 

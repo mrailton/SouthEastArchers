@@ -328,7 +328,7 @@ Periodically clean up:
 1. **Check logs first** - Most issues show up in logs
 2. **Review this guide** - Common solutions documented
 3. **Dokploy Documentation** - https://docs.dokploy.com/
-4. **Main Docker README** - [docker/README.md](README.md)
+4. **Main Docker README** - [../docker/README.md](../docker/README.md)
 5. **GitHub Issues** - Report bugs or ask questions
 
 ## Next Steps

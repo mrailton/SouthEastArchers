@@ -3,10 +3,14 @@
 
 import os
 import sys
+import warnings
 from datetime import date, datetime, timedelta
 
 import click
 from dotenv import load_dotenv
+
+# Suppress SyntaxWarning from third-party libraries (e.g., sumup package)
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 # Load environment variables from .env file
 load_dotenv()

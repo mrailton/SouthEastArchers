@@ -269,9 +269,9 @@ docker-compose logs -f web
 
 ## Questions?
 
-- **Docker Compose issues?** See `docker/README.md`
-- **Dokploy deployment?** See `DOKPLOY_DEPLOYMENT.md`
-- **General questions?** See main `README.md`
+- **Docker Compose issues?** See [../docker/README.md](../docker/README.md)
+- **Dokploy deployment?** See [DOKPLOY_DEPLOYMENT.md](DOKPLOY_DEPLOYMENT.md)
+- **General questions?** See main [../README.md](../README.md)
 
 ---
 

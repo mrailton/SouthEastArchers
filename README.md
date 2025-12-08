@@ -100,7 +100,7 @@ Dokploy will automatically:
 - Push to `main` → GitHub Actions builds images → Pushes to GHCR → Dokploy pulls latest
 - Images: `ghcr.io/mrailton/southeastarchers-web:latest` and `southeastarchers-worker:latest`
 
-**Detailed Guide**: See [DOKPLOY_DEPLOYMENT.md](DOKPLOY_DEPLOYMENT.md) for comprehensive deployment documentation.
+**Detailed Guide**: See [docs/DOKPLOY_DEPLOYMENT.md](docs/DOKPLOY_DEPLOYMENT.md) for comprehensive deployment documentation.
 
 ### Alternative: GitHub Actions + GHCR (Legacy)
 
@@ -156,8 +156,10 @@ make format-check     # Check code quality
 ## Documentation
 
 - [Docker Setup Guide](docker/README.md) - Comprehensive Docker Compose documentation
+- [Dokploy Deployment Guide](docs/DOKPLOY_DEPLOYMENT.md) - Step-by-step deployment to Dokploy
+- [GHCR Integration Guide](docs/GHCR_INTEGRATION.md) - Using GitHub Container Registry
+- [Docker Migration Notes](docs/DOCKER_MIGRATION.md) - What changed in the Docker setup
 - [Background Jobs Guide](docs/BACKGROUND_JOBS.md) - Redis & RQ setup
-- [Coolify Deployment](docs/COOLIFY_DEPLOYMENT.md) - Legacy deployment guide
 
 ## License
 

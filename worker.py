@@ -3,6 +3,10 @@
 
 import os
 import sys
+import warnings
+
+# Suppress SyntaxWarning from third-party libraries (e.g., sumup package)
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 from redis import Redis
 from rq import Worker

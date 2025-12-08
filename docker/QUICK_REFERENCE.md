@@ -178,7 +178,7 @@ Optional:
 
 ## Further Reading
 
-- **Detailed Docker Guide**: [docker/README.md](docker/README.md)
-- **Dokploy Deployment**: [DOKPLOY_DEPLOYMENT.md](../DOKPLOY_DEPLOYMENT.md)
-- **Migration Notes**: [DOCKER_MIGRATION.md](../DOCKER_MIGRATION.md)
-- **Main README**: [README.md](../README.md)
+- **Detailed Docker Guide**: [README.md](README.md)
+- **Dokploy Deployment**: [../docs/DOKPLOY_DEPLOYMENT.md](../docs/DOKPLOY_DEPLOYMENT.md)
+- **Migration Notes**: [../docs/DOCKER_MIGRATION.md](../docs/DOCKER_MIGRATION.md)
+- **Main README**: [../README.md](../README.md)

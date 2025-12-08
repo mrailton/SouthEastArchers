@@ -316,9 +316,9 @@ docker-compose -f docker-compose.build.yml up -d --build
 ## Support
 
 - **GHCR Issues:** [GitHub Packages Docs](https://docs.github.com/en/packages)
-- **Docker Compose:** [docker/README.md](docker/README.md)
+- **Docker Compose:** [../docker/README.md](../docker/README.md)
 - **Dokploy Setup:** [DOKPLOY_DEPLOYMENT.md](DOKPLOY_DEPLOYMENT.md)
-- **General:** [README.md](README.md)
+- **General:** [../README.md](../README.md)
 
 ---
 

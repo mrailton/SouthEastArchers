@@ -1,5 +1,5 @@
-from datetime import date, timedelta
 import uuid
+from datetime import date, timedelta
 
 from flask import (
     Blueprint,

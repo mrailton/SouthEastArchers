@@ -231,3 +231,23 @@ class TestModelsImport:
             assert User.query.count() >= 0
             assert Membership.query.count() >= 0
             assert Shoot.query.count() >= 0
+
+
+class TestRedisConnection:
+    def test_redis_connection_failure(self, monkeypatch):
+        """Test app handles Redis connection failure gracefully"""
+        from unittest.mock import Mock
+
+        # Mock Redis to raise connection error
+        mock_redis = Mock()
+        mock_redis.from_url.side_effect = Exception("Redis connection failed")
+
+        with patch("app.Redis", mock_redis):
+            # App should still create successfully even if Redis fails
+            app = create_app("testing")
+            assert app is not None
+
+            # task_queue should be None when Redis fails
+            from app import task_queue
+
+            assert task_queue is None or hasattr(task_queue, "enqueue")

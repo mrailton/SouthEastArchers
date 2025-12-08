@@ -181,3 +181,32 @@ class TestPasswordReset:
         # This is actually expected behavior - tokens don't invalidate after use
         # unless you implement additional tracking
         assert response.status_code == 200
+
+    def test_forgot_password_email_send_exception(self, app, client, test_user):
+        """Test forgot password when email sending raises exception"""
+        from unittest.mock import patch
+
+        # Mock send_password_reset_email to raise an exception
+        with patch("app.utils.email.send_password_reset_email", side_effect=Exception("Email server error")):
+            response = client.post(
+                "/auth/forgot-password",
+                data={"email": test_user.email},
+                follow_redirects=False,
+            )
+
+            # Should return to forgot password page with error message
+            assert response.status_code == 200
+            assert b"error" in response.data.lower()
+
+    def test_reset_password_invalid_token_redirect(self, app, client):
+        """Test reset password with invalid token redirects properly"""
+        response = client.post(
+            "/auth/reset-password/invalid-bad-token",
+            data={"password": "NewPassword123!", "password_confirm": "NewPassword123!"},
+            follow_redirects=True,
+        )
+
+        # Should redirect to forgot password page
+        assert response.status_code == 200
+        # Should show error message
+        assert b"Invalid" in response.data or b"expired" in response.data

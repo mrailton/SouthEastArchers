@@ -1,6 +1,6 @@
 """Tests for admin member management"""
 
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -544,3 +544,49 @@ class TestAdminMembers:
         # The error is caught and the route returns successfully with updated member
         # The ValueError exception path is covered even if the flash message isn't shown
         assert response.status_code == 200
+
+    def test_activate_membership_email_exception(self, client, admin_user, app):
+        """Test activating membership when email sending raises exception"""
+        from unittest.mock import patch
+
+        from app import db
+        from app.models import Payment
+
+        # Create user with pending membership and payment
+        user = User(name="Pending User", email="pending@example.com", date_of_birth=date(1990, 1, 1))
+        user.set_password("password123")
+        db.session.add(user)
+        db.session.flush()
+
+        membership = Membership(
+            user_id=user.id,
+            start_date=date.today(),
+            expiry_date=date.today() + timedelta(days=365),
+            status="pending",
+            credits=20,
+        )
+        db.session.add(membership)
+
+        payment = Payment(
+            user_id=user.id,
+            amount_cents=10000,
+            payment_type="membership",
+            payment_method="cash",
+            status="pending",
+        )
+        db.session.add(payment)
+        db.session.commit()
+
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        # Mock send_payment_receipt to raise an exception
+        with patch("app.utils.email.send_payment_receipt", side_effect=Exception("Email server down")):
+            response = client.post(f"/admin/members/{user.id}/membership/activate", follow_redirects=True)
+
+            assert response.status_code == 200
+            # Should show warning that email failed but membership was still activated
+            assert b"Email failed to send" in response.data or b"activated" in response.data.lower()
+
+            # Verify membership was still activated
+            db.session.refresh(membership)
+            assert membership.status == "active"

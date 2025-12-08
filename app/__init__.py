@@ -81,11 +81,15 @@ def create_app(config_name=None):
     bcrypt.init_app(app)
 
     # Debug: Log mail configuration
-    app.logger.info(f"Mail Configuration:")
+    app.logger.info("Mail Configuration")
     app.logger.info(f"  MAIL_SERVER: {app.config.get('MAIL_SERVER')}")
     app.logger.info(f"  MAIL_PORT: {app.config.get('MAIL_PORT')}")
-    app.logger.info(f"  MAIL_USE_TLS: {app.config.get('MAIL_USE_TLS')} (type: {type(app.config.get('MAIL_USE_TLS'))})")
-    app.logger.info(f"  MAIL_USE_SSL: {app.config.get('MAIL_USE_SSL')} (type: {type(app.config.get('MAIL_USE_SSL'))})")
+    app.logger.info(
+        f"  MAIL_USE_TLS: {app.config.get('MAIL_USE_TLS')} (type: {type(app.config.get('MAIL_USE_TLS'))})"
+    )
+    app.logger.info(
+        f"  MAIL_USE_SSL: {app.config.get('MAIL_USE_SSL')} (type: {type(app.config.get('MAIL_USE_SSL'))})"
+    )
     app.logger.info(f"  MAIL_USERNAME: {app.config.get('MAIL_USERNAME')}")
 
     login_manager.init_app(app)

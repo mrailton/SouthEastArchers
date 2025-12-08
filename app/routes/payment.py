@@ -10,7 +10,6 @@ from flask import (
 )
 from flask_login import current_user, login_required
 
-from app import db
 from app.models import Payment
 from app.services import PaymentProcessingService, PaymentService
 from app.utils.session import get_user_id_from_session
@@ -95,46 +94,18 @@ def process_checkout(checkout_id):
         flash("An error occurred processing your payment. Please try again.", "error")
         return redirect(url_for("payment.show_checkout", checkout_id=checkout_id))
 
-        return redirect(url_for("payment.show_checkout", checkout_id=checkout_id))
-
 
 @bp.route("/membership", methods=["GET", "POST"])
 @login_required
 def membership_payment():
     if request.method == "POST":
-        user = current_user
-        amount_cents = current_app.config["ANNUAL_MEMBERSHIP_COST"]
-
-        payment = Payment(
-            user_id=user.id,
-            amount_cents=amount_cents,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            description=f"Annual Membership - {user.name}",
-            status="pending",
-        )
-        db.session.add(payment)
-        db.session.commit()
-
         payment_service = PaymentService()
+        result = payment_service.initiate_membership_payment(current_user)
 
-        checkout = payment_service.create_checkout(
-            amount_cents=amount_cents,
-            description=f"Annual Membership - {user.name}",
-        )
-
-        if checkout:
-            session["membership_renewal_user_id"] = user.id
-            session["membership_renewal_payment_id"] = payment.id
-            session["checkout_amount"] = float(amount_cents / 100.0)
-            session["checkout_description"] = f"Annual Membership - {user.name}"
-
-            return redirect(url_for("payment.show_checkout", checkout_id=checkout.get("id")))
+        if result.get("success"):
+            return redirect(url_for("payment.show_checkout", checkout_id=result["checkout_id"]))
         else:
-            flash("Error creating payment. Please try again.", "error")
-            db.session.delete(payment)
-            db.session.commit()
+            flash(result.get("error", "Error creating payment."), "error")
 
     return render_template("payment/membership.html")
 
@@ -143,45 +114,14 @@ def membership_payment():
 @login_required
 def credits():
     if request.method == "POST":
-        user = current_user
         quantity = int(request.form.get("quantity", 1))
-        amount_cents = quantity * current_app.config["ADDITIONAL_NIGHT_COST"]
-
-        # Create payment record
-        payment = Payment(
-            user_id=user.id,
-            amount_cents=amount_cents,
-            currency="EUR",
-            payment_type="credits",
-            payment_method="online",
-            description=f"{quantity} shooting credits",
-            status="pending",
-        )
-        db.session.add(payment)
-        db.session.commit()
-
-        # Create payment checkout
         payment_service = PaymentService()
+        result = payment_service.initiate_credit_purchase(current_user, quantity)
 
-        checkout = payment_service.create_checkout(
-            amount_cents=amount_cents,
-            description=f"{quantity} credits - {user.name}",
-        )
-
-        if checkout:
-            # Store info in session for payment processing
-            session["credit_purchase_user_id"] = user.id
-            session["credit_purchase_payment_id"] = payment.id
-            session["credit_purchase_quantity"] = quantity
-            session["checkout_amount"] = float(amount_cents / 100.0)
-            session["checkout_description"] = f"{quantity} credits - {user.name}"
-
-            # Redirect to custom payment form
-            return redirect(url_for("payment.show_checkout", checkout_id=checkout.get("id")))
+        if result.get("success"):
+            return redirect(url_for("payment.show_checkout", checkout_id=result["checkout_id"]))
         else:
-            flash("Error creating payment. Please try again.", "error")
-            db.session.delete(payment)
-            db.session.commit()
+            flash(result.get("error", "Error creating payment."), "error")
 
     return render_template("payment/credits.html")
 

@@ -1,8 +1,7 @@
-from flask import flash, redirect, render_template, request, url_for
+from flask import abort, flash, redirect, render_template, request, url_for
 
-from app import db
 from app.forms.admin_forms import ShootForm
-from app.models import Shoot, User
+from app.services import ShootService
 
 from . import admin_required, bp
 
@@ -10,7 +9,7 @@ from . import admin_required, bp
 @bp.route("/shoots")
 @admin_required
 def shoots():
-    shoots = Shoot.query.order_by(Shoot.date.desc()).all()
+    shoots = ShootService.get_all_shoots()
     return render_template("admin/shoots.html", shoots=shoots)
 
 
@@ -18,32 +17,20 @@ def shoots():
 @admin_required
 def create_shoot():
     form = ShootForm()
-
-    active_members = User.query.filter_by(is_active=True).order_by(User.name).all()
-    form.attendees.choices = [
-        (u.id, f"{u.name} ({u.membership.credits_remaining()} credits)") for u in active_members if u.membership and u.membership.is_active()
-    ]
+    form.attendees.choices = ShootService.get_active_members_with_credits()
 
     if form.validate_on_submit():
-        shoot = Shoot(
-            date=form.date.data,
+        shoot, warnings = ShootService.create_shoot(
+            shoot_date=form.date.data,
             location=form.location.data,
             description=form.description.data,
+            attendee_ids=form.attendees.data,
         )
-        db.session.add(shoot)
-        db.session.flush()
 
-        attendee_ids = form.attendees.data
-        for user_id in attendee_ids:
-            user = db.session.get(User, user_id)
-            if user and user.membership:
-                if user.membership.use_credit():
-                    shoot.users.append(user)
-                else:
-                    flash(f"Warning: {user.name} has no credits remaining.", "warning")
+        for warning in warnings:
+            flash(f"Warning: {warning}", "warning")
 
-        db.session.commit()
-        flash(f"Shoot created with {len(attendee_ids)} attendees!", "success")
+        flash(f"Shoot created with {len(form.attendees.data)} attendees!", "success")
         return redirect(url_for("admin.shoots"))
 
     return render_template("admin/create_shoot.html", form=form)
@@ -52,45 +39,25 @@ def create_shoot():
 @bp.route("/shoots/<int:shoot_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_shoot(shoot_id):
-    shoot = db.session.get(Shoot, shoot_id)
+    shoot = ShootService.get_shoot_by_id(shoot_id)
     if not shoot:
-        from flask import abort
-
         abort(404)
 
     form = ShootForm()
-
-    active_members = User.query.filter_by(is_active=True).order_by(User.name).all()
-    form.attendees.choices = [
-        (u.id, f"{u.name} ({u.membership.credits_remaining()} credits)") for u in active_members if u.membership and u.membership.is_active()
-    ]
+    form.attendees.choices = ShootService.get_active_members_with_credits()
 
     if form.validate_on_submit():
-        old_attendee_ids = {u.id for u in shoot.users}
-        new_attendee_ids = set(form.attendees.data)
+        warnings = ShootService.update_shoot(
+            shoot=shoot,
+            shoot_date=form.date.data,
+            location=form.location.data,
+            description=form.description.data,
+            attendee_ids=form.attendees.data,
+        )
 
-        removed_ids = old_attendee_ids - new_attendee_ids
-        for user_id in removed_ids:
-            user = db.session.get(User, user_id)
-            if user and user.membership:
-                user.membership.add_credits(1)
+        for warning in warnings:
+            flash(f"Warning: {warning}", "warning")
 
-        added_ids = new_attendee_ids - old_attendee_ids
-        for user_id in added_ids:
-            user = db.session.get(User, user_id)
-            if user and user.membership:
-                if user.membership.use_credit():
-                    shoot.users.append(user)
-                else:
-                    flash(f"Warning: {user.name} has no credits remaining.", "warning")
-
-        shoot.users = [u for u in shoot.users if u.id in new_attendee_ids]
-
-        shoot.date = form.date.data
-        shoot.location = form.location.data
-        shoot.description = form.description.data
-
-        db.session.commit()
         flash("Shoot updated successfully!", "success")
         return redirect(url_for("admin.shoots"))
 

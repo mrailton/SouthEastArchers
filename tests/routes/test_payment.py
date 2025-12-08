@@ -513,8 +513,7 @@ class TestMembershipPayment:
     def test_membership_payment_post_success(self, mock_service_class, client, app, test_user):
         """Test successful membership payment creation"""
         mock_service = Mock()
-        mock_checkout = {"id": "checkout_abc", "status": "PENDING"}
-        mock_service.create_checkout.return_value = mock_checkout
+        mock_service.initiate_membership_payment.return_value = {"success": True, "checkout_id": "checkout_abc"}
         mock_service_class.return_value = mock_service
 
         with client:
@@ -532,7 +531,7 @@ class TestMembershipPayment:
     def test_membership_payment_checkout_failure(self, mock_service_class, client, app, test_user):
         """Test membership payment when checkout creation fails"""
         mock_service = Mock()
-        mock_service.create_checkout.return_value = None
+        mock_service.initiate_membership_payment.return_value = {"success": False, "error": "Error creating payment. Please try again."}
         mock_service_class.return_value = mock_service
 
         with client:
@@ -543,18 +542,10 @@ class TestMembershipPayment:
 
             app.config["ANNUAL_MEMBERSHIP_COST"] = 100.00
 
-            with app.app_context():
-                initial_payment_count = Payment.query.count()
-
             response = client.post("/payment/membership", follow_redirects=True)
 
             assert response.status_code == 200
             assert b"Error creating payment" in response.data
-
-            with app.app_context():
-                # Payment should be deleted after failure
-                final_payment_count = Payment.query.count()
-                assert final_payment_count == initial_payment_count
 
 
 class TestCreditsPurchase:
@@ -577,8 +568,7 @@ class TestCreditsPurchase:
     def test_credits_purchase_post_success(self, mock_service_class, client, app, test_user):
         """Test successful credit purchase"""
         mock_service = Mock()
-        mock_checkout = {"id": "checkout_credits", "status": "PENDING"}
-        mock_service.create_checkout.return_value = mock_checkout
+        mock_service.initiate_credit_purchase.return_value = {"success": True, "checkout_id": "checkout_credits"}
         mock_service_class.return_value = mock_service
 
         with client:
@@ -596,7 +586,7 @@ class TestCreditsPurchase:
     def test_credits_purchase_checkout_failure(self, mock_service_class, client, app, test_user):
         """Test credit purchase when checkout creation fails"""
         mock_service = Mock()
-        mock_service.create_checkout.return_value = None
+        mock_service.initiate_credit_purchase.return_value = {"success": False, "error": "Error creating payment. Please try again."}
         mock_service_class.return_value = mock_service
 
         with client:

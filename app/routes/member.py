@@ -1,9 +1,8 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
-from app import db
-from app.models import Credit, Membership, Payment, Shoot, User
-from app.utils.datetime_utils import utc_now
+from app.models import Credit, Shoot, User
+from app.services import UserService
 
 bp = Blueprint("member", __name__, url_prefix="/member")
 
@@ -53,13 +52,12 @@ def profile():
 @bp.route("/profile/update", methods=["POST"])
 @login_required
 def update_profile():
-    user = current_user
-
-    user.name = request.form.get("name", user.name)
-    user.phone = request.form.get("phone", user.phone)
-
-    db.session.commit()
-    flash("Profile updated successfully!", "success")
+    success, message = UserService.update_profile(
+        user=current_user,
+        name=request.form.get("name", current_user.name),
+        phone=request.form.get("phone", current_user.phone),
+    )
+    flash(message, "success" if success else "error")
     return redirect(url_for("member.profile"))
 
 
@@ -67,23 +65,23 @@ def update_profile():
 @login_required
 def change_password():
     if request.method == "POST":
-        user = current_user
-        current_password = request.form.get("current_password")
         new_password = request.form.get("new_password")
         confirm_password = request.form.get("confirm_password")
-
-        if not user.check_password(current_password):
-            flash("Current password is incorrect.", "error")
-            return render_template("member/change_password.html")
 
         if new_password != confirm_password:
             flash("New passwords do not match.", "error")
             return render_template("member/change_password.html")
 
-        user.set_password(new_password)
-        db.session.commit()
+        success, message = UserService.change_password(
+            user=current_user,
+            current_password=request.form.get("current_password"),
+            new_password=new_password,
+        )
 
-        flash("Password changed successfully!", "success")
-        return redirect(url_for("member.profile"))
+        if success:
+            flash(message, "success")
+            return redirect(url_for("member.profile"))
+        else:
+            flash(message, "error")
 
     return render_template("member/change_password.html")

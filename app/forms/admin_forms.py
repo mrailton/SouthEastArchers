@@ -1,7 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import (
     DateField,
-    IntegerField,
     SelectField,
     SelectMultipleField,
     StringField,
@@ -12,8 +11,6 @@ from wtforms.validators import DataRequired, Length, Optional
 
 
 class ShootForm(FlaskForm):
-    """Create/edit shoot form"""
-
     date = DateField("Date", validators=[DataRequired()])
     location = SelectField(
         "Location",
@@ -26,8 +23,6 @@ class ShootForm(FlaskForm):
 
 
 class NewsForm(FlaskForm):
-    """Create/edit news form"""
-
     title = StringField("Title", validators=[DataRequired(), Length(min=5)])
     summary = StringField("Summary", validators=[Optional()])
     content = TextAreaField("Content", validators=[DataRequired(), Length(min=20)])
@@ -35,8 +30,6 @@ class NewsForm(FlaskForm):
 
 
 class EventForm(FlaskForm):
-    """Create/edit event form"""
-
     title = StringField("Title", validators=[DataRequired(), Length(min=5)])
     description = TextAreaField("Description", validators=[DataRequired()])
     start_date = DateField("Start Date", validators=[DataRequired()])

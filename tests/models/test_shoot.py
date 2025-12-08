@@ -11,9 +11,7 @@ class TestShoot:
     def test_create_shoot(self, app):
         from app import db
 
-        shoot = Shoot(
-            date=date.today(), location=ShootLocation.HALL, description="Test shoot"
-        )
+        shoot = Shoot(date=date.today(), location=ShootLocation.HALL, description="Test shoot")
         db.session.add(shoot)
         db.session.commit()
 
@@ -29,9 +27,7 @@ class TestShoot:
         db.session.add(shoot)
         db.session.flush()
 
-        user = User(
-            name="Test User", email="test@example.com", date_of_birth=date(2000, 1, 1)
-        )
+        user = User(name="Test User", email="test@example.com", date_of_birth=date(2000, 1, 1))
         user.set_password("password")
         db.session.add(user)
         db.session.flush()

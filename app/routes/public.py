@@ -9,26 +9,22 @@ bp = Blueprint("public", __name__)
 
 @bp.route("/")
 def index():
-    """Home page"""
     return render_template("public/index.html")
 
 
 @bp.route("/about")
 def about():
-    """About page"""
     return render_template("public/about.html")
 
 
 @bp.route("/news")
 def news_list():
-    """News list page"""
     news = News.query.filter_by(published=True).order_by(News.published_at.desc()).all()
     return render_template("public/news.html", news=news)
 
 
 @bp.route("/news/<int:news_id>")
 def news_detail(news_id):
-    """News detail page"""
     from flask import abort
 
     news = db.session.get(News, news_id)
@@ -41,17 +37,10 @@ def news_detail(news_id):
 
 @bp.route("/events")
 def events():
-    """Events list page"""
-    events = (
-        Event.query.filter_by(published=True)
-        .filter(Event.start_date >= utc_now())
-        .order_by(Event.start_date)
-        .all()
-    )
+    events = Event.query.filter_by(published=True).filter(Event.start_date >= utc_now()).order_by(Event.start_date).all()
     return render_template("public/events.html", events=events)
 
 
 @bp.route("/membership")
 def membership():
-    """Membership information page"""
     return render_template("public/membership.html")

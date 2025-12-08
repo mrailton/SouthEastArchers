@@ -1,19 +1,13 @@
-from datetime import datetime
-
 from app import db
 from app.utils.datetime_utils import utc_now
 
 
 class Credit(db.Model):
-    """Additional purchased credits beyond membership"""
-
     __tablename__ = "credits"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("users.id"), nullable=False, index=True
-    )
-    amount = db.Column(db.Integer, default=1)  # Number of credits purchased
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    amount = db.Column(db.Integer, default=1)
     payment_id = db.Column(db.Integer, db.ForeignKey("payments.id"), nullable=True)
     created_at = db.Column(db.DateTime, default=utc_now)
 

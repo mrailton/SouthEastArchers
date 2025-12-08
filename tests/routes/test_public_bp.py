@@ -87,9 +87,7 @@ class TestPublicRoutes:
             published=True,
             published_at=date.today(),
         )
-        news2 = News(
-            title="Unpublished News", content="Unpublished content", published=False
-        )
+        news2 = News(title="Unpublished News", content="Unpublished content", published=False)
         db.session.add_all([news1, news2])
         db.session.commit()
 

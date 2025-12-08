@@ -1,5 +1,3 @@
-"""Admin dashboard routes"""
-
 from datetime import date, timedelta
 
 from flask import render_template
@@ -12,11 +10,9 @@ from . import admin_required, bp
 @bp.route("/dashboard")
 @admin_required
 def dashboard():
-    """Admin dashboard with key statistics and recent activity"""
     total_members = User.query.count()
     active_memberships = Membership.query.filter_by(status="active").count()
 
-    # Count memberships expiring in the next 30 days
     today = date.today()
     expiry_threshold = today + timedelta(days=30)
     expiring_soon = Membership.query.filter(
@@ -25,7 +21,6 @@ def dashboard():
         Membership.expiry_date >= today,
     ).count()
 
-    # Get the 5 most recently created members
     recent_members = User.query.order_by(User.created_at.desc()).limit(5).all()
 
     return render_template(

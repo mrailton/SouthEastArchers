@@ -5,7 +5,6 @@ from flask_login import current_user
 
 
 def admin_required(f):
-    """Admin required decorator"""
 
     @wraps(f)
     def decorated_function(*args, **kwargs):

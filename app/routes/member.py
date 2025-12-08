@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
@@ -13,11 +11,9 @@ bp = Blueprint("member", __name__, url_prefix="/member")
 @bp.route("/dashboard")
 @login_required
 def dashboard():
-    """Member dashboard"""
     user = current_user
     membership = user.membership
 
-    # Get shoot count
     shoots_attended = len(user.shoots)
 
     return render_template(
@@ -31,16 +27,9 @@ def dashboard():
 @bp.route("/shoots")
 @login_required
 def shoots():
-    """View shoot history"""
     user = current_user
 
-    # Get user's shoot history
-    user_shoots = (
-        Shoot.query.join(Shoot.users)
-        .filter(User.id == user.id)
-        .order_by(Shoot.date.desc())
-        .all()
-    )
+    user_shoots = Shoot.query.join(Shoot.users).filter(User.id == user.id).order_by(Shoot.date.desc()).all()
 
     return render_template("member/shoots.html", shoots=user_shoots, user=user)
 
@@ -48,7 +37,6 @@ def shoots():
 @bp.route("/credits")
 @login_required
 def credits():
-    """View and purchase credits"""
     user = current_user
     credits = Credit.query.filter_by(user_id=user.id).all()
 
@@ -58,7 +46,6 @@ def credits():
 @bp.route("/profile")
 @login_required
 def profile():
-    """User profile page"""
     user = current_user
     return render_template("member/profile.html", user=user)
 
@@ -66,7 +53,6 @@ def profile():
 @bp.route("/profile/update", methods=["POST"])
 @login_required
 def update_profile():
-    """Update user profile"""
     user = current_user
 
     user.name = request.form.get("name", user.name)
@@ -80,7 +66,6 @@ def update_profile():
 @bp.route("/change-password", methods=["GET", "POST"])
 @login_required
 def change_password():
-    """Change password"""
     if request.method == "POST":
         user = current_user
         current_password = request.form.get("current_password")

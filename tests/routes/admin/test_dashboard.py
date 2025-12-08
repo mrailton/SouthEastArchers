@@ -6,18 +6,14 @@ import pytest
 class TestAdminDashboard:
     def test_dashboard_requires_admin(self, client, test_user):
         """Test that dashboard requires admin"""
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get("/admin/dashboard")
         assert response.status_code in [302, 403]
 
     def test_dashboard_with_admin(self, client, admin_user):
         """Test dashboard access with admin"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/dashboard")
         assert response.status_code == 200
@@ -30,15 +26,11 @@ class TestAdminDashboard:
         from app.models import Shoot, ShootLocation
 
         # Create a shoot
-        shoot = Shoot(
-            date=date.today(), location=ShootLocation.HALL, description="Test shoot"
-        )
+        shoot = Shoot(date=date.today(), location=ShootLocation.HALL, description="Test shoot")
         db.session.add(shoot)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/dashboard")
         assert response.status_code == 200
@@ -47,9 +39,7 @@ class TestAdminDashboard:
 
     def test_dashboard_shows_recent_members(self, client, admin_user, test_user, app):
         """Test dashboard shows recent members"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/dashboard")
         assert response.status_code == 200

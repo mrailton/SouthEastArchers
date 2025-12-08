@@ -81,9 +81,7 @@ class TestCreateCheckout:
             assert result["id"] == "checkout_123"
 
     @patch("app.services.sumup_service.Sumup")
-    def test_create_checkout_uses_merchant_code_from_config(
-        self, mock_sumup_class, app
-    ):
+    def test_create_checkout_uses_merchant_code_from_config(self, mock_sumup_class, app):
         """Test merchant code is fetched from config"""
         with app.app_context():
             app.config["SUMUP_MERCHANT_CODE"] = "CONFIG_MERCHANT"
@@ -291,9 +289,7 @@ class TestVerifyPayment:
         with app.app_context():
             # Mock checkout that raises exception when accessing status
             mock_checkout = Mock()
-            mock_checkout.status = property(
-                lambda self: (_ for _ in ()).throw(Exception("Status check error"))
-            )
+            mock_checkout.status = property(lambda self: (_ for _ in ()).throw(Exception("Status check error")))
 
             mock_client = Mock()
             mock_client.checkouts.get.return_value = mock_checkout
@@ -313,9 +309,7 @@ class TestProcessCheckoutPayment:
             mock_response = Mock()
             mock_response.status = "PAID"
             mock_response.transaction_id = "txn_internal_123"
-            mock_response.transaction_code = (
-                "TXN-CODE-123"  # Searchable transaction code
-            )
+            mock_response.transaction_code = "TXN-CODE-123"  # Searchable transaction code
 
             mock_client = Mock()
             mock_client.checkouts.process.return_value = mock_response

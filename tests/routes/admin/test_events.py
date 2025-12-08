@@ -10,18 +10,14 @@ from app.models import Event
 class TestAdminEvents:
     def test_events_list(self, client, admin_user):
         """Test viewing events list"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/events")
         assert response.status_code == 200
 
     def test_create_event_page(self, client, admin_user):
         """Test accessing create event page"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/events/create")
         assert response.status_code == 200
@@ -39,9 +35,7 @@ class TestAdminEvents:
         db.session.add(event)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get(f"/admin/events/{event.id}/edit")
         assert response.status_code == 200
@@ -62,9 +56,7 @@ class TestAdminEvents:
         db.session.commit()
         event_id = event.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         new_date = datetime.now().strftime("%Y-%m-%dT%H:%M")
         response = client.post(
@@ -89,18 +81,14 @@ class TestAdminEvents:
 
     def test_edit_event_not_found(self, client, admin_user):
         """Test editing non-existent event"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/events/99999/edit")
         assert response.status_code == 404
 
     def test_events_requires_admin(self, client, test_user):
         """Test that events require admin"""
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get("/admin/events")
         assert response.status_code in [302, 403]
@@ -109,9 +97,7 @@ class TestAdminEvents:
         """Test successfully creating an event"""
         from app import db
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         from datetime import datetime
 
@@ -141,9 +127,7 @@ class TestAdminEvents:
         """Test creating an unpublished event"""
         from app import db
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         from datetime import datetime
 
@@ -170,9 +154,7 @@ class TestAdminEvents:
 
     def test_create_event_invalid_date(self, client, admin_user):
         """Test creating event with invalid date format"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             "/admin/events/create",
@@ -201,9 +183,7 @@ class TestAdminEvents:
         db.session.commit()
         event_id = event.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/events/{event_id}/edit",
@@ -220,9 +200,7 @@ class TestAdminEvents:
 
     def test_create_event_requires_admin(self, client, test_user):
         """Test creating event requires admin"""
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get("/admin/events/create")
         assert response.status_code in [302, 403]
@@ -240,9 +218,7 @@ class TestAdminEvents:
         db.session.add(event)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get(f"/admin/events/{event.id}/edit")
         assert response.status_code in [302, 403]

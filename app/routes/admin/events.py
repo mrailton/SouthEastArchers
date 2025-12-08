@@ -1,5 +1,3 @@
-"""Admin event management routes"""
-
 from datetime import datetime
 
 from flask import flash, redirect, render_template, request, url_for
@@ -13,7 +11,6 @@ from . import admin_required, bp
 @bp.route("/events")
 @admin_required
 def events():
-    """Manage events"""
     events = Event.query.order_by(Event.start_date.desc()).all()
     return render_template("admin/events.html", events=events)
 
@@ -21,7 +18,6 @@ def events():
 @bp.route("/events/create", methods=["GET", "POST"])
 @admin_required
 def create_event():
-    """Create a new event"""
     if request.method == "POST":
         try:
             start_date_str = request.form.get("start_date")
@@ -50,7 +46,6 @@ def create_event():
 @bp.route("/events/<int:event_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_event(event_id):
-    """Edit an event"""
     event = db.session.get(Event, event_id)
     if not event:
         from flask import abort

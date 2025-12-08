@@ -11,9 +11,7 @@ class TestUser:
     def test_create_user(self, app):
         from app import db
 
-        user = User(
-            name="John Doe", email="john@example.com", date_of_birth=date(2000, 1, 1)
-        )
+        user = User(name="John Doe", email="john@example.com", date_of_birth=date(2000, 1, 1))
         user.set_password("password")
 
         db.session.add(user)

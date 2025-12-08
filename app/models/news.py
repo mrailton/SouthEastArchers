@@ -1,12 +1,8 @@
-from datetime import datetime
-
 from app import db
 from app.utils.datetime_utils import utc_now
 
 
 class News(db.Model):
-    """News articles for the club"""
-
     __tablename__ = "news"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -19,7 +15,6 @@ class News(db.Model):
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     def publish(self):
-        """Publish the news article"""
         self.published = True
         self.published_at = utc_now()
 

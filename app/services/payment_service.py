@@ -1,5 +1,3 @@
-"""Payment processing service for handling various payment types"""
-
 from datetime import date, timedelta
 
 from flask import current_app, flash, redirect, session, url_for
@@ -11,13 +9,11 @@ from app.utils.session import clear_session_keys
 
 
 class PaymentService:
-    """Main payment service that orchestrates payment processing"""
 
     def __init__(self):
         self.processor = SumUpService()
 
     def create_checkout(self, amount_cents, description):
-        """Create a payment checkout"""
         return self.processor.create_checkout(
             amount=amount_cents,
             currency="EUR",
@@ -26,7 +22,6 @@ class PaymentService:
         )
 
     def process_payment(self, checkout_id, card_number, card_name, expiry_month, expiry_year, cvv):
-        """Process a payment after customer completes checkout"""
         return self.processor.process_checkout_payment(
             checkout_id=checkout_id,
             card_number=card_number,
@@ -38,23 +33,18 @@ class PaymentService:
 
 
 class PaymentProcessingService:
-    """Service for handling payment business logic after processing"""
 
     @staticmethod
     def queue_payment_receipt(user_id, payment_id):
-        """Queue background job to send payment receipt email"""
         if task_queue:
             from app.services.background_jobs import send_payment_receipt_job
 
             try:
                 task_queue.enqueue(send_payment_receipt_job, user_id, payment_id)
-                current_app.logger.info(
-                    f"Queued payment receipt email for user {user_id}, payment {payment_id}"
-                )
+                current_app.logger.info(f"Queued payment receipt email for user {user_id}, payment {payment_id}")
             except Exception as e:
                 current_app.logger.error(f"Failed to queue receipt email: {str(e)}")
         else:
-            # Fallback to synchronous email if Redis is not available
             from app.utils.email import send_payment_receipt
 
             try:
@@ -67,12 +57,10 @@ class PaymentProcessingService:
 
     @staticmethod
     def validate_card_details(card_number, card_name, expiry_month, expiry_year, cvv):
-        """Validate card details are present"""
         return all([card_number, card_name, expiry_month, expiry_year, cvv])
 
     @staticmethod
     def handle_signup_payment(user_id, checkout_id, result):
-        """Handle signup payment processing"""
         payment_id = session.get("signup_payment_id")
         payment = db.session.get(Payment, payment_id)
         user = db.session.get(User, user_id)
@@ -86,7 +74,6 @@ class PaymentProcessingService:
             user.membership.activate()
         db.session.commit()
 
-        # Queue payment receipt email as background job
         PaymentProcessingService.queue_payment_receipt(user.id, payment.id)
 
         clear_session_keys(
@@ -104,7 +91,6 @@ class PaymentProcessingService:
 
     @staticmethod
     def handle_membership_renewal(user_id, checkout_id, result):
-        """Handle membership renewal payment processing"""
         payment_id = session.get("membership_renewal_payment_id")
         payment = db.session.get(Payment, payment_id)
         user = db.session.get(User, user_id)
@@ -147,7 +133,6 @@ class PaymentProcessingService:
 
     @staticmethod
     def handle_credit_purchase(user_id, checkout_id, result):
-        """Handle credit purchase payment processing"""
         payment_id = session.get("credit_purchase_payment_id")
         quantity = session.get("credit_purchase_quantity", 1)
         payment = db.session.get(Payment, payment_id)
@@ -159,7 +144,6 @@ class PaymentProcessingService:
         transaction_id = result.get("transaction_code") or result.get("transaction_id") or checkout_id
         payment.mark_completed(transaction_id, processor="sumup")
 
-        # Add credits
         credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
         db.session.add(credit)
         db.session.commit()
@@ -177,7 +161,6 @@ class PaymentProcessingService:
 
     @staticmethod
     def handle_payment_failure(checkout_id, result):
-        """Handle payment failure or pending status"""
         status = result.get("status", "UNKNOWN")
         error_msg = result.get("error", "Payment was not approved")
 

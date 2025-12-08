@@ -16,7 +16,7 @@ class TestPasswordReset:
         assert response.status_code == 200
         assert b"Forgot Password" in response.data or b"Reset Password" in response.data
 
-    @patch("app.routes.auth.mail.send")
+    @patch("app.utils.email.mail.send")
     def test_forgot_password_with_valid_email(self, mock_mail_send, client, test_user):
         """Test forgot password with valid email"""
         response = client.post(
@@ -27,14 +27,11 @@ class TestPasswordReset:
 
         assert response.status_code == 200
         # Check for the actual flash message
-        assert (
-            b"password reset link" in response.data.lower()
-            or b"if an account exists" in response.data.lower()
-        )
+        assert b"password reset link" in response.data.lower() or b"if an account exists" in response.data.lower()
         # Verify email was attempted to be sent
         assert mock_mail_send.called
 
-    @patch("app.routes.auth.mail.send")
+    @patch("app.utils.email.mail.send")
     def test_forgot_password_with_invalid_email(self, mock_mail_send, client):
         """Test forgot password with non-existent email"""
         response = client.post(
@@ -45,10 +42,7 @@ class TestPasswordReset:
 
         assert response.status_code == 200
         # Same message for security (don't reveal if email exists)
-        assert (
-            b"password reset link" in response.data.lower()
-            or b"if an account exists" in response.data.lower()
-        )
+        assert b"password reset link" in response.data.lower() or b"if an account exists" in response.data.lower()
         # Email should not be sent for non-existent user
         assert not mock_mail_send.called
 
@@ -92,9 +86,7 @@ class TestPasswordReset:
         response = client.get("/auth/reset-password/invalid-token")
         assert response.status_code == 302  # Redirect
 
-        response = client.get(
-            "/auth/reset-password/invalid-token", follow_redirects=True
-        )
+        response = client.get("/auth/reset-password/invalid-token", follow_redirects=True)
         assert b"Invalid or expired" in response.data
 
     def test_reset_password_with_valid_token(self, app, client, test_user):
@@ -170,9 +162,7 @@ class TestPasswordReset:
         )
 
         assert response.status_code == 200
-        assert (
-            b"fill in all fields" in response.data or b"do not match" in response.data
-        )
+        assert b"fill in all fields" in response.data or b"do not match" in response.data
 
     def test_cannot_reset_password_twice_with_same_token(self, app, client, test_user):
         """Test that a token cannot be used twice"""

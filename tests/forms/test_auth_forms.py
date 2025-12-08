@@ -10,9 +10,7 @@ from app.forms.auth_forms import ForgotPasswordForm, LoginForm, SignupForm
 class TestLoginForm:
     def test_valid_data(self, app):
         with app.test_request_context():
-            form = LoginForm(
-                data={"email": "test@example.com", "password": "password123"}
-            )
+            form = LoginForm(data={"email": "test@example.com", "password": "password123"})
             assert form.validate()
 
     def test_invalid_email(self, app):

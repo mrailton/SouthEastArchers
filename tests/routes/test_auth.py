@@ -29,9 +29,7 @@ class TestAuthRoutes:
 
     def test_login_invalid_password(self, client, test_user):
         """Test login with invalid password"""
-        response = client.post(
-            "/auth/login", data={"email": test_user.email, "password": "wrongpassword"}
-        )
+        response = client.post("/auth/login", data={"email": test_user.email, "password": "wrongpassword"})
         assert response.status_code == 200
         assert b"Invalid" in response.data
 
@@ -78,9 +76,7 @@ class TestAuthRoutes:
         assert response.status_code == 200
 
     def test_logout(self, client, test_user):
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get("/auth/logout", follow_redirects=True)
         assert response.status_code == 200
@@ -181,11 +177,8 @@ class TestAuthRoutes:
         """Test signup with online payment method"""
         from unittest.mock import Mock, patch
 
-        with patch("app.routes.auth.PaymentService") as mock_service_class:
-            mock_service = Mock()
-            mock_checkout = {"id": "checkout_signup", "status": "PENDING"}
-            mock_service.create_checkout.return_value = mock_checkout
-            mock_service_class.return_value = mock_service
+        with patch("app.services.user_service.UserService.initiate_online_payment") as mock_payment:
+            mock_payment.return_value = {"success": True, "checkout_id": "checkout_123"}
 
             response = client.post(
                 "/auth/signup",
@@ -205,10 +198,9 @@ class TestAuthRoutes:
             assert "/payment/checkout/" in response.location
 
     def test_signup_online_payment_failure(self, client, app):
-        """Test signup when online payment checkout creation fails"""
         from unittest.mock import Mock, patch
 
-        with patch("app.routes.auth.PaymentService") as mock_service_class:
+        with patch("app.services.payment_service.PaymentService") as mock_service_class:
             mock_service = Mock()
             mock_service.create_checkout.return_value = None
             mock_service_class.return_value = mock_service
@@ -237,10 +229,9 @@ class TestAuthRoutes:
         assert b"Forgot Password" in response.data or b"forgot" in response.data.lower()
 
     def test_forgot_password_existing_user(self, client, test_user, app):
-        """Test forgot password with existing user"""
         from unittest.mock import patch
 
-        with patch("app.routes.auth.mail.send"):
+        with patch("app.utils.email.mail.send"):
             response = client.post(
                 "/auth/forgot-password",
                 data={"email": test_user.email},
@@ -263,13 +254,10 @@ class TestAuthRoutes:
         assert b"receive a password reset link" in response.data
 
     def test_forgot_password_email_failure(self, client, test_user, app):
-        """Test forgot password when email sending fails"""
         from unittest.mock import patch
 
-        with patch("app.routes.auth.mail.send", side_effect=Exception("Email error")):
-            response = client.post(
-                "/auth/forgot-password", data={"email": test_user.email}
-            )
+        with patch("app.utils.email.mail.send", side_effect=Exception("Email error")):
+            response = client.post("/auth/forgot-password", data={"email": test_user.email})
 
             assert response.status_code == 200
             assert b"error" in response.data.lower()
@@ -279,15 +267,11 @@ class TestAuthRoutes:
         token = test_user.generate_reset_token()
         response = client.get(f"/auth/reset-password/{token}")
         assert response.status_code == 200
-        assert (
-            b"Reset Password" in response.data or b"password" in response.data.lower()
-        )
+        assert b"Reset Password" in response.data or b"password" in response.data.lower()
 
     def test_reset_password_invalid_token(self, client):
         """Test reset password with invalid token"""
-        response = client.get(
-            "/auth/reset-password/invalid_token", follow_redirects=True
-        )
+        response = client.get("/auth/reset-password/invalid_token", follow_redirects=True)
         assert response.status_code == 200
         assert b"Invalid" in response.data or b"expired" in response.data.lower()
 
@@ -301,10 +285,7 @@ class TestAuthRoutes:
         )
 
         assert response.status_code == 200
-        assert (
-            b"successfully" in response.data.lower()
-            or b"login" in response.data.lower()
-        )
+        assert b"successfully" in response.data.lower() or b"login" in response.data.lower()
 
     def test_reset_password_mismatch(self, client, test_user):
         """Test reset password with mismatched passwords"""

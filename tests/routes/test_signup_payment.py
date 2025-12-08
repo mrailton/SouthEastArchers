@@ -29,10 +29,7 @@ class TestSignupWithCashPayment:
         )
 
         assert response.status_code == 200
-        assert (
-            b"Your membership will be activated once payment is received"
-            in response.data
-        )
+        assert b"Your membership will be activated once payment is received" in response.data
 
         # Verify user was created
         user = User.query.filter_by(email="cash@example.com").first()
@@ -145,9 +142,7 @@ class TestSignupWithOnlinePayment:
         assert payment.status == "pending"
 
     @patch("app.services.sumup_service.SumUpService.create_checkout")
-    def test_signup_online_payment_failure_shows_error(
-        self, mock_checkout, client, app
-    ):
+    def test_signup_online_payment_failure_shows_error(self, mock_checkout, client, app):
         """Test error handling when SumUp checkout creation fails"""
         mock_checkout.return_value = None
 
@@ -169,9 +164,7 @@ class TestSignupWithOnlinePayment:
         assert b"Error creating payment" in response.data
 
     @patch("app.services.sumup_service.SumUpService.process_checkout_payment")
-    def test_successful_online_payment_activates_membership(
-        self, mock_process, client, app
-    ):
+    def test_successful_online_payment_activates_membership(self, mock_process, client, app):
         """Test that successful online payment activates membership"""
         # Create user with pending membership
         user = User(
@@ -208,7 +201,8 @@ class TestSignupWithOnlinePayment:
             "success": True,
             "status": "PAID",
             "checkout_id": "test_checkout_123",
-            "transaction_code": "TXN", "transaction_id": "txn_123",
+            "transaction_code": "TXN",
+            "transaction_id": "txn_123",
         }
 
         # Set up session for payment processing
@@ -245,9 +239,7 @@ class TestSignupWithOnlinePayment:
         assert payment.status == "completed"
 
     @patch("app.services.sumup_service.SumUpService.process_checkout_payment")
-    def test_failed_online_payment_keeps_membership_pending(
-        self, mock_process, client, app
-    ):
+    def test_failed_online_payment_keeps_membership_pending(self, mock_process, client, app):
         """Test that failed online payment keeps membership pending"""
         # Create user with pending membership
         user = User(
@@ -411,14 +403,10 @@ class TestAdminMembershipActivation:
         db.session.commit()
 
         # Login as admin
-        client.post(
-            "/auth/login", data={"email": test_admin.email, "password": "admin123"}
-        )
+        client.post("/auth/login", data={"email": test_admin.email, "password": "admin123"})
 
         # Activate membership
-        response = client.post(
-            f"/admin/members/{user.id}/membership/activate", follow_redirects=True
-        )
+        response = client.post(f"/admin/members/{user.id}/membership/activate", follow_redirects=True)
 
         assert response.status_code == 200
         assert b"Membership activated" in response.data
@@ -432,9 +420,7 @@ class TestAdminMembershipActivation:
         payment = Payment.query.filter_by(user_id=user.id).first()
         assert payment.status == "completed"
 
-    def test_admin_cannot_activate_already_active_membership(
-        self, client, app, test_admin
-    ):
+    def test_admin_cannot_activate_already_active_membership(self, client, app, test_admin):
         """Test that admin gets info message when activating already active membership"""
         # Create user with active membership
         user = User(
@@ -457,14 +443,10 @@ class TestAdminMembershipActivation:
         db.session.commit()
 
         # Login as admin
-        client.post(
-            "/auth/login", data={"email": test_admin.email, "password": "admin123"}
-        )
+        client.post("/auth/login", data={"email": test_admin.email, "password": "admin123"})
 
         # Try to activate already active membership
-        response = client.post(
-            f"/admin/members/{user.id}/membership/activate", follow_redirects=True
-        )
+        response = client.post(f"/admin/members/{user.id}/membership/activate", follow_redirects=True)
 
         assert response.status_code == 200
         assert b"already active" in response.data
@@ -492,9 +474,7 @@ class TestAdminMembershipActivation:
         db.session.commit()
 
         # Login as regular user
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         # Try to activate another user's membership
         response = client.post(
@@ -511,9 +491,7 @@ class TestPaymentModel:
 
     def test_payment_model_has_payment_method_field(self, app):
         """Test that Payment model has payment_method field"""
-        user = User(
-            name="Test User", email="test@example.com", date_of_birth=date(2000, 1, 1)
-        )
+        user = User(name="Test User", email="test@example.com", date_of_birth=date(2000, 1, 1))
         user.set_password("password123")
         db.session.add(user)
         db.session.flush()
@@ -528,9 +506,7 @@ class TestPaymentModel:
         db.session.add(cash_payment)
 
         # Test online payment
-        online_payment = Payment(
-            user_id=user.id, amount=5, payment_type="credits", payment_method="online"
-        )
+        online_payment = Payment(user_id=user.id, amount=5, payment_type="credits", payment_method="online")
         db.session.add(online_payment)
         db.session.commit()
 
@@ -543,9 +519,7 @@ class TestMembershipModel:
 
     def test_membership_has_activate_method(self, app):
         """Test that Membership model has activate method"""
-        user = User(
-            name="Test User", email="test@example.com", date_of_birth=date(2000, 1, 1)
-        )
+        user = User(name="Test User", email="test@example.com", date_of_birth=date(2000, 1, 1))
         user.set_password("password123")
         db.session.add(user)
         db.session.flush()
@@ -571,9 +545,7 @@ class TestMembershipModel:
 
     def test_pending_membership_is_not_active(self, app):
         """Test that pending memberships return False for is_active()"""
-        user = User(
-            name="Test User", email="test@example.com", date_of_birth=date(2000, 1, 1)
-        )
+        user = User(name="Test User", email="test@example.com", date_of_birth=date(2000, 1, 1))
         user.set_password("password123")
         db.session.add(user)
         db.session.flush()

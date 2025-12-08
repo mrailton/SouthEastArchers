@@ -10,18 +10,14 @@ from app.models import Shoot, ShootLocation, User
 class TestAdminShoots:
     def test_shoots_list(self, client, admin_user):
         """Test viewing shoots list"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/shoots")
         assert response.status_code == 200
 
     def test_create_shoot_page(self, client, admin_user):
         """Test accessing create shoot page"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/shoots/create")
         assert response.status_code == 200
@@ -31,15 +27,11 @@ class TestAdminShoots:
         from app import db
 
         # Create a shoot first
-        shoot = Shoot(
-            date=date.today(), location=ShootLocation.HALL, description="Test shoot"
-        )
+        shoot = Shoot(date=date.today(), location=ShootLocation.HALL, description="Test shoot")
         db.session.add(shoot)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get(f"/admin/shoots/{shoot.id}/edit")
         assert response.status_code == 200
@@ -59,9 +51,7 @@ class TestAdminShoots:
         db.session.commit()
         shoot_id = shoot.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         # Update the shoot
         response = client.post(
@@ -79,18 +69,14 @@ class TestAdminShoots:
 
     def test_shoots_requires_admin(self, client, test_user):
         """Test that shoots require admin"""
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get("/admin/shoots")
         assert response.status_code in [302, 403]
 
     def test_edit_shoot_not_found(self, client, admin_user):
         """Test editing non-existent shoot"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/shoots/99999/edit")
         assert response.status_code == 404
@@ -99,9 +85,7 @@ class TestAdminShoots:
         """Test creating shoot with attendees deducts credits"""
         from app import db
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             "/admin/shoots/create",
@@ -123,16 +107,12 @@ class TestAdminShoots:
         from app import db
 
         # Create a shoot without attendees
-        shoot = Shoot(
-            date=date.today(), location=ShootLocation.HALL, description="Test shoot"
-        )
+        shoot = Shoot(date=date.today(), location=ShootLocation.HALL, description="Test shoot")
         db.session.add(shoot)
         db.session.commit()
         shoot_id = shoot.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/shoots/{shoot_id}/edit",
@@ -153,9 +133,7 @@ class TestAdminShoots:
         from app import db
 
         # Create a shoot with attendee
-        shoot = Shoot(
-            date=date.today(), location=ShootLocation.HALL, description="Test shoot"
-        )
+        shoot = Shoot(date=date.today(), location=ShootLocation.HALL, description="Test shoot")
         db.session.add(shoot)
         db.session.flush()
 
@@ -166,9 +144,7 @@ class TestAdminShoots:
 
         shoot_id = shoot.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         # Remove attendee (empty attendees list)
         response = client.post(
@@ -213,9 +189,7 @@ class TestAdminShoots:
         db.session.add(membership)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             "/admin/shoots/create",
@@ -247,9 +221,7 @@ class TestAdminShoots:
         shoot.users.append(test_user)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get(f"/admin/shoots/{shoot.id}/edit")
         assert response.status_code == 200
@@ -257,9 +229,7 @@ class TestAdminShoots:
 
     def test_create_shoot_requires_admin(self, client, test_user):
         """Test creating shoot requires admin"""
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get("/admin/shoots/create")
         assert response.status_code in [302, 403]
@@ -268,15 +238,11 @@ class TestAdminShoots:
         """Test editing shoot requires admin"""
         from app import db
 
-        shoot = Shoot(
-            date=date.today(), location=ShootLocation.HALL, description="Test shoot"
-        )
+        shoot = Shoot(date=date.today(), location=ShootLocation.HALL, description="Test shoot")
         db.session.add(shoot)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get(f"/admin/shoots/{shoot.id}/edit")
         assert response.status_code in [302, 403]
@@ -285,27 +251,19 @@ class TestAdminShoots:
         """Test shoots list displays all shoots"""
         from app import db
 
-        shoot1 = Shoot(
-            date=date.today(), location=ShootLocation.HALL, description="First shoot"
-        )
-        shoot2 = Shoot(
-            date=date.today(), location=ShootLocation.MEADOW, description="Second shoot"
-        )
+        shoot1 = Shoot(date=date.today(), location=ShootLocation.HALL, description="First shoot")
+        shoot2 = Shoot(date=date.today(), location=ShootLocation.MEADOW, description="Second shoot")
         db.session.add_all([shoot1, shoot2])
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/shoots")
         assert response.status_code == 200
         # Should show both shoots
         assert b"First shoot" in response.data or b"Second shoot" in response.data
 
-    def test_edit_shoot_add_attendee_no_credits(
-        self, client, admin_user, test_user, app
-    ):
+    def test_edit_shoot_add_attendee_no_credits(self, client, admin_user, test_user, app):
         """Test adding attendee when they have no credits shows warning"""
         from app import db
 
@@ -314,16 +272,12 @@ class TestAdminShoots:
         db.session.commit()
 
         # Create a shoot
-        shoot = Shoot(
-            date=date.today(), location=ShootLocation.HALL, description="Test shoot"
-        )
+        shoot = Shoot(date=date.today(), location=ShootLocation.HALL, description="Test shoot")
         db.session.add(shoot)
         db.session.commit()
         shoot_id = shoot.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/shoots/{shoot_id}/edit",

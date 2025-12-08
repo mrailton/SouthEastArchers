@@ -8,18 +8,14 @@ from app.models import News
 class TestAdminNews:
     def test_news_list(self, client, admin_user):
         """Test viewing news list"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/news")
         assert response.status_code == 200
 
     def test_create_news_page(self, client, admin_user):
         """Test accessing create news page"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/news/create")
         assert response.status_code == 200
@@ -32,9 +28,7 @@ class TestAdminNews:
         db.session.add(news)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get(f"/admin/news/{news.id}/edit")
         assert response.status_code == 200
@@ -50,9 +44,7 @@ class TestAdminNews:
         db.session.commit()
         news_id = news.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/news/{news_id}/edit",
@@ -75,18 +67,14 @@ class TestAdminNews:
 
     def test_edit_news_not_found(self, client, admin_user):
         """Test editing non-existent news"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/news/99999/edit")
         assert response.status_code == 404
 
     def test_news_requires_admin(self, client, test_user):
         """Test that news requires admin"""
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get("/admin/news")
         assert response.status_code in [302, 403]
@@ -95,9 +83,7 @@ class TestAdminNews:
         """Test successfully creating a published news article"""
         from app import db
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             "/admin/news/create",
@@ -122,9 +108,7 @@ class TestAdminNews:
         """Test successfully creating an unpublished news article"""
         from app import db
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             "/admin/news/create",
@@ -154,9 +138,7 @@ class TestAdminNews:
         db.session.commit()
         news_id = news.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/news/{news_id}/edit",
@@ -192,9 +174,7 @@ class TestAdminNews:
         db.session.commit()
         news_id = news.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/news/{news_id}/edit",
@@ -213,14 +193,11 @@ class TestAdminNews:
         updated_news = db.session.get(News, news_id)
         # Remove timezone info for comparison if needed
         orig_time = (
-            original_published_at.replace(tzinfo=None)
-            if hasattr(original_published_at, "tzinfo") and original_published_at.tzinfo
-            else original_published_at
+            original_published_at.replace(tzinfo=None) if hasattr(original_published_at, "tzinfo") and original_published_at.tzinfo else original_published_at
         )
         updated_time = (
             updated_news.published_at.replace(tzinfo=None)
-            if hasattr(updated_news.published_at, "tzinfo")
-            and updated_news.published_at.tzinfo
+            if hasattr(updated_news.published_at, "tzinfo") and updated_news.published_at.tzinfo
             else updated_news.published_at
         )
         assert abs((orig_time - updated_time).total_seconds()) < 1
@@ -240,9 +217,7 @@ class TestAdminNews:
         db.session.commit()
         news_id = news.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/news/{news_id}/edit",
@@ -263,9 +238,7 @@ class TestAdminNews:
 
     def test_create_news_requires_admin(self, client, test_user):
         """Test creating news requires admin"""
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get("/admin/news/create")
         assert response.status_code in [302, 403]
@@ -278,9 +251,7 @@ class TestAdminNews:
         db.session.add(news)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get(f"/admin/news/{news.id}/edit")
         assert response.status_code in [302, 403]

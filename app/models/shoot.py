@@ -4,7 +4,6 @@ from datetime import datetime
 from app import db
 from app.utils.datetime_utils import utc_now
 
-# Association table for many-to-many relationship
 user_shoots = db.Table(
     "user_shoots",
     db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
@@ -14,16 +13,12 @@ user_shoots = db.Table(
 
 
 class ShootLocation(enum.Enum):
-    """Enum for shoot locations"""
-
     HALL = "Hall"
     MEADOW = "Meadow"
     WOODS = "Woods"
 
 
 class Shoot(db.Model):
-    """Shoot sessions - records of past shooting events"""
-
     __tablename__ = "shoots"
 
     id = db.Column(db.Integer, primary_key=True)

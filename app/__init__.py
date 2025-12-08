@@ -12,7 +12,6 @@ from flask_sqlalchemy import SQLAlchemy
 from redis import Redis
 from rq import Queue
 
-# Suppress SyntaxWarning from sumup library (incompatible with Python 3.14)
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="sumup")
 
 db = SQLAlchemy()
@@ -26,7 +25,6 @@ task_queue = None
 
 
 def create_app(config_name=None):
-    """Application factory"""
     from config.config import config
 
     # Determine config from environment if not specified
@@ -49,26 +47,16 @@ def create_app(config_name=None):
         if not os.path.exists("logs"):
             os.mkdir("logs")
 
-        file_handler = RotatingFileHandler(
-            "logs/app.log", maxBytes=10240000, backupCount=10
-        )
+        file_handler = RotatingFileHandler("logs/app.log", maxBytes=10240000, backupCount=10)
 
-        file_handler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
-            )
-        )
+        file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"))
 
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
 
     # Also log to stdout for Docker
     stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(
-        logging.Formatter(
-            "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
-        )
-    )
+    stream_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"))
 
     stream_handler.setLevel(logging.INFO)
     app.logger.addHandler(stream_handler)
@@ -96,15 +84,11 @@ def create_app(config_name=None):
     global redis_client, task_queue
 
     try:
-        redis_client = Redis.from_url(
-            app.config.get("REDIS_URL", "redis://localhost:6379/0")
-        )
+        redis_client = Redis.from_url(app.config.get("REDIS_URL", "redis://localhost:6379/0"))
 
         task_queue = Queue(connection=redis_client, default_timeout=600)
     except Exception as e:
-        app.logger.warning(
-            f"Redis connection failed: {str(e)}. Background jobs disabled."
-        )
+        app.logger.warning(f"Redis connection failed: {str(e)}. Background jobs disabled.")
 
         redis_client = None
         task_queue = None

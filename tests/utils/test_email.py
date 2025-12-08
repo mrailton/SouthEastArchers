@@ -71,9 +71,7 @@ class TestSendPaymentReceipt:
             assert mock_mail.send.called
 
     @patch("app.utils.email.mail")
-    def test_send_payment_receipt_formats_receipt_number(
-        self, mock_mail, app, test_user
-    ):
+    def test_send_payment_receipt_formats_receipt_number(self, mock_mail, app, test_user):
         """Test receipt number formatting"""
         with app.app_context():
             from datetime import datetime
@@ -98,9 +96,7 @@ class TestSendPaymentReceipt:
             assert "SEA-000042" in call_args.html or "SEA-000042" in call_args.body
 
     @patch("app.utils.email.mail")
-    def test_send_payment_receipt_includes_transaction_id_for_online(
-        self, mock_mail, app, test_user
-    ):
+    def test_send_payment_receipt_includes_transaction_id_for_online(self, mock_mail, app, test_user):
         """Test transaction ID is included for online payments"""
         with app.app_context():
             from datetime import datetime
@@ -127,9 +123,7 @@ class TestSendPaymentReceipt:
             assert "txn_xyz789" in call_args.html or "txn_xyz789" in call_args.body
 
     @patch("app.utils.email.mail")
-    def test_send_payment_receipt_no_transaction_id_for_cash(
-        self, mock_mail, app, test_user
-    ):
+    def test_send_payment_receipt_no_transaction_id_for_cash(self, mock_mail, app, test_user):
         """Test no transaction ID for cash payments"""
         with app.app_context():
             from datetime import datetime
@@ -178,9 +172,7 @@ class TestSendPaymentReceipt:
             assert call_args.html is not None
 
     @patch("app.utils.email.mail")
-    def test_send_payment_receipt_includes_membership_details(
-        self, mock_mail, app, test_user
-    ):
+    def test_send_payment_receipt_includes_membership_details(self, mock_mail, app, test_user):
         """Test membership details are included in receipt"""
         with app.app_context():
             from datetime import datetime
@@ -203,15 +195,10 @@ class TestSendPaymentReceipt:
             call_args = mock_mail.send.call_args[0][0]
             # Check membership details are included
             html_body = call_args.html
-            assert (
-                membership.start_date.strftime("%d %B %Y") in html_body
-                or membership.start_date.strftime("%d %B %Y") in call_args.body
-            )
+            assert membership.start_date.strftime("%d %B %Y") in html_body or membership.start_date.strftime("%d %B %Y") in call_args.body
 
     @patch("app.utils.email.mail")
-    def test_send_payment_receipt_handles_missing_description(
-        self, mock_mail, app, test_user
-    ):
+    def test_send_payment_receipt_handles_missing_description(self, mock_mail, app, test_user):
         """Test receipt handles missing payment description"""
         with app.app_context():
             from datetime import datetime
@@ -260,9 +247,7 @@ class TestSendPaymentReceipt:
             assert result is False
 
     @patch("app.utils.email.mail")
-    def test_send_payment_receipt_uses_correct_payment_method_display(
-        self, mock_mail, app, test_user
-    ):
+    def test_send_payment_receipt_uses_correct_payment_method_display(self, mock_mail, app, test_user):
         """Test payment method display formatting"""
         with app.app_context():
             from datetime import datetime
@@ -317,9 +302,7 @@ class TestSendWelcomeEmail:
             assert test_user.name in call_args.html
 
     @patch("app.utils.email.mail")
-    def test_send_welcome_email_includes_membership_details(
-        self, mock_mail, app, test_user
-    ):
+    def test_send_welcome_email_includes_membership_details(self, mock_mail, app, test_user):
         """Test welcome email includes membership details"""
         with app.app_context():
             membership = test_user.membership
@@ -455,10 +438,7 @@ class TestEmailURLGeneration:
                 assert mock_mail.send.called
                 # Verify email was sent successfully with login link
                 call_args = mock_mail.send.call_args[0][0]
-                assert (
-                    "login" in call_args.html.lower()
-                    or "login" in call_args.body.lower()
-                )
+                assert "login" in call_args.html.lower() or "login" in call_args.body.lower()
             finally:
                 # Restore SERVER_NAME
                 app.config["SERVER_NAME"] = original_server_name
@@ -510,9 +490,7 @@ class TestEmailURLGeneration:
 
     @patch("app.utils.email.url_for")
     @patch("app.utils.email.mail")
-    def test_fallback_mechanism_when_url_for_fails(
-        self, mock_mail, mock_url_for, app, test_user
-    ):
+    def test_fallback_mechanism_when_url_for_fails(self, mock_mail, mock_url_for, app, test_user):
         """Test that fallback mechanism is triggered when url_for raises RuntimeError"""
         with app.app_context():
             # Make url_for raise RuntimeError to test fallback

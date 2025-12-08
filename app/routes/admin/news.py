@@ -1,7 +1,3 @@
-"""Admin news management routes"""
-
-from datetime import datetime
-
 from flask import flash, redirect, render_template, request, url_for
 
 from app import db
@@ -14,7 +10,6 @@ from . import admin_required, bp
 @bp.route("/news")
 @admin_required
 def news():
-    """Manage news"""
     articles = News.query.order_by(News.created_at.desc()).all()
     return render_template("admin/news.html", articles=articles)
 
@@ -22,7 +17,6 @@ def news():
 @bp.route("/news/create", methods=["GET", "POST"])
 @admin_required
 def create_news():
-    """Create news article"""
     if request.method == "POST":
         article = News(
             title=request.form.get("title"),
@@ -46,7 +40,6 @@ def create_news():
 @bp.route("/news/<int:news_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_news(news_id):
-    """Edit a news article"""
     news = db.session.get(News, news_id)
     if not news:
         from flask import abort

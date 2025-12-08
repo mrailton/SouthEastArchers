@@ -10,27 +10,21 @@ from app.models import Membership, User
 class TestAdminMembers:
     def test_members_list(self, client, admin_user):
         """Test viewing members list"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/members")
         assert response.status_code == 200
 
     def test_member_detail(self, client, admin_user, test_user):
         """Test viewing member detail"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get(f"/admin/members/{test_user.id}")
         assert response.status_code == 200
 
     def test_create_member_page(self, client, admin_user):
         """Test accessing create member page"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/members/create")
         assert response.status_code == 200
@@ -40,9 +34,7 @@ class TestAdminMembers:
         """Test creating a new member"""
         from app import db
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             "/admin/members/create",
@@ -68,9 +60,7 @@ class TestAdminMembers:
 
     def test_create_member_duplicate_email(self, client, admin_user, test_user):
         """Test creating member with duplicate email"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             "/admin/members/create",
@@ -87,9 +77,7 @@ class TestAdminMembers:
 
     def test_edit_member_page(self, client, admin_user, test_user):
         """Test accessing edit member page"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get(f"/admin/members/{test_user.id}/edit")
         assert response.status_code == 200
@@ -98,9 +86,7 @@ class TestAdminMembers:
 
     def test_edit_member_success(self, client, admin_user, test_user):
         """Test updating member details"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/members/{test_user.id}/edit",
@@ -126,9 +112,7 @@ class TestAdminMembers:
 
     def test_edit_member_change_password(self, client, admin_user, test_user):
         """Test changing member password"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/members/{test_user.id}/edit",
@@ -152,9 +136,7 @@ class TestAdminMembers:
 
     def test_edit_member_membership_dates(self, client, admin_user, test_user):
         """Test updating membership dates"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         from datetime import timedelta
 
@@ -186,9 +168,7 @@ class TestAdminMembers:
 
     def test_edit_member_credits(self, client, admin_user, test_user):
         """Test updating member credits"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/members/{test_user.id}/edit",
@@ -225,9 +205,7 @@ class TestAdminMembers:
         db.session.add(user)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/members/{user.id}/edit",
@@ -248,18 +226,14 @@ class TestAdminMembers:
 
     def test_members_requires_admin(self, client, test_user):
         """Test that members list requires admin"""
-        client.post(
-            "/auth/login", data={"email": test_user.email, "password": "password123"}
-        )
+        client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get("/admin/members")
         assert response.status_code in [302, 403]
 
     def test_member_detail_not_found(self, client, admin_user):
         """Test viewing non-existent member"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/members/99999")
         assert response.status_code == 404
@@ -270,15 +244,11 @@ class TestAdminMembers:
 
         from app import db
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         original_expiry = test_user.membership.expiry_date
 
-        response = client.post(
-            f"/admin/members/{test_user.id}/membership/renew", follow_redirects=True
-        )
+        response = client.post(f"/admin/members/{test_user.id}/membership/renew", follow_redirects=True)
 
         assert response.status_code == 200
         assert b"renewed" in response.data.lower()
@@ -300,13 +270,9 @@ class TestAdminMembers:
         db.session.add(user)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
-        response = client.post(
-            f"/admin/members/{user.id}/membership/renew", follow_redirects=True
-        )
+        response = client.post(f"/admin/members/{user.id}/membership/renew", follow_redirects=True)
 
         assert response.status_code == 200
         assert b"No membership" in response.data
@@ -350,13 +316,9 @@ class TestAdminMembers:
 
         user_id = user.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
-        response = client.post(
-            f"/admin/members/{user_id}/membership/activate", follow_redirects=True
-        )
+        response = client.post(f"/admin/members/{user_id}/membership/activate", follow_redirects=True)
 
         assert response.status_code == 200
         assert b"activated" in response.data.lower()
@@ -367,13 +329,9 @@ class TestAdminMembers:
 
     def test_activate_membership_already_active(self, client, admin_user, test_user):
         """Test activating an already active membership"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
-        response = client.post(
-            f"/admin/members/{test_user.id}/membership/activate", follow_redirects=True
-        )
+        response = client.post(f"/admin/members/{test_user.id}/membership/activate", follow_redirects=True)
 
         assert response.status_code == 200
         assert b"already active" in response.data.lower()
@@ -391,40 +349,30 @@ class TestAdminMembers:
         db.session.add(user)
         db.session.commit()
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
-        response = client.post(
-            f"/admin/members/{user.id}/membership/activate", follow_redirects=True
-        )
+        response = client.post(f"/admin/members/{user.id}/membership/activate", follow_redirects=True)
 
         assert response.status_code == 200
         assert b"No membership" in response.data
 
     def test_activate_membership_not_found(self, client, admin_user):
         """Test activating membership for non-existent user"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post("/admin/members/99999/membership/activate")
         assert response.status_code == 404
 
     def test_renew_membership_not_found(self, client, admin_user):
         """Test renewing membership for non-existent user"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post("/admin/members/99999/membership/renew")
         assert response.status_code == 404
 
     def test_create_member_invalid_date(self, client, admin_user):
         """Test creating member with invalid date"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             "/admin/members/create",
@@ -441,9 +389,7 @@ class TestAdminMembers:
 
     def test_edit_member_invalid_date(self, client, admin_user, test_user):
         """Test editing member with invalid date"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             f"/admin/members/{test_user.id}/edit",
@@ -460,9 +406,7 @@ class TestAdminMembers:
 
     def test_edit_member_not_found(self, client, admin_user):
         """Test editing non-existent member"""
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.get("/admin/members/99999/edit")
         assert response.status_code == 404
@@ -471,9 +415,7 @@ class TestAdminMembers:
         """Test creating member without membership"""
         from app import db
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             "/admin/members/create",
@@ -499,9 +441,7 @@ class TestAdminMembers:
         """Test creating member with admin flag"""
         from app import db
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         response = client.post(
             "/admin/members/create",
@@ -523,9 +463,7 @@ class TestAdminMembers:
         assert new_user is not None
         assert new_user.is_admin is True
 
-    def test_activate_membership_email_failure(
-        self, client, admin_user, app, monkeypatch
-    ):
+    def test_activate_membership_email_failure(self, client, admin_user, app, monkeypatch):
         """Test activating membership when email sending fails"""
         from datetime import timedelta
         from unittest.mock import Mock
@@ -537,9 +475,7 @@ class TestAdminMembers:
         def mock_send_email_error(*args, **kwargs):
             raise Exception("Email service unavailable")
 
-        monkeypatch.setattr(
-            "app.utils.email.send_payment_receipt", mock_send_email_error
-        )
+        monkeypatch.setattr("app.utils.email.send_payment_receipt", mock_send_email_error)
 
         # Create user with pending membership
         user = User(
@@ -573,13 +509,9 @@ class TestAdminMembers:
 
         user_id = user.id
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
-        response = client.post(
-            f"/admin/members/{user_id}/membership/activate", follow_redirects=True
-        )
+        response = client.post(f"/admin/members/{user_id}/membership/activate", follow_redirects=True)
 
         # Should still succeed despite email failure
         assert response.status_code == 200
@@ -593,9 +525,7 @@ class TestAdminMembers:
         """Test editing member with invalid membership date format"""
         from app import db
 
-        client.post(
-            "/auth/login", data={"email": admin_user.email, "password": "adminpass"}
-        )
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
         # Try to set invalid date format
         response = client.post(

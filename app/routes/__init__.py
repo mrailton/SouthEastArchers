@@ -1,5 +1,3 @@
-"""Routes package"""
-
 from .admin import bp as admin_bp
 from .auth import bp as auth_bp
 from .member import bp as member_bp

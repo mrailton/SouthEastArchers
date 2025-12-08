@@ -54,9 +54,7 @@ class TestBackgroundJobs:
     """Test background job execution"""
 
     @patch("app.services.background_jobs.mail.send")
-    def test_send_payment_receipt_job(
-        self, mock_mail_send, app, test_user_with_payment
-    ):
+    def test_send_payment_receipt_job(self, mock_mail_send, app, test_user_with_payment):
         """Test payment receipt email job"""
         user = test_user_with_payment["user"]
         payment = test_user_with_payment["payment"]
@@ -83,9 +81,7 @@ class TestBackgroundJobs:
 
     @patch("app.services.background_jobs.render_template")
     @patch("app.services.background_jobs.mail.send")
-    def test_send_password_reset_job(
-        self, mock_mail_send, mock_render, app, test_user_with_payment
-    ):
+    def test_send_password_reset_job(self, mock_mail_send, mock_render, app, test_user_with_payment):
         """Test password reset email job"""
         user = test_user_with_payment["user"]
         token = "test-reset-token"
@@ -105,9 +101,7 @@ class TestBackgroundJobs:
 
     @patch("app.services.background_jobs.render_template")
     @patch("app.services.background_jobs.mail.send")
-    def test_send_membership_expiry_reminder_job(
-        self, mock_mail_send, mock_render, app, test_user_with_payment
-    ):
+    def test_send_membership_expiry_reminder_job(self, mock_mail_send, mock_render, app, test_user_with_payment):
         """Test membership expiry reminder job"""
         user = test_user_with_payment["user"]
 
@@ -128,9 +122,7 @@ class TestBackgroundJobs:
 class TestJobQueueing:
     """Test job queueing functionality"""
 
-    def test_queue_payment_receipt_with_redis(
-        self, app, client, test_user_with_payment
-    ):
+    def test_queue_payment_receipt_with_redis(self, app, client, test_user_with_payment):
         """Test queueing payment receipt with Redis"""
         from app import task_queue
         from app.services.payment_service import PaymentProcessingService
@@ -150,9 +142,7 @@ class TestJobQueueing:
         assert True  # If we got here, queuing worked
 
     @patch("app.utils.email.send_payment_receipt")
-    def test_queue_payment_receipt_fallback(
-        self, mock_send_receipt, app, test_user_with_payment
-    ):
+    def test_queue_payment_receipt_fallback(self, mock_send_receipt, app, test_user_with_payment):
         """Test payment receipt falls back to sync when Redis unavailable"""
         from app import task_queue
         from app.services.payment_service import PaymentProcessingService

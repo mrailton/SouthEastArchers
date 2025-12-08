@@ -158,9 +158,7 @@ class TestLogging:
         # Check that at least one handler is a StreamHandler
         from logging import StreamHandler
 
-        stream_handlers = [
-            h for h in app.logger.handlers if isinstance(h, StreamHandler)
-        ]
+        stream_handlers = [h for h in app.logger.handlers if isinstance(h, StreamHandler)]
         assert len(stream_handlers) > 0
 
     def test_logger_has_correct_level(self, app):
@@ -172,9 +170,7 @@ class TestLogging:
     @patch("os.path.exists")
     @patch("os.mkdir")
     @patch("app.RotatingFileHandler")
-    def test_file_logging_in_production_mode(
-        self, mock_handler, mock_mkdir, mock_exists
-    ):
+    def test_file_logging_in_production_mode(self, mock_handler, mock_mkdir, mock_exists):
         """Test that file logging is configured when not in debug/testing mode"""
         # Mock that logs directory doesn't exist
         mock_exists.return_value = False

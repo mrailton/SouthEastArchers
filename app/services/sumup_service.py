@@ -1,5 +1,3 @@
-"""SumUp payment service using official SumUp Python SDK"""
-
 import uuid
 
 from flask import current_app
@@ -8,10 +6,8 @@ from sumup.checkouts import CreateCheckoutBody
 
 
 class SumUpService:
-    """SumUp payment API service using official SDK"""
 
     def __init__(self, api_key=None):
-        """Initialize SumUp client with API key"""
         self.api_key = api_key or current_app.config.get("SUMUP_API_KEY")
         self.client = Sumup(api_key=self.api_key)
 
@@ -23,19 +19,6 @@ class SumUpService:
         checkout_reference="",
         merchant_code=None,
     ):
-        """
-        Create a checkout session using SumUp SDK
-
-        Args:
-            amount: Amount in cents (e.g., 10000 for €100.00)
-            currency: Currency code (default: EUR)
-            description: Payment description
-            checkout_reference: Unique reference for this checkout (auto-generated if not provided)
-            merchant_code: SumUp merchant code (optional, from config if not provided)
-
-        Returns:
-            dict: Checkout response with checkout_id or None on error
-        """
         try:
             # Get merchant code from config if not provided
             if not merchant_code:
@@ -44,9 +27,7 @@ class SumUpService:
             # Merchant code is required by SumUp SDK
             if not merchant_code:
                 current_app.logger.error("SUMUP_MERCHANT_CODE not configured")
-                raise ValueError(
-                    "SUMUP_MERCHANT_CODE must be set in environment variables"
-                )
+                raise ValueError("SUMUP_MERCHANT_CODE must be set in environment variables")
 
             # Generate checkout reference if not provided
             if not checkout_reference:
@@ -68,9 +49,7 @@ class SumUpService:
             response = self.client.checkouts.create(body=checkout_body)
 
             # Log the response for debugging
-            current_app.logger.info(
-                f'SumUp checkout created with ID: {response.id if hasattr(response, "id") else "no id"}'
-            )
+            current_app.logger.info(f'SumUp checkout created with ID: {response.id if hasattr(response, "id") else "no id"}')
 
             # The SDK returns a Checkout object
             if response and hasattr(response, "id"):
@@ -78,14 +57,8 @@ class SumUpService:
 
                 return {
                     "id": checkout_id,
-                    "checkout_reference": (
-                        response.checkout_reference
-                        if hasattr(response, "checkout_reference")
-                        else checkout_reference
-                    ),
-                    "status": (
-                        response.status if hasattr(response, "status") else "PENDING"
-                    ),
+                    "checkout_reference": (response.checkout_reference if hasattr(response, "checkout_reference") else checkout_reference),
+                    "status": (response.status if hasattr(response, "status") else "PENDING"),
                 }
 
             current_app.logger.error("SumUp checkout response missing id")
@@ -102,15 +75,6 @@ class SumUpService:
             return None
 
     def get_checkout(self, checkout_id):
-        """
-        Get checkout details by ID
-
-        Args:
-            checkout_id: The checkout ID
-
-        Returns:
-            Checkout object or None
-        """
         try:
             checkout = self.client.checkouts.get(checkout_id=checkout_id)
             return checkout
@@ -122,15 +86,6 @@ class SumUpService:
             return None
 
     def verify_payment(self, checkout_id):
-        """
-        Verify if payment was successful
-
-        Args:
-            checkout_id: The checkout ID to verify
-
-        Returns:
-            bool: True if payment successful, False otherwise
-        """
         try:
             checkout = self.get_checkout(checkout_id)
 
@@ -155,21 +110,6 @@ class SumUpService:
         cvv,
         payment_type="card",
     ):
-        """
-        Process a checkout payment with card details
-
-        Args:
-            checkout_id: The checkout ID to process
-            card_number: Full card number
-            card_name: Cardholder name
-            expiry_month: Expiry month (01-12)
-            expiry_year: Expiry year (YYYY or YY)
-            cvv: Card CVV/CVC
-            payment_type: Payment type (default: 'card')
-
-        Returns:
-            dict: Payment result or None on error
-        """
         try:
             from sumup.checkouts import ProcessCheckoutBody
             from sumup.checkouts.types import Card
@@ -202,9 +142,7 @@ class SumUpService:
             # Process the checkout
             response = self.client.checkouts.process(id=checkout_id, body=process_body)
 
-            current_app.logger.info(
-                f"SumUp payment processed for checkout: {checkout_id}"
-            )
+            current_app.logger.info(f"SumUp payment processed for checkout: {checkout_id}")
 
             # Check the response status
             status = getattr(response, "status", None)

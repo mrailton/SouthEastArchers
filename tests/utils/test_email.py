@@ -453,7 +453,10 @@ class TestEmailURLGeneration:
                 assert mock_mail.send.called
                 # Verify email was sent successfully with login link
                 call_args = mock_mail.send.call_args[0][0]
-                assert "login" in call_args.html.lower() or "login" in call_args.body.lower()
+                assert (
+                    "login" in call_args.html.lower()
+                    or "login" in call_args.body.lower()
+                )
             finally:
                 # Restore SERVER_NAME
                 app.config["SERVER_NAME"] = original_server_name
@@ -505,7 +508,9 @@ class TestEmailURLGeneration:
 
     @patch("app.utils.email.url_for")
     @patch("app.utils.email.mail")
-    def test_fallback_mechanism_when_url_for_fails(self, mock_mail, mock_url_for, app, test_user):
+    def test_fallback_mechanism_when_url_for_fails(
+        self, mock_mail, mock_url_for, app, test_user
+    ):
         """Test that fallback mechanism is triggered when url_for raises RuntimeError"""
         with app.app_context():
             # Make url_for raise RuntimeError to test fallback

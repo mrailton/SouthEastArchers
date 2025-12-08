@@ -32,7 +32,10 @@ def send_payment_receipt(user, payment, membership):
             login_url = url_for("auth.login", _external=True)
         except RuntimeError:
             # Fallback if SERVER_NAME not configured
-            login_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/login"
+            login_url = (
+                current_app.config.get("SITE_URL", "https://southeastarchers.ie")
+                + "/login"
+            )
 
         # Prepare template data
         template_data = {
@@ -89,7 +92,10 @@ def send_welcome_email(user, membership):
             login_url = url_for("auth.login", _external=True)
         except RuntimeError:
             # Fallback if SERVER_NAME not configured
-            login_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/login"
+            login_url = (
+                current_app.config.get("SITE_URL", "https://southeastarchers.ie")
+                + "/login"
+            )
 
         # You can create welcome email templates later
         # For now, we'll just use a simple message

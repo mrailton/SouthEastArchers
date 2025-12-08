@@ -50,6 +50,11 @@ MAIL_DEFAULT_SENDER=noreply@southeastarchers.ie
 # Payment Configuration
 SUMUP_API_KEY=your-sumup-api-key
 SUMUP_MERCHANT_CODE=your-merchant-code
+
+# Worker URL Generation
+SERVER_NAME=localhost:5000
+PREFERRED_URL_SCHEME=http
+SITE_URL=http://localhost:5000
 ```
 
 **Generate secure keys:**

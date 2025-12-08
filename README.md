@@ -27,7 +27,34 @@ A modern web application for managing archery club memberships, shooting nights,
 
 ## Quick Start
 
-### Local Development
+### Docker Development (Recommended)
+
+The easiest way to get started is using Docker Compose:
+
+```bash
+# Start everything (MySQL, Redis, Web, Worker, Mailhog)
+make docker-up
+
+# View logs
+make docker-logs
+
+# Stop everything
+make docker-down
+```
+
+Visit:
+- Application: http://localhost:5000
+- Email testing (Mailhog): http://localhost:8025
+
+**Features:**
+- No local dependencies needed (Python, Node, MySQL, Redis all in containers)
+- Hot reload for code changes
+- Auto-restart for background worker
+- Email testing with Mailhog
+
+See [docker/README.md](docker/README.md) for detailed Docker documentation.
+
+### Local Development (Without Docker)
 
 ```bash
 # Install dependencies
@@ -47,37 +74,56 @@ Visit http://localhost:5000
 
 ## Deployment
 
-### Coolify with GitHub Actions + GHCR (Recommended)
+### Dokploy with Docker Compose (Recommended)
 
-Images are automatically built and pushed to GitHub Container Registry (GHCR) on every push to main.
+This project uses Docker Compose with pre-built images from GitHub Container Registry (GHCR).
+
+**Quick Deploy to Dokploy:**
+
+1. **Create a Compose Application** in Dokploy
+2. **Connect your Git repository**
+3. **Set compose file path** to `docker/docker-compose.yml`
+4. **Add environment variables** (see `.env.example`)
+   - Database credentials
+   - Flask SECRET_KEY
+   - Email (SMTP) settings
+   - Sum Up payment API keys
+5. **Deploy!**
+
+Dokploy will automatically:
+- Pull pre-built images from GHCR (fast, no build step!)
+- Start MySQL and Redis
+- Run database migrations
+- Expose your application
+
+**How CI/CD Works:**
+- Push to `main` → GitHub Actions builds images → Pushes to GHCR → Dokploy pulls latest
+- Images: `ghcr.io/mrailton/southeastarchers-web:latest` and `southeastarchers-worker:latest`
+
+**Detailed Guide**: See [DOKPLOY_DEPLOYMENT.md](DOKPLOY_DEPLOYMENT.md) for comprehensive deployment documentation.
+
+### Alternative: GitHub Actions + GHCR (Legacy)
+
+Images can be automatically built and pushed to GitHub Container Registry (GHCR) on every push to main.
 
 **Full deployment guide**: [docs/COOLIFY_DEPLOYMENT.md](docs/COOLIFY_DEPLOYMENT.md)
 
-**Quick Reference**: [COOLIFY_QUICK_DEPLOY.md](COOLIFY_QUICK_DEPLOY.md)
-
 **Quick Deploy:**
-1. Create 4 services in Coolify:
-   - MySQL Database (managed)
-   - Redis Database (managed)
-   - Web Application (Docker Image: `ghcr.io/mrailton/southeastarchers-web:latest`)
-   - Worker (Docker Image: `ghcr.io/mrailton/southeastarchers-worker:latest`)
-2. Add environment variables to each service (see `.env.example`)
-3. Configure webhook for auto-deploy
-4. Push to main → GitHub Actions builds → Coolify deploys!
-
-**What happens on deployment:**
-- GitHub Actions runs tests
-- Builds Docker images for web and worker
-- Pushes images to GHCR
-- Triggers Coolify webhook
-- Coolify pulls latest images and restarts services
+1. GitHub Actions builds and pushes images to GHCR
+2. Configure Dokploy to pull from GHCR
+3. Set environment variables
+4. Deploy
 
 ### Manual Docker
 
 ```bash
-# Build images
-docker build -f Dockerfile.web -t sea-app .
-docker build -f Dockerfile.worker -t sea-worker .
+# Using Docker Compose (Production)
+cd docker
+docker-compose up -d
+
+# Or build individual images
+docker build -f docker/Dockerfile.web -t sea-app .
+docker build -f docker/Dockerfile.worker -t sea-worker .
 
 # Run web server
 docker run -p 5000:5000 --env-file .env sea-app
@@ -89,21 +135,29 @@ docker run --env-file .env sea-worker
 ## Development Commands
 
 ```bash
-make help           # Show all available commands
-make install        # Install all dependencies
-make dev            # Run dev server + asset watcher
-make test           # Run test suite
-make test-cov       # Run tests with coverage
-make worker         # Start RQ worker
-make worker-dev     # Start worker with auto-reload
-make format         # Format code
-make format-check   # Check code quality
+# Docker (Recommended)
+make docker-up        # Start all services with Docker Compose
+make docker-down      # Stop all services
+make docker-logs      # View logs
+make docker-rebuild   # Rebuild containers
+make docker-shell     # Open shell in web container
+
+# Local Development (Without Docker)
+make help             # Show all available commands
+make install          # Install all dependencies
+make dev              # Run dev server + asset watcher
+make test             # Run test suite
+make test-cov         # Run tests with coverage
+make worker-dev       # Start worker with auto-reload
+make format           # Format code
+make format-check     # Check code quality
 ```
 
 ## Documentation
 
+- [Docker Setup Guide](docker/README.md) - Comprehensive Docker Compose documentation
 - [Background Jobs Guide](docs/BACKGROUND_JOBS.md) - Redis & RQ setup
-- [Coolify Deployment](docs/COOLIFY_DEPLOYMENT.md) - Production deployment guide
+- [Coolify Deployment](docs/COOLIFY_DEPLOYMENT.md) - Legacy deployment guide
 
 ## License
 

@@ -96,7 +96,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.web
+          file: ./docker/Dockerfile.web
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -121,7 +121,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.worker
+          file: ./docker/Dockerfile.worker
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta-worker.outputs.tags }}

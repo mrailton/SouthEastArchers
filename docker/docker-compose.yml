@@ -45,6 +45,9 @@ services:
       FLASK_ENV: ${FLASK_ENV:-production}
       FLASK_APP: web.py
       SECRET_KEY: ${SECRET_KEY}
+      SERVER_NAME: ${SERVER_NAME}
+      PREFERRED_URL_SCHEME: ${PREFERRED_URL_SCHEME:-https}
+      SITE_URL: ${SITE_URL}
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:-appuser}:${MYSQL_PASSWORD:-changeme}@db:3306/${MYSQL_DATABASE:-southeastarchers}
       REDIS_URL: redis://redis:6379/0
       MAIL_SERVER: ${MAIL_SERVER}
@@ -71,6 +74,9 @@ services:
       FLASK_ENV: ${FLASK_ENV:-production}
       FLASK_APP: web.py
       SECRET_KEY: ${SECRET_KEY}
+      SERVER_NAME: ${SERVER_NAME}
+      PREFERRED_URL_SCHEME: ${PREFERRED_URL_SCHEME:-https}
+      SITE_URL: ${SITE_URL}
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:-appuser}:${MYSQL_PASSWORD:-changeme}@db:3306/${MYSQL_DATABASE:-southeastarchers}
       REDIS_URL: redis://redis:6379/0
       MAIL_SERVER: ${MAIL_SERVER}

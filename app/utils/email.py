@@ -27,6 +27,13 @@ def send_payment_receipt(user, payment, membership):
             "cash": "Cash Payment",
         }.get(payment.payment_method, payment.payment_method.title())
 
+        # Generate login URL safely
+        try:
+            login_url = url_for("auth.login", _external=True)
+        except RuntimeError:
+            # Fallback if SERVER_NAME not configured
+            login_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/login"
+
         # Prepare template data
         template_data = {
             "name": user.name,
@@ -43,7 +50,7 @@ def send_payment_receipt(user, payment, membership):
             "membership_start": membership.start_date.strftime("%d %B %Y"),
             "membership_expiry": membership.expiry_date.strftime("%d %B %Y"),
             "credits": membership.credits,
-            "login_url": url_for("auth.login", _external=True),
+            "login_url": login_url,
         }
 
         # Render email templates
@@ -77,6 +84,13 @@ def send_welcome_email(user, membership):
         membership: Membership object
     """
     try:
+        # Generate login URL safely
+        try:
+            login_url = url_for("auth.login", _external=True)
+        except RuntimeError:
+            # Fallback if SERVER_NAME not configured
+            login_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/login"
+
         # You can create welcome email templates later
         # For now, we'll just use a simple message
         html_body = f"""
@@ -91,7 +105,7 @@ def send_welcome_email(user, membership):
                 <li>Expiry Date: {membership.expiry_date.strftime('%d %B %Y')}</li>
                 <li>Credits: {membership.credits} shooting nights</li>
             </ul>
-            <p><a href="{url_for('auth.login', _external=True)}">Login to your account</a></p>
+            <p><a href="{login_url}">Login to your account</a></p>
             <p>Best regards,<br>South East Archers</p>
         </body>
         </html>

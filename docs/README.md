@@ -13,11 +13,13 @@ Welcome to the South East Archers documentation!
 - [Dokploy Deployment Guide](DOKPLOY_DEPLOYMENT.md) - Step-by-step deployment to Dokploy
 - [GHCR Integration Guide](GHCR_INTEGRATION.md) - Using GitHub Container Registry
 - [Docker Migration Notes](DOCKER_MIGRATION.md) - What changed in the Docker setup
+- [Database Access Guide](DATABASE_ACCESS.md) - External database access methods
 
 ## 🔧 Technical Guides
 
 - [Background Jobs Guide](BACKGROUND_JOBS.md) - Redis & RQ setup (if exists)
 - [RQ Worker Context Fix](RQ_WORKER_FIX.md) - Flask application context in workers
+- [URL Generation Fix](URL_GENERATION_FIX.md) - URL generation in background jobs
 - [Sum Up Warning Fix](SUMUP_WARNING_FIX.md) - Third-party library warning suppression
 
 ## 📦 Legacy Documentation
@@ -56,7 +58,8 @@ Welcome to the South East Archers documentation!
 ### For Operations
 1. Check: [Docker Quick Reference](../docker/QUICK_REFERENCE.md)
 2. Background jobs: [Background Jobs Guide](BACKGROUND_JOBS.md)
-3. Issues: [Sum Up Warning Fix](SUMUP_WARNING_FIX.md)
+3. Database access: [Database Access Guide](DATABASE_ACCESS.md)
+4. Issues: [Sum Up Warning Fix](SUMUP_WARNING_FIX.md)
 
 ## 💡 Need Help?
 

@@ -10,6 +10,11 @@ class Config:
     DEBUG = False
     TESTING = False
 
+    # Server configuration for URL generation outside request context
+    SERVER_NAME = os.environ.get("SERVER_NAME")  # e.g., "southeastarchers.ie"
+    PREFERRED_URL_SCHEME = os.environ.get("PREFERRED_URL_SCHEME", "https")
+    APPLICATION_ROOT = os.environ.get("APPLICATION_ROOT", "/")
+
     # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "mysql+pymysql://sea_user:sea_password@localhost:3306/sea_db"
@@ -67,6 +72,8 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_ECHO = False
     MAIL_USE_TLS = False
     MAIL_USE_SSL = False
+    SERVER_NAME = os.environ.get("SERVER_NAME", "localhost:5000")
+    PREFERRED_URL_SCHEME = "http"
 
 
 class TestingConfig(Config):
@@ -76,6 +83,8 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
     SESSION_COOKIE_SECURE = False
+    SERVER_NAME = "localhost.localdomain"
+    PREFERRED_URL_SCHEME = "http"
 
 
 class ProductionConfig(Config):

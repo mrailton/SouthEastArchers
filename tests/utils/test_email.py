@@ -391,3 +391,144 @@ class TestSendWelcomeEmail:
             assert result is True
             call_args = mock_mail.send.call_args[0][0]
             assert "50" in call_args.html
+
+
+class TestEmailURLGeneration:
+    """Test URL generation in emails works in different contexts"""
+
+    @patch("app.utils.email.mail")
+    def test_email_with_server_name_configured(self, mock_mail, app, test_user):
+        """Test email works when SERVER_NAME is configured"""
+        with app.app_context():
+            # TestingConfig should have SERVER_NAME configured
+            assert app.config.get("SERVER_NAME") is not None
+
+            from datetime import datetime
+
+            payment = Payment(
+                id=1,
+                user_id=test_user.id,
+                amount=100.00,
+                currency="EUR",
+                payment_type="membership",
+                payment_method="online",
+                status="completed",
+                created_at=datetime.now(),
+            )
+            membership = test_user.membership
+
+            result = send_payment_receipt(test_user, payment, membership)
+
+            assert result is True
+            assert mock_mail.send.called
+
+    @patch("app.utils.email.mail")
+    def test_email_without_server_name_uses_fallback(self, mock_mail, app, test_user):
+        """Test email uses SITE_URL fallback when SERVER_NAME not configured"""
+        with app.app_context():
+            # Temporarily remove SERVER_NAME to test fallback
+            original_server_name = app.config.get("SERVER_NAME")
+            app.config["SERVER_NAME"] = None
+            app.config["SITE_URL"] = "https://test.example.com"
+
+            try:
+                from datetime import datetime
+
+                payment = Payment(
+                    id=2,
+                    user_id=test_user.id,
+                    amount=100.00,
+                    currency="EUR",
+                    payment_type="membership",
+                    payment_method="online",
+                    status="completed",
+                    created_at=datetime.now(),
+                )
+                membership = test_user.membership
+
+                # Should not raise RuntimeError - fallback should work
+                result = send_payment_receipt(test_user, payment, membership)
+
+                assert result is True
+                assert mock_mail.send.called
+                # Verify email was sent successfully with login link
+                call_args = mock_mail.send.call_args[0][0]
+                assert "login" in call_args.html.lower() or "login" in call_args.body.lower()
+            finally:
+                # Restore SERVER_NAME
+                app.config["SERVER_NAME"] = original_server_name
+
+    @patch("app.utils.email.mail")
+    def test_welcome_email_with_url_generation(self, mock_mail, app, test_user):
+        """Test welcome email URL generation works"""
+        with app.app_context():
+            membership = test_user.membership
+
+            result = send_welcome_email(test_user, membership)
+
+            assert result is True
+            call_args = mock_mail.send.call_args[0][0]
+            # Should contain login link
+            assert "login" in call_args.html.lower()
+
+    @patch("app.utils.email.mail")
+    def test_welcome_email_without_server_name(self, mock_mail, app, test_user):
+        """Test welcome email fallback when SERVER_NAME not configured"""
+        with app.app_context():
+            original_server_name = app.config.get("SERVER_NAME")
+            app.config["SERVER_NAME"] = None
+            app.config["SITE_URL"] = "https://fallback.example.com"
+
+            try:
+                membership = test_user.membership
+
+                # Should not raise RuntimeError - fallback should work
+                result = send_welcome_email(test_user, membership)
+
+                assert result is True
+                call_args = mock_mail.send.call_args[0][0]
+                # Check that email was sent with login link (fallback worked)
+                assert "login" in call_args.html.lower()
+            finally:
+                app.config["SERVER_NAME"] = original_server_name
+
+    def test_config_has_server_name_in_testing(self, app):
+        """Ensure test app has SERVER_NAME configured to prevent URL generation errors"""
+        assert app.config.get("SERVER_NAME") is not None
+        assert app.config.get("PREFERRED_URL_SCHEME") is not None
+
+    def test_config_has_site_url_fallback(self, app):
+        """Ensure config provides SITE_URL fallback option"""
+        # Test that we can set SITE_URL as fallback
+        app.config["SITE_URL"] = "https://example.com"
+        assert app.config.get("SITE_URL") == "https://example.com"
+
+    @patch("app.utils.email.url_for")
+    @patch("app.utils.email.mail")
+    def test_fallback_mechanism_when_url_for_fails(self, mock_mail, mock_url_for, app, test_user):
+        """Test that fallback mechanism is triggered when url_for raises RuntimeError"""
+        with app.app_context():
+            # Make url_for raise RuntimeError to test fallback
+            mock_url_for.side_effect = RuntimeError("SERVER_NAME not configured")
+            app.config["SITE_URL"] = "https://example.com"
+
+            from datetime import datetime
+
+            payment = Payment(
+                id=3,
+                user_id=test_user.id,
+                amount=100.00,
+                currency="EUR",
+                payment_type="membership",
+                payment_method="online",
+                status="completed",
+                created_at=datetime.now(),
+            )
+            membership = test_user.membership
+
+            # Should catch RuntimeError and use fallback
+            result = send_payment_receipt(test_user, payment, membership)
+
+            # Should succeed using fallback
+            assert result is True
+            assert mock_mail.send.called

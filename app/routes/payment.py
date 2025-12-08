@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+import uuid
 
 from flask import (
     Blueprint,
@@ -133,7 +134,7 @@ def membership_payment():
 
         # Create SumUp checkout
         sumup_service = SumUpService()
-        checkout_reference = f"membership_{user.id}_{payment.id}"
+        checkout_reference = f"membership_{user.id}_{payment.id}_{uuid.uuid4().hex[:8]}"
 
         checkout = sumup_service.create_checkout(
             amount=amount,
@@ -185,7 +186,7 @@ def credits():
 
         # Create SumUp checkout
         sumup_service = SumUpService()
-        checkout_reference = f"credits_{user.id}_{payment.id}"
+        checkout_reference = f"credits_{user.id}_{payment.id}_{uuid.uuid4().hex[:8]}"
 
         checkout = sumup_service.create_checkout(
             amount=amount,

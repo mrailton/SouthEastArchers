@@ -140,8 +140,9 @@ def signup():
             # Create SumUp checkout
             sumup_service = SumUpService()
 
-            # Generate unique checkout reference
-            checkout_reference = f"membership_{user.id}_{payment.id}"
+            # Generate unique checkout reference with timestamp to avoid conflicts
+            import uuid
+            checkout_reference = f"membership_{user.id}_{payment.id}_{uuid.uuid4().hex[:8]}"
 
             # Include user name in description for easy matching in SumUp
             checkout = sumup_service.create_checkout(

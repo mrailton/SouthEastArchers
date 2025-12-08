@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Alternative production compose file that builds images locally
 # Use this if you want to build images locally instead of pulling from GHCR
 # Usage: docker-compose -f docker-compose.build.yml up -d

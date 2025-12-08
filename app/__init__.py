@@ -25,9 +25,13 @@ redis_client = None
 task_queue = None
 
 
-def create_app(config_name="development"):
+def create_app(config_name=None):
     """Application factory"""
     from config.config import config
+
+    # Determine config from environment if not specified
+    if config_name is None:
+        config_name = os.environ.get("FLASK_ENV", "development")
 
     app = Flask(
         __name__,
@@ -75,6 +79,14 @@ def create_app(config_name="development"):
     migrate.init_app(app, db)
     mail.init_app(app)
     bcrypt.init_app(app)
+
+    # Debug: Log mail configuration
+    app.logger.info(f"Mail Configuration:")
+    app.logger.info(f"  MAIL_SERVER: {app.config.get('MAIL_SERVER')}")
+    app.logger.info(f"  MAIL_PORT: {app.config.get('MAIL_PORT')}")
+    app.logger.info(f"  MAIL_USE_TLS: {app.config.get('MAIL_USE_TLS')} (type: {type(app.config.get('MAIL_USE_TLS'))})")
+    app.logger.info(f"  MAIL_USE_SSL: {app.config.get('MAIL_USE_SSL')} (type: {type(app.config.get('MAIL_USE_SSL'))})")
+    app.logger.info(f"  MAIL_USERNAME: {app.config.get('MAIL_USERNAME')}")
 
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"

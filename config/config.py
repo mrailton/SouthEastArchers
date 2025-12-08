@@ -35,17 +35,22 @@ class Config:
         "true",
         "1",
         "yes",
+        "on",
     )
     MAIL_USE_SSL = os.environ.get("MAIL_USE_SSL", "False").lower() in (
         "true",
         "1",
         "yes",
+        "on",
     )
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = os.environ.get(
         "MAIL_DEFAULT_SENDER", "noreply@southeastarchers.ie"
     )
+    # Additional mail settings for better compatibility
+    MAIL_SUPPRESS_SEND = False
+    MAIL_DEBUG = False
 
     # Payment
     SUMUP_API_KEY = os.environ.get("SUMUP_API_KEY")

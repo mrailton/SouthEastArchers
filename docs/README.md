@@ -20,6 +20,7 @@ Welcome to the South East Archers documentation!
 - [Background Jobs Guide](BACKGROUND_JOBS.md) - Redis & RQ setup (if exists)
 - [RQ Worker Context Fix](RQ_WORKER_FIX.md) - Flask application context in workers
 - [URL Generation Fix](URL_GENERATION_FIX.md) - URL generation in background jobs
+- [Email Configuration](EMAIL_CONFIGURATION.md) - SMTP setup and troubleshooting
 - [Sum Up Warning Fix](SUMUP_WARNING_FIX.md) - Third-party library warning suppression
 
 ## 📦 Legacy Documentation

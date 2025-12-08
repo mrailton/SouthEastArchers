@@ -1,5 +1,6 @@
 import pytest
 from flask import url_for
+from unittest.mock import patch
 
 from app import db
 from app.models import User
@@ -14,7 +15,8 @@ class TestPasswordReset:
         assert response.status_code == 200
         assert b"Forgot Password" in response.data or b"Reset Password" in response.data
 
-    def test_forgot_password_with_valid_email(self, client, test_user):
+    @patch("app.routes.auth.mail.send")
+    def test_forgot_password_with_valid_email(self, mock_mail_send, client, test_user):
         """Test forgot password with valid email"""
         response = client.post(
             "/auth/forgot-password",
@@ -23,9 +25,16 @@ class TestPasswordReset:
         )
 
         assert response.status_code == 200
-        assert b"password reset link" in response.data.lower()
+        # Check for the actual flash message
+        assert (
+            b"password reset link" in response.data.lower()
+            or b"if an account exists" in response.data.lower()
+        )
+        # Verify email was attempted to be sent
+        assert mock_mail_send.called
 
-    def test_forgot_password_with_invalid_email(self, client):
+    @patch("app.routes.auth.mail.send")
+    def test_forgot_password_with_invalid_email(self, mock_mail_send, client):
         """Test forgot password with non-existent email"""
         response = client.post(
             "/auth/forgot-password",
@@ -34,7 +43,13 @@ class TestPasswordReset:
         )
 
         assert response.status_code == 200
-        assert b"password reset link" in response.data.lower()
+        # Same message for security (don't reveal if email exists)
+        assert (
+            b"password reset link" in response.data.lower()
+            or b"if an account exists" in response.data.lower()
+        )
+        # Email should not be sent for non-existent user
+        assert not mock_mail_send.called
 
     def test_generate_reset_token(self, app, test_user):
         """Test that user can generate a reset token"""

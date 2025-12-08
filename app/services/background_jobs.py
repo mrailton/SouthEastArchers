@@ -1,10 +1,23 @@
 """Background job tasks for async processing using RQ"""
 
-from flask import current_app, render_template, url_for
+from flask import current_app, has_app_context, render_template, url_for
 from flask_mail import Message
 
 from app import db, mail
 from app.models import Membership, Payment, User
+
+
+def _get_app_context():
+    """Get or create app context for background jobs"""
+    if has_app_context():
+        # Already in app context (e.g., during tests)
+        return None
+    else:
+        # Create new app context for worker
+        from app import create_app
+
+        app = create_app()
+        return app.app_context()
 
 
 def send_payment_receipt_job(user_id, payment_id):
@@ -15,10 +28,11 @@ def send_payment_receipt_job(user_id, payment_id):
         user_id: User ID
         payment_id: Payment ID
     """
-    from app import create_app
+    ctx = _get_app_context()
+    try:
+        if ctx:
+            ctx.push()
 
-    app = create_app()
-    with app.app_context():
         # Import here to avoid circular dependency
         from app.utils.email import send_payment_receipt
 
@@ -38,6 +52,9 @@ def send_payment_receipt_job(user_id, payment_id):
         current_app.logger.info(
             f"Payment receipt sent to {user.email} for payment {payment_id}"
         )
+    finally:
+        if ctx:
+            ctx.pop()
 
 
 def send_password_reset_job(user_id, token):
@@ -48,10 +65,11 @@ def send_password_reset_job(user_id, token):
         user_id: User ID
         token: Reset token
     """
-    from app import create_app
+    ctx = _get_app_context()
+    try:
+        if ctx:
+            ctx.push()
 
-    app = create_app()
-    with app.app_context():
         user = db.session.get(User, user_id)
 
         if not user:
@@ -76,6 +94,9 @@ def send_password_reset_job(user_id, token):
         mail.send(msg)
 
         current_app.logger.info(f"Password reset email sent to {user.email}")
+    finally:
+        if ctx:
+            ctx.pop()
 
 
 def send_membership_expiry_reminder_job(user_id):
@@ -85,10 +106,11 @@ def send_membership_expiry_reminder_job(user_id):
     Args:
         user_id: User ID
     """
-    from app import create_app
+    ctx = _get_app_context()
+    try:
+        if ctx:
+            ctx.push()
 
-    app = create_app()
-    with app.app_context():
         user = db.session.get(User, user_id)
 
         if not user or not user.membership:
@@ -130,6 +152,9 @@ def send_membership_expiry_reminder_job(user_id):
         current_app.logger.info(
             f"Membership expiry reminder sent to {user.email} ({days_until_expiry} days remaining)"
         )
+    finally:
+        if ctx:
+            ctx.pop()
 
 
 def check_expiring_memberships_job():
@@ -140,10 +165,11 @@ def check_expiring_memberships_job():
     """
     from datetime import date, timedelta
 
-    from app import create_app
+    ctx = _get_app_context()
+    try:
+        if ctx:
+            ctx.push()
 
-    app = create_app()
-    with app.app_context():
         # Get memberships expiring in 7 days
         expiry_date = date.today() + timedelta(days=7)
 
@@ -169,3 +195,6 @@ def check_expiring_memberships_job():
         current_app.logger.info(
             f"Sent {count} membership expiry reminders for {len(expiring_memberships)} expiring memberships"
         )
+    finally:
+        if ctx:
+            ctx.pop()

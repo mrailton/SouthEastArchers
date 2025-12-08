@@ -18,69 +18,113 @@ RQ workers run in a separate process from the Flask application. When a job is e
 
 ## Solution
 
-Wrapped each background job function with Flask's application context:
+Created a smart context manager that:
+1. Checks if already running in an app context (e.g., during tests)
+2. If yes, uses existing context
+3. If no, creates new context for the worker
 
 ```python
+def _get_app_context():
+    """Get or create app context for background jobs"""
+    if has_app_context():
+        # Already in app context (e.g., during tests)
+        return None
+    else:
+        # Create new app context for worker
+        from app import create_app
+        app = create_app()
+        return app.app_context()
+
 def send_payment_receipt_job(user_id, payment_id):
-    from app import create_app
-    
-    app = create_app()
-    with app.app_context():
-        # Job code here - now has access to Flask context
+    ctx = _get_app_context()
+    try:
+        if ctx:
+            ctx.push()
+        
+        # Job code here - has access to Flask context
         user = db.session.get(User, user_id)
         # ... rest of job
+    finally:
+        if ctx:
+            ctx.pop()
 ```
 
 ## Files Updated
 
-- **app/services/background_jobs.py** - All job functions now create app context
+- **app/services/background_jobs.py** - All job functions now use smart context
 
 ## How It Works
 
-1. Each job imports `create_app` from the app factory
-2. Creates a new Flask app instance
-3. Uses `app.app_context()` context manager
-4. All code inside the context has access to Flask features
+### In Production (RQ Worker)
+1. `has_app_context()` returns `False`
+2. Creates new Flask app instance
+3. Pushes app context
+4. Executes job
+5. Pops context in finally block
+
+### In Tests
+1. Test fixture already provides app context
+2. `has_app_context()` returns `True`
+3. Returns `None` (no new context needed)
+4. Job uses existing test context
+5. Test can mock/verify normally
+
+## Benefits
+
+- ✅ Works in production workers
+- ✅ Works in test environment
+- ✅ No duplicate contexts
+- ✅ Proper cleanup with try/finally
+- ✅ Each job is self-contained
+- ✅ Easy to test individually
 
 ## Testing
 
 ```python
+# In tests - job uses test app context
+def test_send_payment_receipt_job(app, test_user_with_payment):
+    user = test_user_with_payment["user"]
+    payment = test_user_with_payment["payment"]
+    
+    # Already in app.app_context(), job will detect and use it
+    send_payment_receipt_job(user.id, payment.id)
+    # Works!
+
+# In production - job creates its own context
 # Queue a job
-from app.services.queue import queue_job
-
 queue_job('send_payment_receipt_job', user_id=1, payment_id=1)
-
-# Check worker logs - should see success instead of error
+# Worker creates context automatically
 ```
 
-## Alternative Approaches
+## Why This Approach?
 
-### Option 1: Push App Context in Worker (Not Chosen)
-Could modify `worker.py` to push app context globally, but this is less flexible and harder to test.
+### Alternative 1: Always Create Context (Previous)
+❌ Creates unnecessary nested contexts in tests
+❌ Can cause database session issues
+❌ Tests try to connect to production database
 
-### Option 2: Use Flask-RQ2 (Overkill)
-Flask-RQ2 automatically handles context, but adds another dependency and wraps RQ heavily.
+### Alternative 2: Push Context in Worker
+❌ Less flexible
+❌ Harder to test
+❌ Global state issues
 
-### Option 3: Current Approach (Chosen) ✅
-Each job manages its own context - explicit, testable, and no extra dependencies.
-
-## Benefits
-
-- ✅ Explicit and clear
-- ✅ Each job is self-contained
-- ✅ Easy to test individually
-- ✅ No global state issues
-- ✅ Works with RQ's worker architecture
+### Alternative 3: Smart Context Detection (Current) ✅
+✅ Works everywhere
+✅ Efficient
+✅ Test-friendly
+✅ Production-ready
 
 ## Important Notes
 
-- Each job creates its own app instance - this is fine for background jobs
-- The app instance is lightweight and created on-demand
-- Database connections are managed per job (committed/rolled back properly)
-- No memory leaks - context manager ensures cleanup
+- Uses `has_app_context()` to detect existing context
+- Uses `try/finally` to ensure cleanup
+- Context only created when needed
+- No memory leaks or connection issues
+- Works with Flask's request-local state
 
 ## Related Documentation
 
 - [Background Jobs Guide](BACKGROUND_JOBS.md)
 - [Flask Application Context](https://flask.palletsprojects.com/en/latest/appcontext/)
 - [RQ Documentation](https://python-rq.org/)
+

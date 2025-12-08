@@ -49,9 +49,6 @@ def send_payment_receipt_job(user_id, payment_id):
 
         # Send receipt email
         send_payment_receipt(user, payment, membership)
-        current_app.logger.info(
-            f"Payment receipt sent to {user.email} for payment {payment_id}"
-        )
     finally:
         if ctx:
             ctx.pop()

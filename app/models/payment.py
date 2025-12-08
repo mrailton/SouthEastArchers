@@ -24,19 +24,21 @@ class Payment(db.Model):
         default="pending",
         index=True,
     )
-    sumup_transaction_id = db.Column(
+    description = db.Column(db.Text)
+    payment_processor = db.Column(
+        db.String(50), nullable=True
+    )  # e.g., 'sumup', 'stripe', etc.
+    external_transaction_id = db.Column(
         db.String(255), unique=True, nullable=True, index=True
     )
-    sumup_receipt_url = db.Column(db.String(500))
-    description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
-    def mark_completed(self, sumup_transaction_id=None, receipt_url=None):
+    def mark_completed(self, transaction_id=None, processor=None):
         """Mark payment as completed"""
         self.status = "completed"
-        self.sumup_transaction_id = sumup_transaction_id
-        self.sumup_receipt_url = receipt_url
+        self.external_transaction_id = transaction_id
+        self.payment_processor = processor
 
     def mark_failed(self):
         """Mark payment as failed"""

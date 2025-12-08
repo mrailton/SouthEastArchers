@@ -53,7 +53,7 @@ class PaymentProcessingService:
             return None
 
         transaction_id = result.get("transaction_id") or checkout_id
-        payment.mark_completed(transaction_id)
+        payment.mark_completed(transaction_id, processor="sumup")
         if user.membership:
             user.membership.activate()
         db.session.commit()
@@ -85,7 +85,7 @@ class PaymentProcessingService:
             return None
 
         transaction_id = result.get("transaction_id") or checkout_id
-        payment.mark_completed(transaction_id)
+        payment.mark_completed(transaction_id, processor="sumup")
 
         # Renew or create membership
         if user.membership:
@@ -129,7 +129,7 @@ class PaymentProcessingService:
             return None
 
         transaction_id = result.get("transaction_id") or checkout_id
-        payment.mark_completed(transaction_id)
+        payment.mark_completed(transaction_id, processor="sumup")
 
         # Add credits
         credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)

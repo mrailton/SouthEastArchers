@@ -203,22 +203,6 @@ def forgot_password():
             token = user.generate_reset_token()
             reset_url = url_for("auth.reset_password", token=token, _external=True)
 
-            current_app.logger.info(
-                f"Attempting to send password reset email to {user.email}"
-            )
-            current_app.logger.debug(
-                f'Mail server: {current_app.config.get("MAIL_SERVER")}:{current_app.config.get("MAIL_PORT")}'
-            )
-            current_app.logger.debug(
-                f'Mail TLS: {current_app.config.get("MAIL_USE_TLS")}'
-            )
-            current_app.logger.debug(
-                f'Mail username: {current_app.config.get("MAIL_USERNAME")}'
-            )
-            current_app.logger.debug(
-                f'Mail sender: {current_app.config.get("MAIL_DEFAULT_SENDER")}'
-            )
-
             msg = Message(
                 "Password Reset Request",
                 recipients=[user.email],
@@ -229,7 +213,6 @@ def forgot_password():
 
             try:
                 mail.send(msg)
-                current_app.logger.info(f"Password reset email sent to {user.email}")
             except Exception as e:
                 current_app.logger.error(
                     f"Failed to send password reset email to {user.email}: {str(e)}",

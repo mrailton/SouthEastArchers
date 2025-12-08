@@ -312,7 +312,10 @@ class TestProcessCheckoutPayment:
         with app.app_context():
             mock_response = Mock()
             mock_response.status = "PAID"
-            mock_response.transaction_id = "txn_123"
+            mock_response.transaction_id = "txn_internal_123"
+            mock_response.transaction_code = (
+                "TXN-CODE-123"  # Searchable transaction code
+            )
 
             mock_client = Mock()
             mock_client.checkouts.process.return_value = mock_response
@@ -331,7 +334,9 @@ class TestProcessCheckoutPayment:
             assert result is not None
             assert result["success"] is True
             assert result["status"] == "PAID"
-            assert result["transaction_id"] == "txn_123"
+            # Should use transaction_code (searchable in SumUp)
+            assert result["transaction_id"] == "TXN-CODE-123"
+            assert result["transaction_code"] == "TXN-CODE-123"
 
     @patch("app.services.sumup_service.Sumup")
     def test_process_payment_converts_two_digit_year(self, mock_sumup_class, app):

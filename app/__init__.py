@@ -80,22 +80,17 @@ def create_app(config_name=None):
     mail.init_app(app)
     bcrypt.init_app(app)
 
-    # Debug: Log mail configuration
-    app.logger.info("Mail Configuration")
-    app.logger.info(f"  MAIL_SERVER: {app.config.get('MAIL_SERVER')}")
-    app.logger.info(f"  MAIL_PORT: {app.config.get('MAIL_PORT')}")
-    app.logger.info(
-        f"  MAIL_USE_TLS: {app.config.get('MAIL_USE_TLS')} (type: {type(app.config.get('MAIL_USE_TLS'))})"
-    )
-    app.logger.info(
-        f"  MAIL_USE_SSL: {app.config.get('MAIL_USE_SSL')} (type: {type(app.config.get('MAIL_USE_SSL'))})"
-    )
-    app.logger.info(f"  MAIL_USERNAME: {app.config.get('MAIL_USERNAME')}")
-
+    # Setup flask login
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
     login_manager.login_message = "Please log in to access this page."
     login_manager.login_message_category = "warning"
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        from app.models import User
+
+        return db.session.get(User, int(user_id))
 
     # Initialize Redis and RQ for background jobs
     global redis_client, task_queue
@@ -113,12 +108,6 @@ def create_app(config_name=None):
 
         redis_client = None
         task_queue = None
-
-    @login_manager.user_loader
-    def load_user(user_id):
-        from app.models import User
-
-        return db.session.get(User, int(user_id))
 
     # Register blueprints
     from app.routes import admin_bp, auth_bp, member_bp, payment_bp, public_bp

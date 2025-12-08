@@ -39,9 +39,10 @@ class TestPayment:
         db.session.add(payment)
         db.session.commit()
 
-        payment.mark_completed("txn_123")
+        payment.mark_completed("txn_123", processor="sumup")
         assert payment.status == "completed"
-        assert payment.sumup_transaction_id == "txn_123"
+        assert payment.external_transaction_id == "txn_123"
+        assert payment.payment_processor == "sumup"
 
     def test_mark_failed(self, app, test_user):
         """Test marking payment as failed"""

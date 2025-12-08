@@ -45,7 +45,7 @@ def send_payment_receipt(user, payment, membership):
             "description": payment.description or "Annual Membership",
             "payment_method": payment_method_display,
             "transaction_id": (
-                payment.sumup_transaction_id
+                payment.external_transaction_id
                 if payment.payment_method == "online"
                 else None
             ),

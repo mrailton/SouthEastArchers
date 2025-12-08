@@ -100,8 +100,8 @@ class TestSignupWithCashPayment:
         user = User.query.filter_by(email="cash@example.com").first()
         payment = Payment.query.filter_by(user_id=user.id).first()
 
-        assert payment.sumup_transaction_id is None
-        assert payment.sumup_receipt_url is None
+        assert payment.external_transaction_id is None
+        assert payment.payment_processor is None
 
 
 class TestSignupWithOnlinePayment:

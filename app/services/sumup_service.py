@@ -206,12 +206,17 @@ class SumUpService:
             # Check the response status
             status = getattr(response, "status", None)
 
+            # Get transaction details
+            transaction_code = getattr(response, "transaction_code", None)
+            transaction_id = getattr(response, "transaction_id", None)
+
             # Return processed result with actual status
             return {
                 "success": status == "PAID",
                 "status": status,
                 "checkout_id": checkout_id,
-                "transaction_id": getattr(response, "transaction_id", None),
+                "transaction_id": transaction_code or transaction_id,
+                "transaction_code": transaction_code,
                 "response": response,
             }
 

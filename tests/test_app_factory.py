@@ -19,8 +19,10 @@ class TestAppFactory:
         assert app.config["TESTING"] is True
         assert "sqlite" in app.config["SQLALCHEMY_DATABASE_URI"]
 
-    def test_create_app_development_config(self):
+    def test_create_app_development_config(self, monkeypatch):
         """Test app creation with development config (default)"""
+        monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
+        monkeypatch.setenv("SECRET_KEY", "test-secret")
         app = create_app("development")
         assert app is not None
         assert app.config["TESTING"] is False

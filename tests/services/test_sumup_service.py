@@ -48,7 +48,7 @@ class TestCreateCheckout:
 
             service = SumUpService(api_key="test_key")
             result = service.create_checkout(
-                amount=100.00,
+                amount=10000,  # 100.00 EUR in cents
                 currency="EUR",
                 description="Test payment",
                 checkout_reference="ref_123",
@@ -75,7 +75,7 @@ class TestCreateCheckout:
             mock_sumup_class.return_value = mock_client
 
             service = SumUpService(api_key="test_key")
-            result = service.create_checkout(amount=50.00)
+            result = service.create_checkout(amount=5000)  # 50.00 EUR in cents
 
             assert result is not None
             assert result["id"] == "checkout_123"
@@ -97,7 +97,7 @@ class TestCreateCheckout:
             mock_sumup_class.return_value = mock_client
 
             service = SumUpService(api_key="test_key")
-            result = service.create_checkout(amount=100.00)
+            result = service.create_checkout(amount=10000)
 
             assert result is not None
 
@@ -111,7 +111,7 @@ class TestCreateCheckout:
             mock_sumup_class.return_value = mock_client
 
             service = SumUpService(api_key="test_key")
-            result = service.create_checkout(amount=100.00)
+            result = service.create_checkout(amount=10000)
 
             assert result is None
 
@@ -127,7 +127,7 @@ class TestCreateCheckout:
             mock_sumup_class.return_value = mock_client
 
             service = SumUpService(api_key="test_key")
-            result = service.create_checkout(amount=100.00)
+            result = service.create_checkout(amount=10000)
 
             assert result is None
 
@@ -143,7 +143,7 @@ class TestCreateCheckout:
             mock_sumup_class.return_value = mock_client
 
             service = SumUpService(api_key="test_key")
-            result = service.create_checkout(amount=100.00)
+            result = service.create_checkout(amount=10000)
 
             assert result is None
 
@@ -158,7 +158,7 @@ class TestCreateCheckout:
             mock_sumup_class.return_value = mock_client
 
             service = SumUpService(api_key="test_key")
-            result = service.create_checkout(amount=100.00)
+            result = service.create_checkout(amount=10000)
 
             assert result is None
 

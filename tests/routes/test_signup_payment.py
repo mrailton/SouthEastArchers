@@ -208,7 +208,7 @@ class TestSignupWithOnlinePayment:
             "success": True,
             "status": "PAID",
             "checkout_id": "test_checkout_123",
-            "transaction_id": "txn_123",
+            "transaction_code": "TXN", "transaction_id": "txn_123",
         }
 
         # Set up session for payment processing

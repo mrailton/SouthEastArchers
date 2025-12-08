@@ -6,11 +6,39 @@ from flask import current_app, flash, redirect, session, url_for
 
 from app import db, task_queue
 from app.models import Credit, Membership, Payment, User
+from app.services.sumup_service import SumUpService
 from app.utils.session import clear_session_keys
 
 
+class PaymentService:
+    """Main payment service that orchestrates payment processing"""
+
+    def __init__(self):
+        self.processor = SumUpService()
+
+    def create_checkout(self, amount_cents, description):
+        """Create a payment checkout"""
+        return self.processor.create_checkout(
+            amount=amount_cents,
+            currency="EUR",
+            description=description,
+            checkout_reference=None,  # Can be added if needed
+        )
+
+    def process_payment(self, checkout_id, card_number, card_name, expiry_month, expiry_year, cvv):
+        """Process a payment after customer completes checkout"""
+        return self.processor.process_checkout_payment(
+            checkout_id=checkout_id,
+            card_number=card_number,
+            card_name=card_name,
+            expiry_month=expiry_month,
+            expiry_year=expiry_year,
+            cvv=cvv,
+        )
+
+
 class PaymentProcessingService:
-    """Service for processing different types of payments"""
+    """Service for handling payment business logic after processing"""
 
     @staticmethod
     def queue_payment_receipt(user_id, payment_id):
@@ -52,7 +80,7 @@ class PaymentProcessingService:
         if not payment or not user:
             return None
 
-        transaction_id = result.get("transaction_id") or checkout_id
+        transaction_id = result.get("transaction_code") or result.get("transaction_id") or checkout_id
         payment.mark_completed(transaction_id, processor="sumup")
         if user.membership:
             user.membership.activate()
@@ -84,7 +112,7 @@ class PaymentProcessingService:
         if not payment or not user:
             return None
 
-        transaction_id = result.get("transaction_id") or checkout_id
+        transaction_id = result.get("transaction_code") or result.get("transaction_id") or checkout_id
         payment.mark_completed(transaction_id, processor="sumup")
 
         # Renew or create membership
@@ -128,7 +156,7 @@ class PaymentProcessingService:
         if not payment or not user:
             return None
 
-        transaction_id = result.get("transaction_id") or checkout_id
+        transaction_id = result.get("transaction_code") or result.get("transaction_id") or checkout_id
         payment.mark_completed(transaction_id, processor="sumup")
 
         # Add credits

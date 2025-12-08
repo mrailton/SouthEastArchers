@@ -16,7 +16,7 @@ from flask_mail import Message
 
 from app import db, mail
 from app.models import Membership, Payment, User
-from app.services import SumUpService
+from app.services import PaymentService
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -122,10 +122,10 @@ def signup():
         db.session.add(membership)
 
         # Create payment record
-        amount = current_app.config["ANNUAL_MEMBERSHIP_COST"]
+        amount_cents = current_app.config["ANNUAL_MEMBERSHIP_COST"]
         payment = Payment(
             user_id=user.id,
-            amount=amount,
+            amount_cents=amount_cents,
             currency="EUR",
             payment_type="membership",
             payment_method=payment_method,
@@ -137,8 +137,8 @@ def signup():
 
         # Handle payment method
         if payment_method == "online":
-            # Create SumUp checkout
-            sumup_service = SumUpService()
+            # Create payment checkout
+            payment_service = PaymentService()
 
             # Generate unique checkout reference with timestamp to avoid conflicts
             import uuid
@@ -147,19 +147,17 @@ def signup():
                 f"membership_{user.id}_{payment.id}_{uuid.uuid4().hex[:8]}"
             )
 
-            # Include user name in description for easy matching in SumUp
-            checkout = sumup_service.create_checkout(
-                amount=amount,
-                currency="EUR",
+            # Include user name in description for easy matching
+            checkout = payment_service.create_checkout(
+                amount_cents=amount_cents,
                 description=f"Annual Membership - {name}",
-                checkout_reference=checkout_reference,
             )
 
             if checkout:
                 # Store info in session for payment processing
                 session["signup_user_id"] = user.id
                 session["signup_payment_id"] = payment.id
-                session["checkout_amount"] = float(amount)
+                session["checkout_amount"] = float(amount_cents / 100.0)
                 session["checkout_description"] = f"Annual Membership - {name}"
 
                 # Redirect to our custom payment form

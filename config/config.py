@@ -46,14 +46,15 @@ class Config:
     MAIL_DEBUG = False
 
     # Payment
+    PAYMENT_PROCESSOR = os.environ.get("PAYMENT_PROCESSOR", "sumup")  # Default processor
     SUMUP_API_KEY = os.environ.get("SUMUP_API_KEY")
     SUMUP_MERCHANT_CODE = os.environ.get("SUMUP_MERCHANT_CODE")
     SUMUP_API_URL = "https://api.sumup.com"
 
-    # Membership
-    ANNUAL_MEMBERSHIP_COST = 100  # EUR
+    # Membership (prices in cents to avoid floating point issues)
+    ANNUAL_MEMBERSHIP_COST = 10000  # 100.00 EUR (stored as cents)
     MEMBERSHIP_NIGHTS_INCLUDED = 20
-    ADDITIONAL_NIGHT_COST = 5  # EUR per night
+    ADDITIONAL_NIGHT_COST = 500  # 5.00 EUR per night (stored as cents)
 
     # Redis & Background Jobs
     REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")

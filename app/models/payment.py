@@ -13,7 +13,7 @@ class Payment(db.Model):
     user_id = db.Column(
         db.Integer, db.ForeignKey("users.id"), nullable=False, index=True
     )
-    amount = db.Column(db.Float, nullable=False)
+    amount_cents = db.Column(db.Integer, nullable=False)  # Store amount in cents
     currency = db.Column(db.String(3), default="EUR")
     payment_type = db.Column(db.Enum("membership", "credits"), nullable=False)
     payment_method = db.Column(
@@ -43,6 +43,16 @@ class Payment(db.Model):
     def mark_failed(self):
         """Mark payment as failed"""
         self.status = "failed"
+
+    @property
+    def amount(self):
+        """Get amount in euros (for display)"""
+        return self.amount_cents / 100.0
+
+    @amount.setter
+    def amount(self, value):
+        """Set amount from euros (converts to cents)"""
+        self.amount_cents = int(round(value * 100))
 
     def __repr__(self):
         return f"<Payment {self.id} user_id={self.user_id} {self.status}>"

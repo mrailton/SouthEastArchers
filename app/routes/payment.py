@@ -15,7 +15,7 @@ from flask_login import current_user, login_required
 
 from app import db
 from app.models import Credit, Membership, Payment, User
-from app.services import PaymentProcessingService, SumUpService
+from app.services import PaymentProcessingService, PaymentService
 from app.utils.email import send_payment_receipt
 from app.utils.session import get_user_id_from_session
 
@@ -60,9 +60,9 @@ def process_checkout(checkout_id):
             flash("Please fill in all card details", "error")
             return redirect(url_for("payment.show_checkout", checkout_id=checkout_id))
 
-        # Process payment with SumUp
-        sumup_service = SumUpService()
-        result = sumup_service.process_checkout_payment(
+        # Process payment with payment service
+        payment_service = PaymentService()
+        result = payment_service.process_payment(
             checkout_id=checkout_id,
             card_number=card_number,
             card_name=card_name,
@@ -72,7 +72,14 @@ def process_checkout(checkout_id):
         )
 
         if not result.get("success"):
-            return PaymentProcessingService.handle_payment_failure(checkout_id, result)
+            return PaymentProcessingService.handle_payment_failure(
+                checkout_id,
+                {
+                    "success": False,
+                    "status": result.get("status", "FAILED"),
+                    "error": result.get("error", "Payment was not approved"),
+                },
+            )
 
         # Payment successful - determine payment type and handle accordingly
         user_id = get_user_id_from_session(current_user)
@@ -117,12 +124,12 @@ def membership_payment():
     """Membership payment page"""
     if request.method == "POST":
         user = current_user
-        amount = current_app.config["ANNUAL_MEMBERSHIP_COST"]
+        amount_cents = current_app.config["ANNUAL_MEMBERSHIP_COST"]
 
         # Create payment record
         payment = Payment(
             user_id=user.id,
-            amount=amount,
+            amount_cents=amount_cents,
             currency="EUR",
             payment_type="membership",
             payment_method="online",
@@ -132,22 +139,20 @@ def membership_payment():
         db.session.add(payment)
         db.session.commit()
 
-        # Create SumUp checkout
-        sumup_service = SumUpService()
+        # Create payment checkout
+        payment_service = PaymentService()
         checkout_reference = f"membership_{user.id}_{payment.id}_{uuid.uuid4().hex[:8]}"
 
-        checkout = sumup_service.create_checkout(
-            amount=amount,
-            currency="EUR",
+        checkout = payment_service.create_checkout(
+            amount_cents=amount_cents,
             description=f"Annual Membership - {user.name}",
-            checkout_reference=checkout_reference,
         )
 
         if checkout:
             # Store info in session for payment processing
             session["membership_renewal_user_id"] = user.id
             session["membership_renewal_payment_id"] = payment.id
-            session["checkout_amount"] = float(amount)
+            session["checkout_amount"] = float(amount_cents / 100.0)
             session["checkout_description"] = f"Annual Membership - {user.name}"
 
             # Redirect to custom payment form
@@ -169,12 +174,12 @@ def credits():
     if request.method == "POST":
         user = current_user
         quantity = int(request.form.get("quantity", 1))
-        amount = quantity * current_app.config["ADDITIONAL_NIGHT_COST"]
+        amount_cents = quantity * current_app.config["ADDITIONAL_NIGHT_COST"]
 
         # Create payment record
         payment = Payment(
             user_id=user.id,
-            amount=amount,
+            amount_cents=amount_cents,
             currency="EUR",
             payment_type="credits",
             payment_method="online",
@@ -184,15 +189,13 @@ def credits():
         db.session.add(payment)
         db.session.commit()
 
-        # Create SumUp checkout
-        sumup_service = SumUpService()
+        # Create payment checkout
+        payment_service = PaymentService()
         checkout_reference = f"credits_{user.id}_{payment.id}_{uuid.uuid4().hex[:8]}"
 
-        checkout = sumup_service.create_checkout(
-            amount=amount,
-            currency="EUR",
+        checkout = payment_service.create_checkout(
+            amount_cents=amount_cents,
             description=f"{quantity} credits - {user.name}",
-            checkout_reference=checkout_reference,
         )
 
         if checkout:
@@ -200,7 +203,7 @@ def credits():
             session["credit_purchase_user_id"] = user.id
             session["credit_purchase_payment_id"] = payment.id
             session["credit_purchase_quantity"] = quantity
-            session["checkout_amount"] = float(amount)
+            session["checkout_amount"] = float(amount_cents / 100.0)
             session["checkout_description"] = f"{quantity} credits - {user.name}"
 
             # Redirect to custom payment form

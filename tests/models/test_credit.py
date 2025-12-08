@@ -59,7 +59,7 @@ class TestCredit:
 
         payment = Payment(
             user_id=user.id,
-            amount=25.0,
+            amount_cents=2500,  # Store directly in cents
             currency="EUR",
             payment_type="credits",
             status="completed",

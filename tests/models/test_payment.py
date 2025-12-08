@@ -13,7 +13,7 @@ class TestPayment:
 
         payment = Payment(
             user_id=test_user.id,
-            amount=50.0,
+            amount_cents=5000,  # Store directly in cents
             currency="GBP",
             payment_type="membership",
             status="completed",
@@ -22,7 +22,8 @@ class TestPayment:
         db.session.commit()
 
         assert payment.id is not None
-        assert payment.amount == 50.0
+        assert payment.amount_cents == 5000
+        assert payment.amount == 50.0  # Property converts to decimal
         assert payment.status == "completed"
 
     def test_mark_completed(self, app, test_user):
@@ -31,7 +32,7 @@ class TestPayment:
 
         payment = Payment(
             user_id=test_user.id,
-            amount=50.0,
+            amount_cents=5000,  # Store directly in cents
             currency="GBP",
             payment_type="membership",
             status="pending",
@@ -50,7 +51,7 @@ class TestPayment:
 
         payment = Payment(
             user_id=test_user.id,
-            amount=50.0,
+            amount_cents=5000,  # Store directly in cents
             currency="GBP",
             payment_type="membership",
             status="pending",
@@ -67,7 +68,7 @@ class TestPayment:
 
         payment = Payment(
             user_id=test_user.id,
-            amount=50.0,
+            amount_cents=5000,  # Store directly in cents
             currency="GBP",
             payment_type="membership",
             status="completed",

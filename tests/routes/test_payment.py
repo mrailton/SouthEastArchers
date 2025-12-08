@@ -27,7 +27,7 @@ class TestShowCheckout:
 
 
 class TestProcessCheckout:
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     def test_process_checkout_missing_card_details(self, mock_service, client):
         """Test processing with missing card details"""
         response = client.post(
@@ -42,7 +42,7 @@ class TestProcessCheckout:
         assert response.status_code == 200
         assert b"Please fill in all card details" in response.data
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     @patch("app.routes.payment.send_payment_receipt")
     def test_process_checkout_signup_payment_success(
         self, mock_email, mock_service_class, client, app, test_user
@@ -52,7 +52,7 @@ class TestProcessCheckout:
             # Create pending payment
             payment = Payment(
                 user_id=test_user.id,
-                amount=100.00,
+                amount_cents=10000,
                 currency="EUR",
                 payment_type="membership",
                 status="pending",
@@ -64,9 +64,10 @@ class TestProcessCheckout:
 
         # Mock successful payment
         mock_service = Mock()
-        mock_service.process_checkout_payment.return_value = {
+        mock_service.process_payment.return_value = {
             "success": True,
             "status": "PAID",
+            "transaction_code": "TXN123",
             "transaction_id": "txn_123",
         }
         mock_service_class.return_value = mock_service
@@ -96,7 +97,7 @@ class TestProcessCheckout:
             payment = db.session.get(Payment, payment_id)
             assert payment.status == "completed"
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     @patch("app.routes.payment.send_payment_receipt")
     def test_process_checkout_signup_payment_email_failure(
         self, mock_email, mock_service_class, client, app, test_user
@@ -105,7 +106,7 @@ class TestProcessCheckout:
         with app.app_context():
             payment = Payment(
                 user_id=test_user.id,
-                amount=100.00,
+                amount_cents=10000,
                 currency="EUR",
                 payment_type="membership",
                 status="pending",
@@ -116,10 +117,10 @@ class TestProcessCheckout:
 
         # Mock successful payment but email fails
         mock_service = Mock()
-        mock_service.process_checkout_payment.return_value = {
+        mock_service.process_payment.return_value = {
             "success": True,
             "status": "PAID",
-            "transaction_id": "txn_123",
+            "transaction_code": "TXN", "transaction_id": "txn_123",
         }
         mock_service_class.return_value = mock_service
         mock_email.side_effect = Exception("Email service down")
@@ -146,7 +147,7 @@ class TestProcessCheckout:
             payment = db.session.get(Payment, payment_id)
             assert payment.status == "completed"
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     def test_process_checkout_signup_payment_failed(
         self, mock_service_class, client, app, test_user
     ):
@@ -154,7 +155,7 @@ class TestProcessCheckout:
         with app.app_context():
             payment = Payment(
                 user_id=test_user.id,
-                amount=100.00,
+                amount_cents=10000,
                 currency="EUR",
                 payment_type="membership",
                 status="pending",
@@ -165,7 +166,7 @@ class TestProcessCheckout:
 
         # Mock failed payment
         mock_service = Mock()
-        mock_service.process_checkout_payment.return_value = {
+        mock_service.process_payment.return_value = {
             "success": False,
             "status": "FAILED",
             "error": "Card declined",
@@ -191,11 +192,11 @@ class TestProcessCheckout:
         assert response.status_code == 200
         assert b"Payment declined" in response.data
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     def test_process_checkout_pending_status(self, mock_service_class, client):
         """Test payment with pending status"""
         mock_service = Mock()
-        mock_service.process_checkout_payment.return_value = {
+        mock_service.process_payment.return_value = {
             "success": False,
             "status": "PENDING",
         }
@@ -216,7 +217,7 @@ class TestProcessCheckout:
         assert response.status_code == 200
         assert b"pending" in response.data.lower()
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     @patch("app.routes.payment.send_payment_receipt")
     def test_process_checkout_membership_renewal(
         self, mock_email, mock_service_class, client, app, test_user
@@ -225,7 +226,7 @@ class TestProcessCheckout:
         with app.app_context():
             payment = Payment(
                 user_id=test_user.id,
-                amount=100.00,
+                amount_cents=10000,
                 currency="EUR",
                 payment_type="membership",
                 status="pending",
@@ -235,10 +236,10 @@ class TestProcessCheckout:
             payment_id = payment.id
 
         mock_service = Mock()
-        mock_service.process_checkout_payment.return_value = {
+        mock_service.process_payment.return_value = {
             "success": True,
             "status": "PAID",
-            "transaction_id": "txn_456",
+            "transaction_code": "TXN", "transaction_id": "txn_456",
         }
         mock_service_class.return_value = mock_service
 
@@ -260,7 +261,7 @@ class TestProcessCheckout:
 
         assert response.status_code == 200
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     @patch("app.routes.payment.send_payment_receipt")
     def test_process_checkout_membership_renewal_no_existing_membership(
         self, mock_email, mock_service_class, client, app
@@ -280,7 +281,7 @@ class TestProcessCheckout:
 
             payment = Payment(
                 user_id=user.id,
-                amount=100.00,
+                amount_cents=10000,
                 currency="EUR",
                 payment_type="membership",
                 status="pending",
@@ -292,10 +293,10 @@ class TestProcessCheckout:
             payment_id = payment.id
 
         mock_service = Mock()
-        mock_service.process_checkout_payment.return_value = {
+        mock_service.process_payment.return_value = {
             "success": True,
             "status": "PAID",
-            "transaction_id": "txn_456",
+            "transaction_code": "TXN", "transaction_id": "txn_456",
         }
         mock_service_class.return_value = mock_service
 
@@ -323,7 +324,7 @@ class TestProcessCheckout:
             assert user.membership is not None
             assert user.membership.status == "active"
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     @patch("app.routes.payment.send_payment_receipt")
     def test_process_checkout_membership_renewal_email_failure(
         self, mock_email, mock_service_class, client, app, test_user
@@ -332,7 +333,7 @@ class TestProcessCheckout:
         with app.app_context():
             payment = Payment(
                 user_id=test_user.id,
-                amount=100.00,
+                amount_cents=10000,
                 currency="EUR",
                 payment_type="membership",
                 status="pending",
@@ -342,10 +343,10 @@ class TestProcessCheckout:
             payment_id = payment.id
 
         mock_service = Mock()
-        mock_service.process_checkout_payment.return_value = {
+        mock_service.process_payment.return_value = {
             "success": True,
             "status": "PAID",
-            "transaction_id": "txn_456",
+            "transaction_code": "TXN", "transaction_id": "txn_456",
         }
         mock_service_class.return_value = mock_service
         mock_email.side_effect = Exception("Email service down")
@@ -372,7 +373,7 @@ class TestProcessCheckout:
             payment = db.session.get(Payment, payment_id)
             assert payment.status == "completed"
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     @patch("app.routes.payment.send_payment_receipt")
     def test_process_checkout_credit_purchase(
         self, mock_email, mock_service_class, client, app, test_user
@@ -381,7 +382,7 @@ class TestProcessCheckout:
         with app.app_context():
             payment = Payment(
                 user_id=test_user.id,
-                amount=50.00,
+                amount_cents=5000,
                 currency="EUR",
                 payment_type="credits",
                 status="pending",
@@ -391,10 +392,10 @@ class TestProcessCheckout:
             payment_id = payment.id
 
         mock_service = Mock()
-        mock_service.process_checkout_payment.return_value = {
+        mock_service.process_payment.return_value = {
             "success": True,
             "status": "PAID",
-            "transaction_id": "txn_789",
+            "transaction_code": "TXN", "transaction_id": "txn_789",
         }
         mock_service_class.return_value = mock_service
 
@@ -423,11 +424,11 @@ class TestProcessCheckout:
             assert credit is not None
             assert credit.amount == 5
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     def test_process_checkout_exception_handling(self, mock_service_class, client):
         """Test exception handling during checkout processing"""
         mock_service = Mock()
-        mock_service.process_checkout_payment.side_effect = Exception(
+        mock_service.process_payment.side_effect = Exception(
             "Unexpected error"
         )
         mock_service_class.return_value = mock_service
@@ -447,11 +448,11 @@ class TestProcessCheckout:
         assert response.status_code == 200
         assert b"error" in response.data.lower()
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     def test_process_checkout_unknown_status(self, mock_service_class, client):
         """Test payment with unknown status"""
         mock_service = Mock()
-        mock_service.process_checkout_payment.return_value = {
+        mock_service.process_payment.return_value = {
             "success": False,
             "status": "UNKNOWN",
             "error": "Something went wrong",
@@ -473,16 +474,16 @@ class TestProcessCheckout:
         assert response.status_code == 200
         assert b"Payment failed" in response.data
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     def test_process_checkout_generic_success_no_session_data(
         self, mock_service_class, client
     ):
         """Test successful payment without specific session data (generic case)"""
         mock_service = Mock()
-        mock_service.process_checkout_payment.return_value = {
+        mock_service.process_payment.return_value = {
             "success": True,
             "status": "PAID",
-            "transaction_id": "txn_999",
+            "transaction_code": "TXN", "transaction_id": "txn_999",
         }
         mock_service_class.return_value = mock_service
 
@@ -520,7 +521,7 @@ class TestMembershipPayment:
             response = client.get("/payment/membership")
             assert response.status_code == 200
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     def test_membership_payment_post_success(
         self, mock_service_class, client, app, test_user
     ):
@@ -541,7 +542,7 @@ class TestMembershipPayment:
 
             assert response.status_code == 200
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     def test_membership_payment_checkout_failure(
         self, mock_service_class, client, app, test_user
     ):
@@ -588,7 +589,7 @@ class TestCreditsPurchase:
             response = client.get("/payment/credits")
             assert response.status_code == 200
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     def test_credits_purchase_post_success(
         self, mock_service_class, client, app, test_user
     ):
@@ -611,7 +612,7 @@ class TestCreditsPurchase:
 
             assert response.status_code == 200
 
-    @patch("app.routes.payment.SumUpService")
+    @patch("app.routes.payment.PaymentService")
     def test_credits_purchase_checkout_failure(
         self, mock_service_class, client, app, test_user
     ):
@@ -648,14 +649,14 @@ class TestPaymentHistory:
             # Create some test payments
             payment1 = Payment(
                 user_id=test_user.id,
-                amount=100.00,
+                amount_cents=10000,
                 currency="EUR",
                 payment_type="membership",
                 status="completed",
             )
             payment2 = Payment(
                 user_id=test_user.id,
-                amount=50.00,
+                amount_cents=5000,
                 currency="EUR",
                 payment_type="credits",
                 status="completed",

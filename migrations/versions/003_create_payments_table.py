@@ -20,7 +20,7 @@ def upgrade():
         'payments',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('amount', sa.Float(), nullable=False),
+        sa.Column('amount_cents', sa.Integer(), nullable=False),
         sa.Column('currency', sa.String(length=3), nullable=True),
         sa.Column('payment_type', sa.Enum('membership', 'credits', name='payment_type'), nullable=False),
         sa.Column('payment_method', sa.Enum('cash', 'online', name='payment_method'), nullable=False),

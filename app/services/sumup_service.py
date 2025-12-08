@@ -27,7 +27,7 @@ class SumUpService:
         Create a checkout session using SumUp SDK
 
         Args:
-            amount: Amount in decimal (e.g., 100.00 for €100)
+            amount: Amount in cents (e.g., 10000 for €100.00)
             currency: Currency code (default: EUR)
             description: Payment description
             checkout_reference: Unique reference for this checkout (auto-generated if not provided)
@@ -52,9 +52,12 @@ class SumUpService:
             if not checkout_reference:
                 checkout_reference = str(uuid.uuid4())
 
+            # Convert cents to euros for SumUp API
+            amount_euros = amount / 100.0
+
             # Create checkout body
             checkout_body = CreateCheckoutBody(
-                amount=float(amount),
+                amount=float(amount_euros),
                 currency=currency,
                 checkout_reference=checkout_reference,
                 merchant_code=merchant_code,

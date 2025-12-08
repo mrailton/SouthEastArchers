@@ -128,30 +128,3 @@ jobs:
           labels: ${{ steps.meta-worker.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - name: Deploy Web to Dokploy
-        run: |
-          curl -X POST \
-            ${{ secrets.DOKPLOY_URL }}/api/application.deploy \
-            -H 'accept: application/json' \
-            -H 'x-api-key: ${{ secrets.DOKPLOY_TOKEN }}' \
-            -H 'Content-Type: application/json' \
-            -d '{
-              "applicationId": "${{ secrets.DOKPLOY_WEB_APP_ID }}"
-            }'
-
-      - name: Deploy Worker to Dokploy
-        run: |
-          curl -X POST \
-            ${{ secrets.DOKPLOY_URL }}/api/application.deploy \
-            -H 'accept: application/json' \
-            -H 'x-api-key: ${{ secrets.DOKPLOY_TOKEN }}' \
-            -H 'Content-Type: application/json' \
-            -d '{
-              "applicationId": "${{ secrets.DOKPLOY_WORKER_APP_ID }}"
-            }'

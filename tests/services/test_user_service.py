@@ -145,9 +145,7 @@ class TestCreateMember:
 
     def test_create_member_with_custom_password(self, app):
         """Test creating member with custom password"""
-        user, error = UserService.create_member(
-            name="Custom Pass Member", email="custom@example.com", password="custompass123"
-        )
+        user, error = UserService.create_member(name="Custom Pass Member", email="custom@example.com", password="custompass123")
 
         assert error is None
         assert user.check_password("custompass123")
@@ -196,7 +194,6 @@ class TestUpdateMember:
             user=test_user,
             name="Updated Name",
             email="updated@example.com",
-
             phone="9999999999",
         )
 

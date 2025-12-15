@@ -51,15 +51,15 @@ def activate_membership(user_id):
         flash(message, "error")
         return redirect(url_for("admin.member_detail", user_id=user_id))
 
-    pending_payment = Payment.query.filter_by(
+    payment = Payment.query.filter_by(
         user_id=user_id,
         payment_type="membership",
-        status="paid",
+        status="completed",
     ).first()
 
-    if pending_payment:
+    if payment:
         try:
-            send_payment_receipt(member, pending_payment, member.membership)
+            send_payment_receipt(member, payment, member.membership)
             flash(f"Membership activated for {member.name}! Receipt email sent.", "success")
         except Exception as e:
             current_app.logger.error(f"Failed to send receipt email: {str(e)}")

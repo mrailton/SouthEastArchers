@@ -9,7 +9,7 @@
     "build:css": "postcss resources/assets/css/style.css -o resources/static/css/style.min.css",
     "build:css:watch": "postcss resources/assets/css/style.css -o resources/static/css/style.min.css --watch",
     "build:js": "esbuild resources/assets/js/main.js --bundle --minify --outfile=resources/static/js/main.min.js --sourcemap",
-    "build:js:watch": "esbuild resources/assets/js/main.js --bundle --minify --outfile=resources/static/js/main.min.js --sourcemap --watch"
+    "build:js:watch": "esbuild resources/assets/js/main.js --bundle --minify --outfile=resources/static/js/main.min.js --sourcemap --watch=forever"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.17",

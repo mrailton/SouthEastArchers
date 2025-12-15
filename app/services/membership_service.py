@@ -59,11 +59,3 @@ class MembershipService:
     @staticmethod
     def get_expired_memberships() -> list[Membership]:
         return Membership.query.filter(Membership.status == "active", Membership.expiry_date < date.today()).all()
-
-    @staticmethod
-    def calculate_membership_fee(date_of_birth: date) -> int:
-        from flask import current_app
-
-        age = (date.today() - date_of_birth).days // 365
-        base_fee = current_app.config.get("ANNUAL_MEMBERSHIP_COST", 10000)
-        return base_fee // 2 if age < 18 else base_fee

@@ -50,7 +50,6 @@ class TestAuthRoutes:
                 "name": "New User",
                 "email": "newuser@example.com",
                 "phone": "1234567890",
-                "date_of_birth": "2000-01-01",
                 "password": "password123",
                 "password_confirm": "password123",
                 "payment_method": "cash",
@@ -67,7 +66,6 @@ class TestAuthRoutes:
                 "name": "Another User",
                 "email": test_user.email,
                 "phone": "1234567890",
-                "date_of_birth": "2000-01-01",
                 "password": "password123",
                 "password_confirm": "password123",
                 "payment_method": "cash",
@@ -87,7 +85,6 @@ class TestAuthRoutes:
         user = User(
             name="Inactive User",
             email="inactive@example.com",
-            date_of_birth=date(2000, 1, 1),
             is_active=False,
         )
         user.set_password("password123")
@@ -131,7 +128,6 @@ class TestAuthRoutes:
                 "name": "New User",
                 "email": "newuser@example.com",
                 "phone": "1234567890",
-                "date_of_birth": "2000-01-01",
                 "password": "password123",
                 "password_confirm": "differentpassword",
                 "payment_method": "cash",

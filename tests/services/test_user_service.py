@@ -27,13 +27,13 @@ class TestGetAllUsers:
     def test_get_all_users_ordered_by_name(self, app):
         """Test retrieving all users ordered by name"""
         users_data = [
-            ("Zara User", "zara@example.com", "2000-01-01"),
-            ("Alice User", "alice@example.com", "2000-02-02"),
-            ("Bob User", "bob@example.com", "2000-03-03"),
+            ("Zara User", "zara@example.com"),
+            ("Alice User", "alice@example.com"),
+            ("Bob User", "bob@example.com"),
         ]
 
-        for name, email, dob in users_data:
-            user = User(name=name, email=email, date_of_birth=date.fromisoformat(dob))
+        for name, email in users_data:
+            user = User(name=name, email=email)
             user.set_password("password123")
             db.session.add(user)
         db.session.commit()
@@ -133,7 +133,7 @@ class TestChangePassword:
 class TestCreateMember:
     def test_create_member_basic(self, app):
         """Test creating a basic member without membership"""
-        user, error = UserService.create_member(name="New Member", email="newmember@example.com", date_of_birth=date(1990, 5, 15))
+        user, error = UserService.create_member(name="New Member", email="newmember@example.com")
 
         assert error is None
         assert user is not None
@@ -146,7 +146,7 @@ class TestCreateMember:
     def test_create_member_with_custom_password(self, app):
         """Test creating member with custom password"""
         user, error = UserService.create_member(
-            name="Custom Pass Member", email="custom@example.com", date_of_birth=date(1990, 5, 15), password="custompass123"
+            name="Custom Pass Member", email="custom@example.com", password="custompass123"
         )
 
         assert error is None
@@ -154,14 +154,14 @@ class TestCreateMember:
 
     def test_create_member_as_admin(self, app):
         """Test creating member with admin privileges"""
-        user, error = UserService.create_member(name="Admin Member", email="adminmember@example.com", date_of_birth=date(1990, 5, 15), is_admin=True)
+        user, error = UserService.create_member(name="Admin Member", email="adminmember@example.com", is_admin=True)
 
         assert error is None
         assert user.is_admin is True
 
     def test_create_member_with_phone(self, app):
         """Test creating member with phone number"""
-        user, error = UserService.create_member(name="Phone Member", email="phone@example.com", date_of_birth=date(1990, 5, 15), phone="1234567890")
+        user, error = UserService.create_member(name="Phone Member", email="phone@example.com", phone="1234567890")
 
         assert error is None
         assert user.phone == "1234567890"
@@ -171,7 +171,6 @@ class TestCreateMember:
         user, error = UserService.create_member(
             name="Member With Membership",
             email="withmembership@example.com",
-            date_of_birth=date(1990, 5, 15),
             create_membership=True,
         )
 
@@ -184,7 +183,7 @@ class TestCreateMember:
 
     def test_create_member_duplicate_email(self, app, test_user):
         """Test creating member with existing email"""
-        user, error = UserService.create_member(name="Duplicate Email", email=test_user.email, date_of_birth=date(1990, 5, 15))
+        user, error = UserService.create_member(name="Duplicate Email", email=test_user.email)
 
         assert user is None
         assert error == "Email already registered."
@@ -197,7 +196,7 @@ class TestUpdateMember:
             user=test_user,
             name="Updated Name",
             email="updated@example.com",
-            date_of_birth=date(1985, 6, 20),
+
             phone="9999999999",
         )
 
@@ -205,7 +204,6 @@ class TestUpdateMember:
         assert "successfully" in message
         assert test_user.name == "Updated Name"
         assert test_user.email == "updated@example.com"
-        assert test_user.date_of_birth == date(1985, 6, 20)
         assert test_user.phone == "9999999999"
 
     def test_update_member_admin_status(self, app, test_user):
@@ -216,7 +214,6 @@ class TestUpdateMember:
             user=test_user,
             name=test_user.name,
             email=test_user.email,
-            date_of_birth=test_user.date_of_birth,
             is_admin=True,
         )
 
@@ -229,7 +226,6 @@ class TestUpdateMember:
             user=test_user,
             name=test_user.name,
             email=test_user.email,
-            date_of_birth=test_user.date_of_birth,
             is_active=False,
         )
 
@@ -242,7 +238,6 @@ class TestUpdateMember:
             user=test_user,
             name=test_user.name,
             email=test_user.email,
-            date_of_birth=test_user.date_of_birth,
             password="newadminpassword",
         )
 
@@ -258,7 +253,6 @@ class TestUpdateMember:
             user=test_user,
             name=test_user.name,
             email=test_user.email,
-            date_of_birth=test_user.date_of_birth,
             membership_start_date=new_start,
             membership_expiry_date=new_expiry,
         )
@@ -273,7 +267,6 @@ class TestUpdateMember:
             user=test_user,
             name=test_user.name,
             email=test_user.email,
-            date_of_birth=test_user.date_of_birth,
             membership_credits=50,
         )
 
@@ -282,7 +275,7 @@ class TestUpdateMember:
 
     def test_update_member_without_membership(self, app):
         """Test updating member who has no membership"""
-        user = User(name="No Membership", email="nomem@example.com", date_of_birth=date(1990, 1, 1))
+        user = User(name="No Membership", email="nomem@example.com")
         user.set_password("password123")
         db.session.add(user)
         db.session.commit()
@@ -291,7 +284,6 @@ class TestUpdateMember:
             user=user,
             name="Updated No Membership",
             email="nomem@example.com",
-            date_of_birth=date(1990, 1, 1),
             membership_credits=30,
         )
 
@@ -306,7 +298,6 @@ class TestCreateUser:
             name="Online User",
             email="online@example.com",
             password="password123",
-            date_of_birth=date(1990, 1, 1),
             phone="1234567890",
             payment_method="online",
         )
@@ -329,7 +320,6 @@ class TestCreateUser:
             name="Cash User",
             email="cash@example.com",
             password="password123",
-            date_of_birth=date(1990, 1, 1),
             payment_method="cash",
         )
 
@@ -338,40 +328,28 @@ class TestCreateUser:
         assert payment.payment_method == "cash"
         assert payment.payment_processor is None
 
-    def test_create_user_adult_membership_fee(self, app):
+    def test_create_user_membership_fee(self, app):
         """Test adult user gets full membership fee"""
         user, error = UserService.create_user(
             name="Adult User",
             email="adult@example.com",
             password="password123",
-            date_of_birth=date(1980, 1, 1),
         )
 
         assert error is None
         payment = Payment.query.filter_by(user_id=user.id).first()
         assert payment.amount_cents == app.config["ANNUAL_MEMBERSHIP_COST"]
 
-    def test_create_user_junior_membership_fee(self, app):
-        """Test junior user gets discounted membership fee"""
-        junior_dob = date.today() - timedelta(days=365 * 16)
-
-        user, error = UserService.create_user(name="Junior User", email="junior@example.com", password="password123", date_of_birth=junior_dob)
-
-        assert error is None
-        payment = Payment.query.filter_by(user_id=user.id).first()
-        expected_fee = app.config["ANNUAL_MEMBERSHIP_COST"] // 2
-        assert payment.amount_cents == expected_fee
-
     def test_create_user_duplicate_email(self, app, test_user):
         """Test creating user with duplicate email"""
-        user, error = UserService.create_user(name="Duplicate", email=test_user.email, password="password123", date_of_birth=date(1990, 1, 1))
+        user, error = UserService.create_user(name="Duplicate", email=test_user.email, password="password123")
 
         assert user is None
         assert error == "Email already registered."
 
     def test_create_user_membership_dates(self, app):
         """Test user membership has correct dates"""
-        user, error = UserService.create_user(name="Date Test", email="datetest@example.com", password="password123", date_of_birth=date(1990, 1, 1))
+        user, error = UserService.create_user(name="Date Test", email="datetest@example.com", password="password123")
 
         assert error is None
         assert user.membership.start_date == date.today()
@@ -536,7 +514,7 @@ class TestCreateMemberErrors:
         from unittest.mock import patch
 
         with patch("app.db.session.commit", side_effect=Exception("Database error")):
-            user, error = UserService.create_member(name="New Member", email="new@example.com", date_of_birth=date(1990, 1, 1))
+            user, error = UserService.create_member(name="New Member", email="new@example.com")
 
             assert user is None
             assert error is not None
@@ -553,7 +531,6 @@ class TestUpdateMemberErrors:
                 user=test_user,
                 name="Updated Name",
                 email=test_user.email,
-                date_of_birth=test_user.date_of_birth,
             )
 
             assert success is False
@@ -570,7 +547,6 @@ class TestCreateUserErrors:
                 name="New User",
                 email="newuser@example.com",
                 password="password123",
-                date_of_birth=date(1990, 1, 1),
             )
 
             assert user is None

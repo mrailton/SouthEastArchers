@@ -24,12 +24,6 @@
                     <input class="w-full border border-gray-300 rounded px-3 py-2" 
                            type="tel" id="phone" name="phone" value="{{ user.phone or '' }}">
                 </div>
-                
-                <div>
-                    <label for="dob" class="block text-gray-700 font-bold mb-2">Date of Birth</label>
-                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                           type="date" id="dob" value="{{ user.date_of_birth.isoformat() }}" disabled>
-                </div>
             </div>
             
             <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">

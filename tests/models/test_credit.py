@@ -12,7 +12,7 @@ class TestCredit:
         """Test creating a basic credit"""
         from app import db
 
-        user = User(name="Test User", email="test@example.com", date_of_birth=date(2000, 1, 1))
+        user = User(name="Test User", email="test@example.com")
         user.set_password("password")
         db.session.add(user)
         db.session.flush()
@@ -30,7 +30,7 @@ class TestCredit:
         """Test credit has default amount of 1"""
         from app import db
 
-        user = User(name="Test User", email="test2@example.com", date_of_birth=date(2000, 1, 1))
+        user = User(name="Test User", email="test2@example.com")
         user.set_password("password")
         db.session.add(user)
         db.session.flush()
@@ -46,7 +46,7 @@ class TestCredit:
         from app import db
         from app.models import Payment
 
-        user = User(name="Test User", email="test3@example.com", date_of_birth=date(2000, 1, 1))
+        user = User(name="Test User", email="test3@example.com")
         user.set_password("password")
         db.session.add(user)
         db.session.flush()
@@ -72,7 +72,7 @@ class TestCredit:
         """Test credit can be created without payment (e.g., admin grant)"""
         from app import db
 
-        user = User(name="Test User", email="test4@example.com", date_of_birth=date(2000, 1, 1))
+        user = User(name="Test User", email="test4@example.com")
         user.set_password("password")
         db.session.add(user)
         db.session.flush()
@@ -88,7 +88,7 @@ class TestCredit:
         """Test credit relationship with user"""
         from app import db
 
-        user = User(name="Test User", email="test5@example.com", date_of_birth=date(2000, 1, 1))
+        user = User(name="Test User", email="test5@example.com")
         user.set_password("password")
         db.session.add(user)
         db.session.flush()
@@ -104,7 +104,7 @@ class TestCredit:
         """Test credit string representation"""
         from app import db
 
-        user = User(name="Test User", email="test6@example.com", date_of_birth=date(2000, 1, 1))
+        user = User(name="Test User", email="test6@example.com")
         user.set_password("password")
         db.session.add(user)
         db.session.flush()

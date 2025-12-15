@@ -6,39 +6,33 @@
     
     <form method="POST" class="space-y-4">
         <div>
-            <label class="block text-gray-700 font-bold mb-2">Full Name *</label>
+            <label for="name" class="block text-gray-700 font-bold mb-2">Full Name *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="text" name="name" value="{{ name or '' }}" required>
+                   type="text" id="name" name="name" value="{{ name or '' }}" required>
         </div>
         
         <div>
-            <label class="block text-gray-700 font-bold mb-2">Email Address *</label>
+            <label for="email" class="block text-gray-700 font-bold mb-2">Email Address *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="email" name="email" value="{{ email or '' }}" required>
+                   type="email" id="email" name="email" value="{{ email or '' }}" required>
         </div>
         
         <div>
-            <label class="block text-gray-700 font-bold mb-2">Phone Number (optional)</label>
+            <label for="phone" class="block text-gray-700 font-bold mb-2">Phone Number (optional)</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="tel" name="phone" value="{{ phone or '' }}">
+                   type="tel" id="phone" name="phone" value="{{ phone or '' }}">
         </div>
         
         <div>
-            <label class="block text-gray-700 font-bold mb-2">Date of Birth *</label>
+            <label for="password" class="block text-gray-700 font-bold mb-2">Password *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="date" name="date_of_birth" value="{{ date_of_birth or '' }}" required>
+                   type="password" id="password" name="password" required>
         </div>
         
         <div>
-            <label class="block text-gray-700 font-bold mb-2">Password *</label>
+            <label for="password_confirm" class="block text-gray-700 font-bold mb-2">Confirm Password *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="password" name="password" required>
-        </div>
-        
-        <div>
-            <label class="block text-gray-700 font-bold mb-2">Confirm Password *</label>
-            <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="password" name="password_confirm" required>
+                   type="password" id="password_confirm" name="password_confirm" required>
         </div>
         
         <!-- Payment Method Selection -->

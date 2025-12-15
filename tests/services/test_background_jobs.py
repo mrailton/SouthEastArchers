@@ -22,7 +22,6 @@ def test_user_with_payment(app):
     user = User(
         name="Test User",
         email="test@example.com",
-        date_of_birth=date(1990, 1, 1),
     )
     user.set_password("password123")
     db.session.add(user)
@@ -235,7 +234,7 @@ class TestSendMembershipExpiryReminderJob:
     @patch("app.services.background_jobs.mail.send")
     def test_send_membership_expiry_reminder_job_no_membership(self, mock_mail_send, app):
         """Test expiry reminder handles user without membership"""
-        user = User(name="No Membership", email="nomem@example.com", date_of_birth=date(1990, 1, 1))
+        user = User(name="No Membership", email="nomem@example.com")
         user.set_password("password123")
         db.session.add(user)
         db.session.commit()
@@ -289,7 +288,7 @@ class TestCheckExpiringMembershipsJob:
         expiry_date = date.today() + timedelta(days=7)
 
         for i in range(3):
-            user = User(name=f"Expiring User {i}", email=f"expiring{i}@example.com", date_of_birth=date(1990, 1, 1))
+            user = User(name=f"Expiring User {i}", email=f"expiring{i}@example.com")
             user.set_password("password123")
             db.session.add(user)
             db.session.flush()
@@ -317,7 +316,7 @@ class TestCheckExpiringMembershipsJob:
         expiry_date = date.today() + timedelta(days=7)
 
         # Create active user
-        active_user = User(name="Active User", email="active@example.com", date_of_birth=date(1990, 1, 1))
+        active_user = User(name="Active User", email="active@example.com")
         active_user.set_password("password123")
         db.session.add(active_user)
         db.session.flush()
@@ -326,7 +325,7 @@ class TestCheckExpiringMembershipsJob:
         db.session.add(membership)
 
         # Create inactive user
-        inactive_user = User(name="Inactive User", email="inactive@example.com", date_of_birth=date(1990, 1, 1), is_active=False)
+        inactive_user = User(name="Inactive User", email="inactive@example.com", is_active=False)
         inactive_user.set_password("password123")
         db.session.add(inactive_user)
         db.session.flush()
@@ -358,7 +357,7 @@ class TestCheckExpiringMembershipsJob:
 
         # Create multiple users
         for i in range(2):
-            user = User(name=f"User {i}", email=f"user{i}@example.com", date_of_birth=date(1990, 1, 1))
+            user = User(name=f"User {i}", email=f"user{i}@example.com")
             user.set_password("password123")
             db.session.add(user)
             db.session.flush()
@@ -388,7 +387,7 @@ class TestCheckExpiringMembershipsJob:
         expiry_date = date.today() + timedelta(days=7)
 
         with app.app_context():
-            user = User(name="Test User", email="test@example.com", date_of_birth=date(1990, 1, 1))
+            user = User(name="Test User", email="test@example.com")
             user.set_password("password123")
             db.session.add(user)
             db.session.flush()

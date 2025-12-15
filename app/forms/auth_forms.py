@@ -13,7 +13,6 @@ class SignupForm(FlaskForm):
     name = StringField("Full Name", validators=[DataRequired(), Length(min=2)])
     email = StringField("Email", validators=[DataRequired(), Email()])
     phone = StringField("Phone (optional)", validators=[Optional()])
-    date_of_birth = DateField("Date of Birth", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired(), Length(min=6)])
     password_confirm = PasswordField("Confirm Password", validators=[DataRequired(), EqualTo("password")])
     payment_method = RadioField(

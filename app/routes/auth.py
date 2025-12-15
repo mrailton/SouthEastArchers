@@ -50,7 +50,6 @@ def signup():
             name=validated_data["name"],
             email=validated_data["email"],
             password=validated_data["password"],
-            date_of_birth=validated_data["dob"],
             phone=validated_data.get("phone"),
             payment_method=validated_data["payment_method"],
         )

@@ -522,7 +522,6 @@ class TestMembershipPayment:
                 data={"email": test_user.email, "password": "password123"},
             )
 
-            app.config["ANNUAL_MEMBERSHIP_COST"] = 100.00
             response = client.post("/payment/membership", follow_redirects=True)
 
             assert response.status_code == 200
@@ -539,8 +538,6 @@ class TestMembershipPayment:
                 "/auth/login",
                 data={"email": test_user.email, "password": "password123"},
             )
-
-            app.config["ANNUAL_MEMBERSHIP_COST"] = 100.00
 
             response = client.post("/payment/membership", follow_redirects=True)
 

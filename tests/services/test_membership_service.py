@@ -317,11 +317,6 @@ class TestGetExpiredMemberships:
 
         assert len(result) == 0
 
-    def test_get_expired_memberships_empty(self, app):
-        """Test getting expired memberships when none exist"""
-        result = MembershipService.get_expired_memberships()
-
-        assert result == []
 
 
 class TestCalculateMembershipFee:

@@ -84,6 +84,7 @@ class TestingConfig(Config):
     SESSION_COOKIE_SECURE = False
     SERVER_NAME = "localhost.localdomain"
     PREFERRED_URL_SCHEME = "http"
+    BCRYPT_LOG_ROUNDS = 4  # Minimum rounds for fast tests (default is 12)
 
 
 class ProductionConfig(Config):

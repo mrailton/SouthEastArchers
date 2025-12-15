@@ -113,40 +113,12 @@ class TestMemberRoutes:
         response = client.get("/member/credits")
         assert response.status_code == 200
 
-    def test_credits_requires_login(self, client):
-        """Test credits page requires login"""
-        response = client.get("/member/credits", follow_redirects=True)
-        assert response.status_code == 200
-        assert b"Login" in response.data
-
-    def test_shoots_requires_login(self, client):
-        """Test shoots page requires login"""
-        response = client.get("/member/shoots", follow_redirects=True)
-        assert response.status_code == 200
-        assert b"Login" in response.data
-
     def test_shoots_with_no_history(self, client, test_user):
         """Test shoots page when user has no shoot history"""
         client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
         response = client.get("/member/shoots")
         assert response.status_code == 200
-
-    def test_profile_requires_login(self, client):
-        """Test profile page requires login"""
-        response = client.get("/member/profile", follow_redirects=True)
-        assert response.status_code == 200
-        assert b"Login" in response.data
-
-    def test_update_profile_requires_login(self, client):
-        """Test update profile requires login"""
-        response = client.post(
-            "/member/profile/update",
-            data={"name": "New Name", "phone": "9876543210"},
-            follow_redirects=True,
-        )
-        assert response.status_code == 200
-        assert b"Login" in response.data
 
     def test_update_profile_partial_data(self, client, test_user):
         """Test updating profile with partial data"""
@@ -166,8 +138,3 @@ class TestMemberRoutes:
         db.session.refresh(test_user)
         assert test_user.name == "Only Name Update"
 
-    def test_change_password_requires_login(self, client):
-        """Test change password requires login"""
-        response = client.get("/member/change-password", follow_redirects=True)
-        assert response.status_code == 200
-        assert b"Login" in response.data

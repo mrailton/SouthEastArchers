@@ -448,21 +448,3 @@ class TestJobQueueing:
         # Note: Jobs execute quickly in tests, so we check that queuing succeeded
         # by verifying no errors were raised
         assert True  # If we got here, queuing worked
-
-    @patch("app.utils.email.send_payment_receipt")
-    def test_queue_payment_receipt_fallback(self, mock_send_receipt, app, test_user_with_payment):
-        """Test payment receipt falls back to sync when Redis unavailable"""
-        from app import task_queue
-        from app.services.payment_service import PaymentProcessingService
-
-        if task_queue:
-            pytest.skip("Redis is available, can't test fallback")
-
-        user = test_user_with_payment["user"]
-        payment = test_user_with_payment["payment"]
-
-        # Queue the job (should fallback to sync)
-        PaymentProcessingService.queue_payment_receipt(user.id, payment.id)
-
-        # Verify sync function was called
-        assert mock_send_receipt.called

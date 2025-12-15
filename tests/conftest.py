@@ -8,14 +8,19 @@ from app import create_app, db
 from app.models import Membership, User
 
 
-@pytest.fixture(scope="function")
-def app():
-    """Create application for testing"""
+@pytest.fixture(scope="session")
+def app_instance():
+    """Create application instance for entire test session"""
     app = create_app("testing")
+    return app
 
-    with app.app_context():
+
+@pytest.fixture(scope="function")
+def app(app_instance):
+    """Create application context for each test"""
+    with app_instance.app_context():
         db.create_all()
-        yield app
+        yield app_instance
         # Properly clean up database connections
         db.session.remove()
         db.drop_all()
@@ -79,24 +84,8 @@ def test_user(app):
 
 
 @pytest.fixture
-def test_admin(app):
-    """Create a test admin user"""
-    user = User(
-        name="Admin User",
-        email="admin@example.com",
-        date_of_birth=date(2000, 1, 1),
-        is_admin=True,
-    )
-    user.set_password("admin123")
-    db.session.add(user)
-    db.session.commit()
-
-    return user
-
-
-@pytest.fixture
 def admin_user(app):
-    """Alias for test_admin for consistency"""
+    """Create a test admin user"""
     user = User(
         name="Admin User",
         email="admin@example.com",

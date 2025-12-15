@@ -318,7 +318,6 @@ class TestGetExpiredMemberships:
         assert len(result) == 0
 
 
-
 class TestCalculateMembershipFee:
     def test_calculate_fee_adult(self, app):
         """Test calculating fee for adult member (18+)"""

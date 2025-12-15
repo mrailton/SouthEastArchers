@@ -306,4 +306,3 @@ class TestAdminMembers:
         # Verify membership was activated
         user = db.session.get(User, user_id)
         assert user.membership.status == "active"
-

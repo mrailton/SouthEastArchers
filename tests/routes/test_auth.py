@@ -139,4 +139,3 @@ class TestAuthRoutes:
         )
         assert response.status_code == 200
         assert b"do not match" in response.data
-

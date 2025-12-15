@@ -89,9 +89,9 @@ class TestErrorHandlers:
         """Test 500 error handler by triggering an exception"""
         # Create a fresh app instance to avoid "setup finished" error
         from app import create_app
-        
+
         fresh_app = create_app("testing")
-        
+
         # Register a route that will cause an error before any requests
         @fresh_app.route("/test-500")
         def error_route():

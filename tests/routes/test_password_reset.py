@@ -118,4 +118,3 @@ class TestPasswordReset:
             user = db.session.get(User, test_user.id)
             assert user.password_hash != old_password_hash
             assert user.check_password(new_password)
-

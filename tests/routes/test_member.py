@@ -137,4 +137,3 @@ class TestMemberRoutes:
 
         db.session.refresh(test_user)
         assert test_user.name == "Only Name Update"
-

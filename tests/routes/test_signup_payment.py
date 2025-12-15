@@ -80,7 +80,6 @@ class TestSignupWithCashPayment:
         assert not user.membership.is_active()
 
 
-
 class TestSignupWithOnlinePayment:
     """Test signup with online payment method"""
 
@@ -345,5 +344,3 @@ class TestSignupWithOnlinePayment:
         # Membership should still be pending (payment not completed)
         user = User.query.filter_by(email="online@example.com").first()
         assert user.membership.status == "pending"
-
-

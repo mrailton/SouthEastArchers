@@ -17,4 +17,3 @@ class TestUser:
         age = test_user.get_age()
         assert isinstance(age, int)
         assert age >= 23  # Test user was born in 2000
-

@@ -70,7 +70,6 @@ def test_user(app):
         name="Test User",
         email="test@example.com",
         phone="1234567890",
-        date_of_birth=date(2000, 1, 1),
     )
     user.set_password("password123")
 
@@ -98,7 +97,6 @@ def admin_user(app):
     user = User(
         name="Admin User",
         email="admin@example.com",
-        date_of_birth=date(2000, 1, 1),
         is_admin=True,
     )
     user.set_password("adminpass")

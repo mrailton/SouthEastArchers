@@ -27,7 +27,6 @@ class TestSignupForm:
                     "name": "John Doe",
                     "email": "john@example.com",
                     "phone": "1234567890",
-                    "date_of_birth": datetime(2000, 1, 1).date(),
                     "password": "password123",
                     "password_confirm": "password123",
                 }
@@ -41,7 +40,6 @@ class TestSignupForm:
                     "name": "John Doe",
                     "email": "john@example.com",
                     "phone": "1234567890",
-                    "date_of_birth": datetime(2000, 1, 1).date(),
                     "password": "password123",
                     "password_confirm": "different",
                 }

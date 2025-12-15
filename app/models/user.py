@@ -13,7 +13,6 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     phone = db.Column(db.String(20), nullable=True)
-    date_of_birth = db.Column(db.Date, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
@@ -30,12 +29,6 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password_hash, password)
-
-    def get_age(self):
-        from datetime import date
-
-        today = date.today()
-        return today.year - self.date_of_birth.year - ((today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day))
 
     def generate_reset_token(self):
         serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])

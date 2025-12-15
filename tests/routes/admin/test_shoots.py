@@ -173,7 +173,6 @@ class TestAdminShoots:
             name="No Credits User",
             email="nocredits@example.com",
             phone="1234567890",
-            date_of_birth=date(2000, 1, 1),
         )
         user.set_password("password")
         db.session.add(user)

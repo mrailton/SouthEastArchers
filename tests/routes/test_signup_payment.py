@@ -20,7 +20,6 @@ class TestSignupWithCashPayment:
                 "name": "Cash User",
                 "email": "cash@example.com",
                 "phone": "1234567890",
-                "date_of_birth": "2000-01-01",
                 "password": "password123",
                 "password_confirm": "password123",
                 "payment_method": "cash",
@@ -58,7 +57,6 @@ class TestSignupWithCashPayment:
                 "name": "Cash User",
                 "email": "cash@example.com",
                 "phone": "1234567890",
-                "date_of_birth": "2000-01-01",
                 "password": "password123",
                 "password_confirm": "password123",
                 "payment_method": "cash",
@@ -97,7 +95,6 @@ class TestSignupWithOnlinePayment:
                 "name": "Online User",
                 "email": "online@example.com",
                 "phone": "1234567890",
-                "date_of_birth": "2000-01-01",
                 "password": "password123",
                 "password_confirm": "password123",
                 "payment_method": "online",
@@ -131,7 +128,6 @@ class TestSignupWithOnlinePayment:
                 "name": "Online User",
                 "email": "online@example.com",
                 "phone": "1234567890",
-                "date_of_birth": "2000-01-01",
                 "password": "password123",
                 "password_confirm": "password123",
                 "payment_method": "online",
@@ -150,7 +146,6 @@ class TestSignupWithOnlinePayment:
             name="Online User",
             email="online@example.com",
             phone="1234567890",
-            date_of_birth=date(2000, 1, 1),
         )
         user.set_password("password123")
         db.session.add(user)
@@ -225,7 +220,6 @@ class TestSignupWithOnlinePayment:
             name="Online User",
             email="online@example.com",
             phone="1234567890",
-            date_of_birth=date(2000, 1, 1),
         )
         user.set_password("password123")
         db.session.add(user)
@@ -304,7 +298,6 @@ class TestSignupWithOnlinePayment:
             name="Online User",
             email="online@example.com",
             phone="1234567890",
-            date_of_birth=date(2000, 1, 1),
         )
         user.set_password("password123")
         db.session.add(user)

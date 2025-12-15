@@ -12,7 +12,7 @@ from app.services.membership_service import MembershipService
 @pytest.fixture
 def user_with_pending_membership(app):
     """Create a user with a pending membership"""
-    user = User(name="Pending User", email="pending@example.com", date_of_birth=date(1990, 1, 1))
+    user = User(name="Pending User", email="pending@example.com")
     user.set_password("password123")
     db.session.add(user)
     db.session.flush()
@@ -33,7 +33,7 @@ def user_with_pending_membership(app):
 @pytest.fixture
 def user_with_cash_payment(app):
     """Create a user with pending cash payment"""
-    user = User(name="Cash User", email="cash@example.com", date_of_birth=date(1990, 1, 1))
+    user = User(name="Cash User", email="cash@example.com")
     user.set_password("password123")
     db.session.add(user)
     db.session.flush()
@@ -88,7 +88,7 @@ class TestActivateMembership:
 
     def test_activate_user_without_membership(self, app):
         """Test activating membership for user without membership"""
-        user = User(name="No Membership", email="nomem@example.com", date_of_birth=date(1990, 1, 1))
+        user = User(name="No Membership", email="nomem@example.com")
         user.set_password("password123")
         db.session.add(user)
         db.session.commit()
@@ -127,7 +127,7 @@ class TestRenewMembership:
 
     def test_renew_user_without_membership(self, app):
         """Test renewing membership for user without membership"""
-        user = User(name="No Membership", email="nomem2@example.com", date_of_birth=date(1990, 1, 1))
+        user = User(name="No Membership", email="nomem2@example.com")
         user.set_password("password123")
         db.session.add(user)
         db.session.commit()
@@ -161,7 +161,7 @@ class TestDeactivateMembership:
 
     def test_deactivate_user_without_membership(self, app):
         """Test deactivating membership for user without membership"""
-        user = User(name="No Membership", email="nomem3@example.com", date_of_birth=date(1990, 1, 1))
+        user = User(name="No Membership", email="nomem3@example.com")
         user.set_password("password123")
         db.session.add(user)
         db.session.commit()
@@ -185,7 +185,7 @@ class TestGetExpiringMemberships:
 
         created_users = []
         for name, email, expiry in users_data:
-            user = User(name=name, email=email, date_of_birth=date(1990, 1, 1))
+            user = User(name=name, email=email)
             user.set_password("password123")
             db.session.add(user)
             db.session.flush()
@@ -214,7 +214,7 @@ class TestGetExpiringMemberships:
 
     def test_get_expiring_memberships_custom_days(self, app):
         """Test getting memberships expiring in custom number of days"""
-        user = User(name="Expiring 7", email="exp7@example.com", date_of_birth=date(1990, 1, 1))
+        user = User(name="Expiring 7", email="exp7@example.com")
         user.set_password("password123")
         db.session.add(user)
         db.session.flush()
@@ -236,7 +236,7 @@ class TestGetExpiringMemberships:
 
     def test_get_expiring_memberships_excludes_inactive(self, app):
         """Test that inactive memberships are excluded"""
-        user = User(name="Inactive Expiring", email="inactexp@example.com", date_of_birth=date(1990, 1, 1))
+        user = User(name="Inactive Expiring", email="inactexp@example.com")
         user.set_password("password123")
         db.session.add(user)
         db.session.flush()
@@ -272,7 +272,7 @@ class TestGetExpiredMemberships:
         ]
 
         for name, email, expiry in users_data:
-            user = User(name=name, email=email, date_of_birth=date(1990, 1, 1))
+            user = User(name=name, email=email)
             user.set_password("password123")
             db.session.add(user)
             db.session.flush()
@@ -298,7 +298,7 @@ class TestGetExpiredMemberships:
 
     def test_get_expired_memberships_excludes_already_inactive(self, app):
         """Test that memberships marked as inactive are excluded"""
-        user = User(name="Inactive Expired", email="inacexp@example.com", date_of_birth=date(1990, 1, 1))
+        user = User(name="Inactive Expired", email="inacexp@example.com")
         user.set_password("password123")
         db.session.add(user)
         db.session.flush()
@@ -316,59 +316,3 @@ class TestGetExpiredMemberships:
         result = MembershipService.get_expired_memberships()
 
         assert len(result) == 0
-
-
-class TestCalculateMembershipFee:
-    def test_calculate_fee_adult(self, app):
-        """Test calculating fee for adult member (18+)"""
-        adult_dob = date.today() - timedelta(days=365 * 20)
-
-        fee = MembershipService.calculate_membership_fee(adult_dob)
-
-        assert fee == app.config["ANNUAL_MEMBERSHIP_COST"]
-
-    def test_calculate_fee_junior(self, app):
-        """Test calculating fee for junior member (<18)"""
-        junior_dob = date.today() - timedelta(days=365 * 16)
-
-        fee = MembershipService.calculate_membership_fee(junior_dob)
-
-        expected_fee = app.config["ANNUAL_MEMBERSHIP_COST"] // 2
-        assert fee == expected_fee
-
-    def test_calculate_fee_exactly_18(self, app):
-        """Test calculating fee for member who is exactly 18"""
-        dob_18 = date.today() - timedelta(days=365 * 18)
-
-        fee = MembershipService.calculate_membership_fee(dob_18)
-
-        # At 18, should be adult rate
-        assert fee == app.config["ANNUAL_MEMBERSHIP_COST"]
-
-    def test_calculate_fee_almost_18(self, app):
-        """Test calculating fee for member who is almost 18 (17 years, 364 days)"""
-        dob_almost_18 = date.today() - timedelta(days=365 * 18 - 1)
-
-        fee = MembershipService.calculate_membership_fee(dob_almost_18)
-
-        # Should still be junior rate
-        expected_fee = app.config["ANNUAL_MEMBERSHIP_COST"] // 2
-        assert fee == expected_fee
-
-    def test_calculate_fee_very_young(self, app):
-        """Test calculating fee for very young member"""
-        young_dob = date.today() - timedelta(days=365 * 10)
-
-        fee = MembershipService.calculate_membership_fee(young_dob)
-
-        expected_fee = app.config["ANNUAL_MEMBERSHIP_COST"] // 2
-        assert fee == expected_fee
-
-    def test_calculate_fee_senior(self, app):
-        """Test calculating fee for senior member"""
-        senior_dob = date.today() - timedelta(days=365 * 70)
-
-        fee = MembershipService.calculate_membership_fee(senior_dob)
-
-        # No senior discount, should be adult rate
-        assert fee == app.config["ANNUAL_MEMBERSHIP_COST"]

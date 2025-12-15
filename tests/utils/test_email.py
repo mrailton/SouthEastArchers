@@ -350,7 +350,6 @@ class TestSendWelcomeEmail:
                 name="Test User 2",
                 email="test2@example.com",
                 phone="1234567890",
-                date_of_birth=date(2000, 1, 1),
             )
             user.set_password("password")
 

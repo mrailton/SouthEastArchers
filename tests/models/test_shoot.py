@@ -27,7 +27,7 @@ class TestShoot:
         db.session.add(shoot)
         db.session.flush()
 
-        user = User(name="Test User", email="test@example.com", date_of_birth=date(2000, 1, 1))
+        user = User(name="Test User", email="test@example.com")
         user.set_password("password")
         db.session.add(user)
         db.session.flush()

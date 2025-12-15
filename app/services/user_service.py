@@ -56,7 +56,6 @@ class UserService:
     def create_member(
         name: str,
         email: str,
-        date_of_birth: date,
         phone: str = None,
         password: str = "changeme123",
         is_admin: bool = False,
@@ -70,7 +69,6 @@ class UserService:
             name=name,
             email=email,
             phone=phone,
-            date_of_birth=date_of_birth,
             is_admin=is_admin,
         )
         user.set_password(password)
@@ -101,7 +99,6 @@ class UserService:
         user: User,
         name: str,
         email: str,
-        date_of_birth: date,
         phone: str = None,
         is_admin: bool = False,
         is_active: bool = True,
@@ -114,7 +111,6 @@ class UserService:
         user.name = name
         user.email = email
         user.phone = phone
-        user.date_of_birth = date_of_birth
         user.is_admin = is_admin
         user.is_active = is_active
 
@@ -142,7 +138,6 @@ class UserService:
         name: str,
         email: str,
         password: str,
-        date_of_birth: date,
         phone: str = None,
         payment_method: str = "online",
     ) -> tuple[User | None, str | None]:
@@ -151,15 +146,12 @@ class UserService:
 
         from flask import current_app
 
-        age = (date.today() - date_of_birth).days // 365
-        base_fee = current_app.config.get("ANNUAL_MEMBERSHIP_COST", 10000)
-        membership_fee_cents = base_fee // 2 if age < 18 else base_fee
+        membership_fee_cents = current_app.config.get("ANNUAL_MEMBERSHIP_COST", 10000)
 
         user = User(
             name=name,
             email=email,
             phone=phone,
-            date_of_birth=date_of_birth,
         )
         user.set_password(password)
 

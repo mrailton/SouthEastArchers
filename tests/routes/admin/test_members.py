@@ -42,7 +42,6 @@ class TestAdminMembers:
                 "name": "New Member",
                 "email": "newmember@example.com",
                 "phone": "1234567890",
-                "date_of_birth": "2000-01-01",
                 "password": "testpass123",
                 "create_membership": "on",
             },
@@ -67,7 +66,6 @@ class TestAdminMembers:
             data={
                 "name": "Duplicate",
                 "email": test_user.email,
-                "date_of_birth": "2000-01-01",
                 "password": "testpass",
             },
         )
@@ -94,7 +92,6 @@ class TestAdminMembers:
                 "name": "Updated Name",
                 "email": test_user.email,
                 "phone": "9876543210",
-                "date_of_birth": test_user.date_of_birth.isoformat(),
                 "is_admin": "",
                 "is_active": "on",
             },
@@ -119,7 +116,6 @@ class TestAdminMembers:
             data={
                 "name": test_user.name,
                 "email": test_user.email,
-                "date_of_birth": test_user.date_of_birth.isoformat(),
                 "password": "newpassword123",
                 "is_active": "on",
             },
@@ -148,7 +144,6 @@ class TestAdminMembers:
             data={
                 "name": test_user.name,
                 "email": test_user.email,
-                "date_of_birth": test_user.date_of_birth.isoformat(),
                 "is_active": "on",
                 "membership_start_date": new_start.isoformat(),
                 "membership_expiry_date": new_expiry.isoformat(),
@@ -175,7 +170,6 @@ class TestAdminMembers:
             data={
                 "name": test_user.name,
                 "email": test_user.email,
-                "date_of_birth": test_user.date_of_birth.isoformat(),
                 "is_active": "on",
                 "membership_start_date": test_user.membership.start_date.isoformat(),
                 "membership_expiry_date": test_user.membership.expiry_date.isoformat(),
@@ -199,7 +193,6 @@ class TestAdminMembers:
         user = User(
             name="No Membership User",
             email="nomembership@example.com",
-            date_of_birth=date(2000, 1, 1),
         )
         user.set_password("password")
         db.session.add(user)
@@ -212,7 +205,6 @@ class TestAdminMembers:
             data={
                 "name": "Updated Name",
                 "email": user.email,
-                "date_of_birth": user.date_of_birth.isoformat(),
                 "is_active": "on",
             },
             follow_redirects=True,
@@ -269,7 +261,6 @@ class TestAdminMembers:
             name="Pending User",
             email="pending@example.com",
             phone="1234567890",
-            date_of_birth=date(2000, 1, 1),
         )
         user.set_password("password")
         db.session.add(user)
@@ -306,3 +297,213 @@ class TestAdminMembers:
         # Verify membership was activated
         user = db.session.get(User, user_id)
         assert user.membership.status == "active"
+
+    def test_renew_membership_user_not_found(self, client, admin_user):
+        """Test renewing membership for non-existent user"""
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        response = client.post("/admin/members/99999/membership/renew")
+        assert response.status_code == 404
+
+    def test_activate_membership_user_not_found(self, client, admin_user):
+        """Test activating membership for non-existent user"""
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        response = client.post("/admin/members/99999/membership/activate")
+        assert response.status_code == 404
+
+    def test_activate_membership_failure(self, client, admin_user, test_user, app):
+        """Test activation failure when membership is already active"""
+        from app import db
+
+        # Ensure membership is already active
+        test_user.membership.status = "active"
+        db.session.commit()
+
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        response = client.post(f"/admin/members/{test_user.id}/membership/activate", follow_redirects=True)
+
+        assert response.status_code == 200
+        # Should show error message about already active
+        assert b"already active" in response.data.lower() or b"error" in response.data.lower()
+
+    def test_activate_membership_with_payment_and_email(self, client, admin_user, app):
+        """Test activating membership with payment and sending receipt email"""
+        from datetime import timedelta
+        from unittest.mock import patch
+
+        from app import db
+        from app.models import Membership, Payment
+
+        # Create user with pending membership
+        user = User(
+            name="Pending User Email",
+            email="pendingemail@example.com",
+            phone="1234567890",
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.flush()
+
+        membership = Membership(
+            user_id=user.id,
+            start_date=date.today(),
+            expiry_date=date.today() + timedelta(days=365),
+            status="pending",
+            credits=20,
+        )
+        db.session.add(membership)
+
+        payment = Payment(
+            user_id=user.id,
+            amount=100.00,
+            currency="EUR",
+            payment_type="membership",
+            payment_method="cash",
+            status="completed",
+        )
+        db.session.add(payment)
+        db.session.commit()
+
+        user_id = user.id
+
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        with patch("app.routes.admin.members.send_payment_receipt") as mock_send:
+            response = client.post(f"/admin/members/{user_id}/membership/activate", follow_redirects=True)
+
+            assert response.status_code == 200
+            assert b"receipt email sent" in response.data.lower()
+            mock_send.assert_called_once()
+
+    def test_activate_membership_email_failure(self, client, admin_user, app):
+        """Test activating membership when receipt email fails"""
+        from datetime import timedelta
+        from unittest.mock import patch
+
+        from app import db
+        from app.models import Membership, Payment
+
+        # Create user with pending membership
+        user = User(
+            name="Pending User Email Fail",
+            email="pendingfail@example.com",
+            phone="1234567890",
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.flush()
+
+        membership = Membership(
+            user_id=user.id,
+            start_date=date.today(),
+            expiry_date=date.today() + timedelta(days=365),
+            status="pending",
+            credits=20,
+        )
+        db.session.add(membership)
+
+        payment = Payment(
+            user_id=user.id,
+            amount=100.00,
+            currency="EUR",
+            payment_type="membership",
+            payment_method="cash",
+            status="completed",
+        )
+        db.session.add(payment)
+        db.session.commit()
+
+        user_id = user.id
+
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        with patch("app.routes.admin.members.send_payment_receipt", side_effect=Exception("SMTP error")):
+            response = client.post(f"/admin/members/{user_id}/membership/activate", follow_redirects=True)
+
+            assert response.status_code == 200
+            assert b"email failed" in response.data.lower()
+
+    def test_edit_member_not_found(self, client, admin_user):
+        """Test editing non-existent member"""
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        response = client.get("/admin/members/99999/edit")
+        assert response.status_code == 404
+
+    def test_edit_member_invalid_membership_dates(self, client, admin_user, test_user):
+        """Test editing member with invalid membership date format"""
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        response = client.post(
+            f"/admin/members/{test_user.id}/edit",
+            data={
+                "name": test_user.name,
+                "email": test_user.email,
+                "is_active": "on",
+                "membership_start_date": "invalid-date",
+                "membership_expiry_date": test_user.membership.expiry_date.isoformat(),
+                "membership_credits": str(test_user.membership.credits),
+            },
+        )
+
+        assert response.status_code == 200
+        assert b"Error parsing membership data" in response.data
+
+    def test_edit_member_invalid_membership_credits(self, client, admin_user, test_user):
+        """Test editing member with invalid credits value"""
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        response = client.post(
+            f"/admin/members/{test_user.id}/edit",
+            data={
+                "name": test_user.name,
+                "email": test_user.email,
+                "is_active": "on",
+                "membership_start_date": test_user.membership.start_date.isoformat(),
+                "membership_expiry_date": test_user.membership.expiry_date.isoformat(),
+                "membership_credits": "not-a-number",
+            },
+        )
+
+        assert response.status_code == 200
+        assert b"Error parsing membership data" in response.data
+
+    def test_activate_membership_without_payment(self, client, admin_user, app):
+        """Test activating membership when no payment exists"""
+        from datetime import timedelta
+
+        from app import db
+        from app.models import Membership
+
+        # Create user with pending membership but no payment
+        user = User(
+            name="No Payment User",
+            email="nopayment@example.com",
+            phone="1234567890",
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.flush()
+
+        membership = Membership(
+            user_id=user.id,
+            start_date=date.today(),
+            expiry_date=date.today() + timedelta(days=365),
+            status="pending",
+            credits=20,
+        )
+        db.session.add(membership)
+        db.session.commit()
+
+        user_id = user.id
+
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        response = client.post(f"/admin/members/{user_id}/membership/activate", follow_redirects=True)
+
+        assert response.status_code == 200
+        assert b"activated" in response.data.lower()
+        # Should not mention receipt email since no payment exists
+        assert b"receipt email" not in response.data.lower()

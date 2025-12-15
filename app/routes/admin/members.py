@@ -51,15 +51,15 @@ def activate_membership(user_id):
         flash(message, "error")
         return redirect(url_for("admin.member_detail", user_id=user_id))
 
-    pending_payment = Payment.query.filter_by(
+    payment = Payment.query.filter_by(
         user_id=user_id,
         payment_type="membership",
-        status="paid",
+        status="completed",
     ).first()
 
-    if pending_payment:
+    if payment:
         try:
-            send_payment_receipt(member, pending_payment, member.membership)
+            send_payment_receipt(member, payment, member.membership)
             flash(f"Membership activated for {member.name}! Receipt email sent.", "success")
         except Exception as e:
             current_app.logger.error(f"Failed to send receipt email: {str(e)}")
@@ -74,17 +74,9 @@ def activate_membership(user_id):
 @admin_required
 def create_member():
     if request.method == "POST":
-        try:
-            dob_str = request.form.get("date_of_birth")
-            dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
-        except (ValueError, AttributeError):
-            flash("Invalid date format.", "error")
-            return render_template("admin/create_member.html")
-
         user, error = UserService.create_member(
             name=request.form.get("name"),
             email=request.form.get("email"),
-            date_of_birth=dob,
             phone=request.form.get("phone"),
             password=request.form.get("password", "changeme123"),
             is_admin=request.form.get("is_admin") == "on",
@@ -109,13 +101,6 @@ def edit_member(user_id):
         abort(404)
 
     if request.method == "POST":
-        try:
-            dob_str = request.form.get("date_of_birth")
-            dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
-        except (ValueError, AttributeError):
-            flash("Invalid date format.", "error")
-            return render_template("admin/edit_member.html", member=member)
-
         # Parse optional membership fields
         membership_start = None
         membership_expiry = None
@@ -141,7 +126,6 @@ def edit_member(user_id):
             user=member,
             name=request.form.get("name"),
             email=request.form.get("email"),
-            date_of_birth=dob,
             phone=request.form.get("phone"),
             is_admin=request.form.get("is_admin") == "on",
             is_active=request.form.get("is_active") == "on",

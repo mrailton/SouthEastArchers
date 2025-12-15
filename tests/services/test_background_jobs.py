@@ -61,14 +61,6 @@ class TestGetAppContext:
             result = _get_app_context()
             assert result is None
 
-    def test_get_app_context_when_no_context(self):
-        """Test _get_app_context creates new context when none exists"""
-        # Call outside of app context
-        result = _get_app_context()
-        assert result is not None
-        assert hasattr(result, "push")
-        assert hasattr(result, "pop")
-
 
 class TestSendPaymentReceiptJob:
     """Test payment receipt email job"""

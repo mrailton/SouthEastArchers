@@ -55,7 +55,7 @@ jobs:
         run: make build
 
       - name: Run tests with coverage
-        run: make test-parallel
+        run: make test-cov
 
   build-and-push:
     needs: test

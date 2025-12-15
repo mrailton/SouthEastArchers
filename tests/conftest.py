@@ -9,35 +9,44 @@ from app.models import Membership, User
 
 
 @pytest.fixture(scope="session")
-def app_instance():
-    """Create application instance for entire test session"""
+def app_instance(tmp_path_factory, worker_id):
+    """Create application instance with per-worker database for parallel testing"""
     app = create_app("testing")
-    return app
 
+    # Use separate database file for each worker in parallel mode
+    if worker_id != "master":
+        # Running in xdist mode - use separate DB per worker
+        db_path = tmp_path_factory.mktemp("data", numbered=True) / f"test_{worker_id}.db"
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 
-@pytest.fixture(scope="function")
-def app(app_instance):
-    """Create application context for each test"""
-    with app_instance.app_context():
+    with app.app_context():
         db.create_all()
-        yield app_instance
-        # Properly clean up database connections
+        yield app
+        # Clean up after all tests
         db.session.remove()
         db.drop_all()
         db.engine.dispose()
 
 
+@pytest.fixture(scope="function")
+def app(app_instance):
+    """Provide application context for each test"""
+    with app_instance.app_context():
+        yield app_instance
+        # Clean up data after each test
+        db.session.rollback()  # Rollback any failed transactions
+        for table in reversed(db.metadata.sorted_tables):
+            db.session.execute(table.delete())
+        db.session.commit()
+
+
 def pytest_sessionfinish(session, exitstatus):
-    """Clean up coverage artifacts after test session finishes"""
-    # Remove coverage database
+    """Clean up artifacts after test session finishes"""
+    # Remove coverage artifacts
     if os.path.exists(".coverage"):
         os.remove(".coverage")
-
-    # Remove htmlcov directory
     if os.path.exists("htmlcov"):
         shutil.rmtree("htmlcov")
-
-    # Remove coverage.db if it exists
     if os.path.exists("coverage.db"):
         os.remove("coverage.db")
 

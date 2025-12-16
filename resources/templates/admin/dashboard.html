@@ -24,10 +24,10 @@
     <div class="bg-white p-6 rounded shadow">
         <h3 class="text-xl font-bold mb-4">Management</h3>
         <ul class="space-y-2">
-            <li><a href="/admin/members" class="text-blue-600 hover:underline">Manage Members</a></li>
-            <li><a href="/admin/shoots" class="text-blue-600 hover:underline">Manage Shoots</a></li>
-            <li><a href="/admin/news" class="text-blue-600 hover:underline">Manage News</a></li>
-            <li><a href="/admin/events" class="text-blue-600 hover:underline">Manage Events</a></li>
+            <li><a href="{{ url_for('admin.members') }}" class="text-blue-600 hover:underline">Manage Members</a></li>
+            <li><a href="{{ url_for('admin.shoots') }}" class="text-blue-600 hover:underline">Manage Shoots</a></li>
+            <li><a href="{{ url_for('admin.news') }}" class="text-blue-600 hover:underline">Manage News</a></li>
+            <li><a href="{{ url_for('admin.events') }}" class="text-blue-600 hover:underline">Manage Events</a></li>
         </ul>
     </div>
     
@@ -37,7 +37,7 @@
         <ul class="space-y-2">
             {% for member in recent_members %}
             <li class="text-gray-700">
-                <a href="/admin/members/{{ member.id }}" class="text-blue-600 hover:underline">{{ member.name }}</a>
+                <a href="{{ url_for('admin.member_detail', user_id=member.id) }}" class="text-blue-600 hover:underline">{{ member.name }}</a>
                 <span class="text-sm text-gray-500">- {{ member.created_at.strftime('%d/%m/%Y') }}</span>
             </li>
             {% endfor %}

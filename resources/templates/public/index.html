@@ -10,10 +10,10 @@
         
         {% if not session.user_id %}
             <div class="space-x-4">
-                <a href="/signup" class="bg-white text-blue-600 px-8 py-3 rounded font-bold hover:bg-gray-100">
+                <a href="{{ url_for('auth.signup') }}" class="bg-white text-blue-600 px-8 py-3 rounded font-bold hover:bg-gray-100">
                     Join Now
                 </a>
-                <a href="/membership" class="border-2 border-white text-white px-8 py-3 rounded font-bold hover:bg-white hover:text-blue-600">
+                <a href="{{ url_for('public.membership') }}" class="border-2 border-white text-white px-8 py-3 rounded font-bold hover:bg-white hover:text-blue-600">
                     Learn More
                 </a>
             </div>

@@ -16,11 +16,11 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
-                    <a href="/" class="text-2xl font-bold text-blue-600">
+                    <a href="{{ url_for('public.index') }}" class="text-2xl font-bold text-blue-600">
                         South East Archers
                     </a>
                 </div>
-                
+
                 <!-- Mobile menu button -->
                 <button @click="open = !open" class="md:hidden">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,42 +31,42 @@
                 
                 <!-- Desktop menu -->
                 <div class="hidden md:flex space-x-8">
-                    <a href="/" class="text-gray-700 hover:text-blue-600">Home</a>
-                    <a href="/about" class="text-gray-700 hover:text-blue-600">About</a>
-                    <a href="/news" class="text-gray-700 hover:text-blue-600">News</a>
-                    <a href="/events" class="text-gray-700 hover:text-blue-600">Events</a>
+                    <a href="{{ url_for('public.index') }}" class="text-gray-700 hover:text-blue-600">Home</a>
+                    <a href="{{ url_for('public.about') }}" class="text-gray-700 hover:text-blue-600">About</a>
+                    <a href="{{ url_for('public.news_list') }}" class="text-gray-700 hover:text-blue-600">News</a>
+                    <a href="{{ url_for('public.events') }}" class="text-gray-700 hover:text-blue-600">Events</a>
 
                     {% if current_user.is_authenticated %}
-                        <a href="/member/dashboard" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+                        <a href="{{ url_for('member.dashboard') }}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
                         {% if current_user.is_admin %}
-                            <a href="/admin/dashboard" class="text-gray-700 hover:text-purple-600">Admin</a>
+                            <a href="{{ url_for('admin.dashboard') }}" class="text-gray-700 hover:text-purple-600">Admin</a>
                         {% endif %}
-                        <a href="/auth/logout" class="text-red-700 hover:text-purple-700">Logout</a>
+                        <a href="{{ url_for('auth.logout') }}" class="text-red-700 hover:text-purple-700">Logout</a>
                     {% else %}
-                        <a href="/membership" class="text-gray-700 hover:text-blue-600">Membership</a>
-                        <a href="/auth/login" class="text-gray-700 hover:text-blue-600">Login</a>
-                        <a href="/auth/signup" class="text-gray-700 hover:text-blue-600">Sign Up</a>
+                        <a href="{{ url_for('public.membership') }}" class="text-gray-700 hover:text-blue-600">Membership</a>
+                        <a href="{{ url_for('auth.login') }}" class="text-gray-700 hover:text-blue-600">Login</a>
+                        <a href="{{ url_for('auth.signup') }}" class="text-gray-700 hover:text-blue-600">Sign Up</a>
                     {% endif %}
                 </div>
             </div>
             
             <!-- Mobile menu -->
             <div x-show="open" class="md:hidden pb-4">
-                <a href="/" class="block py-2 text-gray-700">Home</a>
-                <a href="/about" class="block py-2 text-gray-700">About</a>
-                <a href="/news" class="block py-2 text-gray-700">News</a>
-                <a href="/events" class="block py-2 text-gray-700">Events</a>
+                <a href="{{ url_for('public.index') }}" class="block py-2 text-gray-700">Home</a>
+                <a href="{{ url_for('public.about') }}" class="block py-2 text-gray-700">About</a>
+                <a href="{{ url_for('public.news_list') }}" class="block py-2 text-gray-700">News</a>
+                <a href="{{ url_for('public.events') }}" class="block py-2 text-gray-700">Events</a>
 
                 {% if current_user.is_authenticated %}
-                    <a href="/member/dashboard" class="block py-2 text-gray-700">Dashboard</a>
+                    <a href="{{ url_for('member.dashboard') }}" class="block py-2 text-gray-700">Dashboard</a>
                     {% if current_user.is_admin %}
-                        <a href="/admin/dashboard" class="block py-2 text-purple-600 font-semibold">Admin</a>
+                        <a href="{{ url_for('admin.dashboard') }}" class="block py-2 text-purple-600 font-semibold">Admin</a>
                     {% endif %}
-                    <a href="/auth/logout" class="block py-2 text-red-600">Logout</a>
+                    <a href="{{ url_for('auth.logout') }}" class="block py-2 text-red-600">Logout</a>
                 {% else %}
-                    <a href="/membership" class="block py-2 text-gray-700">Membership</a>
-                    <a href="/auth/login" class="block py-2 text-gray-700">Login</a>
-                    <a href="/auth/signup" class="block py-2 text-blue-600">Sign Up</a>
+                    <a href="{{ url_for('public.membership') }}" class="block py-2 text-gray-700">Membership</a>
+                    <a href="{{ url_for('auth.login') }}" class="block py-2 text-gray-700">Login</a>
+                    <a href="{{ url_for('auth.signup') }}" class="block py-2 text-blue-600">Sign Up</a>
                 {% endif %}
             </div>
         </div>
@@ -105,9 +105,9 @@
                 <div>
                     <h4 class="text-lg font-bold mb-4">Quick Links</h4>
                     <ul class="space-y-2">
-                        <li><a href="/about" class="text-gray-300 hover:text-white">About Us</a></li>
-                        <li><a href="/news" class="text-gray-300 hover:text-white">News</a></li>
-                        <li><a href="/events" class="text-gray-300 hover:text-white">Events</a></li>
+                        <li><a href="{{ url_for('public.about') }}" class="text-gray-300 hover:text-white">About Us</a></li>
+                        <li><a href="{{ url_for('public.news_list') }}" class="text-gray-300 hover:text-white">News</a></li>
+                        <li><a href="{{ url_for('public.events') }}" class="text-gray-300 hover:text-white">Events</a></li>
                     </ul>
                 </div>
                 <div>

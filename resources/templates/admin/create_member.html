@@ -2,31 +2,31 @@
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6">Create Member</h1>
+    <h1 class="text-4xl font-bold mb-6">Create Member</h1>
     
-    <form method="POST" class="space-y-6">
+    <form method="POST" class="bg-white p-8 rounded shadow space-y-6">
         <div>
-            <label for="name" class="block text-sm font-medium text-gray-700">Name *</label>
-            <input type="text" name="name" id="name" required
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <label for="name" class="block text-gray-700 font-bold mb-2">Name *</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="text" id="name" name="name" required>
         </div>
         
         <div>
-            <label for="email" class="block text-sm font-medium text-gray-700">Email *</label>
-            <input type="email" name="email" id="email" required
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <label for="email" class="block text-gray-700 font-bold mb-2">Email *</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="email" id="email" name="email" required>
         </div>
         
         <div>
-            <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
-            <input type="tel" name="phone" id="phone"
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <label for="phone" class="block text-gray-700 font-bold mb-2">Phone</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="tel" id="phone" name="phone">
         </div>
         
         <div>
-            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-            <input type="password" name="password" id="password" value="changeme123"
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <label for="password" class="block text-gray-700 font-bold mb-2">Password</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="password" id="password" name="password" value="changeme123">
             <p class="mt-1 text-sm text-gray-500">Default: changeme123</p>
         </div>
         
@@ -42,12 +42,9 @@
             <label for="create_membership" class="ml-2 text-sm text-gray-700">Create membership (20 credits, 1 year)</label>
         </div>
         
-        <div class="flex gap-4">
-            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
-                Create Member
-            </button>
-            <a href="{{ url_for('admin.members') }}" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400">Cancel</a>
-        </div>
+        <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">
+            Create Member
+        </button>
     </form>
 </div>
 {% endblock %}

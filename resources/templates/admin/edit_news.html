@@ -2,25 +2,25 @@
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6">Edit News</h1>
+    <h1 class="text-4xl font-bold mb-6">Edit News</h1>
     
-    <form method="POST" class="space-y-6">
+    <form method="POST" class="bg-white p-8 rounded shadow space-y-6">
         <div>
-            <label for="title" class="block text-sm font-medium text-gray-700">Title *</label>
-            <input type="text" name="title" id="title" value="{{ news.title }}" required
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <label for="title" class="block text-gray-700 font-bold mb-2">Title</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="text" id="title" name="title" value="{{ news.title }}" required>
         </div>
         
         <div>
-            <label for="summary" class="block text-sm font-medium text-gray-700">Summary</label>
-            <input type="text" name="summary" id="summary" value="{{ news.summary or '' }}" maxlength="500"
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <label for="summary" class="block text-gray-700 font-bold mb-2">Summary</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="text" id="summary" name="summary" value="{{ news.summary or '' }}" maxlength="500">
         </div>
         
         <div>
-            <label for="content" class="block text-sm font-medium text-gray-700">Content *</label>
-            <textarea name="content" id="content" rows="10" required
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ news.content }}</textarea>
+            <label for="content" class="block text-gray-700 font-bold mb-2">Content</label>
+            <textarea class="w-full border border-gray-300 rounded px-3 py-2" 
+                      id="content" name="content" rows="8" required>{{ news.content }}</textarea>
         </div>
         
         <div class="flex items-center">
@@ -29,12 +29,9 @@
             <label for="published" class="ml-2 text-sm text-gray-700">Published</label>
         </div>
         
-        <div class="flex gap-4">
-            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
-                Update News
-            </button>
-            <a href="{{ url_for('admin.news') }}" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400">Cancel</a>
-        </div>
+        <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">
+            Update News
+        </button>
     </form>
 </div>
 {% endblock %}

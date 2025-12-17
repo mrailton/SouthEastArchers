@@ -15,6 +15,37 @@ class TestAdminEvents:
         response = client.get("/admin/events")
         assert response.status_code == 200
 
+    def test_events_list_shows_edit_buttons(self, client, admin_user, app):
+        """Test that events list shows edit buttons for each event"""
+        from app import db
+
+        event = Event(
+            title="Test Event",
+            description="Test description",
+            start_date=datetime.now(),
+            published=True,
+        )
+        db.session.add(event)
+        db.session.commit()
+        event_id = event.id
+
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        response = client.get("/admin/events")
+        assert response.status_code == 200
+        assert b"Test Event" in response.data
+        assert f"/admin/events/{event_id}/edit".encode() in response.data
+        assert b"Edit" in response.data
+
+    def test_events_list_empty_state(self, client, admin_user):
+        """Test that empty events list shows helpful message"""
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+        response = client.get("/admin/events")
+        assert response.status_code == 200
+        assert b"No events yet" in response.data
+        assert b"Create one now" in response.data
+
     def test_create_event_page(self, client, admin_user):
         """Test accessing create event page"""
         client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})

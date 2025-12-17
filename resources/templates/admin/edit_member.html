@@ -2,36 +2,35 @@
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6">Edit Member</h1>
+    <h1 class="text-4xl font-bold mb-6">Edit Member</h1>
     
-    <form method="POST" class="space-y-6">
-        <!-- Member Details Section -->
-        <div class="bg-white shadow rounded-lg p-6">
+    <form method="POST" class="bg-white p-8 rounded shadow space-y-6">
+        <div>
             <h2 class="text-xl font-semibold mb-4">Member Details</h2>
             
             <div class="space-y-4">
                 <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700">Name *</label>
-                    <input type="text" name="name" id="name" value="{{ member.name }}" required
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <label for="name" class="block text-gray-700 font-bold mb-2">Name *</label>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                           type="text" id="name" name="name" value="{{ member.name }}" required>
                 </div>
                 
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700">Email *</label>
-                    <input type="email" name="email" id="email" value="{{ member.email }}" required
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <label for="email" class="block text-gray-700 font-bold mb-2">Email *</label>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                           type="email" id="email" name="email" value="{{ member.email }}" required>
                 </div>
                 
                 <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
-                    <input type="tel" name="phone" id="phone" value="{{ member.phone or '' }}"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <label for="phone" class="block text-gray-700 font-bold mb-2">Phone</label>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                           type="tel" id="phone" name="phone" value="{{ member.phone or '' }}">
                 </div>
                 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700">New Password (leave blank to keep current)</label>
-                    <input type="password" name="password" id="password"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <label for="password" class="block text-gray-700 font-bold mb-2">New Password (leave blank to keep current)</label>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                           type="password" id="password" name="password">
                 </div>
                 
                 <div class="flex items-center space-x-6">
@@ -50,31 +49,30 @@
             </div>
         </div>
         
-        <!-- Membership Section -->
         {% if member.membership %}
-        <div class="bg-white shadow rounded-lg p-6">
+        <div>
             <h2 class="text-xl font-semibold mb-4">Membership</h2>
             
             <div class="space-y-4">
                 <div>
-                    <label for="membership_start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
-                    <input type="date" name="membership_start_date" id="membership_start_date" 
-                           value="{{ member.membership.start_date.isoformat() }}"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <label for="membership_start_date" class="block text-gray-700 font-bold mb-2">Start Date</label>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                           type="date" id="membership_start_date" name="membership_start_date" 
+                           value="{{ member.membership.start_date.isoformat() }}">
                 </div>
                 
                 <div>
-                    <label for="membership_expiry_date" class="block text-sm font-medium text-gray-700">Expiry Date</label>
-                    <input type="date" name="membership_expiry_date" id="membership_expiry_date" 
-                           value="{{ member.membership.expiry_date.isoformat() }}"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <label for="membership_expiry_date" class="block text-gray-700 font-bold mb-2">Expiry Date</label>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                           type="date" id="membership_expiry_date" name="membership_expiry_date" 
+                           value="{{ member.membership.expiry_date.isoformat() }}">
                 </div>
                 
                 <div>
-                    <label for="membership_credits" class="block text-sm font-medium text-gray-700">Credits</label>
-                    <input type="number" name="membership_credits" id="membership_credits" 
-                           value="{{ member.membership.credits }}" min="0"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <label for="membership_credits" class="block text-gray-700 font-bold mb-2">Credits</label>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                           type="number" id="membership_credits" name="membership_credits" 
+                           value="{{ member.membership.credits }}" min="0">
                     <p class="mt-1 text-sm text-gray-500">Current: {{ member.membership.credits }} credits</p>
                 </div>
                 
@@ -94,12 +92,9 @@
         </div>
         {% endif %}
         
-        <div class="flex gap-4">
-            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
-                Update Member
-            </button>
-            <a href="{{ url_for('admin.member_detail', user_id=member.id) }}" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400">Cancel</a>
-        </div>
+        <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">
+            Update Member
+        </button>
     </form>
 </div>
 {% endblock %}

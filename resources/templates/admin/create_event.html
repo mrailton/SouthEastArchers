@@ -1,32 +1,32 @@
 {% extends "base.html" %}
 {% block title %}Create Event - Admin{% endblock %}
 {% block content %}
-<div class="max-w-2xl">
+<div class="max-w-2xl mx-auto">
     <h1 class="text-4xl font-bold mb-6">Create Event</h1>
     
     <form method="POST" class="bg-white p-8 rounded shadow space-y-6">
         <div>
-            <label class="block text-gray-700 font-bold mb-2">Title</label>
+            <label for="title" class="block text-gray-700 font-bold mb-2">Title</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="text" name="title" required>
+                   type="text" id="title" name="title" required>
         </div>
         
         <div>
-            <label class="block text-gray-700 font-bold mb-2">Description</label>
+            <label for="description" class="block text-gray-700 font-bold mb-2">Description</label>
             <textarea class="w-full border border-gray-300 rounded px-3 py-2" 
-                      name="description" rows="4" required></textarea>
+                      id="description" name="description" rows="4" required></textarea>
         </div>
         
         <div>
-            <label class="block text-gray-700 font-bold mb-2">Start Date & Time</label>
+            <label for="start_date" class="block text-gray-700 font-bold mb-2">Start Date & Time</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="datetime-local" name="start_date" required>
+                   type="datetime-local" id="start_date" name="start_date" required>
         </div>
         
         <div>
-            <label class="block text-gray-700 font-bold mb-2">Location</label>
+            <label for="location" class="block text-gray-700 font-bold mb-2">Location</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="text" name="location">
+                   type="text" id="location" name="location">
         </div>
         
         <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">

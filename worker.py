@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-"""RQ worker process for background job execution"""
-
 import os
 import sys
 import warnings

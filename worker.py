@@ -26,7 +26,6 @@ def main():
     # Create worker with default queue
     worker = Worker(["default"], connection=redis_conn)
     print(f"Starting RQ worker on queue: default")
-    print(f"Redis URL: {redis_url}")
     worker.work()
 
 

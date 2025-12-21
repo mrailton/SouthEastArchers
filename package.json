@@ -4,21 +4,16 @@
   "description": "South East Archers Club Website",
   "type": "module",
   "scripts": {
-    "dev": "npm run build:css:watch & npm run build:js:watch",
-    "build": "npm run build:css && npm run build:js",
-    "build:css": "postcss resources/assets/css/style.css -o resources/static/css/style.min.css",
-    "build:css:watch": "postcss resources/assets/css/style.css -o resources/static/css/style.min.css --watch",
-    "build:js": "esbuild resources/assets/js/main.js --bundle --minify --outfile=resources/static/js/main.min.js --sourcemap",
-    "build:js:watch": "esbuild resources/assets/js/main.js --bundle --minify --outfile=resources/static/js/main.min.js --sourcemap --watch=forever"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.17",
+    "@tailwindcss/vite": "^4.1.18",
+    "@vitejs/plugin-legacy": "^7.2.1",
     "alpinejs": "^3.13.0",
-    "autoprefixer": "^10.4.14",
-    "cssnano": "^7.1.2",
-    "esbuild": "^0.27.0",
-    "postcss": "^8.4.31",
-    "postcss-cli": "^10.1.0",
-    "tailwindcss": "^4.1.0"
+    "lightningcss": "^1.30.2",
+    "tailwindcss": "^4.1.0",
+    "vite": "^7.3.0"
   }
 }

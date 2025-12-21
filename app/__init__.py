@@ -117,6 +117,7 @@ def create_app(config_name=None):
     @app.context_processor
     def override_url_for():
         from flask import url_for as flask_url_for
+        from app.utils.vite import vite_asset, vite_hmr_client
 
         def dated_url_for(endpoint, **values):
             if endpoint == "static":
@@ -128,7 +129,7 @@ def create_app(config_name=None):
 
             return flask_url_for(endpoint, **values)
 
-        return dict(url_for=dated_url_for)
+        return dict(url_for=dated_url_for, vite_asset=vite_asset, vite_hmr_client=vite_hmr_client)
 
     with app.app_context():
         from app.models import Credit, Event, Membership, News, Payment, Shoot, User

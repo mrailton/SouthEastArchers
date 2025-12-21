@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}South East Archers{% endblock %}</title>
 
-    <!-- Compiled Tailwind CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.min.css') }}">
+    <!-- Vite HMR Client (dev only) -->
+    {{ vite_hmr_client()|safe }}
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -121,8 +121,8 @@
         </div>
     </footer>
 
-    <!-- Compiled Alpine.js and application JavaScript -->
-    <script src="{{ url_for('static', filename='js/main.min.js') }}"></script>
+    <!-- Compiled Alpine.js and application JavaScript (includes CSS in dev mode) -->
+    {{ vite_asset('js/main.js')|safe }}
 
     {% block extra_js %}{% endblock %}
 </body>

@@ -33,7 +33,7 @@ def vite_asset(asset_name):
             if response.status_code == 200:
                 # Vite is running - return script tag for dev server
                 return Markup(f'<script type="module" src="{vite_dev_server}/static/{asset_name}"></script>')
-        except:
+        except Exception:
             pass
 
         # Try alternate port (5174)
@@ -42,7 +42,7 @@ def vite_asset(asset_name):
             response = requests.get(f"{vite_dev_server_alt}/static/@vite/client", timeout=0.1)
             if response.status_code == 200:
                 return Markup(f'<script type="module" src="{vite_dev_server_alt}/static/{asset_name}"></script>')
-        except:
+        except Exception:
             pass
 
     # Production mode: read from manifest
@@ -91,7 +91,7 @@ def vite_hmr_client():
             response = requests.get(f"{vite_dev_server}/static/@vite/client", timeout=0.1)
             if response.status_code == 200:
                 return Markup(f'<script type="module" src="{vite_dev_server}/static/@vite/client"></script>')
-        except:
+        except Exception:
             pass
 
         # Try alternate port (5174)
@@ -100,7 +100,7 @@ def vite_hmr_client():
             response = requests.get(f"{vite_dev_server_alt}/static/@vite/client", timeout=0.1)
             if response.status_code == 200:
                 return Markup(f'<script type="module" src="{vite_dev_server_alt}/static/@vite/client"></script>')
-        except:
+        except Exception:
             pass
 
     return ""

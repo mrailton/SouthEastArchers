@@ -288,7 +288,7 @@ class TestCheckExpiringMembershipsJob:
         expiry_date = date.today() + timedelta(days=7)
 
         for i in range(3):
-            user = User(name=f"Expiring User {i}", email=f"expiring{i}@example.com")
+            user = User(name=f"Expiring User {i}", email=f"expiring{i}@example.com", is_active=True)
             user.set_password("password123")
             db.session.add(user)
             db.session.flush()
@@ -316,7 +316,7 @@ class TestCheckExpiringMembershipsJob:
         expiry_date = date.today() + timedelta(days=7)
 
         # Create active user
-        active_user = User(name="Active User", email="active@example.com")
+        active_user = User(name="Active User", email="active@example.com", is_active=True)
         active_user.set_password("password123")
         db.session.add(active_user)
         db.session.flush()
@@ -357,7 +357,7 @@ class TestCheckExpiringMembershipsJob:
 
         # Create multiple users
         for i in range(2):
-            user = User(name=f"User {i}", email=f"user{i}@example.com")
+            user = User(name=f"User {i}", email=f"user{i}@example.com", is_active=True)
             user.set_password("password123")
             db.session.add(user)
             db.session.flush()

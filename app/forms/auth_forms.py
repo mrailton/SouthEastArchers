@@ -15,11 +15,11 @@ class SignupForm(FlaskForm):
     phone = StringField("Phone (optional)", validators=[Optional()])
     password = PasswordField("Password", validators=[DataRequired(), Length(min=6)])
     password_confirm = PasswordField("Confirm Password", validators=[DataRequired(), EqualTo("password")])
-    payment_method = RadioField(
+    qualification = RadioField(
         "Payment Method",
-        choices=[("cash", "Cash"), ("online", "Online Payment")],
+        choices=[("none", "None"), ("beginner", "Beginner Certificate"), ("ai", "Archery Ireland Membership"), ("ifaf", "IFAF Membership")],
         validators=[DataRequired()],
-        default="online",
+        default="none",
     )
     submit = SubmitField("Create Account")
 

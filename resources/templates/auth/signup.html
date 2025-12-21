@@ -35,40 +35,74 @@
                    type="password" id="password_confirm" name="password_confirm" required>
         </div>
         
-        <!-- Payment Method Selection -->
+        <!-- QualificationSelection -->
         <div class="border-t pt-4 mt-4">
-            <label class="block text-gray-700 font-bold mb-3">Payment Method *</label>
+            <label class="block text-gray-700 font-bold mb-3">Qualification *</label>
             <div class="space-y-3">
                 <div class="flex items-start">
                     <input type="radio" 
-                           id="payment_online" 
-                           name="payment_method" 
-                           value="online" 
+                           id="qualification_none"
+                           name="qualification"
+                           value="none"
                            class="mt-1 mr-3" 
-                           {% if not payment_method or payment_method == 'online' %}checked{% endif %}>
+                           {% if not payment_method or payment_method == 'none' %}checked{% endif %}>
                     <div>
-                        <label for="payment_online" class="font-semibold text-gray-900 cursor-pointer">
-                            Online Payment (€100)
+                        <label for="qualification_none" class="font-semibold text-gray-900 cursor-pointer">
+                            None
                         </label>
                         <p class="text-sm text-gray-600">
-                            Pay securely with credit/debit card via SumUp. Your membership will be activated immediately upon successful payment.
+                            Select this if you have never taken a beginners course and are not a member of Archery Ireland or the Irish Field Archery Federation.
                         </p>
                     </div>
                 </div>
                 
                 <div class="flex items-start">
                     <input type="radio" 
-                           id="payment_cash" 
-                           name="payment_method" 
-                           value="cash" 
+                           id="qualification_beginner"
+                           name="qualification"
+                           value="beginner"
                            class="mt-1 mr-3"
-                           {% if payment_method == 'cash' %}checked{% endif %}>
+                           {% if qualification == 'beginner' %}checked{% endif %}>
                     <div>
-                        <label for="payment_cash" class="font-semibold text-gray-900 cursor-pointer">
-                            Cash Payment (€100)
+                        <label for="qualification_beginner" class="font-semibold text-gray-900 cursor-pointer">
+                            Beginner Course Completed
                         </label>
                         <p class="text-sm text-gray-600">
-                            Pay in person at the club. Your membership will be activated by an admin once payment is received.
+                            Select this if you have completed a recognised beginners course but are not a member of Archery Ireland or the Irish Field Archery Federation.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <input type="radio"
+                           id="qualification_ai"
+                           name="qualification"
+                           value="ai"
+                           class="mt-1 mr-3"
+                           {% if qualification == 'ai' %}checked{% endif %}>
+                    <div>
+                        <label for="qualification_ai" class="font-semibold text-gray-900 cursor-pointer">
+                            Archery Ireland Member
+                        </label>
+                        <p class="text-sm text-gray-600">
+                            Select this if you have completed a recognised beginners course and are a member of Archery Ireland.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <input type="radio"
+                           id="qualification_ifaf"
+                           name="qualification"
+                           value="cash"
+                           class="mt-1 mr-3"
+                           {% if qualification == 'ifaf' %}checked{% endif %}>
+                    <div>
+                        <label for="qualification_ifaf" class="font-semibold text-gray-900 cursor-pointer">
+                            Irish Field Archery Federation Member
+                        </label>
+                        <p class="text-sm text-gray-600">
+                            Select this if you have completed a recognised beginners course and are a member of the Irish Field Archery Federation.
                         </p>
                     </div>
                 </div>

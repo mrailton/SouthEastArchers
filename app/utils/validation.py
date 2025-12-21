@@ -13,9 +13,9 @@ class SignupValidation:
         phone = form_data.get("phone")
         password = form_data.get("password")
         password_confirm = form_data.get("password_confirm")
-        payment_method = form_data.get("payment_method", "online")
+        qualification = form_data.get("qualification", "None")
 
-        if not all([name, email, password, payment_method]):
+        if not all([name, email, password, qualification]):
             return None, "All required fields must be filled."
 
         if password != password_confirm:
@@ -26,7 +26,7 @@ class SignupValidation:
             "email": email,
             "phone": phone,
             "password": password,
-            "payment_method": payment_method,
+            "qualification": qualification,
         }
 
         return validated_data, None

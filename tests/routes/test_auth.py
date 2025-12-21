@@ -1,9 +1,3 @@
-"""Tests for auth routes"""
-
-from datetime import date
-
-import pytest
-
 from app.models import User
 
 
@@ -43,7 +37,6 @@ class TestAuthRoutes:
         assert b"Invalid" in response.data
 
     def test_signup_new_user(self, client):
-        """Test signup with new user"""
         response = client.post(
             "/auth/signup",
             data={
@@ -52,11 +45,13 @@ class TestAuthRoutes:
                 "phone": "1234567890",
                 "password": "password123",
                 "password_confirm": "password123",
-                "payment_method": "cash",
+                "qualification": "Beginner Certificate",
             },
             follow_redirects=True,
         )
+
         assert response.status_code == 200
+        assert b"Thank you for signing up. A coach will review your information shortly and get back to you to discuss membership." in response.data
 
     def test_signup_existing_email(self, client, test_user):
         """Test signup with existing email"""

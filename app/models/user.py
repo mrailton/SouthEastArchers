@@ -14,8 +14,9 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     phone = db.Column(db.String(20), nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    qualification = db.Column(db.String(255), nullable=False, default="None")
     is_admin = db.Column(db.Boolean, default=False)
-    is_active = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 

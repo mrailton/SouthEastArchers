@@ -26,13 +26,16 @@ def login():
 
         user = UserService.authenticate(email, password)
 
-        if user:
+        if user is None:
+            flash("Invalid username or password.", "error")
+        elif not user.is_active:
+            flash("Your account is not currently active.", "error")
+        else:
             login_user(user, remember=remember)
             flash("Logged in successfully!", "success")
             next_page = request.args.get("next")
+
             return redirect(next_page) if next_page else redirect(url_for("member.dashboard"))
-        else:
-            flash("Invalid email or password.", "error")
 
     return render_template("auth/login.html")
 
@@ -51,24 +54,15 @@ def signup():
             email=validated_data["email"],
             password=validated_data["password"],
             phone=validated_data.get("phone"),
-            payment_method=validated_data["payment_method"],
+            qualification=validated_data["qualification"],
         )
 
         if error:
             flash(error, "error")
             return render_template("auth/signup.html")
 
-        if validated_data["payment_method"] == "cash":
-            flash("Account created! Your membership will be activated once payment is received.", "info")
-            return redirect(url_for("auth.login"))
-
-        result = UserService.initiate_online_payment(user, validated_data["name"])
-
-        if result.get("success"):
-            return redirect(url_for("payment.show_checkout", checkout_id=result["checkout_id"]))
-        else:
-            flash(result.get("error", "Error creating payment. Please contact us."), "error")
-            return redirect(url_for("auth.login"))
+        flash("Thank you for signing up. A coach will review your information shortly and get back to you to discuss membership.", "success")
+        return redirect(url_for("auth.login"))
 
     return render_template("auth/signup.html")
 

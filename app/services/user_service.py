@@ -139,42 +139,24 @@ class UserService:
         email: str,
         password: str,
         phone: str = None,
-        payment_method: str = "online",
+        qualification: str = "None",
     ) -> tuple[User | None, str | None]:
         if User.query.filter_by(email=email).first():
             return None, "Email already registered."
 
         from flask import current_app
 
-        membership_fee_cents = current_app.config.get("ANNUAL_MEMBERSHIP_COST", 10000)
-
         user = User(
             name=name,
             email=email,
             phone=phone,
+            qualification=qualification,
+            is_active=False,
         )
         user.set_password(password)
 
-        membership = Membership(
-            user=user,
-            start_date=date.today(),
-            expiry_date=date.today() + timedelta(days=365),
-            status="pending" if payment_method == "cash" else "pending",
-        )
-
-        payment = Payment(
-            user=user,
-            amount_cents=membership_fee_cents,
-            payment_type="membership",
-            payment_method=payment_method,
-            status="pending",
-            payment_processor="sumup" if payment_method == "online" else None,
-        )
-
         try:
             db.session.add(user)
-            db.session.add(membership)
-            db.session.add(payment)
             db.session.commit()
             return user, None
         except Exception as e:
@@ -185,7 +167,7 @@ class UserService:
     @staticmethod
     def authenticate(email: str, password: str) -> User | None:
         user = User.query.filter_by(email=email).first()
-        if user and user.check_password(password) and user.is_active:
+        if user and user.check_password(password):
             return user
         return None
 

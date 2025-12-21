@@ -289,53 +289,21 @@ class TestUpdateMember:
 
 
 class TestCreateUser:
-    def test_create_user_with_online_payment(self, app):
+    def test_create_user(self, app):
         """Test creating user with online payment method"""
         user, error = UserService.create_user(
             name="Online User",
             email="online@example.com",
             password="password123",
             phone="1234567890",
-            payment_method="online",
+            qualification="none",
         )
 
         assert error is None
         assert user is not None
         assert user.name == "Online User"
-        assert user.membership is not None
-        assert user.membership.status == "pending"
-
-        payment = Payment.query.filter_by(user_id=user.id).first()
-        assert payment is not None
-        assert payment.payment_method == "online"
-        assert payment.payment_processor == "sumup"
-        assert payment.status == "pending"
-
-    def test_create_user_with_cash_payment(self, app):
-        """Test creating user with cash payment method"""
-        user, error = UserService.create_user(
-            name="Cash User",
-            email="cash@example.com",
-            password="password123",
-            payment_method="cash",
-        )
-
-        assert error is None
-        payment = Payment.query.filter_by(user_id=user.id).first()
-        assert payment.payment_method == "cash"
-        assert payment.payment_processor is None
-
-    def test_create_user_membership_fee(self, app):
-        """Test adult user gets full membership fee"""
-        user, error = UserService.create_user(
-            name="Adult User",
-            email="adult@example.com",
-            password="password123",
-        )
-
-        assert error is None
-        payment = Payment.query.filter_by(user_id=user.id).first()
-        assert payment.amount_cents == app.config["ANNUAL_MEMBERSHIP_COST"]
+        assert user.membership is None
+        assert user.is_active is False
 
     def test_create_user_duplicate_email(self, app, test_user):
         """Test creating user with duplicate email"""
@@ -343,14 +311,6 @@ class TestCreateUser:
 
         assert user is None
         assert error == "Email already registered."
-
-    def test_create_user_membership_dates(self, app):
-        """Test user membership has correct dates"""
-        user, error = UserService.create_user(name="Date Test", email="datetest@example.com", password="password123")
-
-        assert error is None
-        assert user.membership.start_date == date.today()
-        assert user.membership.expiry_date == date.today() + timedelta(days=365)
 
 
 class TestAuthenticate:
@@ -370,15 +330,6 @@ class TestAuthenticate:
     def test_authenticate_nonexistent_email(self, app):
         """Test authentication with nonexistent email"""
         result = UserService.authenticate("nonexistent@example.com", "password123")
-
-        assert result is None
-
-    def test_authenticate_inactive_user(self, app, test_user):
-        """Test authentication with inactive user"""
-        test_user.is_active = False
-        db.session.commit()
-
-        result = UserService.authenticate(test_user.email, "password123")
 
         assert result is None
 

@@ -70,6 +70,7 @@ def test_user(app):
         name="Test User",
         email="test@example.com",
         phone="1234567890",
+        is_active=True,
     )
     user.set_password("password123")
 
@@ -98,6 +99,7 @@ def admin_user(app):
         name="Admin User",
         email="admin@example.com",
         is_admin=True,
+        is_active=True,
     )
     user.set_password("adminpass")
     db.session.add(user)

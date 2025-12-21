@@ -117,6 +117,7 @@ def create_app(config_name=None):
     @app.context_processor
     def override_url_for():
         from flask import url_for as flask_url_for
+
         from app.utils.vite import vite_asset, vite_hmr_client
 
         def dated_url_for(endpoint, **values):

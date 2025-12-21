@@ -33,7 +33,6 @@ def create_app(config_name=None):
 
     app = Flask(
         __name__,
-        template_folder="../resources/templates",
         static_folder="../resources/static",
         static_url_path="/static",
     )

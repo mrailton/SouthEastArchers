@@ -16,9 +16,7 @@ class Config:
     APPLICATION_ROOT = os.environ.get("APPLICATION_ROOT", "/")
 
     # Database
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL", "mysql+pymysql://sea_user:sea_password@localhost:3306/sea_db"
-    )
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "mysql+pymysql://sea_user:sea_password@localhost:3306/sea_db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
 
@@ -38,9 +36,7 @@ class Config:
     MAIL_USE_SSL = mail_use_ssl.lower() in ("true", "1", "yes", "on") if isinstance(mail_use_ssl, str) else bool(mail_use_ssl)
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
-    MAIL_DEFAULT_SENDER = os.environ.get(
-        "MAIL_DEFAULT_SENDER", "noreply@southeastarchers.ie"
-    )
+    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "noreply@southeastarchers.ie")
     # Additional mail settings for better compatibility
     MAIL_SUPPRESS_SEND = False
     MAIL_DEBUG = False

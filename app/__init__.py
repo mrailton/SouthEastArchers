@@ -25,7 +25,7 @@ task_queue = None
 
 
 def create_app(config_name=None):
-    from config.config import config
+    from app.config import config
 
     # Determine config from environment if not specified
     if config_name is None:

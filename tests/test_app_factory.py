@@ -188,7 +188,7 @@ class TestLogging:
         mock_handler.return_value = mock_handler_instance
 
         # Temporarily modify config to simulate production
-        from config.config import config
+        from app.config import config
 
         original_debug = config["testing"].DEBUG
         original_testing = config["testing"].TESTING

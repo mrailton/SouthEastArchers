@@ -167,6 +167,7 @@ def user_create(name, email, password, phone, admin):
             name=name,
             email=email,
             phone=phone if phone else None,
+            is_active=True,
             is_admin=admin,
         )
         user.set_password(password)

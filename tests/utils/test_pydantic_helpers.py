@@ -69,6 +69,7 @@ class TestGetListFields:
 
     def test_handles_schema_without_model_fields(self):
         """Test that schemas without model_fields attribute return empty set"""
+
         class FakeSchema:
             pass
 
@@ -141,6 +142,7 @@ class TestSetDefaultBooleans:
 
     def test_handles_multiple_boolean_fields(self):
         """Test handling of multiple boolean fields"""
+
         class MultiBoolSchema(BaseModel):
             active: bool
             verified: bool
@@ -161,6 +163,7 @@ class TestSetDefaultBooleans:
 
     def test_handles_schema_without_model_fields(self):
         """Test that schemas without model_fields attribute are handled gracefully"""
+
         class FakeSchema:
             pass
 
@@ -242,13 +245,15 @@ class TestValidateRequest:
         with app.test_request_context(
             "/",
             method="POST",
-            data=ImmutableMultiDict([
-                ("name", "Test"),
-                ("tags", "tag1"),
-                ("tags", "tag2"),
-                ("ids", "1"),
-                ("ids", "2"),
-            ]),
+            data=ImmutableMultiDict(
+                [
+                    ("name", "Test"),
+                    ("tags", "tag1"),
+                    ("tags", "tag2"),
+                    ("ids", "1"),
+                    ("ids", "2"),
+                ]
+            ),
         ):
             from flask import request
 
@@ -263,11 +268,13 @@ class TestValidateRequest:
         with app.test_request_context(
             "/",
             method="POST",
-            data=ImmutableMultiDict([
-                ("name", "Test"),
-                ("tags[]", "tag1"),
-                ("tags[]", "tag2"),
-            ]),
+            data=ImmutableMultiDict(
+                [
+                    ("name", "Test"),
+                    ("tags[]", "tag1"),
+                    ("tags[]", "tag2"),
+                ]
+            ),
         ):
             from flask import request
 
@@ -309,15 +316,17 @@ class TestValidateRequest:
         with app.test_request_context(
             "/",
             method="POST",
-            data=ImmutableMultiDict([
-                ("name", "John"),
-                ("age", "25"),
-                ("active", "on"),
-                ("tags[]", "tag1"),
-                ("tags[]", "tag2"),
-                ("scores[]", "95"),
-                ("scores[]", "87"),
-            ]),
+            data=ImmutableMultiDict(
+                [
+                    ("name", "John"),
+                    ("age", "25"),
+                    ("active", "on"),
+                    ("tags[]", "tag1"),
+                    ("tags[]", "tag2"),
+                    ("scores[]", "95"),
+                    ("scores[]", "87"),
+                ]
+            ),
         ):
             from flask import request
 

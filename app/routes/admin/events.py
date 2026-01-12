@@ -1,6 +1,8 @@
 from flask import abort, flash, redirect, render_template, request, url_for
 
+from app.schemas import EventSchema
 from app.services import EventService
+from app.utils.pydantic_helpers import validate_request
 
 from . import admin_required, bp
 
@@ -16,17 +18,19 @@ def events():
 @admin_required
 def create_event():
     if request.method == "POST":
-        start_date = EventService.parse_date(request.form.get("start_date"))
-        if not start_date:
-            flash("Invalid date format.", "error")
+        validated, errors = validate_request(EventSchema, request)
+
+        if errors or validated is None:
+            for field, error in (errors or {}).items():
+                flash(error, "error")
             return render_template("admin/create_event.html")
 
         EventService.create_event(
-            title=request.form.get("title"),
-            start_date=start_date,
-            description=request.form.get("description"),
-            location=request.form.get("location"),
-            published=request.form.get("published") == "on",
+            title=validated.title,
+            start_date=validated.start_date,
+            description=validated.description,
+            location=validated.location,
+            published=validated.published,
         )
 
         flash("Event created successfully!", "success")
@@ -43,18 +47,20 @@ def edit_event(event_id):
         abort(404)
 
     if request.method == "POST":
-        start_date = EventService.parse_date(request.form.get("start_date"))
-        if not start_date:
-            flash("Invalid date format.", "error")
+        validated, errors = validate_request(EventSchema, request)
+
+        if errors or validated is None:
+            for field, error in (errors or {}).items():
+                flash(error, "error")
             return render_template("admin/edit_event.html", event=event)
 
         EventService.update_event(
             event=event,
-            title=request.form.get("title"),
-            start_date=start_date,
-            description=request.form.get("description"),
-            location=request.form.get("location"),
-            published=request.form.get("published") == "on",
+            title=validated.title,
+            start_date=validated.start_date,
+            description=validated.description,
+            location=validated.location,
+            published=validated.published,
         )
 
         flash("Event updated successfully!", "success")

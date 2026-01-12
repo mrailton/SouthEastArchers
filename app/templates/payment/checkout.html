@@ -16,7 +16,6 @@
         
         <!-- Payment Form -->
         <form method="POST" action="{{ url_for('payment.process_checkout', checkout_id=checkout_id) }}" class="space-y-4">
-            {{ form.hidden_tag() }}
             
             <!-- Card Number -->
             <div>

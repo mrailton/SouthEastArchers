@@ -5,36 +5,30 @@
     <h1 class="text-4xl font-bold mb-6">Create Shoot</h1>
     
     <form method="POST" class="bg-white p-8 rounded shadow space-y-6">
-        {{ form.hidden_tag() }}
-        
         <div>
             <label for="date" class="block text-gray-700 font-bold mb-2">Date</label>
-            {{ form.date(class="w-full border border-gray-300 rounded px-3 py-2") }}
-            {% if form.date.errors %}
-                <p class="mt-1 text-sm text-red-600">{{ form.date.errors[0] }}</p>
-            {% endif %}
+            <input type="date" name="date" id="date" class="w-full border border-gray-300 rounded px-3 py-2" required>
         </div>
         
         <div>
             <label for="location" class="block text-gray-700 font-bold mb-2">Location</label>
-            {{ form.location(class="w-full border border-gray-300 rounded px-3 py-2") }}
-            {% if form.location.errors %}
-                <p class="mt-1 text-sm text-red-600">{{ form.location.errors[0] }}</p>
-            {% endif %}
+            <select name="location" id="location" class="w-full border border-gray-300 rounded px-3 py-2" required>
+                <option value="">Select a location</option>
+                <option value="HALL">Hall</option>
+                <option value="MEADOW">Meadow</option>
+                <option value="WOODS">Woods</option>
+            </select>
         </div>
         
         <div>
             <label for="description" class="block text-gray-700 font-bold mb-2">Description (Optional)</label>
-            {{ form.description(class="w-full border border-gray-300 rounded px-3 py-2", rows="3") }}
-            {% if form.description.errors %}
-                <p class="mt-1 text-sm text-red-600">{{ form.description.errors[0] }}</p>
-            {% endif %}
+            <textarea name="description" id="description" class="w-full border border-gray-300 rounded px-3 py-2" rows="3"></textarea>
         </div>
         
         <div>
             <label class="block text-gray-700 font-bold mb-2">Attendees</label>
             <div class="border border-gray-300 rounded p-3 max-h-64 overflow-y-auto">
-                {% for value, label in form.attendees.choices %}
+                {% for value, label in active_members %}
                 <div class="flex items-center mb-2">
                     <input type="checkbox" name="attendees" value="{{ value }}" id="attendee_{{ value }}" 
                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
@@ -42,9 +36,6 @@
                 </div>
                 {% endfor %}
             </div>
-            {% if form.attendees.errors %}
-                <p class="mt-1 text-sm text-red-600">{{ form.attendees.errors[0] }}</p>
-            {% endif %}
             <p class="mt-1 text-sm text-gray-500">Credits will be automatically deducted for each attendee</p>
         </div>
         

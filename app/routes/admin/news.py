@@ -1,6 +1,8 @@
 from flask import abort, flash, redirect, render_template, request, url_for
 
+from app.schemas import NewsSchema
 from app.services import NewsService
+from app.utils.pydantic_helpers import validate_request
 
 from . import admin_required, bp
 
@@ -16,11 +18,18 @@ def news():
 @admin_required
 def create_news():
     if request.method == "POST":
+        validated, errors = validate_request(NewsSchema, request)
+
+        if errors or validated is None:
+            for field, error in (errors or {}).items():
+                flash(error, "error")
+            return render_template("admin/create_news.html")
+
         NewsService.create_article(
-            title=request.form.get("title"),
-            summary=request.form.get("summary"),
-            content=request.form.get("content"),
-            published=request.form.get("published") == "on",
+            title=validated.title,
+            summary=validated.summary,
+            content=validated.content,
+            published=validated.published,
         )
 
         flash("News article created!", "success")
@@ -37,12 +46,19 @@ def edit_news(news_id):
         abort(404)
 
     if request.method == "POST":
+        validated, errors = validate_request(NewsSchema, request)
+
+        if errors or validated is None:
+            for field, error in (errors or {}).items():
+                flash(error, "error")
+            return render_template("admin/edit_news.html", news=news)
+
         NewsService.update_article(
             article=news,
-            title=request.form.get("title"),
-            summary=request.form.get("summary"),
-            content=request.form.get("content"),
-            published=request.form.get("published") == "on",
+            title=validated.title,
+            summary=validated.summary,
+            content=validated.content,
+            published=validated.published,
         )
 
         flash("News article updated successfully!", "success")

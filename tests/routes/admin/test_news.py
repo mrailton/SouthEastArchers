@@ -133,7 +133,7 @@ class TestAdminNews:
         """Test editing news to publish it sets published_at"""
         from app import db
 
-        news = News(title="Draft Article", content="Draft content", published=False)
+        news = News(title="Draft Article", content="Draft content that is long enough to pass validation", published=False)
         db.session.add(news)
         db.session.commit()
         news_id = news.id
@@ -145,7 +145,7 @@ class TestAdminNews:
             data={
                 "title": "Published Article",
                 "summary": "Now published",
-                "content": "Published content",
+                "content": "Published content that is long enough to pass validation",
                 "published": "on",
             },
             follow_redirects=True,
@@ -209,7 +209,7 @@ class TestAdminNews:
 
         news = News(
             title="To Be Unpublished",
-            content="Content here",
+            content="Content here that is long enough to pass validation",
             published=True,
             published_at=utc_now(),
         )
@@ -224,7 +224,7 @@ class TestAdminNews:
             data={
                 "title": "Unpublished Article",
                 "summary": "No longer published",
-                "content": "Unpublished content",
+                "content": "Unpublished content that is long enough to pass validation",
                 # Not setting published checkbox
             },
             follow_redirects=True,

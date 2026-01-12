@@ -1,4 +1,4 @@
-.PHONY: help install dev run test test-cov format format-check clean db-upgrade db-migrate shell build assets assets-watch
+.PHONY: help install dev run test test-cov format format-check typecheck clean db-upgrade db-migrate shell build assets assets-watch
 
 # Default target
 help:
@@ -24,6 +24,7 @@ help:
 	@echo "Code Quality:"
 	@echo "  make format           Format code with black and isort"
 	@echo "  make format-check     Check formatting and code quality"
+	@echo "  make typecheck        Run mypy type checking"
 	@echo ""
 	@echo "Database:"
 	@echo "  make db-upgrade       Apply database migrations"
@@ -94,6 +95,10 @@ format-check:
 	@uv run black --check app/ tests/
 	@echo "Running code quality checks..."
 	@uv run flake8 app/ tests/
+
+typecheck:
+	@echo "Running mypy type checking..."
+	@uv run mypy app/
 
 # Database
 db-upgrade:

@@ -19,19 +19,14 @@ bp = Blueprint("payment", __name__, url_prefix="/payment")
 
 @bp.route("/checkout/<checkout_id>")
 def show_checkout(checkout_id):
-    from flask_wtf import FlaskForm
-
     amount = session.get("checkout_amount", 100.00)
     description = session.get("checkout_description", "Payment")
-
-    form = FlaskForm()
 
     return render_template(
         "payment/checkout.html",
         checkout_id=checkout_id,
         amount=amount,
         description=description,
-        form=form,
     )
 
 

@@ -2,7 +2,9 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.models import Credit, Shoot, User
+from app.schemas import ChangePasswordSchema, ProfileSchema
 from app.services import UserService
+from app.utils.pydantic_helpers import validate_request
 
 bp = Blueprint("member", __name__, url_prefix="/member")
 
@@ -52,10 +54,17 @@ def profile():
 @bp.route("/profile/update", methods=["POST"])
 @login_required
 def update_profile():
+    validated, errors = validate_request(ProfileSchema, request)
+
+    if errors or validated is None:
+        for field, error in (errors or {}).items():
+            flash(error, "error")
+        return redirect(url_for("member.profile"))
+
     success, message = UserService.update_profile(
         user=current_user,
-        name=request.form.get("name", current_user.name),
-        phone=request.form.get("phone", current_user.phone),
+        name=validated.name,
+        phone=validated.phone,
     )
     flash(message, "success" if success else "error")
     return redirect(url_for("member.profile"))
@@ -65,17 +74,17 @@ def update_profile():
 @login_required
 def change_password():
     if request.method == "POST":
-        new_password = request.form.get("new_password")
-        confirm_password = request.form.get("confirm_password")
+        validated, errors = validate_request(ChangePasswordSchema, request)
 
-        if new_password != confirm_password:
-            flash("New passwords do not match.", "error")
+        if errors or validated is None:
+            for field, error in (errors or {}).items():
+                flash(error, "error")
             return render_template("member/change_password.html")
 
         success, message = UserService.change_password(
             user=current_user,
-            current_password=request.form.get("current_password"),
-            new_password=new_password,
+            current_password=validated.current_password,
+            new_password=validated.new_password,
         )
 
         if success:

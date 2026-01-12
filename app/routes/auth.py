@@ -10,51 +10,63 @@ from flask import (
 from flask_login import login_required, login_user, logout_user
 
 from app.models import User
+from app.schemas import ForgotPasswordSchema, LoginSchema, ResetPasswordSchema, SignupSchema
 from app.services import UserService
 from app.utils.email import send_password_reset_email
-from app.utils.validation import SignupValidation
+from app.utils.pydantic_helpers import validate_request
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
-@bp.route("/login", methods=["GET", "POST"])
+@bp.get("/login")
 def login():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-        remember = request.form.get("remember", False)
-
-        user = UserService.authenticate(email, password)
-
-        if user is None:
-            flash("Invalid username or password.", "error")
-        elif not user.is_active:
-            flash("Your account is not currently active.", "error")
-        else:
-            login_user(user, remember=remember)
-            flash("Logged in successfully!", "success")
-            next_page = request.args.get("next")
-
-            return redirect(next_page) if next_page else redirect(url_for("member.dashboard"))
-
     return render_template("auth/login.html")
+
+
+@bp.post("/login")
+def store_login():
+    validated, errors = validate_request(LoginSchema, request)
+
+    if errors or validated is None:
+        for field, error in (errors or {}).items():
+            flash(error, "error")
+        return render_template("auth/login.html")
+
+    remember = request.form.get("remember", False)
+    user = UserService.authenticate(validated.email, validated.password)
+
+    if user is None:
+        flash("Invalid username or password.", "error")
+
+        return render_template("auth/login.html")
+    elif not user.is_active:
+        flash("Your account is not currently active.", "error")
+
+        return render_template("auth/login.html")
+    else:
+        login_user(user, remember=remember)
+        flash("Logged in successfully!", "success")
+        next_page = request.args.get("next")
+
+        return redirect(next_page) if next_page else redirect(url_for("member.dashboard"))
 
 
 @bp.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
-        validated_data, error = SignupValidation.validate_and_extract(request.form)
+        validated, errors = validate_request(SignupSchema, request)
 
-        if error:
-            flash(error, "error")
+        if errors or validated is None:
+            for field, error in (errors or {}).items():
+                flash(error, "error")
             return render_template("auth/signup.html")
 
         user, error = UserService.create_user(
-            name=validated_data["name"],
-            email=validated_data["email"],
-            password=validated_data["password"],
-            phone=validated_data.get("phone"),
-            qualification=validated_data["qualification"],
+            name=validated.name,
+            email=validated.email,
+            password=validated.password,
+            phone=validated.phone,
+            qualification=validated.qualification,
         )
 
         if error:
@@ -78,8 +90,14 @@ def logout():
 @bp.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
     if request.method == "POST":
-        email = request.form.get("email")
-        user = User.query.filter_by(email=email).first()
+        validated, errors = validate_request(ForgotPasswordSchema, request)
+
+        if errors or validated is None:
+            for field, error in (errors or {}).items():
+                flash(error, "error")
+            return render_template("auth/forgot_password.html")
+
+        user = User.query.filter_by(email=validated.email).first()
 
         if user:
             token = UserService.create_password_reset_token(user)
@@ -105,22 +123,14 @@ def reset_password(token):
         return redirect(url_for("auth.forgot_password"))
 
     if request.method == "POST":
-        password = request.form.get("password")
-        password_confirm = request.form.get("password_confirm")
+        validated, errors = validate_request(ResetPasswordSchema, request)
 
-        if not password or not password_confirm:
-            flash("Please fill in all fields.", "error")
+        if errors or validated is None:
+            for field, error in (errors or {}).items():
+                flash(error, "error")
             return render_template("auth/reset_password.html", token=token)
 
-        if password != password_confirm:
-            flash("Passwords do not match.", "error")
-            return render_template("auth/reset_password.html", token=token)
-
-        if len(password) < 8:
-            flash("Password must be at least 8 characters long.", "error")
-            return render_template("auth/reset_password.html", token=token)
-
-        success, message = UserService.reset_password(token, password)
+        success, message = UserService.reset_password(token, validated.password)
 
         if success:
             flash(f"{message} Please login.", "success")

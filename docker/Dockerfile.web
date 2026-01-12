@@ -2,19 +2,18 @@ FROM python:3.14-slim as builder
 
 WORKDIR /app
 
-# Install Node.js and make for building assets
+# Install Node.js for building assets
 RUN apt-get update && apt-get install -y \
     curl \
-    make \
     && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy build configuration files
-COPY package*.json Makefile ./
+COPY package*.json ./
 
 # Install Node dependencies
-RUN make install-node
+RUN npm ci
 
 # Copy source files needed for build
 COPY resources ./resources
@@ -22,7 +21,7 @@ COPY vite.config.js ./
 COPY app/templates ./app/templates
 
 # Build assets
-RUN make build
+RUN npm run build
 
 # Final stage
 FROM python:3.14-slim

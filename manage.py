@@ -155,58 +155,28 @@ def user():
     help="User password",
 )
 @click.option("--phone", default="", help="Phone number (optional)")
-@click.option("--dob", prompt="Date of birth (YYYY-MM-DD)", help="Date of birth")
 @click.option("--admin", is_flag=True, help="Create as admin user")
-@click.option(
-    "--with-membership",
-    is_flag=True,
-    default=True,
-    help="Create with membership (default: yes)",
-)
-def user_create(name, email, password, phone, dob, admin, with_membership):
+def user_create(name, email, password, phone, admin):
     """Create a new user"""
     from app import create_app, db
-    from app.models import Membership, User
+    from app.models import User
 
     app = create_app()
     with app.app_context():
-        try:
-            dob_obj = date.fromisoformat(dob)
-        except ValueError:
-            click.echo("Error: Invalid date format. Use YYYY-MM-DD")
-            return
-
-        if User.query.filter_by(email=email).first():
-            click.echo(f"Error: User with email {email} already exists")
-            return
-
         user = User(
             name=name,
             email=email,
             phone=phone if phone else None,
-            date_of_birth=dob_obj,
             is_admin=admin,
         )
         user.set_password(password)
 
         db.session.add(user)
         db.session.flush()
-
-        # Create membership
-        if with_membership:
-            membership = Membership(
-                user_id=user.id,
-                start_date=date.today(),
-                expiry_date=date.today() + timedelta(days=365),
-                status="active",
-            )
-            db.session.add(membership)
-
         db.session.commit()
 
         user_type = "admin" if admin else "member"
-        membership_info = " with membership" if with_membership else ""
-        click.echo(f"✓ Successfully created {user_type} user{membership_info}: {email}")
+        click.echo(f"✓ Successfully created {user_type} user: {email}")
 
 
 @user.command("list")
@@ -262,67 +232,6 @@ def user_delete(user_id):
             click.echo(f"✓ User {user.email} deleted successfully")
         else:
             click.echo("Cancelled")
-
-
-@user.command("admin")
-@click.option("--name", prompt="Full name", help="Admin full name")
-@click.option("--email", prompt="Email", help="Admin email")
-@click.option(
-    "--password",
-    prompt=True,
-    hide_input=True,
-    confirmation_prompt=True,
-    help="Admin password",
-)
-@click.option("--phone", default="", help="Phone number (optional)")
-@click.option(
-    "--dob",
-    prompt="Date of birth (YYYY-MM-DD)",
-    default=str(date.today() - timedelta(days=365 * 30)),
-    help="Date of birth",
-)
-def create_admin(name, email, password, phone, dob):
-    """Create an admin user with membership (shortcut)"""
-    from app import create_app, db
-    from app.models import Membership, User
-
-    app = create_app()
-    with app.app_context():
-        try:
-            dob_obj = date.fromisoformat(dob)
-        except ValueError:
-            click.echo("Error: Invalid date format. Use YYYY-MM-DD")
-            return
-
-        if User.query.filter_by(email=email).first():
-            click.echo(f"Error: User with email {email} already exists")
-            return
-
-        user = User(
-            name=name,
-            email=email,
-            phone=phone if phone else None,
-            date_of_birth=dob_obj,
-            is_admin=True,
-        )
-        user.set_password(password)
-
-        db.session.add(user)
-        db.session.flush()
-
-        # Always create membership for admin
-        membership = Membership(
-            user_id=user.id,
-            start_date=date.today(),
-            expiry_date=date.today() + timedelta(days=365),
-            status="active",
-        )
-        db.session.add(membership)
-
-        db.session.commit()
-
-        click.echo(f"✓ Successfully created admin user with membership: {email}")
-
 
 # ==============================================================================
 # TEST COMMANDS

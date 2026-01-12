@@ -1,4 +1,4 @@
-.PHONY: help install dev run test test-cov format format-check typecheck clean db-upgrade db-migrate shell build assets assets-watch
+.PHONY: help install dev test test-cov format format-check typecheck clean db-upgrade db-migrate shell build assets assets-watch
 
 # Default target
 help:
@@ -7,8 +7,6 @@ help:
 	@echo "Local Development:"
 	@echo "  make install          Install Python and Node.js dependencies"
 	@echo "  make dev              Run Flask dev server and watch assets"
-	@echo "  make run              Run Flask development server only"
-	@echo "  make worker-dev       Start RQ worker with auto-reload"
 	@echo "  make shell            Open Flask shell"
 	@echo ""
 	@echo "Building:"
@@ -50,9 +48,6 @@ dev:
 	uv run watchmedo auto-restart --directory=./app --pattern=*.py --recursive -- uv run python worker.py & \
 	uv run flask run --debug
 
-run:
-	uv run flask run --debug
-
 shell:
 	uv run flask shell
 
@@ -74,14 +69,6 @@ test-cov:
 
 test-parallel:
 	uv run pytest -n auto
-
-# Background Jobs
-worker:
-	uv run python worker.py
-
-worker-dev:
-	@echo "Starting RQ worker with auto-reload..."
-	@watchmedo auto-restart --directory=./app --pattern=*.py --recursive -- uv run python worker.py
 
 # Code Quality
 format:

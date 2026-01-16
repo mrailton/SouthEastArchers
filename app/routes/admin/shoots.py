@@ -1,8 +1,7 @@
 from flask import abort, flash, redirect, render_template, request, url_for
 
-from app.schemas import ShootSchema
+from app.forms import ShootForm
 from app.services import ShootService
-from app.utils.pydantic_helpers import validate_request
 
 from . import admin_required, bp
 
@@ -17,30 +16,29 @@ def shoots():
 @bp.route("/shoots/create", methods=["GET", "POST"])
 @admin_required
 def create_shoot():
-    active_members = ShootService.get_active_members_with_credits()
+    form = ShootForm()
+    form.attendees.choices = ShootService.get_active_members_with_credits()
 
-    if request.method == "POST":
-        validated, errors = validate_request(ShootSchema, request)
-
-        if errors or validated is None:
-            for field, error in (errors or {}).items():
-                flash(error, "error")
-            return render_template("admin/create_shoot.html", active_members=active_members)
-
+    if form.validate_on_submit():
         shoot, warnings = ShootService.create_shoot(
-            shoot_date=validated.date,
-            location=validated.location,
-            description=validated.description,
-            attendee_ids=validated.attendees or [],
+            shoot_date=form.date.data,
+            location=form.location.data,
+            description=form.description.data,
+            attendee_ids=form.attendees.data or [],
         )
 
         for warning in warnings:
             flash(f"Warning: {warning}", "warning")
 
-        flash(f"Shoot created with {len(validated.attendees or [])} attendees!", "success")
+        flash(f"Shoot created with {len(form.attendees.data or [])} attendees!", "success")
         return redirect(url_for("admin.shoots"))
 
-    return render_template("admin/create_shoot.html", active_members=active_members)
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(error, "error")
+
+    active_members = ShootService.get_active_members_with_credits()
+    return render_template("admin/create_shoot.html", active_members=active_members, form=form)
 
 
 @bp.route("/shoots/<int:shoot_id>/edit", methods=["GET", "POST"])
@@ -50,22 +48,19 @@ def edit_shoot(shoot_id):
     if not shoot:
         abort(404)
 
-    active_members = ShootService.get_active_members_with_credits()
+    form = ShootForm(obj=shoot)
+    form.attendees.choices = ShootService.get_active_members_with_credits()
 
-    if request.method == "POST":
-        validated, errors = validate_request(ShootSchema, request)
+    if request.method == "GET":
+        form.attendees.data = [u.id for u in shoot.users]
 
-        if errors or validated is None:
-            for field, error in (errors or {}).items():
-                flash(error, "error")
-            return render_template("admin/edit_shoot.html", shoot=shoot, active_members=active_members)
-
+    if form.validate_on_submit():
         warnings = ShootService.update_shoot(
             shoot=shoot,
-            shoot_date=validated.date,
-            location=validated.location,
-            description=validated.description,
-            attendee_ids=validated.attendees or [],
+            shoot_date=form.date.data,
+            location=form.location.data,
+            description=form.description.data,
+            attendee_ids=form.attendees.data or [],
         )
 
         for warning in warnings:
@@ -74,8 +69,14 @@ def edit_shoot(shoot_id):
         flash("Shoot updated successfully!", "success")
         return redirect(url_for("admin.shoots"))
 
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(error, "error")
+
+    active_members = ShootService.get_active_members_with_credits()
     return render_template(
         "admin/edit_shoot.html",
         shoot=shoot,
         active_members=active_members,
+        form=form,
     )

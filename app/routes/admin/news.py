@@ -1,8 +1,7 @@
 from flask import abort, flash, redirect, render_template, request, url_for
 
-from app.schemas import NewsSchema
+from app.forms import NewsForm
 from app.services import NewsService
-from app.utils.pydantic_helpers import validate_request
 
 from . import admin_required, bp
 
@@ -17,25 +16,24 @@ def news():
 @bp.route("/news/create", methods=["GET", "POST"])
 @admin_required
 def create_news():
-    if request.method == "POST":
-        validated, errors = validate_request(NewsSchema, request)
+    form = NewsForm()
 
-        if errors or validated is None:
-            for field, error in (errors or {}).items():
-                flash(error, "error")
-            return render_template("admin/create_news.html")
-
+    if form.validate_on_submit():
         NewsService.create_article(
-            title=validated.title,
-            summary=validated.summary,
-            content=validated.content,
-            published=validated.published,
+            title=form.title.data,
+            summary=form.summary.data,
+            content=form.content.data,
+            published=form.published.data,
         )
 
         flash("News article created!", "success")
         return redirect(url_for("admin.news"))
 
-    return render_template("admin/create_news.html")
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(error, "error")
+
+    return render_template("admin/create_news.html", form=form)
 
 
 @bp.route("/news/<int:news_id>/edit", methods=["GET", "POST"])
@@ -45,23 +43,22 @@ def edit_news(news_id):
     if not news:
         abort(404)
 
-    if request.method == "POST":
-        validated, errors = validate_request(NewsSchema, request)
+    form = NewsForm(obj=news)
 
-        if errors or validated is None:
-            for field, error in (errors or {}).items():
-                flash(error, "error")
-            return render_template("admin/edit_news.html", news=news)
-
+    if form.validate_on_submit():
         NewsService.update_article(
             article=news,
-            title=validated.title,
-            summary=validated.summary,
-            content=validated.content,
-            published=validated.published,
+            title=form.title.data,
+            summary=form.summary.data,
+            content=form.content.data,
+            published=form.published.data,
         )
 
         flash("News article updated successfully!", "success")
         return redirect(url_for("admin.news"))
 
-    return render_template("admin/edit_news.html", news=news)
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(error, "error")
+
+    return render_template("admin/edit_news.html", news=news, form=form)

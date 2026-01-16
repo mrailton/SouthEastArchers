@@ -51,7 +51,7 @@ def test_update_profile(client, test_user):
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
     response = client.post(
-        "/member/profile/update",
+        "/member/profile",
         data={"name": "Updated Name", "phone": "9876543210"},
         follow_redirects=True,
     )
@@ -136,7 +136,7 @@ def test_update_profile_partial_data(client, test_user):
 
     # Only update name
     response = client.post(
-        "/member/profile/update",
+        "/member/profile",
         data={"name": "Only Name Update"},
         follow_redirects=True,
     )

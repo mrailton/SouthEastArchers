@@ -19,12 +19,13 @@ dependencies = [
     "itsdangerous==2.2.0",
     "Flask-Login==0.6.3",
     "Flask-Bcrypt==1.0.1",
+    "Flask-WTF==1.2.2",
+    "WTForms==3.2.1",
     "gunicorn==23.0.0",
     "whitenoise==6.8.2",
     "sumup==0.0.13",
     "redis==5.2.1",
     "rq==2.0.0",
-    "pydantic[email]>=2.12.4",
 ]
 
 [dependency-groups]

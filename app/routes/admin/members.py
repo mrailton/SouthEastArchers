@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 
+from app.forms import CreateMemberForm, EditMemberForm
 from app.models import Payment
 from app.services import MembershipService, UserService
 from app.utils.email import send_payment_receipt
@@ -73,24 +74,31 @@ def activate_membership(user_id):
 @bp.route("/members/create", methods=["GET", "POST"])
 @admin_required
 def create_member():
-    if request.method == "POST":
+    form = CreateMemberForm()
+
+    if form.validate_on_submit():
         user, error = UserService.create_member(
-            name=request.form.get("name"),
-            email=request.form.get("email"),
-            phone=request.form.get("phone"),
-            password=request.form.get("password", "changeme123"),
-            is_admin=request.form.get("is_admin") == "on",
-            create_membership=request.form.get("create_membership") == "on",
+            name=form.name.data,
+            email=form.email.data,
+            phone=form.phone.data,
+            password=form.password.data or "changeme123",
+            is_admin=form.is_admin.data,
+            create_membership=form.create_membership.data,
         )
 
         if error:
             flash(error, "error")
-            return render_template("admin/create_member.html")
+            return render_template("admin/create_member.html", form=form)
 
-        flash(f"Member {user.name} created successfully!", "success")
-        return redirect(url_for("admin.members"))
+        if user:
+            flash(f"Member {user.name} created successfully!", "success")
+            return redirect(url_for("admin.members"))
 
-    return render_template("admin/create_member.html")
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(error, "error")
+
+    return render_template("admin/create_member.html", form=form)
 
 
 @bp.route("/members/<int:user_id>/edit", methods=["GET", "POST"])
@@ -100,43 +108,33 @@ def edit_member(user_id):
     if not member:
         abort(404)
 
-    if request.method == "POST":
-        # Parse optional membership fields
-        membership_start = None
-        membership_expiry = None
-        membership_credits = None
+    form = EditMemberForm(obj=member)
 
-        if member.membership:
-            try:
-                start_str = request.form.get("membership_start_date")
-                expiry_str = request.form.get("membership_expiry_date")
-                credits_str = request.form.get("membership_credits")
+    if request.method == "GET" and member.membership:
+        form.membership_start_date.data = member.membership.start_date
+        form.membership_expiry_date.data = member.membership.expiry_date
+        form.membership_credits.data = member.membership.credits
 
-                if start_str:
-                    membership_start = datetime.strptime(start_str, "%Y-%m-%d").date()
-                if expiry_str:
-                    membership_expiry = datetime.strptime(expiry_str, "%Y-%m-%d").date()
-                if credits_str:
-                    membership_credits = int(credits_str)
-            except (ValueError, AttributeError) as e:
-                flash(f"Error parsing membership data: {str(e)}", "error")
-                return render_template("admin/edit_member.html", member=member)
-
+    if form.validate_on_submit():
         success, message = UserService.update_member(
             user=member,
-            name=request.form.get("name"),
-            email=request.form.get("email"),
-            phone=request.form.get("phone"),
-            is_admin=request.form.get("is_admin") == "on",
-            is_active=request.form.get("is_active") == "on",
-            password=request.form.get("password") or None,
-            membership_start_date=membership_start,
-            membership_expiry_date=membership_expiry,
-            membership_credits=membership_credits,
+            name=form.name.data,
+            email=form.email.data,
+            phone=form.phone.data,
+            is_admin=form.is_admin.data,
+            is_active=form.is_active.data,
+            password=form.password.data or None,
+            membership_start_date=form.membership_start_date.data,
+            membership_expiry_date=form.membership_expiry_date.data,
+            membership_credits=form.membership_credits.data,
         )
 
         flash(message, "success" if success else "error")
         if success:
             return redirect(url_for("admin.member_detail", user_id=user_id))
 
-    return render_template("admin/edit_member.html", member=member)
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(error, "error")
+
+    return render_template("admin/edit_member.html", member=member, form=form)

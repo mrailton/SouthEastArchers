@@ -123,7 +123,7 @@ def create_app(config_name=None):
         def dated_url_for(endpoint, **values):
             if endpoint == "static":
                 filename = values.get("filename", None)
-                if filename:
+                if filename and app.static_folder:
                     file_path = os.path.join(app.static_folder, filename)
                     if os.path.exists(file_path):
                         values["v"] = int(os.stat(file_path).st_mtime)

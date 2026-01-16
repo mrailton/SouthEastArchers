@@ -207,8 +207,8 @@ def test_create_event_invalid_date(client, admin_user):
     )
 
     assert response.status_code == 200
-    # Pydantic error message for invalid datetime
-    assert b"valid datetime" in response.data or b"Invalid" in response.data
+    # WTForms/Pydantic error message for invalid datetime
+    assert b"valid datetime" in response.data or b"Invalid" in response.data or b"field is required" in response.data or b"Not a valid" in response.data
 
 
 def test_edit_event_invalid_date(client, admin_user, app):
@@ -238,8 +238,8 @@ def test_edit_event_invalid_date(client, admin_user, app):
     )
 
     assert response.status_code == 200
-    # Pydantic error message for invalid datetime
-    assert b"valid datetime" in response.data or b"Invalid" in response.data
+    # WTForms/Pydantic error message for invalid datetime
+    assert b"valid datetime" in response.data or b"Invalid" in response.data or b"field is required" in response.data or b"Not a valid" in response.data
 
 
 def test_create_event_requires_admin(client, test_user):

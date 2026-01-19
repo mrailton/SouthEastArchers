@@ -305,7 +305,7 @@ def test_handle_membership_renewal_creates_membership_if_missing(app, test_user)
         session["membership_renewal_payment_id"] = payment.id
         result = {"transaction_code": "txn_new_123"}
 
-        with patch("app.services.payment_service.PaymentProcessingService.queue_payment_receipt"):
+        with patch("app.services.payment_service.PaymentProcessingService.send_payment_receipt"):
             PaymentProcessingService.handle_membership_renewal(test_user.id, "checkout_new", result)
 
         # Verify membership was created
@@ -334,7 +334,7 @@ def test_queue_payment_receipt_with_task_queue(app, test_user):
 
             mock_queue.enqueue = MagicMock()
 
-            PaymentProcessingService.queue_payment_receipt(test_user.id, payment.id)
+            PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
 
             mock_queue.enqueue.assert_called_once()
 
@@ -357,7 +357,7 @@ def test_queue_payment_receipt_task_queue_exception(app, test_user):
             mock_queue.enqueue.side_effect = Exception("Queue error")
 
             # Should not raise, just log error
-            PaymentProcessingService.queue_payment_receipt(test_user.id, payment.id)
+            PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
 
 
 def test_queue_payment_receipt_fallback_to_direct_send(app, test_user):
@@ -376,7 +376,7 @@ def test_queue_payment_receipt_fallback_to_direct_send(app, test_user):
     with app.test_request_context():
         with patch("app.services.payment_service.task_queue", None):
             with patch("app.utils.email.send_payment_receipt") as mock_send:
-                PaymentProcessingService.queue_payment_receipt(test_user.id, payment.id)
+                PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
                 mock_send.assert_called_once()
 
 
@@ -397,7 +397,7 @@ def test_queue_payment_receipt_fallback_send_exception(app, test_user):
         with patch("app.services.payment_service.task_queue", None):
             with patch("app.utils.email.send_payment_receipt", side_effect=Exception("Email error")):
                 # Should not raise, just log error
-                PaymentProcessingService.queue_payment_receipt(test_user.id, payment.id)
+                PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
 
 
 def test_handle_signup_payment_with_membership(app, test_user):
@@ -421,7 +421,7 @@ def test_handle_signup_payment_with_membership(app, test_user):
         session["signup_payment_id"] = payment.id
         result = {"transaction_code": "txn_signup_123"}
 
-        with patch("app.services.payment_service.PaymentProcessingService.queue_payment_receipt"):
+        with patch("app.services.payment_service.PaymentProcessingService.send_payment_receipt"):
             PaymentProcessingService.handle_signup_payment(test_user.id, "checkout_signup", result)
 
             # Verify membership was activated

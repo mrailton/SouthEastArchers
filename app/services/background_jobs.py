@@ -2,7 +2,7 @@ from flask import current_app, has_app_context, render_template, url_for
 from flask_mail import Message
 
 from app import db, mail
-from app.models import Membership, Payment, User
+from app.models import Payment, User
 
 
 def _get_app_context():
@@ -64,80 +64,6 @@ def send_password_reset_job(user_id, token):
         mail.send(msg)
 
         current_app.logger.info(f"Password reset email sent to {user.email}")
-    finally:
-        if ctx:
-            ctx.pop()
-
-
-def send_membership_expiry_reminder_job(user_id):
-    ctx = _get_app_context()
-    try:
-        if ctx:
-            ctx.push()
-
-        user = db.session.get(User, user_id)
-
-        if not user or not user.membership:
-            current_app.logger.error(f"User {user_id} or membership not found for expiry reminder")
-            return
-
-        membership = user.membership
-        days_until_expiry = (membership.expiry_date - membership.expiry_date.today()).days
-
-        renewal_url = url_for("payment.membership_payment", _external=True)
-
-        html_body = render_template(
-            "email/membership_expiry_reminder.html",
-            name=user.name,
-            expiry_date=membership.expiry_date.strftime("%d %B %Y"),
-            days_until_expiry=days_until_expiry,
-            renewal_url=renewal_url,
-        )
-        text_body = render_template(
-            "email/membership_expiry_reminder.txt",
-            name=user.name,
-            expiry_date=membership.expiry_date.strftime("%d %B %Y"),
-            days_until_expiry=days_until_expiry,
-            renewal_url=renewal_url,
-        )
-
-        msg = Message(
-            subject="Membership Expiry Reminder - South East Archers",
-            recipients=[user.email],
-            body=text_body,
-            html=html_body,
-        )
-        mail.send(msg)
-
-        current_app.logger.info(f"Membership expiry reminder sent to {user.email} ({days_until_expiry} days remaining)")
-    finally:
-        if ctx:
-            ctx.pop()
-
-
-def check_expiring_memberships_job():
-    from datetime import date, timedelta
-
-    ctx = _get_app_context()
-    try:
-        if ctx:
-            ctx.push()
-
-        expiry_date = date.today() + timedelta(days=7)
-
-        expiring_memberships = (
-            Membership.query.filter(Membership.expiry_date == expiry_date, Membership.status == "active").join(User).filter(User.is_active.is_(True)).all()
-        )
-
-        count = 0
-        for membership in expiring_memberships:
-            try:
-                send_membership_expiry_reminder_job(membership.user_id)
-                count += 1
-            except Exception as e:
-                current_app.logger.error(f"Failed to send expiry reminder to user {membership.user_id}: {str(e)}")
-
-        current_app.logger.info(f"Sent {count} membership expiry reminders for {len(expiring_memberships)} expiring memberships")
     finally:
         if ctx:
             ctx.pop()

@@ -62,44 +62,61 @@ def test_get_app_context_when_context_exists(app):
 # TestSendPaymentReceiptJob
 
 
-@patch("app.services.background_jobs.mail.send")
-def test_send_payment_receipt_job(mock_mail_send, app, test_user_with_payment):
+def test_send_payment_receipt_job(app, test_user_with_payment, fake_mailer):
     """Test payment receipt email job"""
     user = test_user_with_payment["user"]
     payment = test_user_with_payment["payment"]
 
     # Execute the job within app context
     with app.app_context():
+        import app.services.background_jobs as background_jobs
+        import app.utils.email as email_mod
+
+        # Ensure both modules reference the fake mailer used in send_payment_receipt
+        background_jobs.mail = fake_mailer
+        email_mod.mail = fake_mailer
+
         send_payment_receipt_job(user.id, payment.id)
 
     # Verify email was sent
-    assert mock_mail_send.called
-    call_args = mock_mail_send.call_args[0][0]
-    assert "Payment Receipt" in call_args.subject
-    assert user.email in call_args.recipients
+    from tests.helpers import assert_email_sent
+
+    assert_email_sent(fake_mailer, subject_contains="Payment Receipt", recipients=[user.email])
 
 
-@patch("app.services.background_jobs.mail.send")
-def test_send_payment_receipt_job_missing_user(mock_mail_send, app):
+def test_send_payment_receipt_job_missing_user(app, fake_mailer):
     """Test payment receipt job handles missing user"""
     # Try to send receipt for non-existent user
     with app.app_context():
+        import app.services.background_jobs as background_jobs
+        import app.utils.email as email_mod
+
+        background_jobs.mail = fake_mailer
+        email_mod.mail = fake_mailer
         send_payment_receipt_job(99999, 99999)
 
     # Should not send email
-    assert not mock_mail_send.called
+    from tests.helpers import assert_no_email_sent
+
+    assert_no_email_sent(fake_mailer)
 
 
-@patch("app.services.background_jobs.mail.send")
-def test_send_payment_receipt_job_missing_payment(mock_mail_send, app, test_user_with_payment):
+def test_send_payment_receipt_job_missing_payment(app, test_user_with_payment, fake_mailer):
     """Test payment receipt job handles missing payment"""
     user = test_user_with_payment["user"]
 
     with app.app_context():
+        import app.services.background_jobs as background_jobs
+        import app.utils.email as email_mod
+
+        background_jobs.mail = fake_mailer
+        email_mod.mail = fake_mailer
         send_payment_receipt_job(user.id, 99999)
 
     # Should not send email
-    assert not mock_mail_send.called
+    from tests.helpers import assert_no_email_sent
+
+    assert_no_email_sent(fake_mailer)
 
 
 @patch("app.utils.email.send_payment_receipt")
@@ -132,8 +149,7 @@ def test_send_payment_receipt_job_handles_exception(mock_send_receipt, app, test
 
 
 @patch("app.services.background_jobs.render_template")
-@patch("app.services.background_jobs.mail.send")
-def test_send_password_reset_job(mock_mail_send, mock_render, app, test_user_with_payment):
+def test_send_password_reset_job(mock_render, app, test_user_with_payment, fake_mailer):
     """Test password reset email job"""
     user = test_user_with_payment["user"]
     token = "test-reset-token"
@@ -143,28 +159,33 @@ def test_send_password_reset_job(mock_mail_send, mock_render, app, test_user_wit
 
     # Execute the job
     with app.app_context():
+        import app.services.background_jobs as background_jobs
+
+        background_jobs.mail = fake_mailer
         send_password_reset_job(user.id, token)
 
     # Verify email was sent
-    assert mock_mail_send.called
-    call_args = mock_mail_send.call_args[0][0]
-    assert "Reset Your Password" in call_args.subject
-    assert user.email in call_args.recipients
+    from tests.helpers import assert_email_sent
+
+    assert_email_sent(fake_mailer, subject_contains="Reset Your Password", recipients=[user.email])
 
 
-@patch("app.services.background_jobs.mail.send")
-def test_send_password_reset_job_missing_user(mock_mail_send, app):
+def test_send_password_reset_job_missing_user(app, fake_mailer):
     """Test password reset job handles missing user"""
     with app.app_context():
+        import app.services.background_jobs as background_jobs
+
+        background_jobs.mail = fake_mailer
         send_password_reset_job(99999, "token")
 
     # Should not send email
-    assert not mock_mail_send.called
+    from tests.helpers import assert_no_email_sent
+
+    assert_no_email_sent(fake_mailer)
 
 
 @patch("app.services.background_jobs.render_template")
-@patch("app.services.background_jobs.mail.send")
-def test_send_password_reset_job_without_app_context(mock_mail_send, mock_render, test_user_with_payment):
+def test_send_password_reset_job_without_app_context(mock_render, test_user_with_payment, fake_mailer):
     """Test password reset job creates app context when needed"""
     user = test_user_with_payment["user"]
     token = "test-token"
@@ -172,15 +193,20 @@ def test_send_password_reset_job_without_app_context(mock_mail_send, mock_render
     mock_render.return_value = "Reset email"
 
     # Call outside app context
+    # Ensure background_jobs module will use the fake mailer when it creates its own context
+    import app.services.background_jobs as background_jobs
+
+    background_jobs.mail = fake_mailer
     send_password_reset_job(user.id, token)
 
     # Should have sent email
-    assert mock_mail_send.called
+    from tests.helpers import assert_email_sent
+
+    assert_email_sent(fake_mailer)
 
 
 @patch("app.services.background_jobs.render_template")
-@patch("app.services.background_jobs.mail.send")
-def test_send_password_reset_job_includes_reset_url(mock_mail_send, mock_render, app, test_user_with_payment):
+def test_send_password_reset_job_includes_reset_url(mock_render, app, test_user_with_payment, fake_mailer):
     """Test password reset email includes reset URL"""
     user = test_user_with_payment["user"]
     token = "secure-token-123"
@@ -188,6 +214,9 @@ def test_send_password_reset_job_includes_reset_url(mock_mail_send, mock_render,
     mock_render.return_value = "Reset email"
 
     with app.app_context():
+        import app.services.background_jobs as background_jobs
+
+        background_jobs.mail = fake_mailer
         send_password_reset_job(user.id, token)
 
     # Verify url_for was called (implied by render_template being called)
@@ -195,13 +224,15 @@ def test_send_password_reset_job_includes_reset_url(mock_mail_send, mock_render,
 
 
 @patch("app.services.background_jobs.render_template", side_effect=Exception("Template error"))
-@patch("app.services.background_jobs.mail.send")
-def test_send_password_reset_job_handles_template_error(mock_mail_send, mock_render, app, test_user_with_payment):
+def test_send_password_reset_job_handles_template_error(mock_render, app, test_user_with_payment, fake_mailer):
     """Test password reset job handles template rendering errors"""
     user = test_user_with_payment["user"]
 
     # Should not raise, context should still be cleaned up
     with app.app_context():
+        import app.services.background_jobs as background_jobs
+
+        background_jobs.mail = fake_mailer
         with pytest.raises(Exception):
             send_password_reset_job(user.id, "token")
 

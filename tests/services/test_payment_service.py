@@ -9,6 +9,7 @@ from flask import session
 from app import db
 from app.models import Credit, Membership, Payment, User
 from app.services.payment_service import PaymentProcessingService, PaymentService
+from tests.helpers import create_payment_for_user
 
 # TestPaymentService module-level functions
 
@@ -290,17 +291,7 @@ def test_handle_membership_renewal_creates_membership_if_missing(app, test_user)
         db.session.commit()
 
     with app.test_request_context():
-        payment = Payment(
-            user_id=test_user.id,
-            amount_cents=10000,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            description="Renewal",
-            status="pending",
-        )
-        db.session.add(payment)
-        db.session.commit()
+        payment = create_payment_for_user(db, test_user, description="Renewal", status="pending")
 
         session["membership_renewal_payment_id"] = payment.id
         result = {"transaction_code": "txn_new_123"}
@@ -317,61 +308,37 @@ def test_handle_membership_renewal_creates_membership_if_missing(app, test_user)
 
 def test_queue_payment_receipt_with_task_queue(app, test_user):
     """Test queueing receipt with task queue available"""
-    payment = Payment(
-        user_id=test_user.id,
-        amount_cents=10000,
-        currency="EUR",
-        payment_type="membership",
-        payment_method="online",
-        status="completed",
-    )
-    db.session.add(payment)
-    db.session.commit()
+    payment = create_payment_for_user(db, test_user)
 
     with app.test_request_context():
-        with patch("app.services.payment_service.task_queue") as mock_queue:
-            from unittest.mock import MagicMock
+        # Use fake queue fixture by patching module-level task_queue to a FakeQueue instance
+        from tests.helpers import FakeQueue, assert_queued
 
-            mock_queue.enqueue = MagicMock()
-
+        fq = FakeQueue()
+        with patch("app.services.payment_service.task_queue", fq):
             PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
 
-            mock_queue.enqueue.assert_called_once()
+        func, args, kwargs = assert_queued(fq, expected_args=(test_user.id, payment.id))
 
 
 def test_queue_payment_receipt_task_queue_exception(app, test_user):
     """Test queueing receipt when task queue raises exception"""
-    payment = Payment(
-        user_id=test_user.id,
-        amount_cents=10000,
-        currency="EUR",
-        payment_type="membership",
-        payment_method="online",
-        status="completed",
-    )
-    db.session.add(payment)
-    db.session.commit()
+    payment = create_payment_for_user(db, test_user)
 
     with app.test_request_context():
-        with patch("app.services.payment_service.task_queue") as mock_queue:
-            mock_queue.enqueue.side_effect = Exception("Queue error")
 
+        class BadQueue:
+            def enqueue(self, *a, **k):
+                raise Exception("Queue error")
+
+        with patch("app.services.payment_service.task_queue", BadQueue()):
             # Should not raise, just log error
             PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
 
 
 def test_queue_payment_receipt_fallback_to_direct_send(app, test_user):
     """Test receipt fallback to direct send when no task queue"""
-    payment = Payment(
-        user_id=test_user.id,
-        amount_cents=10000,
-        currency="EUR",
-        payment_type="membership",
-        payment_method="online",
-        status="completed",
-    )
-    db.session.add(payment)
-    db.session.commit()
+    payment = create_payment_for_user(db, test_user)
 
     with app.test_request_context():
         with patch("app.services.payment_service.task_queue", None):
@@ -382,16 +349,7 @@ def test_queue_payment_receipt_fallback_to_direct_send(app, test_user):
 
 def test_queue_payment_receipt_fallback_send_exception(app, test_user):
     """Test receipt fallback when direct send raises exception"""
-    payment = Payment(
-        user_id=test_user.id,
-        amount_cents=10000,
-        currency="EUR",
-        payment_type="membership",
-        payment_method="online",
-        status="completed",
-    )
-    db.session.add(payment)
-    db.session.commit()
+    payment = create_payment_for_user(db, test_user)
 
     with app.test_request_context():
         with patch("app.services.payment_service.task_queue", None):
@@ -407,16 +365,7 @@ def test_handle_signup_payment_with_membership(app, test_user):
     db.session.commit()
 
     with app.test_request_context():
-        payment = Payment(
-            user_id=test_user.id,
-            amount_cents=10000,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            status="pending",
-        )
-        db.session.add(payment)
-        db.session.commit()
+        payment = create_payment_for_user(db, test_user, status="pending")
 
         session["signup_payment_id"] = payment.id
         result = {"transaction_code": "txn_signup_123"}
@@ -432,16 +381,7 @@ def test_handle_signup_payment_with_membership(app, test_user):
 def test_handle_credit_purchase_with_quantity(app, test_user):
     """Test credit purchase creates correct amount of credits"""
     with app.test_request_context():
-        payment = Payment(
-            user_id=test_user.id,
-            amount_cents=5000,
-            currency="EUR",
-            payment_type="credits",
-            payment_method="online",
-            status="pending",
-        )
-        db.session.add(payment)
-        db.session.commit()
+        payment = create_payment_for_user(db, test_user, amount_cents=5000, payment_type="credits", status="pending")
 
         quantity = 10
         session["credit_purchase_payment_id"] = payment.id

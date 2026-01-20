@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from app import db
 from app.models import User
 
@@ -11,36 +9,54 @@ def test_forgot_password_page_loads(client):
     assert b"Forgot Password" in response.data or b"Reset Password" in response.data
 
 
-@patch("app.utils.email.mail.send")
-def test_forgot_password_with_valid_email(mock_mail_send, client, test_user):
+def test_forgot_password_with_valid_email(client, test_user, app, fake_mailer):
     """Test forgot password with valid email"""
-    response = client.post(
-        "/auth/forgot-password",
-        data={"email": test_user.email},
-        follow_redirects=True,
-    )
+    with app.app_context():
+        import app.utils.email as email_mod
+
+        # Ensure the email util uses the fake mailer
+        email_mod.mail = fake_mailer
+
+        response = client.post(
+            "/auth/forgot-password",
+            data={"email": test_user.email},
+            follow_redirects=True,
+        )
 
     assert response.status_code == 200
     # Check for the actual flash message
     assert b"password reset link" in response.data.lower() or b"if an account exists" in response.data.lower()
     # Verify email was attempted to be sent
-    assert mock_mail_send.called
+    from tests.helpers import assert_email_sent
+
+    assert_email_sent(fake_mailer, subject_contains="Password Reset", recipients=[test_user.email])
 
 
-@patch("app.utils.email.mail.send")
-def test_forgot_password_with_invalid_email(mock_mail_send, client):
+def test_forgot_password_with_invalid_email(client, app, fake_mailer):
     """Test forgot password with non-existent email"""
-    response = client.post(
-        "/auth/forgot-password",
-        data={"email": "nonexistent@example.com"},
-        follow_redirects=True,
-    )
+    with app.app_context():
+        import app.utils.email as email_mod
+
+        email_mod.mail = fake_mailer
+
+        response = client.post(
+            "/auth/forgot-password",
+            data={"email": "nonexistent@example.com"},
+            follow_redirects=True,
+        )
 
     assert response.status_code == 200
     # Same message for security (don't reveal if email exists)
     assert b"password reset link" in response.data.lower() or b"if an account exists" in response.data.lower()
     # Email should not be sent for non-existent user
-    assert not mock_mail_send.called
+    from tests.helpers import assert_email_sent
+
+    try:
+        assert_email_sent(fake_mailer)
+        raise AssertionError("Expected no email to be sent, but one was sent")
+    except AssertionError:
+        # Expected: no messages were sent
+        pass
 
 
 def test_generate_reset_token(app, test_user):

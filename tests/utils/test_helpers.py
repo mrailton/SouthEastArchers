@@ -1,35 +1,37 @@
 """Tests for helpers"""
 
-from unittest.mock import patch
-
 from app.utils.helpers import send_email
 
 
-@patch("app.utils.helpers.mail.send")
-def test_send_email_with_text_only(mock_send, app):
+def test_send_email_with_text_only(app, fake_mailer):
     """Test sending email with text body only"""
     with app.app_context():
+        # Ensure the helper module uses the fake mailer instead of performing network IO
+        import app.utils.helpers as helpers
+
+        helpers.mail = fake_mailer
+
         send_email(
             subject="Test Subject",
             recipients=["test@example.com"],
             text_body="This is a test email",
         )
 
-        # Verify mail.send was called once
-        assert mock_send.call_count == 1
+        from tests.helpers import assert_email_sent
 
-        # Get the message that was sent
-        sent_message = mock_send.call_args[0][0]
-        assert sent_message.subject == "Test Subject"
-        assert sent_message.recipients == ["test@example.com"]
+        # Verify one message was recorded and inspect it
+        sent_message = assert_email_sent(fake_mailer, subject_contains="Test Subject", recipients=["test@example.com"])
         assert sent_message.body == "This is a test email"
-        assert sent_message.html is None
+        assert getattr(sent_message, "html", None) is None
 
 
-@patch("app.utils.helpers.mail.send")
-def test_send_email_with_html(mock_send, app):
+def test_send_email_with_html(app, fake_mailer):
     """Test sending email with both text and HTML body"""
     with app.app_context():
+        import app.utils.helpers as helpers
+
+        helpers.mail = fake_mailer
+
         send_email(
             subject="HTML Test",
             recipients=["test@example.com"],
@@ -37,17 +39,19 @@ def test_send_email_with_html(mock_send, app):
             html_body="<h1>HTML version</h1>",
         )
 
-        assert mock_send.call_count == 1
-        sent_message = mock_send.call_args[0][0]
-        assert sent_message.subject == "HTML Test"
+        from tests.helpers import assert_email_sent
+
+        sent_message = assert_email_sent(fake_mailer, subject_contains="HTML Test")
         assert sent_message.body == "Plain text version"
         assert sent_message.html == "<h1>HTML version</h1>"
 
 
-@patch("app.utils.helpers.mail.send")
-def test_send_email_multiple_recipients(mock_send, app):
+def test_send_email_multiple_recipients(app, fake_mailer):
     """Test sending email to multiple recipients"""
     with app.app_context():
+        import app.utils.helpers as helpers
+
+        helpers.mail = fake_mailer
         recipients = ["user1@example.com", "user2@example.com", "user3@example.com"]
         send_email(
             subject="Multiple Recipients",
@@ -55,15 +59,18 @@ def test_send_email_multiple_recipients(mock_send, app):
             text_body="Message for multiple recipients",
         )
 
-        assert mock_send.call_count == 1
-        sent_message = mock_send.call_args[0][0]
+        from tests.helpers import assert_email_sent
+
+        sent_message = assert_email_sent(fake_mailer)
         assert sent_message.recipients == recipients
 
 
-@patch("app.utils.helpers.mail.send")
-def test_send_email_creates_message_correctly(mock_send, app):
+def test_send_email_creates_message_correctly(app, fake_mailer):
     """Test that Message object is created with correct parameters"""
     with app.app_context():
+        import app.utils.helpers as helpers
+
+        helpers.mail = fake_mailer
         send_email(
             subject="Verification Required",
             recipients=["verify@example.com"],
@@ -71,7 +78,9 @@ def test_send_email_creates_message_correctly(mock_send, app):
             html_body="<p>Please verify your account</p>",
         )
 
-        sent_message = mock_send.call_args[0][0]
+        from tests.helpers import assert_email_sent
+
+        sent_message = assert_email_sent(fake_mailer)
         # Verify it's a Message object with all expected properties
         assert hasattr(sent_message, "subject")
         assert hasattr(sent_message, "recipients")
@@ -79,24 +88,30 @@ def test_send_email_creates_message_correctly(mock_send, app):
         assert hasattr(sent_message, "html")
 
 
-@patch("app.utils.helpers.mail.send")
-def test_send_email_without_html_body(mock_send, app):
+def test_send_email_without_html_body(app, fake_mailer):
     """Test that html is None when html_body is not provided"""
     with app.app_context():
+        import app.utils.helpers as helpers
+
+        helpers.mail = fake_mailer
         send_email(
             subject="Text Only",
             recipients=["text@example.com"],
             text_body="Text only email",
         )
 
-        sent_message = mock_send.call_args[0][0]
-        assert sent_message.html is None
+        from tests.helpers import assert_email_sent
+
+        sent_message = assert_email_sent(fake_mailer)
+        assert getattr(sent_message, "html", None) is None
 
 
-@patch("app.utils.helpers.mail.send")
-def test_send_email_with_empty_html_body(mock_send, app):
+def test_send_email_with_empty_html_body(app, fake_mailer):
     """Test behavior when html_body is empty string"""
     with app.app_context():
+        import app.utils.helpers as helpers
+
+        helpers.mail = fake_mailer
         send_email(
             subject="Empty HTML",
             recipients=["test@example.com"],
@@ -104,6 +119,8 @@ def test_send_email_with_empty_html_body(mock_send, app):
             html_body="",
         )
 
-        sent_message = mock_send.call_args[0][0]
+        from tests.helpers import assert_email_sent
+
+        sent_message = assert_email_sent(fake_mailer)
         # Empty string is falsy, so html should not be set
-        assert sent_message.html is None or sent_message.html == ""
+        assert getattr(sent_message, "html", None) is None or sent_message.html == ""

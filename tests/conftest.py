@@ -6,6 +6,7 @@ import pytest
 
 from app import create_app, db
 from app.models import Membership, User
+from tests.helpers import FakeMailer, FakeQueue
 
 
 @pytest.fixture(scope="session")
@@ -106,3 +107,20 @@ def admin_user(app):
     db.session.commit()
 
     return user
+
+
+@pytest.fixture
+def fake_queue():
+    """Provide a lightweight fake queue object for tests to capture enqueued jobs."""
+    return FakeQueue()
+
+
+@pytest.fixture
+def fake_mailer():
+    """Provide a lightweight fake mailer for tests to capture sent messages."""
+    fm = FakeMailer()
+    # Inject into common modules so tests don't need to set it manually
+    from tests.helpers import inject_fake_mailer
+
+    inject_fake_mailer(fm)
+    return fm

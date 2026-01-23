@@ -306,56 +306,24 @@ def test_handle_membership_renewal_creates_membership_if_missing(app, test_user)
         assert test_user.membership.expiry_date == date.today() + timedelta(days=365)
 
 
-def test_queue_payment_receipt_with_task_queue(app, test_user):
-    """Test queueing receipt with task queue available"""
+def test_send_payment_receipt_synchronously(app, test_user):
+    """Test sending receipt email synchronously"""
     payment = create_payment_for_user(db, test_user)
 
     with app.test_request_context():
-        # Use fake queue fixture by patching module-level task_queue to a FakeQueue instance
-        from tests.helpers import FakeQueue, assert_queued
-
-        fq = FakeQueue()
-        with patch("app.services.payment_service.task_queue", fq):
+        with patch("app.utils.email.send_payment_receipt") as mock_send:
             PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
+            mock_send.assert_called_once()
 
-        func, args, kwargs = assert_queued(fq, expected_args=(test_user.id, payment.id))
 
-
-def test_queue_payment_receipt_task_queue_exception(app, test_user):
-    """Test queueing receipt when task queue raises exception"""
+def test_send_payment_receipt_with_exception(app, test_user):
+    """Test receipt sending when email raises exception"""
     payment = create_payment_for_user(db, test_user)
 
     with app.test_request_context():
-
-        class BadQueue:
-            def enqueue(self, *a, **k):
-                raise Exception("Queue error")
-
-        with patch("app.services.payment_service.task_queue", BadQueue()):
+        with patch("app.utils.email.send_payment_receipt", side_effect=Exception("Email error")):
             # Should not raise, just log error
             PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
-
-
-def test_queue_payment_receipt_fallback_to_direct_send(app, test_user):
-    """Test receipt fallback to direct send when no task queue"""
-    payment = create_payment_for_user(db, test_user)
-
-    with app.test_request_context():
-        with patch("app.services.payment_service.task_queue", None):
-            with patch("app.utils.email.send_payment_receipt") as mock_send:
-                PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
-                mock_send.assert_called_once()
-
-
-def test_queue_payment_receipt_fallback_send_exception(app, test_user):
-    """Test receipt fallback when direct send raises exception"""
-    payment = create_payment_for_user(db, test_user)
-
-    with app.test_request_context():
-        with patch("app.services.payment_service.task_queue", None):
-            with patch("app.utils.email.send_payment_receipt", side_effect=Exception("Email error")):
-                # Should not raise, just log error
-                PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
 
 
 def test_handle_signup_payment_with_membership(app, test_user):

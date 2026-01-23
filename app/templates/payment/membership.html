@@ -28,6 +28,7 @@
         <div class="text-3xl font-bold text-blue-600 mb-6">€100.00</div>
         
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
             <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700">
                 Proceed to Payment
             </button>

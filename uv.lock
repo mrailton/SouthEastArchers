@@ -1088,15 +1088,6 @@ wheels = [
 ]
 
 [[package]]
-name = "redis"
-version = "5.2.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/47/da/d283a37303a995cd36f8b92db85135153dc4f7a8e4441aa827721b442cfb/redis-5.2.1.tar.gz", hash = "sha256:16f2e22dff21d5125e8481515e386711a34cbec50f0e44413dd7d9c060a54e0f", size = 4608355, upload-time = "2024-12-06T09:50:41.956Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/5f/fa26b9b2672cbe30e07d9a5bdf39cf16e3b80b42916757c5f92bca88e4ba/redis-5.2.1-py3-none-any.whl", hash = "sha256:ee7e1056b9aea0f04c6c2ed59452947f34c4940ee025f5dd83e6a6418b6989e4", size = 261502, upload-time = "2024-12-06T09:50:39.656Z" },
-]
-
-[[package]]
 name = "requests"
 version = "2.32.5"
 source = { registry = "https://pypi.org/simple" }
@@ -1109,19 +1100,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf", size = 134517, upload-time = "2025-08-18T20:46:02.573Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6", size = 64738, upload-time = "2025-08-18T20:46:00.542Z" },
-]
-
-[[package]]
-name = "rq"
-version = "2.0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click" },
-    { name = "redis" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e3/29/ce60c4571d51d2b5507961646088999dd0fa63f84c020d61fe6472aa480c/rq-2.0.0.tar.gz", hash = "sha256:76d2a4a27f8fd5c4cfa200cd442efe3c1fd73525c676af06f07fcc0b81bdb70d", size = 639193, upload-time = "2024-10-28T15:04:40.337Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/0a/09ce745d9639e883888ddae0f71b23a20c59d072eb17b80b8ea8638b16ac/rq-2.0.0-py3-none-any.whl", hash = "sha256:a3a767876675dcc42683bac1869494c5020ba7fcf5c026d1f6d36a8ab98573a6", size = 95483, upload-time = "2024-10-28T15:04:37.566Z" },
 ]
 
 [[package]]
@@ -1152,9 +1130,7 @@ dependencies = [
     { name = "markupsafe" },
     { name = "pymysql" },
     { name = "python-dotenv" },
-    { name = "redis" },
     { name = "requests" },
-    { name = "rq" },
     { name = "sqlalchemy" },
     { name = "sumup" },
     { name = "werkzeug" },
@@ -1193,9 +1169,7 @@ requires-dist = [
     { name = "markupsafe", specifier = "==3.0.3" },
     { name = "pymysql", specifier = "==1.1.2" },
     { name = "python-dotenv", specifier = "==1.2.1" },
-    { name = "redis", specifier = "==5.2.1" },
     { name = "requests", specifier = "==2.32.5" },
-    { name = "rq", specifier = "==2.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.30" },
     { name = "sumup", specifier = "==0.0.13" },
     { name = "werkzeug", specifier = "==3.1.3" },

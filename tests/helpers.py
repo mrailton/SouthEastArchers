@@ -75,14 +75,11 @@ def create_payment_for_user(db, user, **kwargs):
 def inject_fake_mailer(fake_mailer):
     """Inject `fake_mailer` into commonly-used mail locations so tests don't need to patch.
 
-    This sets the mail object on `app.utils.email` and `app.services.background_jobs` so both
-    synchronous helpers and background jobs use the fake when run in tests.
+    This sets the mail object on `app.utils.email` so email sending uses the fake mailer in tests.
     """
-    import app.services.background_jobs as background_jobs
     import app.utils.email as email_mod
 
     email_mod.mail = fake_mailer
-    background_jobs.mail = fake_mailer
 
 
 def assert_email_sent(fake_mailer, subject_contains=None, recipients=None, html_contains=None, body_contains=None):

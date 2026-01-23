@@ -45,7 +45,7 @@ def test_process_checkout_missing_card_details(mock_service, client):
 
 
 @patch("app.routes.payment.PaymentService")
-@patch("app.services.background_jobs.send_payment_receipt_job")
+@patch("app.services.mail_service.send_payment_receipt")
 def test_process_checkout_signup_payment_success(mock_email, mock_service_class, client, app, test_user):
     """Test successful signup payment processing"""
     with app.app_context():
@@ -96,7 +96,7 @@ def test_process_checkout_signup_payment_success(mock_email, mock_service_class,
 
 
 @patch("app.routes.payment.PaymentService")
-@patch("app.services.background_jobs.send_payment_receipt_job")
+@patch("app.services.mail_service.send_payment_receipt")
 def test_process_checkout_signup_payment_email_failure(mock_email, mock_service_class, client, app, test_user):
     """Test successful payment but email sending fails"""
     with app.app_context():
@@ -213,7 +213,7 @@ def test_process_checkout_pending_status(mock_service_class, client):
 
 
 @patch("app.routes.payment.PaymentService")
-@patch("app.services.background_jobs.send_payment_receipt_job")
+@patch("app.services.mail_service.send_payment_receipt")
 def test_process_checkout_membership_renewal(mock_email, mock_service_class, client, app, test_user):
     """Test membership renewal payment"""
     with app.app_context():
@@ -257,7 +257,7 @@ def test_process_checkout_membership_renewal(mock_email, mock_service_class, cli
 
 
 @patch("app.routes.payment.PaymentService")
-@patch("app.services.background_jobs.send_payment_receipt_job")
+@patch("app.services.mail_service.send_payment_receipt")
 def test_process_checkout_membership_renewal_no_existing_membership(mock_email, mock_service_class, client, app):
     """Test membership renewal creates new membership if none exists"""
     with app.app_context():
@@ -317,7 +317,7 @@ def test_process_checkout_membership_renewal_no_existing_membership(mock_email, 
 
 
 @patch("app.routes.payment.PaymentService")
-@patch("app.services.background_jobs.send_payment_receipt_job")
+@patch("app.services.mail_service.send_payment_receipt")
 def test_process_checkout_membership_renewal_email_failure(mock_email, mock_service_class, client, app, test_user):
     """Test membership renewal handles email failure gracefully"""
     with app.app_context():
@@ -365,7 +365,7 @@ def test_process_checkout_membership_renewal_email_failure(mock_email, mock_serv
 
 
 @patch("app.routes.payment.PaymentService")
-@patch("app.services.background_jobs.send_payment_receipt_job")
+@patch("app.services.mail_service.send_payment_receipt")
 def test_process_checkout_credit_purchase(mock_email, mock_service_class, client, app, test_user):
     """Test credit purchase payment"""
     with app.app_context():

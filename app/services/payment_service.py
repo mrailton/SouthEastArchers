@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from flask import current_app, flash, redirect, session, url_for
 
-from app import db, task_queue
+from app import db
 from app.models import Credit, Membership, Payment, User
 from app.services.sumup_service import SumUpService
 from app.utils.session import clear_session_keys
@@ -131,29 +131,10 @@ class PaymentProcessingService:
 
     @staticmethod
     def send_payment_receipt(user_id, payment_id):
-        """Hand off sending/queuing of payment receipt emails to the app-registered MailService if available."""
-        try:
-            # Prefer the app-registered instance (in app.extensions) when in an app context
-            from flask import current_app as _current_app
+        """Send payment receipt email synchronously."""
+        from app.services.mail_service import send_payment_receipt
 
-            mail_service = None
-            try:
-                mail_service = _current_app.extensions.get("mail_service")
-            except RuntimeError:
-                mail_service = None
-
-            if mail_service is not None:
-                # Pass the module-level task_queue override so tests can patch it
-                mail_service.send_payment_receipt(user_id, payment_id, task_queue_override=task_queue)
-                return
-
-            # Fallback: use module-level helper which will create a transient MailService
-            from app.services.mail_service import send_payment_receipt as _send_payment_receipt
-
-            # Pass None to explicitly force synchronous send if module-level task_queue is None
-            _send_payment_receipt(user_id, payment_id)
-        except Exception as e:
-            current_app.logger.error(f"Failed to hand off receipt email to MailService: {str(e)}")
+        send_payment_receipt(user_id, payment_id)
 
     @staticmethod
     def validate_card_details(card_number, card_name, expiry_month, expiry_year, cvv):

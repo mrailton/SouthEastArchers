@@ -9,8 +9,6 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
-from redis import Redis
-from rq import Queue
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="sumup")
 
@@ -19,9 +17,6 @@ migrate = Migrate()
 mail = Mail()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
-assets = None
-redis_client = None
-task_queue = None
 
 
 def _configure_logging(app: Flask) -> None:
@@ -62,30 +57,6 @@ def _init_extensions(app: Flask) -> None:
         from app.models import User
 
         return db.session.get(User, int(user_id))
-
-
-def _init_redis_and_queue(app: Flask) -> None:
-    """Initialize Redis client and RQ queue, storing into module-level globals."""
-    global redis_client, task_queue
-
-    try:
-        redis_client = Redis.from_url(app.config.get("REDIS_URL", "redis://localhost:6379/0"))
-        task_queue = Queue(connection=redis_client, default_timeout=600)
-    except Exception as e:
-        app.logger.warning(f"Redis connection failed: {str(e)}. Background jobs disabled.")
-        redis_client = None
-        task_queue = None
-
-
-def _register_mail_service(app: Flask) -> None:
-    """Create and register the MailService instance on app.extensions for DI."""
-    try:
-        from app.services.mail_service import MailService
-
-        app.extensions = getattr(app, "extensions", {})
-        app.extensions["mail_service"] = MailService(queue=task_queue, mailer=mail)
-    except Exception:
-        app.logger.warning("Failed to register MailService instance on app.extensions")
 
 
 def _register_blueprints(app: Flask) -> None:
@@ -150,11 +121,9 @@ def create_app(config_name=None):
     # Load config
     app.config.from_object(config[config_name])
 
-    # Configure logging and initialize extensions/queues/blueprints
+    # Configure logging and initialize extensions/blueprints
     _configure_logging(app)
     _init_extensions(app)
-    _init_redis_and_queue(app)
-    _register_mail_service(app)
     _register_blueprints(app)
     _register_error_handlers(app)
     _register_context_processor(app)

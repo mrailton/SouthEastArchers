@@ -492,15 +492,86 @@ def clean():
 
 @cli.command()
 def install():
-    """Install dependencies with UV"""
-    click.echo("Installing dependencies with UV...")
+    """Install dependencies (Python with UV, Node.js with npm)"""
+    click.echo("Installing Python dependencies with UV...")
+    exit_code = os.system("uv sync")
+    if exit_code != 0:
+        click.echo("Failed to install Python dependencies")
+        sys.exit(exit_code >> 8)
+    
+    click.echo("\nInstalling Node.js dependencies...")
+    exit_code = os.system("npm ci")
+    if exit_code != 0:
+        click.echo("Failed to install Node.js dependencies")
+        sys.exit(exit_code >> 8)
+    
+    click.echo("✓ All dependencies installed!")
 
-    if os.system("which uv > /dev/null 2>&1") != 0:
-        click.echo("UV not found. Installing UV...")
-        os.system("pip install uv")
 
-    os.system("uv sync --group dev")
-    click.echo("✓ Dependencies installed!")
+@cli.group()
+def assets():
+    """Asset building commands"""
+    pass
+
+
+@assets.command("build")
+def assets_build():
+    """Build production assets with Vite"""
+    click.echo("Building production assets...")
+    exit_code = os.system("npm run build")
+    if exit_code == 0:
+        click.echo("✓ Assets built successfully!")
+    sys.exit(exit_code >> 8)
+
+
+@assets.command("watch")
+def assets_watch():
+    """Watch and rebuild assets on change"""
+    click.echo("Starting Vite dev server...")
+    exit_code = os.system("npm run dev")
+    sys.exit(exit_code >> 8)
+
+
+@cli.command()
+def dev():
+    """Run development servers (Flask + Vite)"""
+    import subprocess
+    import signal
+    
+    click.echo("Starting development servers...")
+    click.echo("  - Vite dev server (asset hot reloading)")
+    click.echo("  - Flask dev server")
+    click.echo("\nPress Ctrl+C to stop\n")
+    
+    processes = []
+    
+    try:
+        # Start Vite dev server
+        vite_process = subprocess.Popen(["npm", "run", "dev"])
+        processes.append(vite_process)
+        
+        # Start Flask dev server
+        flask_process = subprocess.Popen(["uv", "run", "flask", "run", "--debug"])
+        processes.append(flask_process)
+        
+        # Wait for processes
+        for p in processes:
+            p.wait()
+    except KeyboardInterrupt:
+        click.echo("\n\nShutting down servers...")
+        for p in processes:
+            p.terminate()
+        click.echo("✓ Servers stopped")
+
+
+@lint.command("typecheck")
+def lint_typecheck():
+    """Run mypy type checking"""
+    click.echo("Running mypy type checking...")
+    exit_code = os.system("mypy app/")
+    if exit_code == 0:
+        click.echo("✓ Type checking passed!")
+    sys.exit(exit_code >> 8)
 
 
 if __name__ == "__main__":

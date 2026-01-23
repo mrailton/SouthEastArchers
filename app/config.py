@@ -10,11 +10,6 @@ class Config:
     DEBUG = False
     TESTING = False
 
-    # Server configuration for URL generation outside request context
-    SERVER_NAME = os.environ.get("SERVER_NAME")  # e.g., "southeastarchers.ie"
-    PREFERRED_URL_SCHEME = os.environ.get("PREFERRED_URL_SCHEME", "https")
-    APPLICATION_ROOT = os.environ.get("APPLICATION_ROOT", "/")
-
     # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "mysql+pymysql://sea_user:sea_password@localhost:3306/sea_db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -52,10 +47,6 @@ class Config:
     MEMBERSHIP_NIGHTS_INCLUDED = 20
     ADDITIONAL_NIGHT_COST = 500  # 5.00 EUR per night (stored as cents)
 
-    # Redis & Background Jobs
-    REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-    RQ_REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-
 
 class DevelopmentConfig(Config):
     """Development configuration"""
@@ -78,7 +69,6 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
     SESSION_COOKIE_SECURE = False
-    SERVER_NAME = "localhost.localdomain"
     PREFERRED_URL_SCHEME = "http"
     BCRYPT_LOG_ROUNDS = 4  # Minimum rounds for fast tests (default is 12)
 

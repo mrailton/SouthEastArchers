@@ -5,6 +5,7 @@
     <h2 class="text-3xl font-bold mb-6 text-center">Create Account</h2>
     
     <form method="POST" class="space-y-4">
+        {{ form.hidden_tag() }}
         <div>
             <label for="name" class="block text-gray-700 font-bold mb-2">Full Name *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 

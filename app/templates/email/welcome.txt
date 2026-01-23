@@ -1,0 +1,35 @@
+Welcome to South East Archers!
+
+Dear {{ user.name }},
+
+Thank you for creating an account with South East Archers! Your account is now active and ready to use.
+
+To get started with archery at our club, you'll need to purchase an annual membership.
+
+ANNUAL MEMBERSHIP DETAILS
+==========================
+
+Membership Cost:         €{{ "%.2f"|format(membership_cost / 100) }}
+Shooting Nights Included: {{ credits_included }} nights
+Membership Duration:     12 months from purchase date
+Additional Credits:      Available for purchase at €5.00 per shooting night
+
+
+WHAT HAPPENS NEXT?
+==================
+
+1. Login to your account: {{ login_url }}
+2. Navigate to the Membership section
+3. Complete your membership purchase securely online
+4. Start booking your shooting nights!
+
+
+If you have any questions or need assistance, please don't hesitate to contact us.
+
+We look forward to seeing you at the range!
+
+Best regards,
+South East Archers
+
+---
+This is an automated email. Please do not reply directly to this message.

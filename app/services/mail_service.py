@@ -77,3 +77,22 @@ def send_credit_purchase_receipt(user_id: int, payment_id: int, credits_purchase
         current_app.logger.info(f"Sent credit purchase receipt email for user {user_id}, payment {payment_id}")
     except Exception as e:
         current_app.logger.error(f"Failed to send credit receipt email: {e}")
+
+
+def send_welcome_email(user_id: int) -> None:
+    """Send a welcome email to new user."""
+    from app import db
+    from app.models import User
+    from app.utils.email import send_welcome_email as util_send
+
+    try:
+        user = db.session.get(User, user_id)
+
+        if not user:
+            current_app.logger.error(f"User {user_id} not found for welcome email")
+            return
+
+        util_send(user)
+        current_app.logger.info(f"Welcome email sent to {user.email}")
+    except Exception as e:
+        current_app.logger.error(f"Failed to send welcome email: {e}")

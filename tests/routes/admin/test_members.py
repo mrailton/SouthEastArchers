@@ -288,3 +288,59 @@ def test_activate_member(client, admin_user, test_user):
         follow_redirects=True,
     )
     assert response.status_code == 200
+
+
+def test_activate_user_success(client, admin_user, test_user, mocker):
+    """Test activating inactive user sends welcome email"""
+    mock_send_email = mocker.patch("app.services.mail_service.send_welcome_email")
+    
+    # Make test user inactive
+    test_user.is_active = False
+    from app import db
+    db.session.commit()
+    
+    # Login as admin
+    with client:
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"}, follow_redirects=True)
+        
+        response = client.post(f"/admin/members/{test_user.id}/activate", follow_redirects=True)
+        
+        assert response.status_code == 200
+        assert b"Account activated" in response.data
+        assert b"Welcome email sent" in response.data
+        
+        # Verify user is now active
+        from app.models import User
+        user = db.session.get(User, test_user.id)
+        assert user.is_active is True
+        
+        # Verify email was sent
+        mock_send_email.assert_called_once_with(test_user.id)
+
+
+def test_activate_user_already_active(client, admin_user, test_user):
+    """Test activating already active user shows warning"""
+    # Ensure test user is active
+    test_user.is_active = True
+    from app import db
+    db.session.commit()
+    
+    # Login as admin
+    with client:
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"}, follow_redirects=True)
+        
+        response = client.post(f"/admin/members/{test_user.id}/activate", follow_redirects=True)
+        
+        assert response.status_code == 200
+        assert b"already active" in response.data
+
+
+def test_activate_user_not_found(client, admin_user):
+    """Test activating non-existent user returns 404"""
+    # Login as admin
+    with client:
+        client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"}, follow_redirects=True)
+        
+        response = client.post("/admin/members/99999/activate", follow_redirects=False)
+        
+        assert response.status_code == 404

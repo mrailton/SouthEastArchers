@@ -71,6 +71,34 @@ def activate_membership(user_id):
     return redirect(url_for("admin.member_detail", user_id=user_id))
 
 
+@bp.route("/members/<int:user_id>/activate", methods=["POST"])
+@admin_required
+def activate_user(user_id):
+    """Activate a user account and send welcome email"""
+    member = UserService.get_user_by_id(user_id)
+    if not member:
+        abort(404)
+
+    if member.is_active:
+        flash(f"{member.name}'s account is already active.", "warning")
+        return redirect(url_for("admin.member_detail", user_id=user_id))
+
+    member.is_active = True
+    from app import db
+    db.session.commit()
+
+    # Send welcome email
+    from app.services.mail_service import send_welcome_email
+    try:
+        send_welcome_email(user_id)
+        flash(f"Account activated for {member.name}! Welcome email sent.", "success")
+    except Exception as e:
+        current_app.logger.error(f"Failed to send welcome email: {str(e)}")
+        flash(f"Account activated for {member.name}! (Email failed to send)", "warning")
+
+    return redirect(url_for("admin.member_detail", user_id=user_id))
+
+
 @bp.route("/members/create", methods=["GET", "POST"])
 @admin_required
 def create_member():
@@ -84,6 +112,7 @@ def create_member():
             password=form.password.data or "changeme123",
             is_admin=form.is_admin.data,
             create_membership=form.create_membership.data,
+            qualification=form.qualification.data if hasattr(form, "qualification") else "none",
         )
 
         if error:

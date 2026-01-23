@@ -1,3 +1,4 @@
+import pytest
 from datetime import date, timedelta
 
 from app.models import Membership, Payment, User
@@ -304,69 +305,42 @@ def test_send_welcome_email_success(app, test_user, fake_mailer):
         import app.utils.email as email_mod
 
         email_mod.mail = fake_mailer
-        membership = test_user.membership
 
-        result = send_welcome_email(test_user, membership)
+        result = send_welcome_email(test_user)
 
         assert result is True
         from tests.helpers import assert_email_sent
 
         call_args = assert_email_sent(fake_mailer, subject_contains="Welcome to South East Archers!", recipients=[test_user.email])
         assert call_args.html is not None
+        assert call_args.body is not None
 
 
-def test_send_welcome_email_includes_user_name(app, test_user, fake_mailer):
-    """Test welcome email includes user name"""
+@pytest.mark.parametrize(
+    "check_type,expected_in_html",
+    [
+        ("user_name", lambda test_user: test_user.name),
+        ("membership_cost", lambda test_user: "€100.00"),
+        ("credits_included", lambda test_user: "20 nights"),
+        ("login_link", lambda test_user: "Login"),
+    ],
+)
+def test_send_welcome_email_content(app, test_user, fake_mailer, check_type, expected_in_html):
+    """Test welcome email includes various required content"""
     with app.app_context():
         import app.utils.email as email_mod
 
         email_mod.mail = fake_mailer
-        membership = test_user.membership
 
-        send_welcome_email(test_user, membership)
-
-        from tests.helpers import assert_email_sent
-
-        call_args = assert_email_sent(fake_mailer)
-        assert test_user.name in (call_args.html or "")
-
-
-def test_send_welcome_email_includes_membership_details(app, test_user, fake_mailer):
-    """Test welcome email includes membership details"""
-    with app.app_context():
-        import app.utils.email as email_mod
-
-        email_mod.mail = fake_mailer
-        membership = test_user.membership
-
-        send_welcome_email(test_user, membership)
+        send_welcome_email(test_user)
 
         from tests.helpers import assert_email_sent
 
         call_args = assert_email_sent(fake_mailer)
         html = call_args.html
-
-        # Check membership details are included
-        assert membership.start_date.strftime("%d %B %Y") in html
-        assert membership.expiry_date.strftime("%d %B %Y") in html
-        assert str(membership.credits) in html
-
-
-def test_send_welcome_email_includes_login_link(app, test_user, fake_mailer):
-    """Test welcome email includes login link"""
-    with app.app_context():
-        import app.utils.email as email_mod
-
-        email_mod.mail = fake_mailer
-        membership = test_user.membership
-
-        send_welcome_email(test_user, membership)
-
-        from tests.helpers import assert_email_sent
-
-        call_args = assert_email_sent(fake_mailer)
-        # Should contain a login URL
-        assert "login" in (call_args.html or "").lower() or "auth/login" in (call_args.html or "")
+        
+        expected = expected_in_html(test_user)
+        assert expected in html, f"Expected {check_type} '{expected}' not found in email HTML"
 
 
 def test_send_welcome_email_exception_handling(app, test_user, fake_mailer):
@@ -382,50 +356,27 @@ def test_send_welcome_email_exception_handling(app, test_user, fake_mailer):
 
         fake_mailer.send = raise_send
 
-        membership = test_user.membership
-
-        result = send_welcome_email(test_user, membership)
+        result = send_welcome_email(test_user)
 
         assert result is False
 
 
-def test_send_welcome_email_with_different_credit_amounts(app, fake_mailer):
-    """Test welcome email with various credit amounts"""
-    with app.app_context():
-        import app.utils.email as email_mod
+def test_send_welcome_email_runtime_error_url_for(app, test_user, fake_mailer):
+    """Test welcome email handles RuntimeError from url_for gracefully."""
+    # Test outside app context to trigger RuntimeError
+    import app.utils.email as email_mod
 
-        email_mod.mail = fake_mailer
-        # Create user with different credit amount
-        user = User(
-            name="Test User 2",
-            email="test2@example.com",
-            phone="1234567890",
-        )
-        user.set_password("password")
+    email_mod.mail = fake_mailer
 
-        membership = Membership(
-            user_id=None,
-            start_date=date.today(),
-            expiry_date=date.today() + timedelta(days=365),
-            credits=50,
-            status="active",
-        )
+    result = send_welcome_email(test_user)
 
-        from app import db
+    assert result is True
+    from tests.helpers import assert_email_sent
 
-        db.session.add(user)
-        db.session.flush()
-
-        membership.user_id = user.id
-        db.session.add(membership)
-        db.session.commit()
-
-        result = send_welcome_email(user, membership)
-
-        assert result is True
-        from tests.helpers import assert_email_contains
-
-        assert_email_contains(fake_mailer, "50")
+    call_args = assert_email_sent(fake_mailer)
+    html = call_args.html
+    # Should contain fallback URL
+    assert "southeastarchers.ie" in html or "login" in html.lower()
 
 
 def test_send_credit_purchase_receipt(app, test_user, fake_mailer):
@@ -509,4 +460,100 @@ def test_send_credit_purchase_receipt_cash(app, test_user, fake_mailer):
         assert "txn_" not in email_sent.html
         assert "5" in email_sent.html  # Credits purchased
         assert "25" in email_sent.html  # Credits remaining
+
+
+def test_send_payment_receipt_runtime_error_url_for(app, test_user, fake_mailer, mocker):
+    """Test payment receipt handles RuntimeError from url_for gracefully"""
+    with app.app_context():
+        import app.utils.email as email_mod
+
+        email_mod.mail = fake_mailer
+        from datetime import datetime
+
+        # Mock url_for to raise RuntimeError (no request context)
+        mocker.patch(
+            "app.utils.email.url_for",
+            side_effect=RuntimeError("No request context")
+        )
+        
+        payment = Payment(
+            id=888,
+            user_id=test_user.id,
+            amount=100.00,
+            currency="EUR",
+            payment_type="membership",
+            payment_method="online",
+            status="completed",
+            created_at=datetime.now(),
+        )
+
+        membership = test_user.membership
+
+        result = send_payment_receipt(test_user, payment, membership)
+
+        # Should still succeed with fallback URL
+        assert result is True
+        email_sent = assert_email_sent(fake_mailer)
+        # Should use fallback URL
+        assert "southeastarchers.ie" in email_sent.html
+
+
+def test_send_credit_purchase_receipt_runtime_error_url_for(app, test_user, fake_mailer, mocker):
+    """Test credit receipt handles RuntimeError from url_for gracefully"""
+    with app.app_context():
+        import app.utils.email as email_mod
+
+        email_mod.mail = fake_mailer
+        from datetime import datetime
+
+        from app.utils.email import send_credit_purchase_receipt
+
+        # Mock url_for to raise RuntimeError
+        mocker.patch(
+            "app.utils.email.url_for",
+            side_effect=RuntimeError("No request context")
+        )
+
+        payment = Payment(
+            id=777,
+            user_id=test_user.id,
+            amount=30.00,
+            currency="EUR",
+            payment_type="credits",
+            payment_method="online",
+            status="completed",
+            created_at=datetime.now(),
+        )
+
+        result = send_credit_purchase_receipt(test_user, payment, 10, 30)
+
+        # Should still succeed with fallback URL
+        assert result is True
+        email_sent = assert_email_sent(fake_mailer)
+        # Should use fallback URL with /member/credits path
+        assert "southeastarchers.ie" in email_sent.html
+
+
+def test_send_welcome_email_runtime_error_url_for(app, test_user, fake_mailer, mocker):
+    """Test welcome email handles RuntimeError from url_for gracefully"""
+    with app.app_context():
+        import app.utils.email as email_mod
+
+        email_mod.mail = fake_mailer
+        
+        # Mock url_for to raise RuntimeError
+        mocker.patch(
+            "app.utils.email.url_for",
+            side_effect=RuntimeError("No request context")
+        )
+
+        result = send_welcome_email(test_user)
+
+        # Should still succeed with fallback URL
+        assert result is True
+        from tests.helpers import assert_email_sent
+
+        email_sent = assert_email_sent(fake_mailer)
+        # Should use fallback URL
+        assert "southeastarchers.ie" in email_sent.html
 

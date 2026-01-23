@@ -140,3 +140,34 @@ def test_signup_password_mismatch(client):
     )
     assert response.status_code == 200
     assert b"do not match" in response.data
+
+
+def test_forgot_password_email_send_failure(client, test_user, mocker):
+    """Test forgot password when email sending fails"""
+    # Mock send_password_reset_email to raise an exception
+    mock_send = mocker.patch(
+        "app.routes.auth.send_password_reset_email",
+        side_effect=Exception("SMTP Error")
+    )
+    
+    response = client.post(
+        "/auth/forgot-password",
+        data={"email": test_user.email},
+        follow_redirects=True,
+    )
+    
+    assert response.status_code == 200
+    assert b"error occurred sending the email" in response.data
+    mock_send.assert_called_once()
+
+
+def test_forgot_password_form_validation_error(client):
+    """Test forgot password with invalid form data"""
+    response = client.post(
+        "/auth/forgot-password",
+        data={"email": "not-an-email"},
+        follow_redirects=True,
+    )
+    
+    assert response.status_code == 200
+    # Form should be re-displayed with errors

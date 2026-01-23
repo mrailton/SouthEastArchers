@@ -60,6 +60,7 @@ class UserService:
         password: str = "changeme123",
         is_admin: bool = False,
         create_membership: bool = False,
+        qualification: str = "none",
     ) -> tuple[User | None, str | None]:
         """Create a new member (admin function)."""
         if User.query.filter_by(email=email).first():
@@ -70,6 +71,8 @@ class UserService:
             email=email,
             phone=phone,
             is_admin=is_admin,
+            qualification=qualification,
+            is_active=False,  # Start as inactive, admin must activate
         )
         user.set_password(password)
 

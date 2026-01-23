@@ -200,6 +200,15 @@ def test_create_member_with_membership(app):
     assert user.membership.expiry_date == date.today() + timedelta(days=365)
 
 
+def test_create_member_starts_inactive(app):
+    """Test new members start as inactive (must be activated by admin)"""
+    user, error = UserService.create_member(name="New Member", email="newemail@example.com")
+    
+    assert error is None
+    assert user is not None
+    assert user.is_active is False
+
+
 def test_create_member_duplicate_email(app, test_user):
     """Test creating member with existing email"""
     user, error = UserService.create_member(name="Duplicate Email", email=test_user.email)

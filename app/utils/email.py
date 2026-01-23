@@ -63,35 +63,34 @@ def send_payment_receipt(user, payment, membership):
         return False
 
 
-def send_welcome_email(user, membership):
+def send_welcome_email(user):
+    """Send welcome email to new user with membership purchase information."""
     try:
         try:
             login_url = url_for("auth.login", _external=True)
         except RuntimeError:
-            login_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/login"
+            login_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/auth/login"
 
-        html_body = f"""
-        <html>
-        <body>
-            <h1>Welcome to South East Archers!</h1>
-            <p>Dear {user.name},</p>
-            <p>Welcome to South East Archers! Your membership is now active.</p>
-            <p><strong>Membership Details:</strong></p>
-            <ul>
-                <li>Start Date: {membership.start_date.strftime('%d %B %Y')}</li>
-                <li>Expiry Date: {membership.expiry_date.strftime('%d %B %Y')}</li>
-                <li>Credits: {membership.credits} shooting nights</li>
-            </ul>
-            <p><a href="{login_url}">Login to your account</a></p>
-            <p>Best regards,<br>South East Archers</p>
-        </body>
-        </html>
-        """
+        membership_cost = current_app.config.get("ANNUAL_MEMBERSHIP_COST", 10000)
+        credits_included = current_app.config.get("MEMBERSHIP_NIGHTS_INCLUDED", 20)
 
         msg = Message(
             subject="Welcome to South East Archers!",
             recipients=[user.email],
-            html=html_body,
+            html=render_template(
+                "email/welcome.html",
+                user=user,
+                login_url=login_url,
+                membership_cost=membership_cost,
+                credits_included=credits_included,
+            ),
+            body=render_template(
+                "email/welcome.txt",
+                user=user,
+                login_url=login_url,
+                membership_cost=membership_cost,
+                credits_included=credits_included,
+            ),
         )
 
         mail.send(msg)

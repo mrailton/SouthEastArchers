@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, DateField, DateTimeLocalField, IntegerField, PasswordField, SelectField, SelectMultipleField, StringField, TextAreaField
-from wtforms.validators import DataRequired, Email, Length, Optional, Regexp
+from wtforms.validators import DataRequired, Email, Length, Optional
 
 
 class ShootForm(FlaskForm):

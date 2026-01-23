@@ -1,6 +1,7 @@
 """Test helpers and lightweight fakes used across tests."""
 
-from typing import Any, Callable, List, Tuple
+from collections.abc import Callable
+from typing import Any
 
 
 class FakeQueue:
@@ -11,7 +12,7 @@ class FakeQueue:
     """
 
     def __init__(self) -> None:
-        self.enqueued: List[Tuple[Callable[..., Any], tuple, dict]] = []
+        self.enqueued: list[tuple[Callable[..., Any], tuple, dict]] = []
 
     def enqueue(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         self.enqueued.append((func, args, kwargs))
@@ -33,7 +34,7 @@ class FakeMailer:
     """
 
     def __init__(self) -> None:
-        self.sent_messages: List[Any] = []
+        self.sent_messages: list[Any] = []
 
     def send(self, message: Any) -> None:
         # Record the message object for assertions in tests

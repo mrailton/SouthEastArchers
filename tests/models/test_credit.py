@@ -1,9 +1,5 @@
 """Tests for credit model"""
 
-from datetime import date
-
-import pytest
-
 from app.models import Credit, User
 
 

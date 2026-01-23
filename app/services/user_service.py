@@ -7,7 +7,6 @@ from app.models import Membership, Payment, User
 
 
 class UserService:
-
     @staticmethod
     def get_user_by_id(user_id: int) -> User | None:
         """Get a user by ID."""

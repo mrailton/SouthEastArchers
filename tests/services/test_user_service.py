@@ -3,7 +3,7 @@
 from datetime import date, timedelta
 
 from app import db
-from app.models import Membership, Payment, User
+from app.models import Payment, User
 from app.services.user_service import UserService
 
 # TestGetUserById
@@ -45,12 +45,6 @@ def test_get_all_users_ordered_by_name(app):
     assert result[0].name == "Alice User"
     assert result[1].name == "Bob User"
     assert result[2].name == "Zara User"
-
-
-def test_get_all_users_empty_database(app):
-    """Test retrieving users when database is empty"""
-    result = UserService.get_all_users()
-    assert result == []
 
 
 # TestUpdateProfile
@@ -203,7 +197,7 @@ def test_create_member_with_membership(app):
 def test_create_member_starts_inactive(app):
     """Test new members start as inactive (must be activated by admin)"""
     user, error = UserService.create_member(name="New Member", email="newemail@example.com")
-    
+
     assert error is None
     assert user is not None
     assert user.is_active is False
@@ -411,8 +405,6 @@ def test_reset_password_with_invalid_token(app):
 
 def test_reset_password_with_expired_token(app, test_user):
     """Test resetting password with expired token"""
-    from datetime import datetime, timedelta
-    from unittest.mock import patch
 
     token = test_user.generate_reset_token()
 

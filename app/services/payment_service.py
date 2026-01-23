@@ -9,7 +9,6 @@ from app.utils.session import clear_session_keys
 
 
 class PaymentService:
-
     def __init__(self):
         self.processor = SumUpService()
 
@@ -98,7 +97,6 @@ class PaymentService:
 
 
 class PaymentProcessingService:
-
     @staticmethod
     def _finalize_and_redirect(user, payment, clear_keys, flash_message, flash_category, redirect_endpoint, redirect_kwargs=None, send_receipt=True):
         """Helper to send/queue receipt, clear session keys, flash a message and return a redirect response.
@@ -224,7 +222,8 @@ class PaymentProcessingService:
         # Send credit purchase receipt
         try:
             from app.services.mail_service import send_credit_purchase_receipt
-            send_credit_purchase_receipt(user_id, payment_id, quantity)
+
+            send_credit_purchase_receipt(user_id, payment.id, quantity)
         except Exception as e:
             current_app.logger.error(f"Failed to send credit purchase receipt: {str(e)}")
 

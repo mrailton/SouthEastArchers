@@ -2,8 +2,6 @@
 
 from datetime import date, timedelta
 
-import pytest
-
 from app.models import Event, News
 
 

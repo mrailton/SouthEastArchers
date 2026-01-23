@@ -5,7 +5,6 @@ from app.models import Shoot, User
 
 
 class ShootService:
-
     @staticmethod
     def create_shoot(
         shoot_date: date,

@@ -1,11 +1,8 @@
 """Tests for event model"""
 
-from datetime import datetime, timedelta
-
-import pytest
+from datetime import UTC, datetime, timedelta
 
 from app.models import Event
-from app.utils.datetime_utils import utc_now
 
 
 def test_create_event(app):
@@ -165,7 +162,7 @@ def test_event_repr(app):
 
 def test_is_upcoming_with_naive_datetime(app):
     """Test is_upcoming with naive datetime (no timezone)"""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from app import db
 
@@ -186,12 +183,12 @@ def test_is_upcoming_with_naive_datetime(app):
 
 def test_is_upcoming_with_aware_datetime(app):
     """Test is_upcoming with timezone-aware datetime"""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from app import db
 
     # Create event with timezone-aware datetime
-    future_date = datetime(2030, 12, 31, 12, 0, 0, tzinfo=timezone.utc)
+    future_date = datetime(2030, 12, 31, 12, 0, 0, tzinfo=UTC)
     event = Event(
         title="Future Event Aware",
         description="Test description",

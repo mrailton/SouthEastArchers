@@ -1,7 +1,5 @@
 """Tests for admin news management"""
 
-import pytest
-
 from app.models import News
 
 
@@ -86,7 +84,6 @@ def test_news_requires_admin(client, test_user):
 
 def test_create_news_success_published(client, admin_user, app):
     """Test successfully creating a published news article"""
-    from app import db
 
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
@@ -112,7 +109,6 @@ def test_create_news_success_published(client, admin_user, app):
 
 def test_create_news_success_unpublished(client, admin_user, app):
     """Test successfully creating an unpublished news article"""
-    from app import db
 
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 

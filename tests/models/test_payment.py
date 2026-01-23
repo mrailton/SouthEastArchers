@@ -1,10 +1,6 @@
 """Tests for payment model"""
 
-from datetime import date
-
-import pytest
-
-from app.models import Payment, User
+from app.models import Payment
 
 
 def test_create_payment(app, test_user):

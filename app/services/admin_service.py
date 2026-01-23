@@ -4,7 +4,6 @@ from app.models import Membership, User
 
 
 class AdminService:
-
     @staticmethod
     def get_dashboard_stats() -> dict:
         """Get statistics for the admin dashboard."""

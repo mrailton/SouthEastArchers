@@ -1,8 +1,6 @@
 """Tests for shoot model"""
 
-from datetime import date, timedelta
-
-import pytest
+from datetime import date
 
 from app.models import Shoot, ShootLocation, User
 

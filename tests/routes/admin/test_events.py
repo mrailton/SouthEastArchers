@@ -2,8 +2,6 @@
 
 from datetime import datetime
 
-import pytest
-
 from app.models import Event
 
 
@@ -133,7 +131,6 @@ def test_events_requires_admin(client, test_user):
 
 def test_create_event_success(client, admin_user, app):
     """Test successfully creating an event"""
-    from app import db
 
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
@@ -164,7 +161,6 @@ def test_create_event_success(client, admin_user, app):
 
 def test_create_event_unpublished(client, admin_user, app):
     """Test creating an unpublished event"""
-    from app import db
 
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 

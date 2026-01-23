@@ -1,7 +1,7 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from app import db
-from app.models import Payment, User
+from app.models import Payment
 
 
 def test_activate_membership_not_found(client, admin_user):

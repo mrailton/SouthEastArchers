@@ -1,9 +1,8 @@
 import pytest
-from datetime import date, timedelta
 
-from app.models import Membership, Payment, User
+from app.models import Payment
 from app.utils.email import send_payment_receipt, send_welcome_email
-from tests.helpers import assert_email_contains, assert_email_sent
+from tests.helpers import assert_email_sent
 
 
 def test_send_payment_receipt_online_payment(app, test_user, fake_mailer):
@@ -338,7 +337,7 @@ def test_send_welcome_email_content(app, test_user, fake_mailer, check_type, exp
 
         call_args = assert_email_sent(fake_mailer)
         html = call_args.html
-        
+
         expected = expected_in_html(test_user)
         assert expected in html, f"Expected {check_type} '{expected}' not found in email HTML"
 
@@ -359,24 +358,6 @@ def test_send_welcome_email_exception_handling(app, test_user, fake_mailer):
         result = send_welcome_email(test_user)
 
         assert result is False
-
-
-def test_send_welcome_email_runtime_error_url_for(app, test_user, fake_mailer):
-    """Test welcome email handles RuntimeError from url_for gracefully."""
-    # Test outside app context to trigger RuntimeError
-    import app.utils.email as email_mod
-
-    email_mod.mail = fake_mailer
-
-    result = send_welcome_email(test_user)
-
-    assert result is True
-    from tests.helpers import assert_email_sent
-
-    call_args = assert_email_sent(fake_mailer)
-    html = call_args.html
-    # Should contain fallback URL
-    assert "southeastarchers.ie" in html or "login" in html.lower()
 
 
 def test_send_credit_purchase_receipt(app, test_user, fake_mailer):
@@ -471,11 +452,8 @@ def test_send_payment_receipt_runtime_error_url_for(app, test_user, fake_mailer,
         from datetime import datetime
 
         # Mock url_for to raise RuntimeError (no request context)
-        mocker.patch(
-            "app.utils.email.url_for",
-            side_effect=RuntimeError("No request context")
-        )
-        
+        mocker.patch("app.utils.email.url_for", side_effect=RuntimeError("No request context"))
+
         payment = Payment(
             id=888,
             user_id=test_user.id,
@@ -509,10 +487,7 @@ def test_send_credit_purchase_receipt_runtime_error_url_for(app, test_user, fake
         from app.utils.email import send_credit_purchase_receipt
 
         # Mock url_for to raise RuntimeError
-        mocker.patch(
-            "app.utils.email.url_for",
-            side_effect=RuntimeError("No request context")
-        )
+        mocker.patch("app.utils.email.url_for", side_effect=RuntimeError("No request context"))
 
         payment = Payment(
             id=777,
@@ -540,12 +515,9 @@ def test_send_welcome_email_runtime_error_url_for(app, test_user, fake_mailer, m
         import app.utils.email as email_mod
 
         email_mod.mail = fake_mailer
-        
+
         # Mock url_for to raise RuntimeError
-        mocker.patch(
-            "app.utils.email.url_for",
-            side_effect=RuntimeError("No request context")
-        )
+        mocker.patch("app.utils.email.url_for", side_effect=RuntimeError("No request context"))
 
         result = send_welcome_email(test_user)
 
@@ -556,4 +528,3 @@ def test_send_welcome_email_runtime_error_url_for(app, test_user, fake_mailer, m
         email_sent = assert_email_sent(fake_mailer)
         # Should use fallback URL
         assert "southeastarchers.ie" in email_sent.html
-

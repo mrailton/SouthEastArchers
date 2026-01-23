@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 
 from app.forms import CreateMemberForm, EditMemberForm
@@ -85,10 +83,12 @@ def activate_user(user_id):
 
     member.is_active = True
     from app import db
+
     db.session.commit()
 
     # Send welcome email
     from app.services.mail_service import send_welcome_email
+
     try:
         send_welcome_email(user_id)
         flash(f"Account activated for {member.name}! Welcome email sent.", "success")

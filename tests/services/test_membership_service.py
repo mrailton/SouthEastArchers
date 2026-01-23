@@ -265,13 +265,6 @@ def test_get_expiring_memberships_excludes_inactive(app):
     assert len(result) == 0
 
 
-def test_get_expiring_memberships_empty(app):
-    """Test getting expiring memberships when none exist"""
-    result = MembershipService.get_expiring_memberships()
-
-    assert result == []
-
-
 # Get expired memberships tests
 def test_get_expired_memberships(app):
     """Test getting expired but still active-status memberships"""

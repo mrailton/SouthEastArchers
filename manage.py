@@ -302,29 +302,65 @@ def lint():
 
 @lint.command("check")
 def lint_check():
-    """Run linting checks"""
-    click.echo("Running flake8...")
-    exit_code = os.system("flake8 app/ tests/")
+    """Run linting checks with Ruff"""
+    click.echo("Running ruff check...")
+    exit_code = os.system("ruff check app/ tests/")
     if exit_code == 0:
         click.echo("✓ Linting passed!")
+    else:
+        click.echo("\n💡 Tip: Run 'python manage.py lint fix' to auto-fix issues")
+    sys.exit(exit_code >> 8)
+
+
+@lint.command("fix")
+def lint_fix():
+    """Auto-fix linting issues with Ruff"""
+    click.echo("Running ruff check --fix...")
+    exit_code = os.system("ruff check --fix app/ tests/")
+    if exit_code == 0:
+        click.echo("✓ Issues fixed!")
     sys.exit(exit_code >> 8)
 
 
 @lint.command("format")
 @click.option("--check", is_flag=True, help="Check only, do not modify files")
 def lint_format(check):
-    """Format code with black and isort"""
+    """Format code with Ruff"""
     if check:
-        click.echo("Checking code format...")
-        exit_code = os.system("black --check app/ tests/ && isort --check app/ tests/")
+        click.echo("Checking code format with ruff...")
+        exit_code = os.system("ruff format --check app/ tests/")
     else:
-        click.echo("Formatting code...")
-        os.system("black app/ tests/")
-        os.system("isort app/ tests/")
-        click.echo("✓ Code formatted!")
-        exit_code = 0
-
+        click.echo("Formatting code with ruff...")
+        exit_code = os.system("ruff format app/ tests/")
+        if exit_code == 0:
+            click.echo("✓ Code formatted!")
+    
     sys.exit(exit_code >> 8)
+
+
+@lint.command("all")
+@click.option("--fix", is_flag=True, help="Auto-fix issues")
+def lint_all(fix):
+    """Run all linting checks and formatting"""
+    click.echo("=== Running Ruff Linting ===")
+    if fix:
+        exit_code_lint = os.system("ruff check --fix app/ tests/")
+    else:
+        exit_code_lint = os.system("ruff check app/ tests/")
+    
+    click.echo("\n=== Running Ruff Format ===")
+    if fix:
+        exit_code_format = os.system("ruff format app/ tests/")
+    else:
+        exit_code_format = os.system("ruff format --check app/ tests/")
+    
+    if exit_code_lint == 0 and exit_code_format == 0:
+        click.echo("\n✓ All checks passed!")
+        sys.exit(0)
+    else:
+        if not fix:
+            click.echo("\n💡 Tip: Run 'python manage.py lint all --fix' to auto-fix all issues")
+        sys.exit(1)
 
 
 # ==============================================================================

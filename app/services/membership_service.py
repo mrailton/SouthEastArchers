@@ -1,13 +1,10 @@
 from datetime import date, timedelta
 
-from flask import current_app
-
 from app import db
 from app.models import Membership, Payment, User
 
 
 class MembershipService:
-
     @staticmethod
     def activate_membership(user: User) -> tuple[bool, str]:
         if not user.membership:

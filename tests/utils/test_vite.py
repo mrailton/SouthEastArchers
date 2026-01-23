@@ -154,7 +154,7 @@ def test_vite_asset_prod_no_css(monkeypatch, app):
         assert '<link rel="stylesheet"' not in s
         # Should have script tag
         assert 'script type="module"' in s
-        assert 'assets/js/app.xyz789.js' in s
+        assert "assets/js/app.xyz789.js" in s
 
 
 def test_vite_asset_prod_json_decode_error(monkeypatch, app):
@@ -163,7 +163,7 @@ def test_vite_asset_prod_json_decode_error(monkeypatch, app):
 
     app.config["DEBUG"] = False
     root_path = app.root_path
-    
+
     # Write invalid JSON to manifest
     dir_path = os.path.join(root_path, "../resources/static/.vite")
     os.makedirs(dir_path, exist_ok=True)

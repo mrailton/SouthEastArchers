@@ -3,11 +3,10 @@
 from datetime import date, timedelta
 from unittest.mock import patch
 
-import pytest
 from flask import session
 
 from app import db
-from app.models import Credit, Membership, Payment, User
+from app.models import Credit, Payment
 from app.services.payment_service import PaymentProcessingService, PaymentService
 from tests.helpers import create_payment_for_user
 

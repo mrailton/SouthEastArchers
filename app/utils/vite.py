@@ -49,7 +49,7 @@ def vite_asset(asset_name):
     manifest_path = os.path.join(current_app.root_path, "../resources/static/.vite/manifest.json")
 
     try:
-        with open(manifest_path, "r") as f:
+        with open(manifest_path) as f:
             manifest = json.load(f)
 
         if asset_name in manifest:

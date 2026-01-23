@@ -1,8 +1,6 @@
 """Tests for membership model"""
 
-from datetime import date, timedelta
-
-import pytest
+from datetime import date
 
 
 def test_is_active(test_user):

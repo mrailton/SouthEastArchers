@@ -1,4 +1,4 @@
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import abort, flash, redirect, render_template, url_for
 
 from app.forms import EventForm
 from app.services import EventService

@@ -351,6 +351,8 @@ def test_handle_credit_purchase_with_quantity(app, test_user):
     with app.test_request_context():
         payment = create_payment_for_user(db, test_user, amount_cents=5000, payment_type="credits", status="pending")
 
+        # User starts with 20 credits (from test_user fixture with membership)
+        initial_credits = test_user.membership.credits
         quantity = 10
         session["credit_purchase_payment_id"] = payment.id
         session["credit_purchase_quantity"] = quantity
@@ -362,3 +364,7 @@ def test_handle_credit_purchase_with_quantity(app, test_user):
         credit = Credit.query.filter_by(user_id=test_user.id, payment_id=payment.id).first()
         assert credit is not None
         assert credit.amount == quantity
+
+        # Verify credits were added to membership
+        db.session.refresh(test_user)
+        assert test_user.membership.credits == initial_credits + quantity

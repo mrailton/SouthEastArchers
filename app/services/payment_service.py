@@ -212,6 +212,11 @@ class PaymentProcessingService:
         transaction_id = result.get("transaction_code") or result.get("transaction_id") or checkout_id
         payment.mark_completed(transaction_id, processor="sumup")
 
+        # Add credits to membership
+        if user.membership:
+            user.membership.add_credits(quantity)
+
+        # Record the credit purchase
         credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
         db.session.add(credit)
         db.session.commit()

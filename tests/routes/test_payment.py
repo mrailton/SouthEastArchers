@@ -366,7 +366,7 @@ def test_process_checkout_membership_renewal_email_failure(mock_email, mock_serv
 
 @patch("app.routes.payment.PaymentService")
 @patch("app.services.mail_service.send_payment_receipt")
-def test_process_checkout_credit_purchase(mock_email, mock_service_class, client, app, test_user):
+def test_process_checkout_credit_purchase(mock_receipt, mock_service_class, client, app, test_user):
     """Test credit purchase payment"""
     with app.app_context():
         payment = Payment(

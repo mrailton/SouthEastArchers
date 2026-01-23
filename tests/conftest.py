@@ -10,15 +10,13 @@ from tests.helpers import FakeMailer, FakeQueue
 
 
 @pytest.fixture(scope="session")
-def app_instance(tmp_path_factory, worker_id):
-    """Create application instance with per-worker database for parallel testing"""
+def app_instance(tmp_path_factory):
+    """Create application instance for testing"""
     app = create_app("testing")
 
-    # Use separate database file for each worker in parallel mode
-    if worker_id != "master":
-        # Running in xdist mode - use separate DB per worker
-        db_path = tmp_path_factory.mktemp("data", numbered=True) / f"test_{worker_id}.db"
-        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+    # Use a temporary database file for testing
+    db_path = tmp_path_factory.mktemp("data") / "test.db"
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 
     with app.app_context():
         db.create_all()

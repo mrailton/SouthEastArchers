@@ -7,7 +7,6 @@ from app.models import Membership, Payment, User
 
 
 class UserService:
-
     @staticmethod
     def get_user_by_id(user_id: int) -> User | None:
         """Get a user by ID."""
@@ -60,6 +59,7 @@ class UserService:
         password: str = "changeme123",
         is_admin: bool = False,
         create_membership: bool = False,
+        qualification: str = "none",
     ) -> tuple[User | None, str | None]:
         """Create a new member (admin function)."""
         if User.query.filter_by(email=email).first():
@@ -70,6 +70,8 @@ class UserService:
             email=email,
             phone=phone,
             is_admin=is_admin,
+            qualification=qualification,
+            is_active=False,  # Start as inactive, admin must activate
         )
         user.set_password(password)
 
@@ -100,6 +102,7 @@ class UserService:
         name: str,
         email: str,
         phone: str = None,
+        qualification: str = None,
         is_admin: bool = False,
         is_active: bool = True,
         password: str = None,
@@ -111,6 +114,8 @@ class UserService:
         user.name = name
         user.email = email
         user.phone = phone
+        if qualification:
+            user.qualification = qualification
         user.is_admin = is_admin
         user.is_active = is_active
 

@@ -2,14 +2,13 @@ from datetime import date, timedelta
 
 from flask import current_app, flash, redirect, session, url_for
 
-from app import db, task_queue
+from app import db
 from app.models import Credit, Membership, Payment, User
 from app.services.sumup_service import SumUpService
 from app.utils.session import clear_session_keys
 
 
 class PaymentService:
-
     def __init__(self):
         self.processor = SumUpService()
 
@@ -98,27 +97,42 @@ class PaymentService:
 
 
 class PaymentProcessingService:
+    @staticmethod
+    def _finalize_and_redirect(user, payment, clear_keys, flash_message, flash_category, redirect_endpoint, redirect_kwargs=None, send_receipt=True):
+        """Helper to send/queue receipt, clear session keys, flash a message and return a redirect response.
+
+        - clear_keys: iterable of session key names to clear
+        - flash_message: message string to flash
+        - flash_category: category for flash (e.g., 'success')
+        - redirect_endpoint: endpoint name for url_for
+        - redirect_kwargs: optional dict of kwargs passed to url_for
+        """
+        if send_receipt:
+            try:
+                # Send or queue the payment receipt
+                PaymentProcessingService.send_payment_receipt(user.id, payment.id)
+            except Exception as e:
+                current_app.logger.error(f"Failed to hand off receipt email to MailService: {str(e)}")
+
+        # Clear session keys
+        if clear_keys:
+            clear_session_keys(*clear_keys)
+
+        # Flash and redirect
+        if flash_message:
+            flash(flash_message, flash_category)
+
+        if redirect_kwargs is None:
+            redirect_kwargs = {}
+
+        return redirect(url_for(redirect_endpoint, **redirect_kwargs))
 
     @staticmethod
-    def queue_payment_receipt(user_id, payment_id):
-        if task_queue:
-            from app.services.background_jobs import send_payment_receipt_job
+    def send_payment_receipt(user_id, payment_id):
+        """Send payment receipt email synchronously."""
+        from app.services.mail_service import send_payment_receipt
 
-            try:
-                task_queue.enqueue(send_payment_receipt_job, user_id, payment_id)
-                current_app.logger.info(f"Queued payment receipt email for user {user_id}, payment {payment_id}")
-            except Exception as e:
-                current_app.logger.error(f"Failed to queue receipt email: {str(e)}")
-        else:
-            from app.utils.email import send_payment_receipt
-
-            try:
-                user = db.session.get(User, user_id)
-                payment = db.session.get(Payment, payment_id)
-                if user and payment:
-                    send_payment_receipt(user, payment, user.membership)
-            except Exception as e:
-                current_app.logger.error(f"Failed to send receipt email: {str(e)}")
+        send_payment_receipt(user_id, payment_id)
 
     @staticmethod
     def validate_card_details(card_number, card_name, expiry_month, expiry_year, cvv):
@@ -139,20 +153,14 @@ class PaymentProcessingService:
             user.membership.activate()
         db.session.commit()
 
-        PaymentProcessingService.queue_payment_receipt(user.id, payment.id)
-
-        clear_session_keys(
-            "signup_user_id",
-            "signup_payment_id",
-            "checkout_amount",
-            "checkout_description",
+        return PaymentProcessingService._finalize_and_redirect(
+            user,
+            payment,
+            clear_keys=("signup_user_id", "signup_payment_id", "checkout_amount", "checkout_description"),
+            flash_message="Payment successful! Your membership is now active. A receipt has been sent to your email.",
+            flash_category="success",
+            redirect_endpoint="auth.login",
         )
-
-        flash(
-            "Payment successful! Your membership is now active. A receipt has been sent to your email.",
-            "success",
-        )
-        return redirect(url_for("auth.login"))
 
     @staticmethod
     def handle_membership_renewal(user_id, checkout_id, result):
@@ -180,21 +188,14 @@ class PaymentProcessingService:
 
         db.session.commit()
 
-        # Queue payment receipt email as background job
-        PaymentProcessingService.queue_payment_receipt(user.id, payment.id)
-
-        clear_session_keys(
-            "membership_renewal_user_id",
-            "membership_renewal_payment_id",
-            "checkout_amount",
-            "checkout_description",
+        return PaymentProcessingService._finalize_and_redirect(
+            user,
+            payment,
+            clear_keys=("membership_renewal_user_id", "membership_renewal_payment_id", "checkout_amount", "checkout_description"),
+            flash_message="Membership renewed successfully! A receipt has been sent to your email.",
+            flash_category="success",
+            redirect_endpoint="member.dashboard",
         )
-
-        flash(
-            "Membership renewed successfully! A receipt has been sent to your email.",
-            "success",
-        )
-        return redirect(url_for("member.dashboard"))
 
     @staticmethod
     def handle_credit_purchase(user_id, checkout_id, result):
@@ -209,20 +210,32 @@ class PaymentProcessingService:
         transaction_id = result.get("transaction_code") or result.get("transaction_id") or checkout_id
         payment.mark_completed(transaction_id, processor="sumup")
 
+        # Add credits to membership
+        if user.membership:
+            user.membership.add_credits(quantity)
+
+        # Record the credit purchase
         credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
         db.session.add(credit)
         db.session.commit()
 
-        clear_session_keys(
-            "credit_purchase_user_id",
-            "credit_purchase_payment_id",
-            "credit_purchase_quantity",
-            "checkout_amount",
-            "checkout_description",
-        )
+        # Send credit purchase receipt
+        try:
+            from app.services.mail_service import send_credit_purchase_receipt
 
-        flash(f"Successfully purchased {quantity} credits!", "success")
-        return redirect(url_for("member.dashboard"))
+            send_credit_purchase_receipt(user_id, payment.id, quantity)
+        except Exception as e:
+            current_app.logger.error(f"Failed to send credit purchase receipt: {str(e)}")
+
+        return PaymentProcessingService._finalize_and_redirect(
+            user,
+            payment,
+            clear_keys=("credit_purchase_user_id", "credit_purchase_payment_id", "credit_purchase_quantity", "checkout_amount", "checkout_description"),
+            flash_message=f"Successfully purchased {quantity} credits! A receipt has been sent to your email.",
+            flash_category="success",
+            redirect_endpoint="member.dashboard",
+            send_receipt=False,  # We're sending a custom credit receipt above
+        )
 
     @staticmethod
     def handle_payment_failure(checkout_id, result):

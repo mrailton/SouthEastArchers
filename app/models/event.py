@@ -1,4 +1,4 @@
-from datetime import timezone
+from datetime import UTC
 
 from app import db
 from app.utils.datetime_utils import utc_now
@@ -23,9 +23,9 @@ class Event(db.Model):
 
         start = self.start_date
         if start.tzinfo is None:
-            start = start.replace(tzinfo=timezone.utc)
+            start = start.replace(tzinfo=UTC)
         if now.tzinfo is None:
-            now = now.replace(tzinfo=timezone.utc)
+            now = now.replace(tzinfo=UTC)
         return start > now
 
     def publish(self):

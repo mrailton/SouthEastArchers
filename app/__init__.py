@@ -9,8 +9,6 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
-from redis import Redis
-from rq import Queue
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="sumup")
 
@@ -19,49 +17,30 @@ migrate = Migrate()
 mail = Mail()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
-assets = None
-redis_client = None
-task_queue = None
 
 
-def create_app(config_name=None):
-    from config.config import config
-
-    # Determine config from environment if not specified
-    if config_name is None:
-        config_name = os.environ.get("FLASK_ENV", "development")
-
-    app = Flask(
-        __name__,
-        static_folder="../resources/static",
-        static_url_path="/static",
-    )
-
-    # Load config
-    app.config.from_object(config[config_name])
-
-    # Configure logging
+def _configure_logging(app: Flask) -> None:
+    """Configure file and stream logging for the app."""
+    # File handler (only when not debug/testing)
     if not app.debug and not app.testing:
-        # File handler
         if not os.path.exists("logs"):
             os.mkdir("logs")
 
         file_handler = RotatingFileHandler("logs/app.log", maxBytes=10240000, backupCount=10)
-
         file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"))
-
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
 
-    # Also log to stdout for Docker
+    # Always log to stdout for Docker
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"))
-
     stream_handler.setLevel(logging.INFO)
     app.logger.addHandler(stream_handler)
     app.logger.setLevel(logging.INFO)
 
-    # Initialize extensions
+
+def _init_extensions(app: Flask) -> None:
+    """Initialize flask extensions and login manager callbacks."""
     db.init_app(app)
     migrate.init_app(app, db)
     mail.init_app(app)
@@ -79,20 +58,9 @@ def create_app(config_name=None):
 
         return db.session.get(User, int(user_id))
 
-    # Initialize Redis and RQ for background jobs
-    global redis_client, task_queue
 
-    try:
-        redis_client = Redis.from_url(app.config.get("REDIS_URL", "redis://localhost:6379/0"))
-
-        task_queue = Queue(connection=redis_client, default_timeout=600)
-    except Exception as e:
-        app.logger.warning(f"Redis connection failed: {str(e)}. Background jobs disabled.")
-
-        redis_client = None
-        task_queue = None
-
-    # Register blueprints
+def _register_blueprints(app: Flask) -> None:
+    """Register the application's blueprints."""
     from app.routes import admin_bp, auth_bp, member_bp, payment_bp, public_bp
 
     app.register_blueprint(public_bp)
@@ -101,7 +69,10 @@ def create_app(config_name=None):
     app.register_blueprint(admin_bp)
     app.register_blueprint(payment_bp)
 
-    # Error handlers
+
+def _register_error_handlers(app: Flask) -> None:
+    """Register generic error handlers."""
+
     @app.errorhandler(404)
     def not_found(e):
         return "Page not found", 404
@@ -111,9 +82,10 @@ def create_app(config_name=None):
         db.session.rollback()
         return "Internal server error", 500
 
-    # Cache busting for static assets
-    # Automatically appends ?v=<timestamp> to static file URLs based on file modification time
-    # This ensures browsers fetch new versions when files change
+
+def _register_context_processor(app: Flask) -> None:
+    """Register context processor for cache-busted static assets and vite helpers."""
+
     @app.context_processor
     def override_url_for():
         from flask import url_for as flask_url_for
@@ -123,7 +95,7 @@ def create_app(config_name=None):
         def dated_url_for(endpoint, **values):
             if endpoint == "static":
                 filename = values.get("filename", None)
-                if filename:
+                if filename and app.static_folder:
                     file_path = os.path.join(app.static_folder, filename)
                     if os.path.exists(file_path):
                         values["v"] = int(os.stat(file_path).st_mtime)
@@ -131,6 +103,30 @@ def create_app(config_name=None):
             return flask_url_for(endpoint, **values)
 
         return dict(url_for=dated_url_for, vite_asset=vite_asset, vite_hmr_client=vite_hmr_client)
+
+
+def create_app(config_name=None):
+    from app.config import config
+
+    # Determine config from environment if not specified
+    if config_name is None:
+        config_name = os.environ.get("FLASK_ENV", "development")
+
+    app = Flask(
+        __name__,
+        static_folder="../resources/static",
+        static_url_path="/static",
+    )
+
+    # Load config
+    app.config.from_object(config[config_name])
+
+    # Configure logging and initialize extensions/blueprints
+    _configure_logging(app)
+    _init_extensions(app)
+    _register_blueprints(app)
+    _register_error_handlers(app)
+    _register_context_processor(app)
 
     with app.app_context():
         from app.models import Credit, Event, Membership, News, Payment, Shoot, User

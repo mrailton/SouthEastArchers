@@ -1,13 +1,12 @@
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import Any
 
 from flask import Response, abort, flash, redirect, url_for
 from flask_login import current_user
 
-F = TypeVar("F", bound=Callable[..., Any])
 
-
-def admin_required(f: F) -> F:
+def admin_required[F: Callable[..., Any]](f: F) -> F:
     """Decorator to require admin authentication."""
 
     @wraps(f)

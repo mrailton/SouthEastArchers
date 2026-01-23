@@ -9,6 +9,10 @@
     {{ vite_hmr_client()|safe }}
 
     {% block extra_css %}{% endblock %}
+    
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 <body class="bg-gray-50">
     <!-- Navigation -->

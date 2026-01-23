@@ -33,7 +33,6 @@ def show_checkout(checkout_id):
 @bp.route("/checkout/<checkout_id>/process", methods=["POST"])
 def process_checkout(checkout_id):
     try:
-        # Get and validate form data
         card_number = request.form.get("card_number", "").replace(" ", "")
         card_name = request.form.get("card_name", "")
         expiry_month = request.form.get("expiry_month", "")
@@ -44,7 +43,6 @@ def process_checkout(checkout_id):
             flash("Please fill in all card details", "error")
             return redirect(url_for("payment.show_checkout", checkout_id=checkout_id))
 
-        # Process payment with payment service
         payment_service = PaymentService()
         result = payment_service.process_payment(
             checkout_id=checkout_id,
@@ -65,22 +63,17 @@ def process_checkout(checkout_id):
                 },
             )
 
-        # Payment successful - determine payment type and handle accordingly
         user_id = get_user_id_from_session(current_user)
 
-        # Handle signup payment
         if session.get("signup_user_id"):
             return PaymentProcessingService.handle_signup_payment(user_id, checkout_id, result)
 
-        # Handle membership renewal
         if session.get("membership_renewal_user_id"):
             return PaymentProcessingService.handle_membership_renewal(user_id, checkout_id, result)
 
-        # Handle credit purchase
         if session.get("credit_purchase_user_id"):
             return PaymentProcessingService.handle_credit_purchase(user_id, checkout_id, result)
 
-        # Default success response
         flash("Payment processed successfully!", "success")
         return redirect(url_for("member.dashboard") if current_user.is_authenticated else url_for("auth.login"))
 

@@ -1,10 +1,9 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
+from app.forms import ChangePasswordForm, ProfileForm
 from app.models import Credit, Shoot, User
-from app.schemas import ChangePasswordSchema, ProfileSchema
 from app.services import UserService
-from app.utils.pydantic_helpers import validate_request
 
 bp = Blueprint("member", __name__, url_prefix="/member")
 
@@ -44,47 +43,37 @@ def credits():
     return render_template("member/credits.html", credits=credits, user=user)
 
 
-@bp.route("/profile")
+@bp.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
-    user = current_user
-    return render_template("member/profile.html", user=user)
+    form = ProfileForm(obj=current_user)
 
-
-@bp.route("/profile/update", methods=["POST"])
-@login_required
-def update_profile():
-    validated, errors = validate_request(ProfileSchema, request)
-
-    if errors or validated is None:
-        for field, error in (errors or {}).items():
-            flash(error, "error")
+    if form.validate_on_submit():
+        success, message = UserService.update_profile(
+            user=current_user,
+            name=form.name.data,
+            phone=form.phone.data,
+        )
+        flash(message, "success" if success else "error")
         return redirect(url_for("member.profile"))
 
-    success, message = UserService.update_profile(
-        user=current_user,
-        name=validated.name,
-        phone=validated.phone,
-    )
-    flash(message, "success" if success else "error")
-    return redirect(url_for("member.profile"))
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(error, "error")
+
+    return render_template("member/profile.html", user=current_user, form=form)
 
 
 @bp.route("/change-password", methods=["GET", "POST"])
 @login_required
 def change_password():
-    if request.method == "POST":
-        validated, errors = validate_request(ChangePasswordSchema, request)
+    form = ChangePasswordForm()
 
-        if errors or validated is None:
-            for field, error in (errors or {}).items():
-                flash(error, "error")
-            return render_template("member/change_password.html")
-
+    if form.validate_on_submit():
         success, message = UserService.change_password(
             user=current_user,
-            current_password=validated.current_password,
-            new_password=validated.new_password,
+            current_password=form.current_password.data,
+            new_password=form.new_password.data,
         )
 
         if success:
@@ -93,4 +82,8 @@ def change_password():
         else:
             flash(message, "error")
 
-    return render_template("member/change_password.html")
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(error, "error")
+
+    return render_template("member/change_password.html", form=form)

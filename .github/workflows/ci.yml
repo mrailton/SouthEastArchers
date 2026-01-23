@@ -46,16 +46,16 @@ jobs:
           sudo apt-get install -y gcc default-libmysqlclient-dev pkg-config make
 
       - name: Install dependencies
-        run: make install
+        run: uv run python manage.py install
 
       - name: Check code quality and formatting
-        run: make format-check
+        run: uv run python manage.py lint format --check && uv run python manage.py lint check
 
       - name: Build assets
-        run: make build
+        run: uv run python manage.py assets build
 
       - name: Run tests with coverage
-        run: make test-cov
+        run: uv run python manage.py test coverage
 
   build-and-push:
     needs: test
@@ -76,11 +76,11 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata for Web
+      - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=test,enable=${{ github.ref == 'refs/heads/test' }}
@@ -89,36 +89,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Web Docker image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./docker/Dockerfile.web
+          file: ./Dockerfile
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Extract metadata for Worker
-        id: meta-worker
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-worker
-          tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=test,enable=${{ github.ref == 'refs/heads/test' }}
-            type=sha,prefix={{branch}}-
-
-      - name: Build and push Worker Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/Dockerfile.worker
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta-worker.outputs.tags }}
-          labels: ${{ steps.meta-worker.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

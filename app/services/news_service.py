@@ -4,7 +4,6 @@ from app.utils.datetime_utils import utc_now
 
 
 class NewsService:
-
     @staticmethod
     def create_article(
         title: str,

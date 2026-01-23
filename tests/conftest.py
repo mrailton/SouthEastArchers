@@ -6,6 +6,7 @@ import pytest
 
 from app import create_app, db
 from app.models import Membership, User
+from tests.helpers import FakeMailer, FakeQueue
 
 
 @pytest.fixture(scope="session")
@@ -70,6 +71,7 @@ def test_user(app):
         name="Test User",
         email="test@example.com",
         phone="1234567890",
+        qualification="none",
         is_active=True,
     )
     user.set_password("password123")
@@ -98,6 +100,7 @@ def admin_user(app):
     user = User(
         name="Admin User",
         email="admin@example.com",
+        qualification="none",
         is_admin=True,
         is_active=True,
     )
@@ -106,3 +109,20 @@ def admin_user(app):
     db.session.commit()
 
     return user
+
+
+@pytest.fixture
+def fake_queue():
+    """Provide a lightweight fake queue object for tests to capture enqueued jobs."""
+    return FakeQueue()
+
+
+@pytest.fixture
+def fake_mailer():
+    """Provide a lightweight fake mailer for tests to capture sent messages."""
+    fm = FakeMailer()
+    # Inject into common modules so tests don't need to set it manually
+    from tests.helpers import inject_fake_mailer
+
+    inject_fake_mailer(fm)
+    return fm

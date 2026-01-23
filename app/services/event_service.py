@@ -6,7 +6,6 @@ from app.utils.datetime_utils import utc_now
 
 
 class EventService:
-
     @staticmethod
     def create_event(
         title: str,

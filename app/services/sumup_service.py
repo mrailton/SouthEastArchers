@@ -6,7 +6,6 @@ from sumup.checkouts import CreateCheckoutBody
 
 
 class SumUpService:
-
     def __init__(self, api_key=None):
         self.api_key = api_key or current_app.config.get("SUMUP_API_KEY")
         self.client = Sumup(api_key=self.api_key)
@@ -49,7 +48,7 @@ class SumUpService:
             response = self.client.checkouts.create(body=checkout_body)
 
             # Log the response for debugging
-            current_app.logger.info(f'SumUp checkout created with ID: {response.id if hasattr(response, "id") else "no id"}')
+            current_app.logger.info(f"SumUp checkout created with ID: {response.id if hasattr(response, 'id') else 'no id'}")
 
             # The SDK returns a Checkout object
             if response and hasattr(response, "id"):

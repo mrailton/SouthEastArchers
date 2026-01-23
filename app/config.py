@@ -10,15 +10,8 @@ class Config:
     DEBUG = False
     TESTING = False
 
-    # Server configuration for URL generation outside request context
-    SERVER_NAME = os.environ.get("SERVER_NAME")  # e.g., "southeastarchers.ie"
-    PREFERRED_URL_SCHEME = os.environ.get("PREFERRED_URL_SCHEME", "https")
-    APPLICATION_ROOT = os.environ.get("APPLICATION_ROOT", "/")
-
     # Database
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL", "mysql+pymysql://sea_user:sea_password@localhost:3306/sea_db"
-    )
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "mysql+pymysql://sea_user:sea_password@localhost:3306/sea_db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
 
@@ -38,9 +31,7 @@ class Config:
     MAIL_USE_SSL = mail_use_ssl.lower() in ("true", "1", "yes", "on") if isinstance(mail_use_ssl, str) else bool(mail_use_ssl)
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
-    MAIL_DEFAULT_SENDER = os.environ.get(
-        "MAIL_DEFAULT_SENDER", "noreply@southeastarchers.ie"
-    )
+    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "noreply@southeastarchers.ie")
     # Additional mail settings for better compatibility
     MAIL_SUPPRESS_SEND = False
     MAIL_DEBUG = False
@@ -55,10 +46,6 @@ class Config:
     ANNUAL_MEMBERSHIP_COST = 10000  # 100.00 EUR (stored as cents)
     MEMBERSHIP_NIGHTS_INCLUDED = 20
     ADDITIONAL_NIGHT_COST = 500  # 5.00 EUR per night (stored as cents)
-
-    # Redis & Background Jobs
-    REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-    RQ_REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
 
 class DevelopmentConfig(Config):
@@ -82,7 +69,6 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
     SESSION_COOKIE_SECURE = False
-    SERVER_NAME = "localhost.localdomain"
     PREFERRED_URL_SCHEME = "http"
     BCRYPT_LOG_ROUNDS = 4  # Minimum rounds for fast tests (default is 12)
 

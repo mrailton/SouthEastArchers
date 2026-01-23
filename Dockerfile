@@ -48,7 +48,7 @@ COPY . .
 COPY --from=builder /app/resources/static ./resources/static
 
 # Copy and set entrypoint script
-COPY docker/docker-entrypoint.sh /usr/local/bin/
+COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Create non-root user

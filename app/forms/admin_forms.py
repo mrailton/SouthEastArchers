@@ -38,6 +38,16 @@ class EditMemberForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(min=2)])
     email = StringField("Email", validators=[DataRequired(), Email()])
     phone = StringField("Phone", validators=[Optional()])
+    qualification = SelectField(
+        "Qualification",
+        choices=[
+            ("none", "None"),
+            ("beginner", "Beginner Course Completed"),
+            ("ai", "Archery Ireland Member"),
+            ("ifaf", "Irish Field Archery Federation Member"),
+        ],
+        validators=[DataRequired()],
+    )
     password = PasswordField("Password", validators=[Optional()])
     is_admin = BooleanField("Is Admin", default=False)
     is_active = BooleanField("Is Active", default=True)

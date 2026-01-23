@@ -52,3 +52,28 @@ def send_password_reset(user_id: int, token: str) -> None:
         current_app.logger.info(f"Password reset email sent to {user.email}")
     except Exception as e:
         current_app.logger.error(f"Failed to send password reset email: {e}")
+
+
+def send_credit_purchase_receipt(user_id: int, payment_id: int, credits_purchased: int) -> None:
+    """Send a credit purchase receipt email synchronously."""
+    from app import db
+    from app.models import Payment, User
+    from app.utils.email import send_credit_purchase_receipt as util_send
+
+    try:
+        user = db.session.get(User, user_id)
+        payment = db.session.get(Payment, payment_id)
+
+        if not user or not payment:
+            current_app.logger.error(f"Cannot send credit receipt — user or payment not found (user_id={user_id}, payment_id={payment_id})")
+            return
+
+        if not user.membership:
+            current_app.logger.error(f"Cannot send credit receipt — user {user_id} has no membership")
+            return
+
+        credits_remaining = user.membership.credits
+        util_send(user, payment, credits_purchased, credits_remaining)
+        current_app.logger.info(f"Sent credit purchase receipt email for user {user_id}, payment {payment_id}")
+    except Exception as e:
+        current_app.logger.error(f"Failed to send credit receipt email: {e}")

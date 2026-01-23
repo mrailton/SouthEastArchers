@@ -100,6 +100,7 @@ class UserService:
         name: str,
         email: str,
         phone: str = None,
+        qualification: str = None,
         is_admin: bool = False,
         is_active: bool = True,
         password: str = None,
@@ -111,6 +112,8 @@ class UserService:
         user.name = name
         user.email = email
         user.phone = phone
+        if qualification:
+            user.qualification = qualification
         user.is_admin = is_admin
         user.is_active = is_active
 

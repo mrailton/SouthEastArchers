@@ -426,3 +426,87 @@ def test_send_welcome_email_with_different_credit_amounts(app, fake_mailer):
         from tests.helpers import assert_email_contains
 
         assert_email_contains(fake_mailer, "50")
+
+
+def test_send_credit_purchase_receipt(app, test_user, fake_mailer):
+    """Test sending credit purchase receipt email"""
+    with app.app_context():
+        import app.utils.email as email_mod
+
+        email_mod.mail = fake_mailer
+        from datetime import datetime
+
+        from app.utils.email import send_credit_purchase_receipt
+
+        # Create test payment for credit purchase
+        payment = Payment(
+            id=789,
+            user_id=test_user.id,
+            amount=30.00,
+            currency="EUR",
+            payment_type="credits",
+            payment_method="online",
+            external_transaction_id="txn_credits_123",
+            payment_processor="sumup",
+            description="10 shooting credits",
+            status="completed",
+            created_at=datetime.now(),
+        )
+
+        credits_purchased = 10
+        credits_remaining = 30  # Had 20, purchased 10
+
+        result = send_credit_purchase_receipt(test_user, payment, credits_purchased, credits_remaining)
+
+        assert result is True
+        email_sent = assert_email_sent(fake_mailer, subject_contains="Credit Purchase Receipt", recipients=[test_user.email])
+        assert email_sent.html is not None
+        assert email_sent.body is not None
+
+        # Check HTML content
+        assert "10" in email_sent.html  # Credits purchased
+        assert "30" in email_sent.html  # Credits remaining
+        assert "€30.00" in email_sent.html
+        assert "txn_credits_123" in email_sent.html
+        assert "SEA-000789" in email_sent.html  # Receipt number
+
+        # Check text content
+        assert "10" in email_sent.body
+        assert "30" in email_sent.body
+        assert "€30.00" in email_sent.body
+
+
+def test_send_credit_purchase_receipt_cash(app, test_user, fake_mailer):
+    """Test sending credit purchase receipt for cash payment"""
+    with app.app_context():
+        import app.utils.email as email_mod
+
+        email_mod.mail = fake_mailer
+        from datetime import datetime
+
+        from app.utils.email import send_credit_purchase_receipt
+
+        payment = Payment(
+            id=999,
+            user_id=test_user.id,
+            amount=15.00,
+            currency="EUR",
+            payment_type="credits",
+            payment_method="cash",
+            description="5 shooting credits",
+            status="completed",
+            created_at=datetime.now(),
+        )
+
+        result = send_credit_purchase_receipt(test_user, payment, 5, 25)
+
+        assert result is True
+        email_sent = assert_email_sent(fake_mailer, subject_contains="Credit Purchase", recipients=[test_user.email])
+
+        # Check cash payment method displayed correctly
+        assert "Cash Payment" in email_sent.html
+        # Should not have transaction ID for cash
+        assert "txn_" not in email_sent.html
+        assert "5" in email_sent.html  # Credits purchased
+        assert "25" in email_sent.html  # Credits remaining
+

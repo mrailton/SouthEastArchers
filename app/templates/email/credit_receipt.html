@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9fafb;
+            padding: 30px;
+            border: 1px solid #e5e7eb;
+        }
+        .receipt-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 1px solid #e5e7eb;
+        }
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .receipt-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-top: 10px;
+            padding-top: 20px;
+            border-top: 2px solid #2563eb;
+        }
+        .label {
+            color: #6b7280;
+        }
+        .value {
+            font-weight: 500;
+            color: #111827;
+        }
+        .success-badge {
+            display: inline-block;
+            background-color: #10b981;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .credits-summary {
+            background-color: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .credits-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .footer {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Credit Purchase Receipt</h1>
+        <p>South East Archers</p>
+    </div>
+    
+    <div class="content">
+        <p>Dear {{ name }},</p>
+        
+        <p>Thank you for purchasing additional shooting credits!</p>
+        
+        <div class="success-badge">✓ Payment Successful</div>
+        
+        <div class="credits-summary">
+            <p style="margin-top: 0; font-size: 0.9em; color: #6b7280;">Credits Purchased</p>
+            <div class="credits-number">{{ credits_purchased }}</div>
+            <p style="margin-bottom: 0; margin-top: 15px;">
+                <strong>Total Credits Available:</strong> <span style="color: #2563eb; font-size: 1.3em;">{{ credits_remaining }}</span>
+            </p>
+        </div>
+        
+        <div class="receipt-box">
+            <h2 style="margin-top: 0; color: #111827;">Receipt Details</h2>
+            
+            <div class="receipt-row">
+                <span class="label">Receipt Number:</span>
+                <span class="value">#{{ receipt_number }}</span>
+            </div>
+            
+            <div class="receipt-row">
+                <span class="label">Date:</span>
+                <span class="value">{{ payment_date }}</span>
+            </div>
+            
+            <div class="receipt-row">
+                <span class="label">Description:</span>
+                <span class="value">{{ description }}</span>
+            </div>
+            
+            <div class="receipt-row">
+                <span class="label">Payment Method:</span>
+                <span class="value">{{ payment_method }}</span>
+            </div>
+            
+            {% if transaction_id %}
+            <div class="receipt-row">
+                <span class="label">Transaction ID:</span>
+                <span class="value">{{ transaction_id }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="receipt-row">
+                <span class="label">Amount Paid:</span>
+                <span class="value">€{{ "%.2f"|format(amount) }}</span>
+            </div>
+        </div>
+        
+        <div style="text-align: center;">
+            <a href="{{ login_url }}" class="button">View Your Credits</a>
+        </div>
+        
+        <h3>What's Next?</h3>
+        <ul>
+            <li>Use your credits to attend shooting nights</li>
+            <li>Book sessions through your member dashboard</li>
+            <li>Check the calendar for upcoming shoots</li>
+        </ul>
+        
+        <p>If you have any questions, please don't hesitate to contact us.</p>
+        
+        <p>
+            Best regards,<br>
+            <strong>South East Archers</strong>
+        </p>
+    </div>
+    
+    <div class="footer">
+        <p>
+            South East Archers<br>
+            Email: info@southeastarchers.ie<br>
+            This is an automated receipt. Please keep for your records.
+        </p>
+    </div>
+</body>
+</html>

@@ -365,9 +365,9 @@ def test_process_checkout_membership_renewal_email_failure(mock_email, mock_serv
 
 
 @patch("app.routes.payment.PaymentService")
-@patch("app.services.mail_service.send_payment_receipt")
-def test_process_checkout_credit_purchase(mock_receipt, mock_service_class, client, app, test_user):
-    """Test credit purchase payment"""
+@patch("app.services.mail_service.send_credit_purchase_receipt")
+def test_process_checkout_credit_purchase(mock_credit_receipt, mock_service_class, client, app, test_user):
+    """Test credit purchase payment sends receipt email"""
     with app.app_context():
         payment = Payment(
             user_id=test_user.id,
@@ -408,11 +408,15 @@ def test_process_checkout_credit_purchase(mock_receipt, mock_service_class, clie
 
     assert response.status_code == 200
     assert b"Successfully purchased" in response.data
+    assert b"A receipt has been sent to your email" in response.data
 
     with app.app_context():
         credit = Credit.query.filter_by(payment_id=payment_id).first()
         assert credit is not None
         assert credit.amount == 5
+
+    # Verify receipt email was sent
+    mock_credit_receipt.assert_called_once_with(test_user.id, payment_id, 5)
 
 
 @patch("app.routes.payment.PaymentService")

@@ -346,8 +346,9 @@ def test_handle_signup_payment_with_membership(app, test_user):
             assert test_user.membership.status == "active"
 
 
-def test_handle_credit_purchase_with_quantity(app, test_user):
-    """Test credit purchase creates correct amount of credits"""
+@patch("app.services.mail_service.send_credit_purchase_receipt")
+def test_handle_credit_purchase_with_quantity(mock_send_email, app, test_user):
+    """Test credit purchase creates correct amount of credits and sends email"""
     with app.test_request_context():
         payment = create_payment_for_user(db, test_user, amount_cents=5000, payment_type="credits", status="pending")
 
@@ -368,3 +369,42 @@ def test_handle_credit_purchase_with_quantity(app, test_user):
         # Verify credits were added to membership
         db.session.refresh(test_user)
         assert test_user.membership.credits == initial_credits + quantity
+
+        # Verify email was sent with correct parameters
+        mock_send_email.assert_called_once_with(test_user.id, payment.id, quantity)
+
+
+@patch("app.services.mail_service.send_credit_purchase_receipt")
+def test_handle_credit_purchase_email_failure(mock_send_email, app, test_user):
+    """Test credit purchase succeeds even if email fails"""
+    # Make email sending fail
+    mock_send_email.side_effect = Exception("Mail server down")
+
+    with app.test_request_context():
+        payment = create_payment_for_user(db, test_user, amount_cents=3000, payment_type="credits", status="pending")
+
+        initial_credits = test_user.membership.credits
+        quantity = 5
+        session["credit_purchase_payment_id"] = payment.id
+        session["credit_purchase_quantity"] = quantity
+        result = {"transaction_id": "txn_456"}
+
+        # Should not raise exception even though email fails
+        response = PaymentProcessingService.handle_credit_purchase(test_user.id, "checkout_456", result)
+
+        # Verify payment still completed successfully
+        assert response is not None
+        db.session.refresh(payment)
+        assert payment.status == "completed"
+
+        # Verify credits were still added
+        db.session.refresh(test_user)
+        assert test_user.membership.credits == initial_credits + quantity
+
+        # Verify credit record was still created
+        credit = Credit.query.filter_by(user_id=test_user.id, payment_id=payment.id).first()
+        assert credit is not None
+        assert credit.amount == quantity
+
+        # Verify email was attempted
+        mock_send_email.assert_called_once()

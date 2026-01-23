@@ -121,6 +121,7 @@ def edit_member(user_id):
             name=form.name.data,
             email=form.email.data,
             phone=form.phone.data,
+            qualification=form.qualification.data,
             is_admin=form.is_admin.data,
             is_active=form.is_active.data,
             password=form.password.data or None,

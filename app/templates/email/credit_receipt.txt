@@ -1,0 +1,42 @@
+CREDIT PURCHASE RECEIPT
+South East Archers
+=====================================
+
+Dear {{ name }},
+
+Thank you for purchasing additional shooting credits!
+
+✓ PAYMENT SUCCESSFUL
+
+CREDITS PURCHASED: {{ credits_purchased }}
+TOTAL CREDITS AVAILABLE: {{ credits_remaining }}
+
+RECEIPT DETAILS
+=====================================
+
+Receipt Number:    #{{ receipt_number }}
+Date:              {{ payment_date }}
+Description:       {{ description }}
+Payment Method:    {{ payment_method }}
+{% if transaction_id %}Transaction ID:    {{ transaction_id }}
+{% endif %}
+Amount Paid:       €{{ "%.2f"|format(amount) }}
+
+WHAT'S NEXT?
+=====================================
+
+* Use your credits to attend shooting nights
+* Book sessions through your member dashboard
+* Check the calendar for upcoming shoots
+
+View your credits: {{ login_url }}
+
+If you have any questions, please don't hesitate to contact us.
+
+Best regards,
+South East Archers
+
+---
+South East Archers
+Email: info@southeastarchers.ie
+This is an automated receipt. Please keep for your records.

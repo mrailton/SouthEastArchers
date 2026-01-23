@@ -29,6 +29,17 @@
                 </div>
                 
                 <div>
+                    <label for="qualification" class="block text-gray-700 font-bold mb-2">Qualification *</label>
+                    <select class="w-full border border-gray-300 rounded px-3 py-2" 
+                            id="qualification" name="qualification" required>
+                        <option value="none" {% if member.qualification == 'none' %}selected{% endif %}>None</option>
+                        <option value="beginner" {% if member.qualification == 'beginner' %}selected{% endif %}>Beginner Course Completed</option>
+                        <option value="ai" {% if member.qualification == 'ai' %}selected{% endif %}>Archery Ireland Member</option>
+                        <option value="ifaf" {% if member.qualification == 'ifaf' %}selected{% endif %}>Irish Field Archery Federation Member</option>
+                    </select>
+                </div>
+                
+                <div>
                     <label for="password" class="block text-gray-700 font-bold mb-2">New Password (leave blank to keep current)</label>
                     <input class="w-full border border-gray-300 rounded px-3 py-2" 
                            type="password" id="password" name="password">

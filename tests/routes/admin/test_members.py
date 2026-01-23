@@ -94,6 +94,7 @@ def test_edit_member_success(client, admin_user, test_user):
             "name": "Updated Name",
             "email": test_user.email,
             "phone": "9876543210",
+            "qualification": test_user.qualification,
             "is_admin": "",
             "is_active": "on",
         },
@@ -117,6 +118,7 @@ def test_edit_member_change_password(client, admin_user, test_user):
         data={
             "name": test_user.name,
             "email": test_user.email,
+            "qualification": test_user.qualification,
             "password": "newpassword123",
             "is_active": "on",
         },
@@ -142,6 +144,7 @@ def test_edit_member_membership_dates(client, admin_user, test_user):
         data={
             "name": test_user.name,
             "email": test_user.email,
+            "qualification": test_user.qualification,
             "is_active": "on",
             "membership_start_date": new_start.isoformat(),
             "membership_expiry_date": new_expiry.isoformat(),
@@ -167,6 +170,7 @@ def test_edit_member_credits(client, admin_user, test_user):
         data={
             "name": test_user.name,
             "email": test_user.email,
+            "qualification": test_user.qualification,
             "is_active": "on",
             "membership_start_date": test_user.membership.start_date.isoformat(),
             "membership_expiry_date": test_user.membership.expiry_date.isoformat(),
@@ -188,6 +192,7 @@ def test_edit_member_without_membership(client, admin_user, app):
     user = User(
         name="No Membership User",
         email="nomembership@example.com",
+        qualification="none",
     )
     user.set_password("password")
     db.session.add(user)
@@ -200,6 +205,7 @@ def test_edit_member_without_membership(client, admin_user, app):
         data={
             "name": "Updated Name",
             "email": user.email,
+            "qualification": "beginner",
             "is_active": "on",
         },
         follow_redirects=True,

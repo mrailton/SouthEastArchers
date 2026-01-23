@@ -101,3 +101,50 @@ def send_welcome_email(user, membership):
     except Exception as e:
         current_app.logger.error(f"Error sending welcome email: {str(e)}")
         return False
+
+
+def send_credit_purchase_receipt(user, payment, credits_purchased, credits_remaining):
+    """Send a receipt email for credit purchase."""
+    try:
+        receipt_number = f"SEA-{payment.id:06d}"
+
+        payment_method_display = {
+            "online": "Credit/Debit Card (SumUp)",
+            "cash": "Cash Payment",
+        }.get(payment.payment_method, payment.payment_method.title())
+
+        try:
+            login_url = url_for("member.credits", _external=True)
+        except RuntimeError:
+            login_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/member/credits"
+
+        template_data = {
+            "name": user.name,
+            "receipt_number": receipt_number,
+            "payment_date": payment.created_at.strftime("%d %B %Y at %H:%M"),
+            "description": payment.description or f"{credits_purchased} shooting credits",
+            "payment_method": payment_method_display,
+            "transaction_id": (payment.external_transaction_id if payment.payment_method == "online" else None),
+            "amount": payment.amount,
+            "credits_purchased": credits_purchased,
+            "credits_remaining": credits_remaining,
+            "login_url": login_url,
+        }
+
+        html_body = render_template("email/credit_receipt.html", **template_data)
+        text_body = render_template("email/credit_receipt.txt", **template_data)
+
+        msg = Message(
+            subject="Credit Purchase Receipt - South East Archers",
+            recipients=[user.email],
+            html=html_body,
+            body=text_body,
+        )
+
+        mail.send(msg)
+        current_app.logger.info(f"Credit purchase receipt sent to {user.email}")
+        return True
+
+    except Exception as e:
+        current_app.logger.error(f"Error sending credit purchase receipt: {str(e)}")
+        return False

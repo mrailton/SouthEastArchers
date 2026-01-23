@@ -221,14 +221,21 @@ class PaymentProcessingService:
         db.session.add(credit)
         db.session.commit()
 
+        # Send credit purchase receipt
+        try:
+            from app.services.mail_service import send_credit_purchase_receipt
+            send_credit_purchase_receipt(user_id, payment_id, quantity)
+        except Exception as e:
+            current_app.logger.error(f"Failed to send credit purchase receipt: {str(e)}")
+
         return PaymentProcessingService._finalize_and_redirect(
             user,
             payment,
             clear_keys=("credit_purchase_user_id", "credit_purchase_payment_id", "credit_purchase_quantity", "checkout_amount", "checkout_description"),
-            flash_message=f"Successfully purchased {quantity} credits!",
+            flash_message=f"Successfully purchased {quantity} credits! A receipt has been sent to your email.",
             flash_category="success",
             redirect_endpoint="member.dashboard",
-            send_receipt=False,
+            send_receipt=False,  # We're sending a custom credit receipt above
         )
 
     @staticmethod

@@ -163,11 +163,12 @@ def test_edit_shoot_remove_attendee(client, admin_user, test_user, app):
     assert response.status_code == 200
 
 
-def test_create_shoot_attendee_no_credits(client, admin_user, app):
-    """Test creating shoot with attendee who has no credits"""
+def test_create_shoot_attendee_no_credits(app):
+    """Test creating shoot with attendee who has no credits allows negative balance"""
     from datetime import timedelta
 
     from app.models import Membership
+    from app.services import ShootService
 
     # Create user with no credits
     user = User(
@@ -188,23 +189,24 @@ def test_create_shoot_attendee_no_credits(client, admin_user, app):
     )
     db.session.add(membership)
     db.session.commit()
+    user_id = user.id
 
-    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
-
-    response = client.post(
-        "/admin/shoots/create",
-        data={
-            "date": date.today().isoformat(),
-            "location": "HALL",
-            "description": "Test shoot",
-            "attendees": [str(user.id)],
-            "csrf_token": "test",
-        },
-        follow_redirects=True,
+    # Use the service directly to create shoot with attendee
+    shoot, warnings = ShootService.create_shoot(
+        shoot_date=date.today(),
+        location="HALL",
+        description="Test shoot",
+        attendee_ids=[user_id],
     )
 
-    assert response.status_code == 200
-    # Should show warning about no credits
+    # Verify user was added and credits went negative
+    user = db.session.get(User, user_id)
+    assert user.membership.credits == -1
+    assert len(shoot.users) == 1
+    assert shoot.users[0].id == user_id
+    # Should have warning about negative balance
+    assert len(warnings) == 1
+    assert "negative balance" in warnings[0].lower()
 
 
 def test_edit_shoot_get_prepopulates_data(client, admin_user, test_user, app):
@@ -265,33 +267,52 @@ def test_shoots_list_shows_all_shoots(client, admin_user, app):
     assert b"First shoot" in response.data or b"Second shoot" in response.data
 
 
-def test_edit_shoot_add_attendee_no_credits(client, admin_user, test_user, app):
-    """Test adding attendee when they have no credits shows warning"""
+def test_edit_shoot_add_attendee_no_credits(app):
+    """Test adding attendee when they have no credits allows negative balance"""
+    from app.services import ShootService
 
-    # Set user to have no credits
-    test_user.membership.credits = 0
+    # Create user with no credits
+    user = User(name="No Credits", email="nocredits2@example.com")
+    user.set_password("password")
+    db.session.add(user)
+    db.session.flush()
+
+    from datetime import timedelta
+
+    from app.models import Membership
+
+    membership = Membership(
+        user_id=user.id,
+        start_date=date.today(),
+        expiry_date=date.today() + timedelta(days=365),
+        credits=0,
+        status="active",
+    )
+    db.session.add(membership)
     db.session.commit()
+    user_id = user.id
 
-    # Create a shoot
-    shoot = Shoot(date=date.today(), location=ShootLocation.HALL, description="Test shoot")
-    db.session.add(shoot)
-    db.session.commit()
-    shoot_id = shoot.id
-
-    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
-
-    response = client.post(
-        f"/admin/shoots/{shoot_id}/edit",
-        data={
-            "date": date.today().isoformat(),
-            "location": "HALL",
-            "description": "Updated shoot",
-            "attendees": [str(test_user.id)],
-            "csrf_token": "test",
-        },
-        follow_redirects=True,
+    # Create a shoot without attendees
+    shoot, _ = ShootService.create_shoot(
+        shoot_date=date.today(),
+        location="HALL",
+        description="Test shoot",
     )
 
-    assert response.status_code == 200
-    # Check for warning about no credits
-    assert b"no credits" in response.data.lower() or b"Warning" in response.data
+    # Add the no-credit user to the shoot
+    warnings = ShootService.update_shoot(
+        shoot=shoot,
+        shoot_date=date.today(),
+        location="HALL",
+        description="Updated shoot",
+        attendee_ids=[user_id],
+    )
+
+    # Verify user was added and credits went negative
+    user = db.session.get(User, user_id)
+    assert user.membership.credits == -1
+    assert len(shoot.users) == 1
+    assert shoot.users[0].id == user_id
+    # Check for warning about negative balance
+    assert len(warnings) == 1
+    assert "negative balance" in warnings[0].lower()

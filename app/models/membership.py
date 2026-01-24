@@ -20,10 +20,22 @@ class Membership(db.Model):
         return self.status == "active" and self.expiry_date >= date.today()
 
     def credits_remaining(self):
-        return max(0, self.credits)
+        return self.credits
 
-    def use_credit(self):
+    def use_credit(self, allow_negative: bool = False):
+        """Use a credit from the membership.
+
+        Args:
+            allow_negative: If True, allows credits to go negative (e.g., for admin bookings)
+
+        Returns:
+            True if credit was used, False if no credits available and negative not allowed
+        """
         if self.credits > 0:
+            self.credits -= 1
+            return True
+        elif allow_negative and self.is_active():
+            # Allow negative credits for active memberships (admin override)
             self.credits -= 1
             return True
         return False

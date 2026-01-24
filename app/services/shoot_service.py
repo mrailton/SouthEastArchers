@@ -15,6 +15,9 @@ class ShootService:
         """
         Create a new shoot with optional attendees.
         Returns the created shoot and a list of warning messages.
+
+        Admin can add members with 0 credits if they have active memberships,
+        which will put their credit balance into negative.
         """
         warnings = []
 
@@ -30,10 +33,15 @@ class ShootService:
             for user_id in attendee_ids:
                 user = db.session.get(User, user_id)
                 if user and user.membership:
-                    if user.membership.use_credit():
+                    # Allow negative credits for active memberships (admin override)
+                    if user.membership.use_credit(allow_negative=True):
                         shoot.users.append(user)
+                        # Warn if credits went negative
+                        if user.membership.credits < 0:
+                            warnings.append(f"{user.name} now has {user.membership.credits} credits (negative balance).")
                     else:
-                        warnings.append(f"{user.name} has no credits remaining.")
+                        # This should only happen if membership is not active
+                        warnings.append(f"{user.name} cannot be added (inactive membership).")
 
         db.session.commit()
         return shoot, warnings
@@ -49,6 +57,9 @@ class ShootService:
         """
         Update an existing shoot and manage attendee credits.
         Returns a list of warning messages.
+
+        Admin can add members with 0 credits if they have active memberships,
+        which will put their credit balance into negative.
         """
         warnings = []
         new_attendee_ids = set(attendee_ids or [])
@@ -66,10 +77,15 @@ class ShootService:
         for user_id in added_ids:
             user = db.session.get(User, user_id)
             if user and user.membership:
-                if user.membership.use_credit():
+                # Allow negative credits for active memberships (admin override)
+                if user.membership.use_credit(allow_negative=True):
                     shoot.users.append(user)
+                    # Warn if credits went negative
+                    if user.membership.credits < 0:
+                        warnings.append(f"{user.name} now has {user.membership.credits} credits (negative balance).")
                 else:
-                    warnings.append(f"{user.name} has no credits remaining.")
+                    # This should only happen if membership is not active
+                    warnings.append(f"{user.name} cannot be added (inactive membership).")
 
         # Update the users list to only include valid attendees
         shoot.users = [u for u in shoot.users if u.id in new_attendee_ids]

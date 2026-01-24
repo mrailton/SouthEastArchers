@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #f59e0b;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            background-color: #f9fafb;
+            padding: 30px;
+            border: 1px solid #e5e7eb;
+        }
+        .alert-box {
+            background-color: #fef3c7;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #f59e0b;
+        }
+        .alert-box h3 {
+            margin-top: 0;
+            color: #92400e;
+        }
+        .credits-info {
+            background-color: white;
+            padding: 25px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        .credits-count {
+            font-size: 48px;
+            font-weight: bold;
+            color: #f59e0b;
+            margin: 10px 0;
+        }
+        .credits-label {
+            color: #6b7280;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .info-box {
+            background-color: white;
+            padding: 25px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 1px solid #e5e7eb;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white !important;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .cta-button:hover {
+            background-color: #1d4ed8;
+        }
+        .footer {
+            background-color: #f3f4f6;
+            padding: 20px;
+            text-align: center;
+            border-radius: 0 0 5px 5px;
+            border: 1px solid #e5e7eb;
+            border-top: none;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .highlight {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚠️ Low Credits Alert</h1>
+    </div>
+    
+    <div class="content">
+        <div class="info-box">
+            <p>Dear {{ user.name }},</p>
+            
+            <p>We wanted to let you know that your shooting night credits are running low.</p>
+        </div>
+        
+        <div class="credits-info">
+            <div class="credits-label">Credits Remaining</div>
+            <div class="credits-count">{{ credits_remaining }}</div>
+            <p style="margin-top: 0; color: #6b7280;">
+                {% if credits_remaining == 1 %}
+                shooting night remaining
+                {% else %}
+                shooting nights remaining
+                {% endif %}
+            </p>
+        </div>
+        
+        <div class="alert-box">
+            <h3>📌 Don't Miss Out!</h3>
+            <p style="margin-bottom: 0;">
+                To ensure you can continue enjoying your archery sessions, we recommend purchasing additional credits before they run out.
+            </p>
+        </div>
+        
+        <div class="info-box">
+            <p><strong>Need more credits?</strong></p>
+            <p>Additional shooting night credits are available for just <span class="highlight">€5.00</span> each.</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ credits_url }}" class="cta-button">Purchase Credits Now</a>
+            </div>
+            
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
+                Click the button above to login and purchase additional credits securely online.
+            </p>
+        </div>
+        
+        <div class="info-box">
+            <p><strong>Why purchase credits in advance?</strong></p>
+            <ul style="color: #6b7280;">
+                <li>Never miss a shooting night</li>
+                <li>Quick and easy online booking</li>
+                <li>Secure payment processing</li>
+                <li>Instant confirmation</li>
+            </ul>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact us.</p>
+            
+            <p>See you at the range!</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p><strong>South East Archers</strong></p>
+        <p>This is an automated reminder. Please do not reply directly to this message.</p>
+    </div>
+</body>
+</html>

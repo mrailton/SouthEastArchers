@@ -17,6 +17,7 @@ A Flask-based membership management system for South East Archers archery club.
 - **Frontend**: Alpine.js + Tailwind CSS (built with Vite)
 - **Email**: Flask-Mail with SMTP
 - **Payments**: SumUp API integration
+- **Task Scheduling**: Laravel-style cron scheduler
 - **Deployment**: Docker with Gunicorn
 
 ## Local Development
@@ -93,6 +94,10 @@ python manage.py db migrate -m "msg"  # Create migration
 python manage.py assets build   # Build production assets
 python manage.py assets watch   # Watch for changes
 
+# Task Scheduling
+python manage.py schedule list   # List scheduled tasks
+python manage.py schedule run    # Run tasks that are due
+
 # Utilities
 python manage.py clean          # Remove cache files
 python manage.py stats          # Show app statistics
@@ -110,13 +115,23 @@ SouthEastArchers/
 │   ├── services/           # Business logic
 │   ├── forms/              # WTForms
 │   ├── templates/          # Jinja2 templates
-│   └── utils/              # Helper functions
+│   ├── utils/              # Helper functions
+│   ├── scheduler/          # Task scheduler module
+│   │   ├── __init__.py     #   - Public API
+│   │   ├── event.py        #   - Event class
+│   │   ├── schedule.py     #   - Schedule class
+│   │   └── jobs/           #   - Scheduled job functions
+│   │       ├── __init__.py
+│   │       └── *.py
+│   └── schedule.py         # Scheduled task definitions
 ├── resources/
 │   ├── css/                # Tailwind CSS source
 │   ├── js/                 # Alpine.js components
 │   └── static/             # Built assets (generated)
 ├── tests/                  # Test suite
 ├── migrations/             # Database migrations
+├── docs/                   # Documentation
+│   └── SCHEDULING.md       # Task scheduler guide
 ├── web.py                  # WSGI entry point
 ├── manage.py               # CLI management commands
 ├── Dockerfile              # Production container
@@ -158,6 +173,28 @@ MAIL_SERVER=localhost
 MAIL_PORT=1025
 MAIL_USE_TLS=False
 # Leave MAIL_USERNAME and MAIL_PASSWORD commented out
+```
+
+## Testing
+
+### Task Scheduling
+
+The app includes a Laravel-style task scheduler. See [docs/SCHEDULING.md](docs/SCHEDULING.md) for full documentation.
+
+Quick example:
+```python
+# In app/schedule.py
+from app.scheduler import schedule
+
+def cleanup_task():
+    print("Cleaning up!")
+
+schedule.call(cleanup_task, "Daily cleanup").daily_at("02:00")
+```
+
+Set up cron job:
+```bash
+* * * * * cd /path/to/project && /path/to/python manage.py schedule run >> /dev/null 2>&1
 ```
 
 ## Testing

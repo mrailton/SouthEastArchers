@@ -610,5 +610,51 @@ def lint_typecheck():
     sys.exit(exit_code >> 8)
 
 
+# ==============================================================================
+# SCHEDULER COMMANDS
+# ==============================================================================
+
+
+@cli.group()
+def schedule():
+    """Task scheduler commands"""
+    pass
+
+
+@schedule.command("run")
+def schedule_run():
+    """Run scheduled tasks that are due"""
+    from app.schedule import schedule as scheduler
+    
+    click.echo("Running scheduled tasks...")
+    scheduler.run_due_tasks()
+    click.echo("✓ Scheduled tasks completed")
+
+
+@schedule.command("list")
+def schedule_list():
+    """List all scheduled tasks"""
+    from app.schedule import schedule as scheduler
+    
+    events = scheduler.all_events()
+    
+    if not events:
+        click.echo("No scheduled tasks defined")
+        return
+    
+    click.echo("\n{:<40} {:<20}".format("Task", "Schedule"))
+    click.echo("-" * 60)
+    
+    for event in events:
+        click.echo("{:<40} {:<20}".format(
+            event.description[:39],
+            event.expression
+        ))
+    
+    click.echo(f"\nTotal: {len(events)} scheduled tasks")
+    click.echo("\nTo run scheduled tasks: python manage.py schedule run")
+    click.echo("For production, add to crontab: * * * * * cd /path/to/project && python manage.py schedule run >> /dev/null 2>&1")
+
+
 if __name__ == "__main__":
     cli()

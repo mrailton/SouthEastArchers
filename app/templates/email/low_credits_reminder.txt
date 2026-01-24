@@ -1,0 +1,45 @@
+Low Credits Alert - South East Archers
+
+Dear {{ user.name }},
+
+We wanted to let you know that your shooting night credits are running low.
+
+CREDITS REMAINING
+=================
+
+  {{ credits_remaining }} {% if credits_remaining == 1 %}shooting night{% else %}shooting nights{% endif %} remaining
+
+
+DON'T MISS OUT!
+===============
+
+To ensure you can continue enjoying your archery sessions, we recommend 
+purchasing additional credits before they run out.
+
+
+PURCHASE ADDITIONAL CREDITS
+===========================
+
+Additional shooting night credits are available for just €5.00 each.
+
+Purchase credits online: {{ credits_url }}
+
+
+WHY PURCHASE CREDITS IN ADVANCE?
+=================================
+
+• Never miss a shooting night
+• Quick and easy online booking
+• Secure payment processing
+• Instant confirmation
+
+
+If you have any questions or need assistance, please don't hesitate to contact us.
+
+See you at the range!
+
+Best regards,
+South East Archers
+
+---
+This is an automated reminder. Please do not reply directly to this message.

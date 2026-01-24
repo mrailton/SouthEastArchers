@@ -17,7 +17,7 @@ from app.utils.session import get_user_id_from_session
 bp = Blueprint("payment", __name__, url_prefix="/payment")
 
 
-@bp.route("/checkout/<checkout_id>")
+@bp.get("/checkout/<checkout_id>")
 def show_checkout(checkout_id):
     amount = session.get("checkout_amount", 100.00)
     description = session.get("checkout_description", "Payment")
@@ -30,7 +30,7 @@ def show_checkout(checkout_id):
     )
 
 
-@bp.route("/checkout/<checkout_id>/process", methods=["POST"])
+@bp.post("/checkout/<checkout_id>/process")
 def process_checkout(checkout_id):
     try:
         card_number = request.form.get("card_number", "").replace(" ", "")
@@ -83,38 +83,52 @@ def process_checkout(checkout_id):
         return redirect(url_for("payment.show_checkout", checkout_id=checkout_id))
 
 
-@bp.route("/membership", methods=["GET", "POST"])
+@bp.get("/membership")
 @login_required
 def membership_payment():
-    if request.method == "POST":
-        payment_service = PaymentService()
-        result = payment_service.initiate_membership_payment(current_user)
+    """Display membership payment page"""
+    return render_template("payment/membership.html")
 
-        if result.get("success"):
-            return redirect(url_for("payment.show_checkout", checkout_id=result["checkout_id"]))
-        else:
-            flash(result.get("error", "Error creating payment."), "error")
+
+@bp.post("/membership")
+@login_required
+def membership_payment_post():
+    """Handle membership payment initiation"""
+    payment_service = PaymentService()
+    result = payment_service.initiate_membership_payment(current_user)
+
+    if result.get("success"):
+        return redirect(url_for("payment.show_checkout", checkout_id=result["checkout_id"]))
+    else:
+        flash(result.get("error", "Error creating payment."), "error")
 
     return render_template("payment/membership.html")
 
 
-@bp.route("/credits", methods=["GET", "POST"])
+@bp.get("/credits")
 @login_required
 def credits():
-    if request.method == "POST":
-        quantity = int(request.form.get("quantity", 1))
-        payment_service = PaymentService()
-        result = payment_service.initiate_credit_purchase(current_user, quantity)
+    """Display credits purchase page"""
+    return render_template("payment/credits.html")
 
-        if result.get("success"):
-            return redirect(url_for("payment.show_checkout", checkout_id=result["checkout_id"]))
-        else:
-            flash(result.get("error", "Error creating payment."), "error")
+
+@bp.post("/credits")
+@login_required
+def credits_post():
+    """Handle credits purchase initiation"""
+    quantity = int(request.form.get("quantity", 1))
+    payment_service = PaymentService()
+    result = payment_service.initiate_credit_purchase(current_user, quantity)
+
+    if result.get("success"):
+        return redirect(url_for("payment.show_checkout", checkout_id=result["checkout_id"]))
+    else:
+        flash(result.get("error", "Error creating payment."), "error")
 
     return render_template("payment/credits.html")
 
 
-@bp.route("/history")
+@bp.get("/history")
 @login_required
 def history():
     user = current_user

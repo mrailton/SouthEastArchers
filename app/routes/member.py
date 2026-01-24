@@ -8,7 +8,7 @@ from app.services import UserService
 bp = Blueprint("member", __name__, url_prefix="/member")
 
 
-@bp.route("/dashboard")
+@bp.get("/dashboard")
 @login_required
 def dashboard():
     user = current_user
@@ -24,7 +24,7 @@ def dashboard():
     )
 
 
-@bp.route("/shoots")
+@bp.get("/shoots")
 @login_required
 def shoots():
     user = current_user
@@ -34,7 +34,7 @@ def shoots():
     return render_template("member/shoots.html", shoots=user_shoots, user=user)
 
 
-@bp.route("/credits")
+@bp.get("/credits")
 @login_required
 def credits():
     user = current_user
@@ -43,9 +43,17 @@ def credits():
     return render_template("member/credits.html", credits=credits, user=user)
 
 
-@bp.route("/profile", methods=["GET", "POST"])
+@bp.get("/profile")
 @login_required
 def profile():
+    """Display profile form"""
+    return render_template("member/profile.html", user=current_user, form=ProfileForm(obj=current_user))
+
+
+@bp.post("/profile")
+@login_required
+def profile_post():
+    """Handle profile form submission"""
     form = ProfileForm(obj=current_user)
 
     if form.validate_on_submit():
@@ -61,12 +69,20 @@ def profile():
         for error in errors:
             flash(error, "error")
 
-    return render_template("member/profile.html", user=current_user, form=form)
+    return render_template("member/profile.html", user=current_user, form=ProfileForm(obj=current_user))
 
 
-@bp.route("/change-password", methods=["GET", "POST"])
+@bp.get("/change-password")
 @login_required
 def change_password():
+    """Display change password form"""
+    return render_template("member/change_password.html", form=ChangePasswordForm())
+
+
+@bp.post("/change-password")
+@login_required
+def change_password_post():
+    """Handle change password form submission"""
     form = ChangePasswordForm()
 
     if form.validate_on_submit():
@@ -86,4 +102,4 @@ def change_password():
         for error in errors:
             flash(error, "error")
 
-    return render_template("member/change_password.html", form=form)
+    return render_template("member/change_password.html", form=ChangePasswordForm())

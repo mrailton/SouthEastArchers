@@ -5,7 +5,7 @@ from app.services import AdminService
 from . import admin_required, bp
 
 
-@bp.route("/dashboard")
+@bp.get("/dashboard")
 @admin_required
 def dashboard():
     stats = AdminService.get_dashboard_stats()

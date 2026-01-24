@@ -5,23 +5,23 @@ from app.services import EventService, NewsService
 bp = Blueprint("public", __name__)
 
 
-@bp.route("/")
+@bp.get("/")
 def index():
     return render_template("public/index.html")
 
 
-@bp.route("/about")
+@bp.get("/about")
 def about():
     return render_template("public/about.html")
 
 
-@bp.route("/news")
+@bp.get("/news")
 def news_list():
     news = NewsService.get_published_articles()
     return render_template("public/news.html", news=news)
 
 
-@bp.route("/news/<int:news_id>")
+@bp.get("/news/<int:news_id>")
 def news_detail(news_id):
     news = NewsService.get_article_by_id(news_id)
     if not news or not news.published:
@@ -29,12 +29,12 @@ def news_detail(news_id):
     return render_template("public/news_detail.html", news=news)
 
 
-@bp.route("/events")
+@bp.get("/events")
 def events():
     events = EventService.get_upcoming_published_events()
     return render_template("public/events.html", events=events)
 
 
-@bp.route("/membership")
+@bp.get("/membership")
 def membership():
     return render_template("public/membership.html")

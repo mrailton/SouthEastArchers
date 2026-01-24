@@ -17,8 +17,15 @@ from app.utils.email import send_password_reset_email
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
-@bp.route("/login", methods=["GET", "POST"])
+@bp.get("/login")
 def login():
+    """Display login form"""
+    return render_template("auth/login.html", form=LoginForm())
+
+
+@bp.post("/login")
+def login_post():
+    """Handle login form submission"""
     form = LoginForm()
 
     if form.validate_on_submit():
@@ -39,11 +46,18 @@ def login():
         for error in errors:
             flash(error, "error")
 
-    return render_template("auth/login.html", form=form)
+    return render_template("auth/login.html", form=SignupForm())
 
 
-@bp.route("/signup", methods=["GET", "POST"])
+@bp.get("/signup")
 def signup():
+    """Display signup form"""
+    return render_template("auth/signup.html", form=SignupForm())
+
+
+@bp.post("/signup")
+def signup_post():
+    """Handle signup form submission"""
     form = SignupForm()
 
     if form.validate_on_submit():
@@ -57,7 +71,7 @@ def signup():
 
         if error:
             flash(error, "error")
-            return render_template("auth/signup.html", form=form)
+            return render_template("auth/signup.html", form=ForgotPasswordForm())
 
         flash("Thank you for signing up. A coach will review your information shortly and get back to you to discuss membership.", "success")
         return redirect(url_for("auth.login"))
@@ -69,7 +83,7 @@ def signup():
     return render_template("auth/signup.html", form=form)
 
 
-@bp.route("/logout")
+@bp.get("/logout")
 @login_required
 def logout():
     logout_user()
@@ -77,8 +91,15 @@ def logout():
     return redirect(url_for("public.index"))
 
 
-@bp.route("/forgot-password", methods=["GET", "POST"])
+@bp.get("/forgot-password")
 def forgot_password():
+    """Display forgot password form"""
+    return render_template("auth/forgot_password.html", form=ForgotPasswordForm())
+
+
+@bp.post("/forgot-password")
+def forgot_password_post():
+    """Handle forgot password form submission"""
     form = ForgotPasswordForm()
 
     if form.validate_on_submit():
@@ -104,8 +125,20 @@ def forgot_password():
     return render_template("auth/forgot_password.html", form=form)
 
 
-@bp.route("/reset-password/<token>", methods=["GET", "POST"])
+@bp.get("/reset-password/<token>")
 def reset_password(token):
+    """Display reset password form"""
+    user = User.verify_reset_token(token, max_age=86400)
+    if not user:
+        flash("Invalid or expired reset link.", "error")
+        return redirect(url_for("auth.forgot_password"))
+
+    return render_template("auth/reset_password.html", token=token, form=ResetPasswordForm())
+
+
+@bp.post("/reset-password/<token>")
+def reset_password_post(token):
+    """Handle reset password form submission"""
     user = User.verify_reset_token(token, max_age=86400)
     if not user:
         flash("Invalid or expired reset link.", "error")

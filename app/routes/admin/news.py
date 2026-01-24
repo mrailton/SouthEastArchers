@@ -6,16 +6,24 @@ from app.services import NewsService
 from . import admin_required, bp
 
 
-@bp.route("/news")
+@bp.get("/news")
 @admin_required
 def news():
     articles = NewsService.get_all_articles()
     return render_template("admin/news.html", articles=articles)
 
 
-@bp.route("/news/create", methods=["GET", "POST"])
+@bp.get("/news/create")
 @admin_required
 def create_news():
+    """Display news creation form"""
+    return render_template("admin/create_news.html", form=NewsForm())
+
+
+@bp.post("/news/create")
+@admin_required
+def create_news_post():
+    """Handle news creation form submission"""
     form = NewsForm()
 
     if form.validate_on_submit():
@@ -33,12 +41,24 @@ def create_news():
         for error in errors:
             flash(error, "error")
 
-    return render_template("admin/create_news.html", form=form)
+    return render_template("admin/create_news.html", form=NewsForm())
 
 
-@bp.route("/news/<int:news_id>/edit", methods=["GET", "POST"])
+@bp.get("/news/<int:news_id>/edit")
 @admin_required
 def edit_news(news_id):
+    """Display news edit form"""
+    news = NewsService.get_article_by_id(news_id)
+    if not news:
+        abort(404)
+
+    return render_template("admin/edit_news.html", news=news, form=NewsForm(obj=news))
+
+
+@bp.post("/news/<int:news_id>/edit")
+@admin_required
+def edit_news_post(news_id):
+    """Handle news edit form submission"""
     news = NewsService.get_article_by_id(news_id)
     if not news:
         abort(404)
@@ -61,4 +81,4 @@ def edit_news(news_id):
         for error in errors:
             flash(error, "error")
 
-    return render_template("admin/edit_news.html", news=news, form=form)
+    return render_template("admin/edit_news.html", news=news, form=NewsForm(obj=news))

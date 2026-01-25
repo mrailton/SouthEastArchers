@@ -47,8 +47,6 @@ def upgrade():
             10000,
             20,
             500,
-            '',
-            '',
             CURRENT_TIMESTAMP,
             CURRENT_TIMESTAMP
         )

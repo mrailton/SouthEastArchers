@@ -39,8 +39,6 @@ def upgrade():
             annual_membership_cost,
             membership_shoots_included,
             additional_shoot_cost,
-            sumup_api_key,
-            sumup_merchant_code,
             created_at,
             updated_at
         ) VALUES (

@@ -83,7 +83,10 @@
                 </p>
                 <p class="text-gray-700 mb-2"><strong>Start Date:</strong> {{ member.membership.start_date.strftime('%d %b %Y') }}</p>
                 <p class="text-gray-700 mb-2"><strong>Expires:</strong> {{ member.membership.expiry_date.strftime('%d %b %Y') }}</p>
-                <p class="text-gray-700 mb-4"><strong>Credits:</strong> {{ member.membership.credits }}</p>
+                <p class="text-gray-700 mb-4">
+                    <strong>Credits:</strong> {{ member.membership.credits_remaining() }}
+                    <span class="text-sm text-gray-500">({{ member.membership.initial_credits }} initial + {{ member.membership.purchased_credits }} purchased)</span>
+                </p>
                 
                 {% if member.membership.status == 'pending' %}
                     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">

@@ -1,7 +1,7 @@
 """Create events table
 
-Revision ID: 008
-Revises: 007
+Revision ID: e77104247124
+Revises: bfa5df169a4d
 Create Date: 2025-12-08 18:30:07.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '008'
-down_revision = '007'
+revision = 'e77104247124'
+down_revision = 'bfa5df169a4d'
 branch_labels = None
 depends_on = None
 

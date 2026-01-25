@@ -1,6 +1,6 @@
 """Tests for UserService - comprehensive service layer testing without mocks"""
 
-from datetime import date, timedelta
+from datetime import date
 
 from app import db
 from app.models import Payment, User
@@ -189,9 +189,12 @@ def test_create_member_with_membership(app):
     assert error is None
     assert user.membership is not None
     assert user.membership.status == "active"
-    assert user.membership.credits == 20
+    assert user.membership.initial_credits == 20
     assert user.membership.start_date == date.today()
-    assert user.membership.expiry_date == date.today() + timedelta(days=365)
+    # Expiry calculated based on membership year
+    # Jan 25 is before March 1, so expires Feb 28, 2026
+    assert user.membership.expiry_date.year == 2026
+    assert user.membership.expiry_date > date.today()
 
 
 def test_create_member_starts_inactive(app):
@@ -295,11 +298,13 @@ def test_update_member_credits(app, test_user):
         user=test_user,
         name=test_user.name,
         email=test_user.email,
-        membership_credits=50,
+        membership_initial_credits=50,
+        membership_purchased_credits=10,
     )
 
     assert success is True
-    assert test_user.membership.credits == 50
+    assert test_user.membership.initial_credits == 50
+    assert test_user.membership.purchased_credits == 10
 
 
 def test_update_member_without_membership(app):
@@ -313,7 +318,7 @@ def test_update_member_without_membership(app):
         user=user,
         name="Updated No Membership",
         email="nomem@example.com",
-        membership_credits=30,
+        membership_initial_credits=30,
     )
 
     assert success is True

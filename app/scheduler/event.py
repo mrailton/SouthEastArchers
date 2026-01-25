@@ -11,9 +11,9 @@ class Event:
         self.expression = "* * * * *"  # Default: every minute
         self._timezone = None
         self._when = None
-        self._filters = []  # Filters that take datetime
-        self._filters_no_arg = []  # Filters that don't take arguments (for when/skip)
-        self._rejects = []
+        self._filters: list[Callable[[datetime], bool]] = []  # Filters that take datetime
+        self._filters_no_arg: list[Callable[[], bool]] = []  # Filters that don't take arguments (for when/skip)
+        self._rejects: list[Callable[[], bool]] = []  # Reject filters that don't take arguments
 
     def cron(self, expression: str) -> Event:
         """Set a custom cron expression."""
@@ -145,8 +145,8 @@ class Event:
                 return False
 
         # Check no-arg filters (when, etc.)
-        for filter_fn in self._filters_no_arg:
-            if not filter_fn():
+        for no_arg_filter in self._filters_no_arg:
+            if not no_arg_filter():
                 return False
 
         # Check rejects

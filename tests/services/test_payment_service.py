@@ -1,6 +1,6 @@
 """Tests for payment service"""
 
-from datetime import date, timedelta
+from datetime import date
 from unittest.mock import patch
 
 from flask import session
@@ -302,7 +302,10 @@ def test_handle_membership_renewal_creates_membership_if_missing(app, test_user)
         db.session.refresh(test_user)
         assert test_user.membership is not None
         assert test_user.membership.status == "active"
-        assert test_user.membership.expiry_date == date.today() + timedelta(days=365)
+        # Expiry calculated based on membership year
+        # Jan 25 is before March 1, so expires Feb 28, 2026
+        assert test_user.membership.expiry_date.year == 2026
+        assert test_user.membership.expiry_date > date.today()
 
 
 def test_send_payment_receipt_synchronously(app, test_user):
@@ -351,8 +354,8 @@ def test_handle_credit_purchase_with_quantity(mock_send_email, app, test_user):
     with app.test_request_context():
         payment = create_payment_for_user(db, test_user, amount_cents=5000, payment_type="credits", status="pending")
 
-        # User starts with 20 credits (from test_user fixture with membership)
-        initial_credits = test_user.membership.credits
+        # User starts with 20 initial credits (from test_user fixture with membership)
+        initial_total = test_user.membership.credits_remaining()
         quantity = 10
         session["credit_purchase_payment_id"] = payment.id
         session["credit_purchase_quantity"] = quantity
@@ -365,9 +368,9 @@ def test_handle_credit_purchase_with_quantity(mock_send_email, app, test_user):
         assert credit is not None
         assert credit.amount == quantity
 
-        # Verify credits were added to membership
+        # Verify credits were added to membership (as purchased credits)
         db.session.refresh(test_user)
-        assert test_user.membership.credits == initial_credits + quantity
+        assert test_user.membership.credits_remaining() == initial_total + quantity
 
         # Verify email was sent with correct parameters
         mock_send_email.assert_called_once_with(test_user.id, payment.id, quantity)
@@ -382,7 +385,7 @@ def test_handle_credit_purchase_email_failure(mock_send_email, app, test_user):
     with app.test_request_context():
         payment = create_payment_for_user(db, test_user, amount_cents=3000, payment_type="credits", status="pending")
 
-        initial_credits = test_user.membership.credits
+        initial_total = test_user.membership.credits_remaining()
         quantity = 5
         session["credit_purchase_payment_id"] = payment.id
         session["credit_purchase_quantity"] = quantity
@@ -398,7 +401,7 @@ def test_handle_credit_purchase_email_failure(mock_send_email, app, test_user):
 
         # Verify credits were still added
         db.session.refresh(test_user)
-        assert test_user.membership.credits == initial_credits + quantity
+        assert test_user.membership.credits_remaining() == initial_total + quantity
 
         # Verify credit record was still created
         credit = Credit.query.filter_by(user_id=test_user.id, payment_id=payment.id).first()

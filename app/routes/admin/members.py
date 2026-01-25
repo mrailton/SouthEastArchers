@@ -151,7 +151,8 @@ def edit_member(user_id):
     if member.membership:
         form.membership_start_date.data = member.membership.start_date
         form.membership_expiry_date.data = member.membership.expiry_date
-        form.membership_credits.data = member.membership.credits
+        form.membership_initial_credits.data = member.membership.initial_credits
+        form.membership_purchased_credits.data = member.membership.purchased_credits
 
     return render_template("admin/edit_member.html", member=member, form=form)
 
@@ -178,7 +179,8 @@ def edit_member_post(user_id):
             password=form.password.data or None,
             membership_start_date=form.membership_start_date.data,
             membership_expiry_date=form.membership_expiry_date.data,
-            membership_credits=form.membership_credits.data,
+            membership_initial_credits=form.membership_initial_credits.data,
+            membership_purchased_credits=form.membership_purchased_credits.data,
         )
 
         flash(message, "success" if success else "error")

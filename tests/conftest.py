@@ -78,7 +78,8 @@ def test_user(app):
         user_id=None,
         start_date=date.today() - timedelta(days=30),
         expiry_date=date.today() + timedelta(days=335),
-        credits=20,
+        initial_credits=20,
+        purchased_credits=0,
         status="active",
     )
 

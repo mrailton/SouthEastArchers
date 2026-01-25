@@ -1068,7 +1068,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = "==1.2.1" },
     { name = "requests", specifier = "==2.32.5" },
     { name = "sqlalchemy", specifier = ">=2.0.30" },
-    { name = "sumup", specifier = "==0.0.22" },
+    { name = "sumup", specifier = "==0.0.13" },
     { name = "werkzeug", specifier = "==3.1.5" },
     { name = "whitenoise", specifier = "==6.11.0" },
     { name = "wtforms", specifier = "==3.2.1" },
@@ -1127,16 +1127,16 @@ wheels = [
 
 [[package]]
 name = "sumup"
-version = "0.0.22"
+version = "0.0.13"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/da/5b/e29840e09f3a9b1c3b9c5f200d41804029f5ce8940b1f3cca13945804a9b/sumup-0.0.22.tar.gz", hash = "sha256:b13b4cbfa5618a0df4d02cd1ce0840e3cbb2cb011c1e126165a57c8b7d84518b", size = 48952, upload-time = "2026-01-19T15:08:45.356Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/30/68da69d230e917af75b8582305a14e63e6b2ea064d6c5b8723ec62590f2d/sumup-0.0.13.tar.gz", hash = "sha256:c746afa28120735076fd08ca207a44f1507cd0fd2051b073784f0e4db5e8ef8d", size = 45171, upload-time = "2025-11-11T17:38:51.161Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ea/18/a785e1f3874ca601e6ff97f4e17bc25307eb4488e9a3dce6361843a88820/sumup-0.0.22-py3-none-any.whl", hash = "sha256:d0d2fbe491ceba2188268397a0aeb176a3acab6a5b95c867d01ecd674d0e432a", size = 64264, upload-time = "2026-01-19T15:08:44.37Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/f9/54e77441c54a7d440c438209fbc60bcf3d24484c23b3705725e864c8bb14/sumup-0.0.13-py3-none-any.whl", hash = "sha256:33ac8639627a80f97080cedc8a5febdb445e12d20232e657fd7d0bbfc9136f6e", size = 61239, upload-time = "2025-11-11T17:38:49.901Z" },
 ]
 
 [[package]]

@@ -23,7 +23,8 @@ class TestLowCreditsReminder:
             user_id=user.id,
             start_date=date.today(),
             expiry_date=date.today() + timedelta(days=300),
-            credits=3,
+            initial_credits=3,
+            purchased_credits=0,
             status="active",
         )
         db.session.add(membership)
@@ -51,7 +52,8 @@ class TestLowCreditsReminder:
             user_id=user.id,
             start_date=date.today(),
             expiry_date=date.today() + timedelta(days=300),
-            credits=1,
+            initial_credits=1,
+            purchased_credits=0,
             status="active",
         )
         db.session.add(membership)
@@ -75,7 +77,8 @@ class TestLowCreditsReminder:
             user_id=user.id,
             start_date=date.today(),
             expiry_date=date.today() + timedelta(days=300),
-            credits=0,
+            initial_credits=0,
+            purchased_credits=0,
             status="active",
         )
         db.session.add(membership)
@@ -97,7 +100,8 @@ class TestLowCreditsReminder:
             user_id=user.id,
             start_date=date.today(),
             expiry_date=date.today() + timedelta(days=300),
-            credits=10,
+            initial_credits=10,
+            purchased_credits=0,
             status="active",
         )
         db.session.add(membership)
@@ -120,7 +124,8 @@ class TestLowCreditsReminder:
             user_id=user.id,
             start_date=date.today(),
             expiry_date=date.today() + timedelta(days=300),
-            credits=2,
+            initial_credits=2,
+            purchased_credits=0,
             status="pending",  # Not active
         )
         db.session.add(membership)
@@ -142,7 +147,8 @@ class TestLowCreditsReminder:
             user_id=user.id,
             start_date=date.today(),
             expiry_date=date.today() + timedelta(days=300),
-            credits=2,
+            initial_credits=2,
+            purchased_credits=0,
             status="active",
         )
         db.session.add(membership)
@@ -166,7 +172,8 @@ class TestLowCreditsReminder:
                 user_id=user.id,
                 start_date=date.today(),
                 expiry_date=date.today() + timedelta(days=300),
-                credits=i + 1,  # 1, 2, 3 credits
+                initial_credits=i + 1,  # 1, 2, 3 credits
+                purchased_credits=0,
                 status="active",
             )
             db.session.add(membership)
@@ -190,7 +197,8 @@ class TestLowCreditsReminder:
             user_id=user.id,
             start_date=date.today(),
             expiry_date=date.today() + timedelta(days=300),
-            credits=2,
+            initial_credits=2,
+            purchased_credits=0,
             status="active",
         )
         db.session.add(membership)
@@ -216,7 +224,8 @@ class TestLowCreditsReminder:
                 user_id=user.id,
                 start_date=date.today(),
                 expiry_date=date.today() + timedelta(days=300),
-                credits=2,
+                initial_credits=2,
+                purchased_credits=0,
                 status="active",
             )
             db.session.add(membership)
@@ -244,7 +253,8 @@ class TestLowCreditsReminder:
             user_id=user.id,
             start_date=date.today(),
             expiry_date=date.today() + timedelta(days=300),
-            credits=-2,  # Negative credits
+            initial_credits=-2,
+            purchased_credits=0,  # Negative credits
             status="active",
         )
         db.session.add(membership)

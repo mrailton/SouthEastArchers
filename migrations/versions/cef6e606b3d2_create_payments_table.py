@@ -1,7 +1,7 @@
 """Create payments table
 
-Revision ID: 003
-Revises: 002
+Revision ID: cef6e606b3d2
+Revises: eac739bdf93d
 Create Date: 2025-12-08 18:30:02.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '003'
-down_revision = '002'
+revision = 'cef6e606b3d2'
+down_revision = 'eac739bdf93d'
 branch_labels = None
 depends_on = None
 

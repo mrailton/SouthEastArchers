@@ -2,6 +2,7 @@ from datetime import date, timedelta
 
 from app import db
 from app.models import Membership, Payment, User
+from app.services.settings_service import SettingsService
 
 
 class MembershipService:
@@ -33,7 +34,9 @@ class MembershipService:
         if not user.membership:
             return False, "No membership to renew."
 
-        user.membership.renew()
+        settings = SettingsService.get()
+        initial_credits = settings.membership_shoots_included
+        user.membership.renew(initial_credits=initial_credits)
         db.session.commit()
 
         return True, "Membership renewed successfully."
@@ -56,3 +59,25 @@ class MembershipService:
     @staticmethod
     def get_expired_memberships() -> list[Membership]:
         return Membership.query.filter(Membership.status == "active", Membership.expiry_date < date.today()).all()
+
+    @staticmethod
+    def expire_memberships_for_year_end() -> int:
+        """Expire initial credits for memberships that have expired.
+
+        This is called on the configured membership year start date.
+        Only affects memberships that have expired and not been renewed.
+
+        Returns:
+            Number of memberships processed
+        """
+        expired_memberships = MembershipService.get_expired_memberships()
+        count = 0
+
+        for membership in expired_memberships:
+            membership.expire_initial_credits()
+            count += 1
+
+        if count > 0:
+            db.session.commit()
+
+        return count

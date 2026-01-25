@@ -1,7 +1,7 @@
 """Create news table
 
-Revision ID: 007
-Revises: 006
+Revision ID: bfa5df169a4d
+Revises: 6480eea65bae
 Create Date: 2025-12-08 18:30:06.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '007'
-down_revision = '006'
+revision = 'bfa5df169a4d'
+down_revision = '6480eea65bae'
 branch_labels = None
 depends_on = None
 

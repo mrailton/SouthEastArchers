@@ -123,7 +123,8 @@ def create_user_with_membership(db, name="Test User", email="test@example.com", 
         user_id=user.id,
         start_date=kwargs.get("start_date"),
         expiry_date=kwargs.get("expiry_date"),
-        credits=credits,
+        initial_credits=credits,
+        purchased_credits=kwargs.get("purchased_credits", 0),
         status=kwargs.get("status", "active"),
     )
     # If specific dates not provided, set reasonable defaults

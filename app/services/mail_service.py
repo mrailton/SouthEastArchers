@@ -72,7 +72,7 @@ def send_credit_purchase_receipt(user_id: int, payment_id: int, credits_purchase
             current_app.logger.error(f"Cannot send credit receipt — user {user_id} has no membership")
             return
 
-        credits_remaining = user.membership.credits
+        credits_remaining = user.membership.credits_remaining()
         util_send(user, payment, credits_purchased, credits_remaining)
         current_app.logger.info(f"Sent credit purchase receipt email for user {user_id}, payment {payment_id}")
     except Exception as e:

@@ -23,7 +23,7 @@ dependencies = [
     "WTForms==3.2.1",
     "gunicorn==24.1.0",
     "whitenoise==6.11.0",
-    "sumup==0.0.22",
+    "sumup==0.0.13",
 ]
 
 [dependency-groups]

@@ -1,7 +1,7 @@
 """Create user_shoots association table
 
-Revision ID: 005
-Revises: 004
+Revision ID: b0e421778d53
+Revises: c5970e80321a
 Create Date: 2025-12-08 18:30:04.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '005'
-down_revision = '004'
+revision = 'b0e421778d53'
+down_revision = 'c5970e80321a'
 branch_labels = None
 depends_on = None
 

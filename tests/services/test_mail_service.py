@@ -160,7 +160,7 @@ def test_send_credit_purchase_receipt_success(app, test_user, mocker):
     # Check credits_remaining was passed
     call_args = mock_util_send.call_args[0]
     assert call_args[2] == 10  # credits_purchased
-    assert call_args[3] == test_user.membership.credits  # credits_remaining
+    assert call_args[3] == test_user.membership.credits_remaining()  # credits_remaining
 
 
 def test_send_credit_purchase_receipt_user_not_found(app, mocker, caplog):

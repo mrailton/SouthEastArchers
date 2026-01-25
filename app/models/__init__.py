@@ -1,3 +1,4 @@
+from .application_settings import ApplicationSettings
 from .credit import Credit
 from .event import Event
 from .membership import Membership
@@ -15,4 +16,5 @@ __all__ = [
     "News",
     "Event",
     "Payment",
+    "ApplicationSettings",
 ]

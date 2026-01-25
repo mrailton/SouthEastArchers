@@ -1,9 +1,10 @@
-from datetime import date, timedelta
+from datetime import date
 
 from flask import current_app, flash, redirect, session, url_for
 
 from app import db
 from app.models import Credit, Membership, Payment, User
+from app.services.settings_service import SettingsService
 from app.services.sumup_service import SumUpService
 from app.utils.session import clear_session_keys
 
@@ -178,10 +179,11 @@ class PaymentProcessingService:
         if user.membership:
             user.membership.renew()
         else:
+            start_date = date.today()
             membership = Membership(
                 user_id=user.id,
-                start_date=date.today(),
-                expiry_date=date.today() + timedelta(days=365),
+                start_date=start_date,
+                expiry_date=SettingsService.calculate_membership_expiry(start_date).date(),
                 status="active",
             )
             db.session.add(membership)

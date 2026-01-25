@@ -37,8 +37,9 @@ class ShootService:
                     if user.membership.use_credit(allow_negative=True):
                         shoot.users.append(user)
                         # Warn if credits went negative
-                        if user.membership.credits < 0:
-                            warnings.append(f"{user.name} now has {user.membership.credits} credits (negative balance).")
+                        total_credits = user.membership.credits_remaining()
+                        if total_credits < 0:
+                            warnings.append(f"{user.name} now has {total_credits} credits (negative balance).")
                     else:
                         # This should only happen if membership is not active
                         warnings.append(f"{user.name} cannot be added (inactive membership).")
@@ -81,8 +82,9 @@ class ShootService:
                 if user.membership.use_credit(allow_negative=True):
                     shoot.users.append(user)
                     # Warn if credits went negative
-                    if user.membership.credits < 0:
-                        warnings.append(f"{user.name} now has {user.membership.credits} credits (negative balance).")
+                    total_credits = user.membership.credits_remaining()
+                    if total_credits < 0:
+                        warnings.append(f"{user.name} now has {total_credits} credits (negative balance).")
                 else:
                     # This should only happen if membership is not active
                     warnings.append(f"{user.name} cannot be added (inactive membership).")

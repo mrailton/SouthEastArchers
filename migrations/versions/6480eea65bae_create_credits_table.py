@@ -1,7 +1,7 @@
 """Create credits table
 
-Revision ID: 006
-Revises: 005
+Revision ID: 6480eea65bae
+Revises: b0e421778d53
 Create Date: 2025-12-08 18:30:05.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '006'
-down_revision = '005'
+revision = '6480eea65bae'
+down_revision = 'b0e421778d53'
 branch_labels = None
 depends_on = None
 

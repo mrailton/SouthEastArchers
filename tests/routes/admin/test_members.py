@@ -54,7 +54,7 @@ def test_create_member_success(client, admin_user, app):
     assert new_user is not None
     assert new_user.name == "New Member"
     assert new_user.membership is not None
-    assert new_user.membership.credits == 20
+    assert new_user.membership.initial_credits == 20
 
 
 def test_create_member_duplicate_email(client, admin_user, test_user):
@@ -148,7 +148,7 @@ def test_edit_member_membership_dates(client, admin_user, test_user):
             "is_active": "on",
             "membership_start_date": new_start.isoformat(),
             "membership_expiry_date": new_expiry.isoformat(),
-            "membership_credits": str(test_user.membership.credits),
+            "membership_initial_credits": str(test_user.membership.initial_credits),
         },
         follow_redirects=True,
     )
@@ -174,7 +174,8 @@ def test_edit_member_credits(client, admin_user, test_user):
             "is_active": "on",
             "membership_start_date": test_user.membership.start_date.isoformat(),
             "membership_expiry_date": test_user.membership.expiry_date.isoformat(),
-            "membership_credits": "50",
+            "membership_initial_credits": "50",
+            "membership_purchased_credits": "10",
         },
         follow_redirects=True,
     )
@@ -184,7 +185,8 @@ def test_edit_member_credits(client, admin_user, test_user):
     # Verify credits were updated
 
     db.session.refresh(test_user)
-    assert test_user.membership.credits == 50
+    assert test_user.membership.initial_credits == 50
+    assert test_user.membership.purchased_credits == 10
 
 
 def test_edit_member_without_membership(client, admin_user, app):

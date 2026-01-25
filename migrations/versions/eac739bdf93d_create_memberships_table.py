@@ -1,7 +1,7 @@
 """Create memberships table
 
-Revision ID: 002
-Revises: 001
+Revision ID: eac739bdf93d
+Revises: 04d18edd8f1e
 Create Date: 2025-12-08 18:30:01.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '002'
-down_revision = '001'
+revision = 'eac739bdf93d'
+down_revision = '04d18edd8f1e'
 branch_labels = None
 depends_on = None
 
@@ -22,7 +22,8 @@ def upgrade():
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('start_date', sa.Date(), nullable=False),
         sa.Column('expiry_date', sa.Date(), nullable=False),
-        sa.Column('credits', sa.Integer(), nullable=True),
+        sa.Column('initial_credits', sa.Integer(), nullable=True),
+        sa.Column('purchased_credits', sa.Integer(), nullable=True),
         sa.Column('status', sa.String(length=20), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.Column('updated_at', sa.DateTime(), nullable=True),

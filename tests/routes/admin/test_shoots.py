@@ -184,7 +184,8 @@ def test_create_shoot_attendee_no_credits(app):
         user_id=user.id,
         start_date=date.today(),
         expiry_date=date.today() + timedelta(days=365),
-        credits=0,  # No credits
+        initial_credits=0,  # No credits
+        purchased_credits=0,
         status="active",
     )
     db.session.add(membership)
@@ -201,7 +202,7 @@ def test_create_shoot_attendee_no_credits(app):
 
     # Verify user was added and credits went negative
     user = db.session.get(User, user_id)
-    assert user.membership.credits == -1
+    assert user.membership.credits_remaining() == -1
     assert len(shoot.users) == 1
     assert shoot.users[0].id == user_id
     # Should have warning about negative balance
@@ -285,7 +286,8 @@ def test_edit_shoot_add_attendee_no_credits(app):
         user_id=user.id,
         start_date=date.today(),
         expiry_date=date.today() + timedelta(days=365),
-        credits=0,
+        initial_credits=0,
+        purchased_credits=0,
         status="active",
     )
     db.session.add(membership)
@@ -310,7 +312,7 @@ def test_edit_shoot_add_attendee_no_credits(app):
 
     # Verify user was added and credits went negative
     user = db.session.get(User, user_id)
-    assert user.membership.credits == -1
+    assert user.membership.credits_remaining() == -1
     assert len(shoot.users) == 1
     assert shoot.users[0].id == user_id
     # Check for warning about negative balance

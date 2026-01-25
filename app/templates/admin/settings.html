@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Application Settings - Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Application Settings</h1>
+            <a href="{{ url_for('admin.dashboard') }}" class="text-blue-600 hover:text-blue-800">
+                ← Back to Dashboard
+            </a>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin.settings') }}">
+            {{ form.csrf_token }}
+            
+            <!-- Membership Year Settings -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">
+                    Membership Year
+                </h2>
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                    <p class="text-sm text-blue-700">
+                        <strong>Note:</strong> The membership year starts on this date. Memberships will expire at 23:59 on the day before.
+                        At 00:01 GMT on the start date, initial credits will be reset to 0 for expired memberships, but purchased credits are retained.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="membership_year_start_month" class="block text-gray-700 font-bold mb-2">
+                            Year Start Month
+                        </label>
+                        {{ form.membership_year_start_month(class="w-full border border-gray-300 rounded px-3 py-2", min="1", max="12") }}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.membership_year_start_month.description }}</p>
+                        {% if form.membership_year_start_month.errors %}
+                            {% for error in form.membership_year_start_month.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="membership_year_start_day" class="block text-gray-700 font-bold mb-2">
+                            Year Start Day
+                        </label>
+                        {{ form.membership_year_start_day(class="w-full border border-gray-300 rounded px-3 py-2", min="1", max="31") }}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.membership_year_start_day.description }}</p>
+                        {% if form.membership_year_start_day.errors %}
+                            {% for error in form.membership_year_start_day.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing Settings -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">
+                    Pricing
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="annual_membership_cost" class="block text-gray-700 font-bold mb-2">
+                            Annual Membership Cost (€)
+                        </label>
+                        {{ form.annual_membership_cost(class="w-full border border-gray-300 rounded px-3 py-2", min="0") }}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.annual_membership_cost.description }}</p>
+                        {% if form.annual_membership_cost.errors %}
+                            {% for error in form.annual_membership_cost.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="membership_shoots_included" class="block text-gray-700 font-bold mb-2">
+                            Shoots Included with Membership
+                        </label>
+                        {{ form.membership_shoots_included(class="w-full border border-gray-300 rounded px-3 py-2", min="0") }}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.membership_shoots_included.description }}</p>
+                        {% if form.membership_shoots_included.errors %}
+                            {% for error in form.membership_shoots_included.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="additional_shoot_cost" class="block text-gray-700 font-bold mb-2">
+                            Additional Shoot Cost (€)
+                        </label>
+                        {{ form.additional_shoot_cost(class="w-full border border-gray-300 rounded px-3 py-2", min="0") }}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.additional_shoot_cost.description }}</p>
+                        {% if form.additional_shoot_cost.errors %}
+                            {% for error in form.additional_shoot_cost.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Processor Settings -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">
+                    Payment Processing (SumUp)
+                </h2>
+                
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                    <p class="text-sm text-yellow-700">
+                        <strong>Security Note:</strong> API keys are stored in the database. Ensure proper database security measures are in place.
+                    </p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="sumup_api_key" class="block text-gray-700 font-bold mb-2">
+                            SumUp API Key
+                        </label>
+                        {{ form.sumup_api_key(class="w-full border border-gray-300 rounded px-3 py-2", type="password") }}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.sumup_api_key.description }}</p>
+                        {% if form.sumup_api_key.errors %}
+                            {% for error in form.sumup_api_key.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="sumup_merchant_code" class="block text-gray-700 font-bold mb-2">
+                            SumUp Merchant Code
+                        </label>
+                        {{ form.sumup_merchant_code(class="w-full border border-gray-300 rounded px-3 py-2") }}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.sumup_merchant_code.description }}</p>
+                        {% if form.sumup_merchant_code.errors %}
+                            {% for error in form.sumup_merchant_code.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between pt-4 border-t">
+                <a href="{{ url_for('admin.dashboard') }}" class="text-gray-600 hover:text-gray-800">
+                    Cancel
+                </a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Information Panel -->
+    <div class="bg-gray-50 border border-gray-300 rounded p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">About Application Settings</h3>
+        <div class="text-sm text-gray-700 space-y-2">
+            <p><strong>Membership Expiry:</strong> Automatic job runs daily at 00:01 GMT to check for the configured expiry date and reset initial credits for expired memberships.</p>
+            <p><strong>Pricing:</strong> All prices are stored in cents internally but displayed and edited in euros for convenience.</p>
+            <p><strong>Payment Processing:</strong> SumUp credentials are used for online payment processing. Leave blank if not using SumUp.</p>
+            <p class="text-yellow-700 font-semibold">⚠️ Changes take effect immediately. Some settings may require system restart to apply fully.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -40,7 +40,7 @@ def send_payment_receipt(user, payment, membership):
             "amount": payment.amount,
             "membership_start": membership.start_date.strftime("%d %B %Y"),
             "membership_expiry": membership.expiry_date.strftime("%d %B %Y"),
-            "credits": membership.credits,
+            "credits": membership.credits_remaining(),
             "login_url": login_url,
         }
 

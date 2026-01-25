@@ -6,8 +6,9 @@ from app.models import Membership, User
 
 
 def send_low_credits_reminder():
-    # Find active memberships with 3 or fewer credits
-    low_credit_memberships = Membership.query.filter(Membership.status == "active", Membership.credits <= 3).join(User).filter(User.is_active).all()
+    # Find active memberships with 3 or fewer total credits (initial + purchased)
+    memberships = Membership.query.filter(Membership.status == "active").join(User).filter(User.is_active).all()
+    low_credit_memberships = [m for m in memberships if m.credits_remaining() <= 3]
 
     if not low_credit_memberships:
         print("No members with low credits found")
@@ -24,8 +25,8 @@ def send_low_credits_reminder():
             continue
 
         try:
-            _send_reminder_email(user, membership.credits)
-            print(f"✓ Sent low credits reminder to {user.email} ({membership.credits} credits)")
+            _send_reminder_email(user, membership.credits_remaining())
+            print(f"✓ Sent low credits reminder to {user.email} ({membership.credits_remaining()} credits)")
         except Exception as e:
             print(f"✗ Failed to send email to {user.email}: {e}")
 

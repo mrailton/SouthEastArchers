@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, DateField, DateTimeLocalField, IntegerField, PasswordField, SelectField, SelectMultipleField, StringField, TextAreaField
-from wtforms.validators import DataRequired, Email, Length, Optional
+from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional
 
 
 class ShootForm(FlaskForm):
@@ -53,4 +53,32 @@ class EditMemberForm(FlaskForm):
     is_active = BooleanField("Is Active", default=True)
     membership_start_date = DateField("Membership Start Date", validators=[Optional()])
     membership_expiry_date = DateField("Membership Expiry Date", validators=[Optional()])
-    membership_credits = IntegerField("Membership Credits", validators=[Optional()])
+    membership_initial_credits = IntegerField("Initial Credits", validators=[Optional()])
+    membership_purchased_credits = IntegerField("Purchased Credits", validators=[Optional()])
+
+
+class SettingsForm(FlaskForm):
+    """Form for managing application settings."""
+
+    # Membership year start settings
+    membership_year_start_month = IntegerField(
+        "Membership Year Start Month", validators=[DataRequired(), NumberRange(min=1, max=12)], description="Month when membership year starts (1-12)"
+    )
+    membership_year_start_day = IntegerField(
+        "Membership Year Start Day", validators=[DataRequired(), NumberRange(min=1, max=31)], description="Day when membership year starts (1-31)"
+    )
+
+    # Pricing settings (in euros, will be converted to cents)
+    annual_membership_cost = IntegerField(
+        "Annual Membership Cost (€)", validators=[DataRequired(), NumberRange(min=0)], description="Cost in euros (e.g., 100 for €100)"
+    )
+    membership_shoots_included = IntegerField(
+        "Shoots Included", validators=[DataRequired(), NumberRange(min=0)], description="Number of shoots included with membership"
+    )
+    additional_shoot_cost = IntegerField(
+        "Additional Shoot Cost (€)", validators=[DataRequired(), NumberRange(min=0)], description="Cost per additional shoot in euros"
+    )
+
+    # Payment processor settings
+    sumup_api_key = StringField("SumUp API Key", validators=[Optional()], description="API key for SumUp payment processing")
+    sumup_merchant_code = StringField("SumUp Merchant Code", validators=[Optional()], description="Merchant code for SumUp")

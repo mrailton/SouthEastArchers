@@ -81,11 +81,30 @@
                 </div>
                 
                 <div>
-                    <label for="membership_credits" class="block text-gray-700 font-bold mb-2">Credits</label>
+                    <label for="membership_initial_credits" class="block text-gray-700 font-bold mb-2">Initial Credits</label>
                     <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                           type="number" id="membership_credits" name="membership_credits" 
-                           value="{{ member.membership.credits }}" min="0">
-                    <p class="mt-1 text-sm text-gray-500">Current: {{ member.membership.credits }} credits</p>
+                           type="number" id="membership_initial_credits" name="membership_initial_credits" 
+                           value="{{ member.membership.initial_credits }}" min="-100">
+                    <p class="mt-1 text-sm text-gray-500">
+                        Credits included with membership (can be negative for admin bookings)
+                    </p>
+                </div>
+
+                <div>
+                    <label for="membership_purchased_credits" class="block text-gray-700 font-bold mb-2">Purchased Credits</label>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                           type="number" id="membership_purchased_credits" name="membership_purchased_credits" 
+                           value="{{ member.membership.purchased_credits }}" min="0">
+                    <p class="mt-1 text-sm text-gray-500">
+                        Additional credits purchased separately (never expire)
+                    </p>
+                </div>
+
+                <div class="bg-gray-50 border border-gray-300 rounded p-4">
+                    <p class="text-sm text-gray-700">
+                        <strong>Total Credits:</strong> {{ member.membership.credits_remaining() }}
+                        ({{ member.membership.initial_credits }} initial + {{ member.membership.purchased_credits }} purchased)
+                    </p>
                 </div>
                 
                 <div class="bg-blue-50 border-l-4 border-blue-400 p-4">

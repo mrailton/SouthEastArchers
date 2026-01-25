@@ -1,9 +1,10 @@
-from datetime import date, timedelta
+from datetime import date
 
 from flask import current_app, session
 
 from app import db
 from app.models import Membership, Payment, User
+from app.services.settings_service import SettingsService
 
 
 class UserService:
@@ -80,11 +81,13 @@ class UserService:
             db.session.flush()
 
             if create_membership:
+                start_date = date.today()
                 membership = Membership(
                     user_id=user.id,
-                    start_date=date.today(),
-                    expiry_date=date.today() + timedelta(days=365),
-                    credits=20,
+                    start_date=start_date,
+                    expiry_date=SettingsService.calculate_membership_expiry(start_date).date(),
+                    initial_credits=20,
+                    purchased_credits=0,
                     status="active",
                 )
                 db.session.add(membership)
@@ -108,7 +111,8 @@ class UserService:
         password: str = None,
         membership_start_date: date = None,
         membership_expiry_date: date = None,
-        membership_credits: int = None,
+        membership_initial_credits: int = None,
+        membership_purchased_credits: int = None,
     ) -> tuple[bool, str]:
         """Update an existing member (admin function)."""
         user.name = name
@@ -127,8 +131,10 @@ class UserService:
                 user.membership.start_date = membership_start_date
             if membership_expiry_date:
                 user.membership.expiry_date = membership_expiry_date
-            if membership_credits is not None:
-                user.membership.credits = membership_credits
+            if membership_initial_credits is not None:
+                user.membership.initial_credits = membership_initial_credits
+            if membership_purchased_credits is not None:
+                user.membership.purchased_credits = membership_purchased_credits
 
         try:
             db.session.commit()

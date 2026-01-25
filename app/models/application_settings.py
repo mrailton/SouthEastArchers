@@ -18,10 +18,6 @@ class ApplicationSettings(db.Model):
     membership_shoots_included = db.Column(db.Integer, nullable=False, default=20)
     additional_shoot_cost = db.Column(db.Integer, nullable=False, default=500)  # €5.00
 
-    # Payment integration
-    sumup_api_key = db.Column(db.String(255), default="")
-    sumup_merchant_code = db.Column(db.String(100), default="")
-
     created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 

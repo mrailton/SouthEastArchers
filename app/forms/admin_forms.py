@@ -78,7 +78,3 @@ class SettingsForm(FlaskForm):
     additional_shoot_cost = IntegerField(
         "Additional Shoot Cost (€)", validators=[DataRequired(), NumberRange(min=0)], description="Cost per additional shoot in euros"
     )
-
-    # Payment processor settings
-    sumup_api_key = StringField("SumUp API Key", validators=[Optional()], description="API key for SumUp payment processing")
-    sumup_merchant_code = StringField("SumUp Merchant Code", validators=[Optional()], description="Merchant code for SumUp")

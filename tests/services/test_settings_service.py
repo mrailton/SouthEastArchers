@@ -28,8 +28,6 @@ def test_get_returns_existing_settings(app):
         annual_membership_cost=15000,
         membership_shoots_included=25,
         additional_shoot_cost=600,
-        sumup_api_key="test_key",
-        sumup_merchant_code="test_code",
     )
     db.session.add(existing)
     db.session.commit()
@@ -41,8 +39,6 @@ def test_get_returns_existing_settings(app):
     assert settings.annual_membership_cost == 15000
     assert settings.membership_shoots_included == 25
     assert settings.additional_shoot_cost == 600
-    assert settings.sumup_api_key == "test_key"
-    assert settings.sumup_merchant_code == "test_code"
 
 
 def test_save_updates_settings(app):
@@ -171,8 +167,6 @@ def test_default_values_are_correct(app):
     assert settings.annual_membership_cost == 10000  # €100 in cents
     assert settings.membership_shoots_included == 20
     assert settings.additional_shoot_cost == 500  # €5 in cents
-    assert settings.sumup_api_key == ""
-    assert settings.sumup_merchant_code == ""
 
 
 def test_settings_have_timestamps(app):
@@ -194,8 +188,6 @@ def test_update_all_fields(app):
     settings.annual_membership_cost = 20000
     settings.membership_shoots_included = 30
     settings.additional_shoot_cost = 1000
-    settings.sumup_api_key = "new_key"
-    settings.sumup_merchant_code = "new_code"
 
     SettingsService.save(settings)
 
@@ -208,8 +200,6 @@ def test_update_all_fields(app):
     assert updated.annual_membership_cost == 20000
     assert updated.membership_shoots_included == 30
     assert updated.additional_shoot_cost == 1000
-    assert updated.sumup_api_key == "new_key"
-    assert updated.sumup_merchant_code == "new_code"
 
 
 def test_membership_expiry_edge_cases(app):

@@ -46,8 +46,6 @@ def test_update_settings_success(client, admin_user, app):
             "annual_membership_cost": "120",
             "membership_shoots_included": "25",
             "additional_shoot_cost": "6",
-            "sumup_api_key": "test_key_123",
-            "sumup_merchant_code": "MERCHANT_ABC",
         },
         follow_redirects=True,
     )
@@ -63,8 +61,6 @@ def test_update_settings_success(client, admin_user, app):
         assert settings.annual_membership_cost == 12000  # 120 euros = 12000 cents
         assert settings.membership_shoots_included == 25
         assert settings.additional_shoot_cost == 600  # 6 euros = 600 cents
-        assert settings.sumup_api_key == "test_key_123"
-        assert settings.sumup_merchant_code == "MERCHANT_ABC"
 
 
 def test_update_settings_validates_month(client, admin_user):
@@ -168,34 +164,6 @@ def test_settings_displays_cents_as_euros(client, admin_user, app):
     assert b'value="85"' in response.data
     # Should display as 7 euros (750 cents / 100 with integer division)
     assert b'value="7"' in response.data
-
-
-def test_settings_optional_fields_can_be_empty(client, admin_user, app):
-    """Test that optional fields (SumUp credentials) can be empty"""
-    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
-
-    response = client.post(
-        "/admin/settings",
-        data={
-            "csrf_token": "test",
-            "membership_year_start_month": "3",
-            "membership_year_start_day": "1",
-            "annual_membership_cost": "100",
-            "membership_shoots_included": "20",
-            "additional_shoot_cost": "5",
-            "sumup_api_key": "",  # Empty
-            "sumup_merchant_code": "",  # Empty
-        },
-        follow_redirects=True,
-    )
-
-    assert response.status_code == 200
-    assert b"Settings updated successfully" in response.data
-
-    with app.app_context():
-        settings = SettingsService.get()
-        assert settings.sumup_api_key == ""
-        assert settings.sumup_merchant_code == ""
 
 
 def test_settings_persists_across_requests(client, admin_user, app):

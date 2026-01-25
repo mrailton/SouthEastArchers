@@ -25,8 +25,6 @@ def upgrade():
         sa.Column("annual_membership_cost", sa.Integer(), nullable=False, server_default="10000"),
         sa.Column("membership_shoots_included", sa.Integer(), nullable=False, server_default="20"),
         sa.Column("additional_shoot_cost", sa.Integer(), nullable=False, server_default="500"),
-        sa.Column("sumup_api_key", sa.String(length=255), server_default=""),
-        sa.Column("sumup_merchant_code", sa.String(length=100), server_default=""),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),

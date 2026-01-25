@@ -22,8 +22,6 @@ def settings():
     form.annual_membership_cost.data = settings_obj.annual_membership_cost // 100  # Convert cents to euros
     form.membership_shoots_included.data = settings_obj.membership_shoots_included
     form.additional_shoot_cost.data = settings_obj.additional_shoot_cost // 100  # Convert cents to euros
-    form.sumup_api_key.data = settings_obj.sumup_api_key or ""
-    form.sumup_merchant_code.data = settings_obj.sumup_merchant_code or ""
 
     return render_template("admin/settings.html", form=form)
 
@@ -44,8 +42,6 @@ def settings_post():
             settings_obj.annual_membership_cost = form.annual_membership_cost.data * 100  # Convert to cents
             settings_obj.membership_shoots_included = form.membership_shoots_included.data
             settings_obj.additional_shoot_cost = form.additional_shoot_cost.data * 100  # Convert to cents
-            settings_obj.sumup_api_key = form.sumup_api_key.data or ""
-            settings_obj.sumup_merchant_code = form.sumup_merchant_code.data or ""
 
             SettingsService.save(settings_obj)
 

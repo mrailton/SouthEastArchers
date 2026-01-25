@@ -1,10 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Sign Up - South East Archers{% endblock %}
 {% block content %}
-<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow">
-    <h2 class="text-3xl font-bold mb-6 text-center">Create Account</h2>
-    
-    <form method="POST" class="space-y-4">
+<div class="max-w-md mx-auto">
+    <div class="card">
+        <div class="text-center mb-8">
+            <img src="{{ url_for('static', filename='images/logo.jpeg') }}" 
+                 alt="South East Archers" 
+                 class="h-32 w-auto mx-auto mb-6 object-contain">
+            <h2 class="text-3xl font-bold text-primary">Join Our Club</h2>
+            <p class="text-gray-600 mt-2">Create your account to get started</p>
+        </div>
+        
+        <form method="POST" class="space-y-4">
         {{ form.hidden_tag() }}
         <div>
             <label for="name" class="block text-gray-700 font-bold mb-2">Full Name *</label>
@@ -110,14 +117,16 @@
             </div>
         </div>
         
-        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700">
+        <button type="submit" class="w-full btn-secondary py-3">
             Create Account
         </button>
     </form>
     
-    <p class="text-center mt-4 text-gray-700">
-        Already have an account? 
-        <a href="{{ url_for('auth.login') }}" class="text-blue-600 hover:underline">Login here</a>
-    </p>
+    <div class="text-center mt-6">
+        <p class="text-gray-700">
+            Already have an account? 
+            <a href="{{ url_for('auth.login') }}" class="link-primary">Login here</a>
+        </p>
+    </div>
 </div>
 {% endblock %}

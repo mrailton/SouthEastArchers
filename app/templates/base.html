@@ -16,12 +16,23 @@
 </head>
 <body class="bg-gray-50">
     <!-- Navigation -->
-    <nav class="bg-white shadow-sm" x-data="{ open: false }">
+    <nav class="bg-white shadow-sm border-b-4" style="border-color: var(--sea-teal);" x-data="{ open: false }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
+            <div class="flex justify-between items-center h-28">
                 <div class="flex items-center">
-                    <a href="{{ url_for('public.index') }}" class="text-2xl font-bold text-blue-600">
-                        South East Archers
+                    <a href="{{ url_for('public.index') }}" class="flex items-center space-x-4 group">
+                        <div class="relative">
+                            <img src="{{ url_for('static', filename='images/logo.jpeg') }}" 
+                                 alt="South East Archers Logo" 
+                                 class="h-24 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                                 style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+                        </div>
+                        <div class="hidden md:block">
+                            <div class="text-2xl font-bold transition-colors duration-300" style="color: var(--sea-primary);">
+                                South East Archers
+                            </div>
+                            <div class="text-sm font-semibold" style="color: var(--sea-red);">Archery Club</div>
+                        </div>
                     </a>
                 </div>
 
@@ -34,43 +45,43 @@
                 </button>
                 
                 <!-- Desktop menu -->
-                <div class="hidden md:flex space-x-8">
-                    <a href="{{ url_for('public.index') }}" class="text-gray-700 hover:text-blue-600">Home</a>
-                    <a href="{{ url_for('public.about') }}" class="text-gray-700 hover:text-blue-600">About</a>
-                    <a href="{{ url_for('public.news_list') }}" class="text-gray-700 hover:text-blue-600">News</a>
-                    <a href="{{ url_for('public.events') }}" class="text-gray-700 hover:text-blue-600">Events</a>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="{{ url_for('public.index') }}" class="nav-link text-gray-700 font-medium">Home</a>
+                    <a href="{{ url_for('public.about') }}" class="nav-link text-gray-700 font-medium">About</a>
+                    <a href="{{ url_for('public.news_list') }}" class="nav-link text-gray-700 font-medium">News</a>
+                    <a href="{{ url_for('public.events') }}" class="nav-link text-gray-700 font-medium">Events</a>
 
                     {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('member.dashboard') }}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+                        <a href="{{ url_for('member.dashboard') }}" class="nav-link text-gray-700 font-medium">Dashboard</a>
                         {% if current_user.is_admin %}
-                            <a href="{{ url_for('admin.dashboard') }}" class="text-gray-700 hover:text-purple-600">Admin</a>
+                            <a href="{{ url_for('admin.dashboard') }}" class="badge-red px-4 py-2 rounded-lg">Admin</a>
                         {% endif %}
-                        <a href="{{ url_for('auth.logout') }}" class="text-red-700 hover:text-purple-700">Logout</a>
+                        <a href="{{ url_for('auth.logout') }}" class="text-gray-600 hover:text-red-600 font-medium">Logout</a>
                     {% else %}
-                        <a href="{{ url_for('public.membership') }}" class="text-gray-700 hover:text-blue-600">Membership</a>
-                        <a href="{{ url_for('auth.login') }}" class="text-gray-700 hover:text-blue-600">Login</a>
-                        <a href="{{ url_for('auth.signup') }}" class="text-gray-700 hover:text-blue-600">Sign Up</a>
+                        <a href="{{ url_for('public.membership') }}" class="nav-link text-gray-700 font-medium">Membership</a>
+                        <a href="{{ url_for('auth.login') }}" class="nav-link text-gray-700 font-medium">Login</a>
+                        <a href="{{ url_for('auth.signup') }}" class="btn-secondary px-6 py-2">Sign Up</a>
                     {% endif %}
                 </div>
             </div>
             
             <!-- Mobile menu -->
-            <div x-show="open" class="md:hidden pb-4">
-                <a href="{{ url_for('public.index') }}" class="block py-2 text-gray-700">Home</a>
-                <a href="{{ url_for('public.about') }}" class="block py-2 text-gray-700">About</a>
-                <a href="{{ url_for('public.news_list') }}" class="block py-2 text-gray-700">News</a>
-                <a href="{{ url_for('public.events') }}" class="block py-2 text-gray-700">Events</a>
+            <div x-show="open" class="md:hidden pb-4 space-y-2">
+                <a href="{{ url_for('public.index') }}" class="block py-2 text-gray-700 hover:text-primary">Home</a>
+                <a href="{{ url_for('public.about') }}" class="block py-2 text-gray-700 hover:text-primary">About</a>
+                <a href="{{ url_for('public.news_list') }}" class="block py-2 text-gray-700 hover:text-primary">News</a>
+                <a href="{{ url_for('public.events') }}" class="block py-2 text-gray-700 hover:text-primary">Events</a>
 
                 {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('member.dashboard') }}" class="block py-2 text-gray-700">Dashboard</a>
+                    <a href="{{ url_for('member.dashboard') }}" class="block py-2 text-gray-700 hover:text-primary">Dashboard</a>
                     {% if current_user.is_admin %}
-                        <a href="{{ url_for('admin.dashboard') }}" class="block py-2 text-purple-600 font-semibold">Admin</a>
+                        <a href="{{ url_for('admin.dashboard') }}" class="block py-2 font-semibold text-red">Admin</a>
                     {% endif %}
-                    <a href="{{ url_for('auth.logout') }}" class="block py-2 text-red-600">Logout</a>
+                    <a href="{{ url_for('auth.logout') }}" class="block py-2 text-gray-600 hover:text-red">Logout</a>
                 {% else %}
-                    <a href="{{ url_for('public.membership') }}" class="block py-2 text-gray-700">Membership</a>
-                    <a href="{{ url_for('auth.login') }}" class="block py-2 text-gray-700">Login</a>
-                    <a href="{{ url_for('auth.signup') }}" class="block py-2 text-blue-600">Sign Up</a>
+                    <a href="{{ url_for('public.membership') }}" class="block py-2 text-gray-700 hover:text-primary">Membership</a>
+                    <a href="{{ url_for('auth.login') }}" class="block py-2 text-gray-700 hover:text-primary">Login</a>
+                    <a href="{{ url_for('auth.signup') }}" class="block py-2 text-red font-semibold">Sign Up</a>
                 {% endif %}
             </div>
         </div>

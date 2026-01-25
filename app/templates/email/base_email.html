@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .email-container {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #20B2AA 0%, #1A8F88 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            background-color: white;
+            padding: 5px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .content {
+            padding: 30px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #20B2AA;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .btn:hover {
+            background-color: #1A8F88;
+        }
+        .btn-secondary {
+            background-color: #C41E3A;
+        }
+        .btn-secondary:hover {
+            background-color: #A01729;
+        }
+        .info-box {
+            background-color: #f0fffe;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #20B2AA;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #1A8F88;
+        }
+        .highlight-box {
+            background-color: #fff5f5;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #C41E3A;
+        }
+        .highlight-box h3 {
+            color: #A01729;
+        }
+        .footer {
+            background-color: #1A1A1A;
+            color: #F5F5DC;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .footer a {
+            color: #20B2AA;
+            text-decoration: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background-color: #f0fffe;
+            color: #1A8F88;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div style="font-size: 48px; margin-bottom: 10px;">🏹</div>
+            <h1>{% block email_title %}South East Archers{% endblock %}</h1>
+        </div>
+        
+        <div class="content">
+            {% block content %}{% endblock %}
+        </div>
+        
+        <div class="footer">
+            <p><strong>South East Archers</strong></p>
+            <p>
+                <a href="{{ url_for('public.index', _external=True) }}">Visit Website</a> | 
+                <a href="{{ url_for('public.about', _external=True) }}">About Us</a> |
+                <a href="{{ url_for('public.membership', _external=True) }}">Membership</a>
+            </p>
+            <p>© {{ year }} South East Archers. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

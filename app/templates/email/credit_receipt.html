@@ -13,7 +13,7 @@
             padding: 20px;
         }
         .header {
-            background-color: #2563eb;
+            background-color: #1BA39C;
             color: white;
             padding: 20px;
             text-align: center;
@@ -43,7 +43,7 @@
             font-size: 1.1em;
             margin-top: 10px;
             padding-top: 20px;
-            border-top: 2px solid #2563eb;
+            border-top: 2px solid #1BA39C;
         }
         .label {
             color: #6b7280;
@@ -63,7 +63,7 @@
         }
         .credits-summary {
             background-color: #eff6ff;
-            border-left: 4px solid #2563eb;
+            border-left: 4px solid #1BA39C;
             padding: 20px;
             margin: 20px 0;
             border-radius: 0 5px 5px 0;
@@ -71,19 +71,18 @@
         .credits-number {
             font-size: 2em;
             font-weight: bold;
-            color: #2563eb;
+            color: #1BA39C;
         }
         .footer {
+            background-color: #1A1A1A;
+            color: #FAF7F2;
+            padding: 20px;
             text-align: center;
-            color: #6b7280;
-            font-size: 0.9em;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
+            font-size: 14px;
         }
         .button {
             display: inline-block;
-            background-color: #2563eb;
+            background-color: #1BA39C;
             color: white;
             padding: 12px 30px;
             text-decoration: none;
@@ -110,7 +109,7 @@
             <p style="margin-top: 0; font-size: 0.9em; color: #6b7280;">Credits Purchased</p>
             <div class="credits-number">{{ credits_purchased }}</div>
             <p style="margin-bottom: 0; margin-top: 15px;">
-                <strong>Total Credits Available:</strong> <span style="color: #2563eb; font-size: 1.3em;">{{ credits_remaining }}</span>
+                <strong>Total Credits Available:</strong> <span style="color: #1BA39C; font-size: 1.3em;">{{ credits_remaining }}</span>
             </p>
         </div>
         
@@ -170,11 +169,9 @@
     </div>
     
     <div class="footer">
-        <p>
-            South East Archers<br>
-            Email: info@southeastarchers.ie<br>
-            This is an automated receipt. Please keep for your records.
-        </p>
+        <p><strong>South East Archers</strong></p>
+        <p>This is an automated receipt. Please keep for your records.</p>
     </div>
+</div>
 </body>
 </html>

@@ -1,25 +1,309 @@
 @import "tailwindcss";
 @source "../../../app/templates/**/*.html";
 
-/* Custom component styles */
+/* ============================================
+   SOUTH EAST ARCHERS DESIGN SYSTEM
+   Based on club logo color palette
+   ============================================ */
+
+:root {
+  /* Primary Brand Colors - Teal/Turquoise (Dragon/Circle) */
+  --sea-primary: #1BA39C;
+  --sea-primary-light: #26D0C7;
+  --sea-primary-dark: #158B84;
+  --sea-primary-darker: #0F6962;
+  
+  /* Secondary Brand Colors - Red/Burgundy (Archer) */
+  --sea-red: #C41E3A;
+  --sea-red-light: #E63946;
+  --sea-red-dark: #A01729;
+  --sea-burgundy: #8B2635;
+  --sea-burgundy-light: #A83545;
+  --sea-burgundy-dark: #6B1D28;
+  
+  /* Accent Colors */
+  --sea-gold: #D4AF37;
+  --sea-gold-light: #E5C968;
+  --sea-gold-dark: #B8932E;
+  
+  /* Neutral Colors */
+  --sea-cream: #FAF7F2;
+  --sea-light-gray: #F5F5F5;
+  --sea-gray: #6B7280;
+  --sea-dark: #1F2937;
+  --sea-darker: #111827;
+  
+  /* Semantic Colors */
+  --sea-success: #10B981;
+  --sea-warning: #F59E0B;
+  --sea-danger: var(--sea-red);
+  --sea-info: var(--sea-primary);
+}
+
+/* ============================================
+   COMPONENT STYLES
+   ============================================ */
+
 @layer components {
+  /* Buttons */
   .btn {
-    @apply inline-block px-4 py-2 rounded-lg font-semibold transition-colors;
+    @apply inline-block px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-sm;
   }
 
   .btn-primary {
-    @apply inline-block px-4 py-2 rounded-lg font-semibold transition-colors bg-blue-600 text-white hover:bg-blue-700;
+    @apply text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+    background: linear-gradient(135deg, var(--sea-primary) 0%, var(--sea-primary-dark) 100%);
+  }
+  
+  .btn-primary:hover {
+    background: linear-gradient(135deg, var(--sea-primary-light) 0%, var(--sea-primary) 100%);
   }
 
   .btn-secondary {
-    @apply inline-block px-4 py-2 rounded-lg font-semibold transition-colors bg-gray-300 text-gray-800 hover:bg-gray-400;
+    @apply text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+    background: linear-gradient(135deg, var(--sea-red) 0%, var(--sea-red-dark) 100%);
+  }
+  
+  .btn-secondary:hover {
+    background: linear-gradient(135deg, var(--sea-red-light) 0%, var(--sea-red) 100%);
+  }
+  
+  .btn-burgundy {
+    @apply text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+    background: linear-gradient(135deg, var(--sea-burgundy) 0%, var(--sea-burgundy-dark) 100%);
+  }
+  
+  .btn-burgundy:hover {
+    background: linear-gradient(135deg, var(--sea-burgundy-light) 0%, var(--sea-burgundy) 100%);
+  }
+
+  .btn-outline {
+    @apply border-2 bg-transparent hover:bg-white/5;
+    border-color: var(--sea-primary);
+    color: var(--sea-primary);
+  }
+  
+  .btn-outline:hover {
+    background-color: var(--sea-primary);
+    color: white;
   }
 
   .btn-danger {
-    @apply inline-block px-4 py-2 rounded-lg font-semibold transition-colors bg-red-600 text-white hover:bg-red-700;
+    @apply bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg;
   }
 
+  /* Cards */
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply bg-white rounded-xl shadow-md p-6 transition-shadow hover:shadow-lg;
   }
+  
+  .card-header {
+    @apply border-b-2 pb-4 mb-4;
+    border-color: var(--sea-primary);
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-block px-3 py-1 rounded-full text-sm font-semibold;
+  }
+  
+  .badge-primary {
+    @apply text-white;
+    background-color: var(--sea-primary);
+  }
+  
+  .badge-secondary {
+    @apply text-white;
+    background-color: var(--sea-red);
+  }
+  
+  .badge-burgundy {
+    @apply text-white;
+    background-color: var(--sea-burgundy);
+  }
+  
+  .badge-red {
+    @apply text-white;
+    background-color: var(--sea-red);
+  }
+  
+  .badge-gold {
+    @apply text-white;
+    background-color: var(--sea-gold);
+  }
+
+  /* Alerts */
+  .alert {
+    @apply p-4 rounded-lg border-l-4 mb-4;
+  }
+  
+  .alert-info {
+    @apply bg-blue-50;
+    border-color: var(--sea-primary);
+  }
+  
+  .alert-success {
+    @apply bg-green-50 border-green-500;
+  }
+  
+  .alert-warning {
+    @apply bg-yellow-50 border-yellow-500;
+  }
+  
+  .alert-danger {
+    @apply bg-red-50;
+    border-color: var(--sea-red);
+  }
+  
+  .alert-warning-red {
+    background-color: rgba(196, 30, 58, 0.1);
+    border-color: var(--sea-red);
+  }
+
+  /* Navigation */
+  .nav-link {
+    @apply transition-colors duration-200;
+  }
+  
+  .nav-link:hover {
+    color: var(--sea-primary);
+  }
+  
+  .nav-link-active {
+    @apply font-semibold;
+    color: var(--sea-primary);
+    border-bottom: 3px solid var(--sea-primary);
+  }
+
+  /* Forms */
+  .form-input {
+    @apply w-full border-2 border-gray-300 rounded-lg px-4 py-2 transition-colors;
+  }
+  
+  .form-input:focus {
+    @apply outline-none border-2;
+    border-color: var(--sea-primary);
+    box-shadow: 0 0 0 3px rgba(27, 163, 156, 0.1);
+  }
+  
+  .form-label {
+    @apply block text-gray-700 font-semibold mb-2;
+  }
+
+  /* Hero Section */
+  .hero {
+    @apply text-white py-20 rounded-2xl mb-12 shadow-xl;
+    background: linear-gradient(135deg, var(--sea-primary) 0%, var(--sea-primary-darker) 40%, var(--sea-red-dark) 100%);
+  }
+  
+  .hero-title {
+    @apply text-5xl md:text-6xl font-bold mb-4 drop-shadow-lg;
+  }
+  
+  .hero-subtitle {
+    @apply text-xl md:text-2xl mb-8 opacity-95;
+  }
+
+  /* Links */
+  .link-primary {
+    @apply font-semibold hover:underline transition-colors;
+    color: var(--sea-primary);
+  }
+  
+  .link-secondary {
+    @apply font-semibold hover:underline transition-colors;
+    color: var(--sea-red);
+  }
+  
+  .link-burgundy {
+    @apply font-semibold hover:underline transition-colors;
+    color: var(--sea-burgundy);
+  }
+}
+
+/* ============================================
+   LEGACY BLUE COLOR OVERRIDES
+   Converts existing blue classes to brand colors
+   ============================================ */
+
+.bg-blue-600,
+.bg-blue-700,
+.bg-blue-800 {
+  background: linear-gradient(135deg, var(--sea-primary) 0%, var(--sea-primary-dark) 100%) !important;
+}
+
+.hover\:bg-blue-700:hover,
+.hover\:bg-blue-600:hover {
+  background: linear-gradient(135deg, var(--sea-primary-light) 0%, var(--sea-primary) 100%) !important;
+}
+
+.text-blue-600,
+.text-blue-700 {
+  color: var(--sea-primary) !important;
+}
+
+.border-blue-400,
+.border-blue-500,
+.border-blue-600 {
+  border-color: var(--sea-primary) !important;
+}
+
+.bg-blue-50 {
+  background-color: rgba(27, 163, 156, 0.05) !important;
+}
+
+.from-blue-600 {
+  --tw-gradient-from: var(--sea-primary) !important;
+}
+
+.to-blue-800 {
+  --tw-gradient-to: var(--sea-primary-darker) !important;
+}
+
+.hover\:text-blue-600:hover {
+  color: var(--sea-primary) !important;
+}
+
+.focus\:ring-blue-500:focus {
+  --tw-ring-color: var(--sea-primary) !important;
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+
+.gradient-primary {
+  background: linear-gradient(135deg, var(--sea-primary) 0%, var(--sea-primary-dark) 100%);
+}
+
+.gradient-secondary {
+  background: linear-gradient(135deg, var(--sea-red) 0%, var(--sea-red-dark) 100%);
+}
+
+.gradient-burgundy {
+  background: linear-gradient(135deg, var(--sea-burgundy) 0%, var(--sea-burgundy-dark) 100%);
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, var(--sea-primary) 0%, var(--sea-primary-darker) 40%, var(--sea-red-dark) 100%);
+}
+
+.text-primary {
+  color: var(--sea-primary);
+}
+
+.text-secondary {
+  color: var(--sea-red);
+}
+
+.text-burgundy {
+  color: var(--sea-burgundy);
+}
+
+.text-red {
+  color: var(--sea-red);
+}
+
+.bg-cream {
+  background-color: var(--sea-cream);
 }

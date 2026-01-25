@@ -16,6 +16,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'resources/assets/js/main.js'),
         style: resolve(__dirname, 'resources/assets/css/style.css'),
+        logo: resolve(__dirname, 'resources/assets/images/logo.jpeg'),
       },
       output: {
         entryFileNames: 'js/[name].min.js',
@@ -23,6 +24,9 @@ export default defineConfig({
         assetFileNames: (assetInfo) => {
           if (assetInfo.name.endsWith('.css')) {
             return 'css/[name].min[extname]'
+          }
+          if (assetInfo.name.match(/\.(jpg|jpeg|png|gif|svg)$/)) {
+            return 'images/[name][extname]'
           }
           return 'assets/[name]-[hash][extname]'
         },

@@ -130,6 +130,7 @@ def test_process_checkout_signup_payment_email_failure(mock_email, mock_service_
     # Mock handle_signup_payment to actually complete the payment
     def side_effect(user_id, checkout_id, result):
         from flask import redirect, url_for
+
         with app.app_context():
             p = db.session.get(Payment, payment_id)
             p.status = "completed"
@@ -375,6 +376,7 @@ def test_process_checkout_membership_renewal_email_failure(mock_email, mock_serv
     # Mock handle_membership_renewal to actually complete the payment
     def side_effect(user_id, checkout_id, result):
         from flask import redirect, url_for
+
         with app.app_context():
             p = db.session.get(Payment, payment_id)
             p.status = "completed"
@@ -414,9 +416,11 @@ def test_process_checkout_credit_purchase(mock_credit_receipt, mock_service_clas
     with app.app_context():
         # Ensure test_user has an active membership
         from app.models import Membership
+
         m = Membership.query.filter_by(user_id=test_user.id).first()
         if not m:
             from datetime import date
+
             m = Membership(user_id=test_user.id, start_date=date.today(), expiry_date=date.today(), status="active")
             db.session.add(m)
         payment = Payment(

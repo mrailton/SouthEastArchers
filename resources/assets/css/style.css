@@ -8,18 +8,18 @@
 
 :root {
   /* Primary Brand Colors - Teal/Turquoise (Dragon/Circle) */
-  --sea-primary: #1BA39C;
-  --sea-primary-light: #26D0C7;
-  --sea-primary-dark: #158B84;
-  --sea-primary-darker: #0F6962;
+  --sea-primary: #158b84;
+  --sea-primary-light: #1ba39c;
+  --sea-primary-dark: #0f6962;
+  --sea-primary-darker: #0d4d48;
   
   /* Secondary Brand Colors - Red/Burgundy (Archer) */
-  --sea-red: #C41E3A;
-  --sea-red-light: #E63946;
-  --sea-red-dark: #A01729;
-  --sea-burgundy: #8B2635;
-  --sea-burgundy-light: #A83545;
-  --sea-burgundy-dark: #6B1D28;
+  --sea-red: #a01729;
+  --sea-red-light: #c41e3a;
+  --sea-red-dark: #8b2635;
+  --sea-burgundy: #6b1d28;
+  --sea-burgundy-light: #8b2635;
+  --sea-burgundy-dark: #4a141b;
   
   /* Accent Colors */
   --sea-gold: #D4AF37;

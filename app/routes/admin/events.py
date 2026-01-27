@@ -81,7 +81,7 @@ def edit_event_post(event_id):
         )
 
         if not success:
-            flash(error, "error")
+            flash(error or "An error occurred while updating the event.", "error")
             return render_template("admin/edit_event.html", event=event, form=form)
 
         flash("Event updated successfully!", "success")

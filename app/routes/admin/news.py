@@ -79,7 +79,7 @@ def edit_news_post(news_id):
         )
 
         if not success:
-            flash(error, "error")
+            flash(error or "An error occurred while updating the article.", "error")
             return render_template("admin/edit_news.html", news=news, form=form)
 
         flash("News article updated successfully!", "success")

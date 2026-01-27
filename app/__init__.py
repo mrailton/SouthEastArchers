@@ -1,7 +1,9 @@
 import logging
 import os
 import warnings
+from datetime import UTC, datetime
 from logging.handlers import RotatingFileHandler
+from typing import Any
 
 from flask import Flask
 from flask_bcrypt import Bcrypt
@@ -48,9 +50,9 @@ def _init_extensions(app: Flask) -> None:
 
     # Initialize Talisman if enabled
     if app.config.get("TALISMAN_ENABLED", True):
-        from flask_talisman import Talisman
+        from flask_talisman import Talisman  # type: ignore[import-untyped]
 
-        csp = {
+        csp: dict[str, Any] = {
             "default-src": "'self'",
             "style-src": [
                 "'self'",
@@ -75,8 +77,11 @@ def _init_extensions(app: Flask) -> None:
 
         # If in development, we might need to allow Vite dev server
         if app.debug:
-            csp["script-src"].append("http://localhost:5173")
-            csp["script-src"].append("http://localhost:5174")
+            # Type safety for mypy: cast to list if needed, though defined as list above
+            script_src = csp.setdefault("script-src", [])
+            if isinstance(script_src, list):
+                script_src.append("http://localhost:5173")
+                script_src.append("http://localhost:5174")
             csp["connect-src"] = ["'self'", "ws://localhost:5173", "ws://localhost:5174", "http://localhost:5173", "http://localhost:5174"]
 
         Talisman(
@@ -150,6 +155,10 @@ def _register_context_processor(app: Flask) -> None:
             return flask_url_for(endpoint, **values)
 
         return dict(url_for=dated_url_for, vite_asset=vite_asset, vite_hmr_client=vite_hmr_client)
+
+    @app.context_processor
+    def inject_now():
+        return {"now": datetime.now(UTC)}
 
 
 def create_app(config_name=None):

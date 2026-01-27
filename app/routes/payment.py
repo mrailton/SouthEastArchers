@@ -67,6 +67,10 @@ def process_checkout(checkout_id):
 
         user_id = get_user_id_from_session(current_user)
 
+        if user_id is None:
+            flash("User session not found. Please try again.", "error")
+            return redirect(url_for("auth.login"))
+
         if session.get("signup_user_id"):
             return PaymentProcessingService.handle_signup_payment(user_id, checkout_id, result)
 

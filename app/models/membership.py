@@ -37,33 +37,30 @@ class Membership(db.Model):
         Returns:
             True if credit was used, False if no credits available and negative not allowed
         """
-        # Ensure fields are not None
-        if self.initial_credits is None:
-            self.initial_credits = 0
-        if self.purchased_credits is None:
-            self.purchased_credits = 0
+        # Ensure fields are not None (use default values if they are)
+        initial = self.initial_credits if self.initial_credits is not None else 0
+        purchased = self.purchased_credits if self.purchased_credits is not None else 0
 
-        total_credits = self.initial_credits + self.purchased_credits
+        total_credits = initial + purchased
 
         if total_credits > 0:
             # Use initial credits first
-            if self.initial_credits > 0:
-                self.initial_credits -= 1
+            if initial > 0:
+                self.initial_credits = initial - 1
             else:
-                self.purchased_credits -= 1
+                self.purchased_credits = purchased - 1
             return True
         elif allow_negative and self.is_active():
             # Allow negative credits for active memberships (admin override)
             # Deduct from initial credits when going negative
-            self.initial_credits -= 1
+            self.initial_credits = initial - 1
             return True
         return False
 
-    def add_credits(self, amount):
+    def add_credits(self, amount: int) -> None:
         """Add purchased credits to the membership."""
-        if self.purchased_credits is None:
-            self.purchased_credits = 0
-        self.purchased_credits += amount
+        current = self.purchased_credits if self.purchased_credits is not None else 0
+        self.purchased_credits = current + amount
 
     def renew(self, initial_credits: int = 20):
         """Renew the membership.

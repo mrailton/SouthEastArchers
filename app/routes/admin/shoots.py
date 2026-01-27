@@ -31,15 +31,21 @@ def create_shoot_post():
     form.attendees.choices = ShootService.get_active_members_with_credits()
 
     if form.validate_on_submit():
-        shoot, warnings = ShootService.create_shoot(
+        shoot, messages = ShootService.create_shoot(
             shoot_date=form.date.data,
             location=form.location.data,
             description=form.description.data,
             attendee_ids=form.attendees.data or [],
         )
 
-        for warning in warnings:
-            flash(f"Warning: {warning}", "warning")
+        if not shoot:
+            for error in messages:
+                flash(error, "error")
+            active_members = ShootService.get_active_members_with_credits()
+            return render_template("admin/create_shoot.html", active_members=active_members, form=form)
+
+        for message in messages:
+            flash(f"Warning: {message}", "warning")
 
         flash(f"Shoot created with {len(form.attendees.data or [])} attendees!", "success")
         return redirect(url_for("admin.shoots"))
@@ -85,7 +91,7 @@ def edit_shoot_post(shoot_id):
     form.attendees.choices = ShootService.get_active_members_with_credits()
 
     if form.validate_on_submit():
-        warnings = ShootService.update_shoot(
+        success, messages = ShootService.update_shoot(
             shoot=shoot,
             shoot_date=form.date.data,
             location=form.location.data,
@@ -93,8 +99,19 @@ def edit_shoot_post(shoot_id):
             attendee_ids=form.attendees.data or [],
         )
 
-        for warning in warnings:
-            flash(f"Warning: {warning}", "warning")
+        if not success:
+            for error in messages:
+                flash(error, "error")
+            active_members = ShootService.get_active_members_with_credits()
+            return render_template(
+                "admin/edit_shoot.html",
+                shoot=shoot,
+                active_members=active_members,
+                form=form,
+            )
+
+        for message in messages:
+            flash(f"Warning: {message}", "warning")
 
         flash("Shoot updated successfully!", "success")
         return redirect(url_for("admin.shoots"))

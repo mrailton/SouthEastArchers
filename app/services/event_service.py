@@ -13,7 +13,7 @@ class EventService:
         description: str = None,
         location: str = None,
         published: bool = False,
-    ) -> Event:
+    ) -> tuple[Event | None, str | None]:
         """Create a new event."""
         event = Event(
             title=title,
@@ -23,9 +23,13 @@ class EventService:
             published=published,
         )
 
-        db.session.add(event)
-        db.session.commit()
-        return event
+        try:
+            db.session.add(event)
+            db.session.commit()
+            return event, None
+        except Exception as e:
+            db.session.rollback()
+            return None, f"Error creating event: {str(e)}"
 
     @staticmethod
     def update_event(
@@ -35,7 +39,7 @@ class EventService:
         description: str = None,
         location: str = None,
         published: bool = False,
-    ) -> Event:
+    ) -> tuple[bool, str | None]:
         """Update an existing event."""
         event.title = title
         event.description = description
@@ -43,8 +47,12 @@ class EventService:
         event.location = location
         event.published = published
 
-        db.session.commit()
-        return event
+        try:
+            db.session.commit()
+            return True, None
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Error updating event: {str(e)}"
 
     @staticmethod
     def get_all_events() -> list[Event]:

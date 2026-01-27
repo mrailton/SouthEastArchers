@@ -14,6 +14,8 @@ def dashboard():
     user = current_user
     membership = user.membership
 
+    # Use len() on the collection to avoid separate count query if shoots already loaded
+    # or let SQL handle it if not.
     shoots_attended = len(user.shoots)
 
     return render_template(

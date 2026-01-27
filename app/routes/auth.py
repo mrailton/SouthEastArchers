@@ -46,7 +46,7 @@ def login_post():
         for error in errors:
             flash(error, "error")
 
-    return render_template("auth/login.html", form=SignupForm())
+    return render_template("auth/login.html", form=form)
 
 
 @bp.get("/signup")
@@ -71,7 +71,7 @@ def signup_post():
 
         if error:
             flash(error, "error")
-            return render_template("auth/signup.html", form=ForgotPasswordForm())
+            return render_template("auth/signup.html", form=form)
 
         flash("Thank you for signing up. A coach will review your information shortly and get back to you to discuss membership.", "success")
         return redirect(url_for("auth.login"))

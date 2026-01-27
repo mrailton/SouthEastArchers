@@ -22,12 +22,15 @@ class MembershipService:
         ).first()
 
         if pending_payment:
-            pending_payment.mark_completed()
+            pending_payment.mark_completed(processor="cash")
 
         user.membership.activate()
-        db.session.commit()
-
-        return True, "Membership activated successfully."
+        try:
+            db.session.commit()
+            return True, "Membership activated successfully."
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Error activating membership: {str(e)}"
 
     @staticmethod
     def renew_membership(user: User) -> tuple[bool, str]:
@@ -37,9 +40,12 @@ class MembershipService:
         settings = SettingsService.get()
         initial_credits = settings.membership_shoots_included
         user.membership.renew(initial_credits=initial_credits)
-        db.session.commit()
-
-        return True, "Membership renewed successfully."
+        try:
+            db.session.commit()
+            return True, "Membership renewed successfully."
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Error renewing membership: {str(e)}"
 
     @staticmethod
     def deactivate_membership(user: User) -> tuple[bool, str]:
@@ -47,9 +53,12 @@ class MembershipService:
             return False, "No membership found."
 
         user.membership.status = "inactive"
-        db.session.commit()
-
-        return True, "Membership deactivated successfully."
+        try:
+            db.session.commit()
+            return True, "Membership deactivated successfully."
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Error deactivating membership: {str(e)}"
 
     @staticmethod
     def get_expiring_memberships(days: int = 30) -> list[Membership]:

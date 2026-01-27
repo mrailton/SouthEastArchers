@@ -15,7 +15,12 @@ app = create_app(os.environ.get("FLASK_ENV", "development"))
 
 # Add WhiteNoise for serving static files (use absolute path)
 static_root = os.path.join(os.path.dirname(__file__), "resources", "static")
-app.wsgi_app = WhiteNoise(app.wsgi_app, root=static_root, prefix="static/")
+app.wsgi_app = WhiteNoise(
+    app.wsgi_app,
+    root=static_root,
+    prefix="static/",
+    max_age=31536000 if not app.debug else 0,
+)
 
 
 @app.shell_context_processor

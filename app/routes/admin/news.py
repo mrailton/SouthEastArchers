@@ -27,12 +27,16 @@ def create_news_post():
     form = NewsForm()
 
     if form.validate_on_submit():
-        NewsService.create_article(
+        article, error = NewsService.create_article(
             title=form.title.data,
             summary=form.summary.data,
             content=form.content.data,
             published=form.published.data,
         )
+
+        if error:
+            flash(error, "error")
+            return render_template("admin/create_news.html", form=form)
 
         flash("News article created!", "success")
         return redirect(url_for("admin.news"))
@@ -66,13 +70,17 @@ def edit_news_post(news_id):
     form = NewsForm(obj=news)
 
     if form.validate_on_submit():
-        NewsService.update_article(
+        success, error = NewsService.update_article(
             article=news,
             title=form.title.data,
             summary=form.summary.data,
             content=form.content.data,
             published=form.published.data,
         )
+
+        if not success:
+            flash(error, "error")
+            return render_template("admin/edit_news.html", news=news, form=form)
 
         flash("News article updated successfully!", "success")
         return redirect(url_for("admin.news"))

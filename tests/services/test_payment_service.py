@@ -7,7 +7,7 @@ from flask import session
 
 from app import db
 from app.models import Credit, Payment
-from app.services.payment_service import PaymentProcessingService, PaymentService
+from app.services import PaymentProcessingService, PaymentService
 from tests.helpers import create_payment_for_user
 
 # TestPaymentService module-level functions
@@ -295,7 +295,7 @@ def test_handle_membership_renewal_creates_membership_if_missing(app, test_user)
         session["membership_renewal_payment_id"] = payment.id
         result = {"transaction_code": "txn_new_123"}
 
-        with patch("app.services.payment_service.PaymentProcessingService.send_payment_receipt"):
+        with patch("app.services.payment_processing_service.PaymentProcessingService.send_payment_receipt"):
             PaymentProcessingService.handle_membership_renewal(test_user.id, "checkout_new", result)
 
         # Verify membership was created
@@ -340,7 +340,7 @@ def test_handle_signup_payment_with_membership(app, test_user):
         session["signup_payment_id"] = payment.id
         result = {"transaction_code": "txn_signup_123"}
 
-        with patch("app.services.payment_service.PaymentProcessingService.send_payment_receipt"):
+        with patch("app.services.payment_processing_service.PaymentProcessingService.send_payment_receipt"):
             PaymentProcessingService.handle_signup_payment(test_user.id, "checkout_signup", result)
 
             # Verify membership was activated

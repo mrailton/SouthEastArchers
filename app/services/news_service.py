@@ -10,7 +10,7 @@ class NewsService:
         summary: str = None,
         content: str = None,
         published: bool = False,
-    ) -> News:
+    ) -> tuple[News | None, str | None]:
         """Create a new news article."""
         article = News(
             title=title,
@@ -22,9 +22,13 @@ class NewsService:
         if published:
             article.published_at = utc_now()
 
-        db.session.add(article)
-        db.session.commit()
-        return article
+        try:
+            db.session.add(article)
+            db.session.commit()
+            return article, None
+        except Exception as e:
+            db.session.rollback()
+            return None, f"Error creating article: {str(e)}"
 
     @staticmethod
     def update_article(
@@ -33,7 +37,7 @@ class NewsService:
         summary: str = None,
         content: str = None,
         published: bool = False,
-    ) -> News:
+    ) -> tuple[bool, str | None]:
         """Update an existing news article."""
         article.title = title
         article.summary = summary
@@ -43,8 +47,12 @@ class NewsService:
         if published and not article.published_at:
             article.published_at = utc_now()
 
-        db.session.commit()
-        return article
+        try:
+            db.session.commit()
+            return True, None
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Error updating article: {str(e)}"
 
     @staticmethod
     def get_all_articles() -> list[News]:

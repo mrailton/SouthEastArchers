@@ -18,6 +18,7 @@ bp = Blueprint("payment", __name__, url_prefix="/payment")
 
 
 @bp.get("/checkout/<checkout_id>")
+@login_required
 def show_checkout(checkout_id):
     amount = session.get("checkout_amount", 100.00)
     description = session.get("checkout_description", "Payment")
@@ -31,6 +32,7 @@ def show_checkout(checkout_id):
 
 
 @bp.post("/checkout/<checkout_id>/process")
+@login_required
 def process_checkout(checkout_id):
     try:
         card_number = request.form.get("card_number", "").replace(" ", "")

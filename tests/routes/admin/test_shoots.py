@@ -302,7 +302,7 @@ def test_edit_shoot_add_attendee_no_credits(app):
     )
 
     # Add the no-credit user to the shoot
-    warnings = ShootService.update_shoot(
+    success, warnings = ShootService.update_shoot(
         shoot=shoot,
         shoot_date=date.today(),
         location="HALL",
@@ -312,6 +312,7 @@ def test_edit_shoot_add_attendee_no_credits(app):
 
     # Verify user was added and credits went negative
     user = db.session.get(User, user_id)
+    assert success is True
     assert user.membership.credits_remaining() == -1
     assert len(shoot.users) == 1
     assert shoot.users[0].id == user_id

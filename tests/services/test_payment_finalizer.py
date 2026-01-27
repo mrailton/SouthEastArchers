@@ -4,7 +4,7 @@ from flask import get_flashed_messages, session
 
 from app import db
 from app.models import Payment
-from app.services.payment_service import PaymentProcessingService
+from app.services import PaymentProcessingService
 
 
 def test_finalize_and_redirect_sends_and_clears(app, test_user):

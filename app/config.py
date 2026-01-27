@@ -21,6 +21,9 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
 
+    # Security Headers
+    TALISMAN_ENABLED = os.environ.get("TALISMAN_ENABLED", "True").lower() == "true"
+
     # Email
     MAIL_SERVER = os.environ.get("MAIL_SERVER", "localhost")
     MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
@@ -55,6 +58,7 @@ class DevelopmentConfig(Config):
     TEMPLATES_AUTO_RELOAD = True
     JINJA_AUTO_RELOAD = True
     SESSION_COOKIE_SECURE = False
+    TALISMAN_ENABLED = False
     SQLALCHEMY_ECHO = False
     MAIL_USE_TLS = False
     MAIL_USE_SSL = False

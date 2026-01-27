@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Access Forbidden - South East Archers{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto text-center py-16">
+    <h1 class="text-6xl font-bold text-red-600 mb-4">403</h1>
+    <h2 class="text-3xl font-bold mb-6">Access Forbidden</h2>
+    <p class="text-xl text-gray-600 mb-8">
+        Sorry, you do not have permission to access this page.
+    </p>
+    <a href="{{ url_for('public.index') }}" class="btn-primary inline-block">
+        Return Home
+    </a>
+</div>
+{% endblock %}

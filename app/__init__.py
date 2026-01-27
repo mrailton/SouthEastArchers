@@ -46,6 +46,48 @@ def _init_extensions(app: Flask) -> None:
     mail.init_app(app)
     bcrypt.init_app(app)
 
+    # Initialize Talisman if enabled
+    if app.config.get("TALISMAN_ENABLED", True):
+        from flask_talisman import Talisman
+
+        csp = {
+            "default-src": "'self'",
+            "style-src": [
+                "'self'",
+                "'unsafe-inline'",
+                "https://fonts.googleapis.com",
+            ],
+            "font-src": [
+                "'self'",
+                "https://fonts.gstatic.com",
+            ],
+            "script-src": [
+                "'self'",
+                "'unsafe-inline'",
+                # Add any external script sources here
+            ],
+            "img-src": [
+                "'self'",
+                "data:",
+                # Add any external image sources here
+            ],
+        }
+
+        # If in development, we might need to allow Vite dev server
+        if app.debug:
+            csp["script-src"].append("http://localhost:5173")
+            csp["script-src"].append("http://localhost:5174")
+            csp["connect-src"] = ["'self'", "ws://localhost:5173", "ws://localhost:5174", "http://localhost:5173", "http://localhost:5174"]
+
+        Talisman(
+            app,
+            content_security_policy=csp,
+            force_https=not (app.debug or app.testing),
+            session_cookie_secure=app.config.get("SESSION_COOKIE_SECURE", True),
+            session_cookie_http_only=True,
+            strict_transport_security=True,
+        )
+
     # Setup flask login
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
@@ -72,15 +114,20 @@ def _register_blueprints(app: Flask) -> None:
 
 def _register_error_handlers(app: Flask) -> None:
     """Register generic error handlers."""
+    from flask import render_template
 
     @app.errorhandler(404)
     def not_found(e):
-        return "Page not found", 404
+        return render_template("errors/404.html"), 404
+
+    @app.errorhandler(403)
+    def forbidden(e):
+        return render_template("errors/403.html"), 403
 
     @app.errorhandler(500)
     def internal_error(e):
         db.session.rollback()
-        return "Internal server error", 500
+        return render_template("errors/500.html"), 500
 
 
 def _register_context_processor(app: Flask) -> None:

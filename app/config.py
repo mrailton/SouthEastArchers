@@ -2,6 +2,11 @@ import os
 from datetime import timedelta
 
 
+def _get_bool_env(name: str, default: bool) -> bool:
+    val = os.environ.get(name, str(default)).lower()
+    return val in ("true", "1", "yes", "on")
+
+
 class Config:
     """Base configuration"""
 
@@ -17,25 +22,21 @@ class Config:
 
     # Session
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = _get_bool_env("SESSION_COOKIE_SECURE", True)
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
 
     # Security Headers
-    TALISMAN_ENABLED = os.environ.get("TALISMAN_ENABLED", "True").lower() == "true"
+    TALISMAN_ENABLED = _get_bool_env("TALISMAN_ENABLED", True)
 
     # Email
     MAIL_SERVER = os.environ.get("MAIL_SERVER", "localhost")
     MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
-    # Force proper boolean conversion for TLS/SSL settings
-    mail_use_tls = os.environ.get("MAIL_USE_TLS", "True")
-    MAIL_USE_TLS = mail_use_tls.lower() in ("true", "1", "yes", "on") if isinstance(mail_use_tls, str) else bool(mail_use_tls)
-    mail_use_ssl = os.environ.get("MAIL_USE_SSL", "False")
-    MAIL_USE_SSL = mail_use_ssl.lower() in ("true", "1", "yes", "on") if isinstance(mail_use_ssl, str) else bool(mail_use_ssl)
+    MAIL_USE_TLS = _get_bool_env("MAIL_USE_TLS", True)
+    MAIL_USE_SSL = _get_bool_env("MAIL_USE_SSL", False)
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "noreply@southeastarchers.ie")
-    # Additional mail settings for better compatibility
     MAIL_SUPPRESS_SEND = False
     MAIL_DEBUG = False
 
@@ -59,9 +60,7 @@ class DevelopmentConfig(Config):
     JINJA_AUTO_RELOAD = True
     SESSION_COOKIE_SECURE = False
     TALISMAN_ENABLED = False
-    SQLALCHEMY_ECHO = False
     MAIL_USE_TLS = False
-    MAIL_USE_SSL = False
     SERVER_NAME = os.environ.get("SERVER_NAME", "localhost:5000")
     PREFERRED_URL_SCHEME = "http"
 
@@ -80,8 +79,7 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
 
-    DEBUG = False
-    SESSION_COOKIE_SECURE = True
+    pass
 
 
 config = {

@@ -65,9 +65,9 @@ python manage.py dev
 ## 📂 Project Structure
 
 - `app/`: Core Flask application
-  - `models/`: SQLAlchemy database models
-  - `routes/`: Flask blueprints (admin, member, public, auth, payment)
-  - `services/`: Business logic layer
+  - `models/`: SQLAlchemy database models (including RBAC)
+  - `routes/`: Flask blueprints (admin, member, public, auth, payment, and role management)
+  - `services/`: Business logic layer (including `RBACService`)
   - `forms/`: WTForms definitions
   - `templates/`: Jinja2 templates
   - `utils/`: Helper functions and utilities
@@ -78,7 +78,27 @@ python manage.py dev
 - `web.py`: Main application entry point
 - `manage.py`: CLI management tool
 - `pyproject.toml`: Python dependencies and tool configuration
-- `package.json`: Node.js dependencies and scripts
+
+## 🔐 Role Based Access Control (RBAC)
+
+The application uses a fine-grained RBAC system for security.
+
+### Key Concepts
+
+- **Permissions:** Granular actions (e.g., `members.read`, `events.create`).
+- **Roles:** Collections of permissions (e.g., `Admin`, `Content Manager`).
+- **Users:** Users are assigned roles, granting them all associated permissions.
+
+### Implementation
+
+- **Models:** `Role` and `Permission` in `app/models/rbac.py`.
+- **Decorators:** Use `@permission_required("perm.name")` in routes to enforce access.
+- **Service:** `RBACService` for managing roles and permissions.
+
+To seed default roles and permissions, run:
+```bash
+python manage.py rbac seed
+```
 
 ## ⌨️ CLI Commands (`manage.py`)
 
@@ -95,6 +115,7 @@ The project includes a comprehensive CLI tool for management tasks:
 | `python manage.py assets build` | Build production assets |
 | `python manage.py schedule run` | Run due scheduled tasks |
 | `python manage.py stats` | Show application statistics |
+| `python manage.py rbac seed` | Seed default roles and permissions |
 | `python manage.py clean` | Remove cache and temporary files |
 
 Run `python manage.py --help` for a full list of commands.

@@ -5,7 +5,51 @@ from unittest.mock import patch
 
 from app import db
 from app.models import Membership, User
-from app.scheduler.jobs import send_low_credits_reminder
+from app.scheduler.jobs import expire_memberships, send_low_credits_reminder
+
+
+class TestExpireMemberships:
+    """Test the membership expiry job."""
+
+    def test_expires_memberships_on_start_date(self, app):
+        """Test that memberships are expired on the year start date"""
+        from app.models import ApplicationSettings
+        from app.services.membership_service import MembershipService
+
+        with app.app_context():
+            # Set today as start date
+            today = date.today()
+            settings = ApplicationSettings.query.first()
+            if not settings:
+                settings = ApplicationSettings()
+                db.session.add(settings)
+            settings.membership_year_start_month = today.month
+            settings.membership_year_start_day = today.day
+            db.session.commit()
+
+            with patch.object(MembershipService, "expire_memberships_for_year_end", return_value=5) as mock_expire:
+                expire_memberships()
+                assert mock_expire.called
+
+    def test_does_not_expire_on_other_dates(self, app):
+        """Test that memberships are not expired on other dates"""
+        from app.models import ApplicationSettings
+        from app.services.membership_service import MembershipService
+
+        with app.app_context():
+            # Set start date to tomorrow
+            tomorrow = date.today() + timedelta(days=1)
+            settings = ApplicationSettings.query.first()
+            if not settings:
+                settings = ApplicationSettings()
+                db.session.add(settings)
+            settings.membership_year_start_month = tomorrow.month
+            settings.membership_year_start_day = tomorrow.day
+            db.session.commit()
+
+            with patch.object(MembershipService, "expire_memberships_for_year_end") as mock_expire:
+                expire_memberships()
+                assert not mock_expire.called
 
 
 class TestLowCreditsReminder:

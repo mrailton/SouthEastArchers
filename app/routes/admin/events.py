@@ -2,26 +2,27 @@ from flask import abort, flash, redirect, render_template, url_for
 
 from app.forms import EventForm
 from app.services import EventService
+from app.utils.decorators import permission_required
 
-from . import admin_required, bp
+from . import bp
 
 
 @bp.get("/events")
-@admin_required
+@permission_required("events.read")
 def events():
     events = EventService.get_all_events()
     return render_template("admin/events.html", events=events)
 
 
 @bp.get("/events/create")
-@admin_required
+@permission_required("events.create")
 def create_event():
     """Display event creation form"""
     return render_template("admin/create_event.html", form=EventForm())
 
 
 @bp.post("/events/create")
-@admin_required
+@permission_required("events.create")
 def create_event_post():
     """Handle event creation form submission"""
     form = EventForm()
@@ -50,7 +51,7 @@ def create_event_post():
 
 
 @bp.get("/events/<int:event_id>/edit")
-@admin_required
+@permission_required("events.update")
 def edit_event(event_id):
     """Display event edit form"""
     event = EventService.get_event_by_id(event_id)
@@ -61,7 +62,7 @@ def edit_event(event_id):
 
 
 @bp.post("/events/<int:event_id>/edit")
-@admin_required
+@permission_required("events.update")
 def edit_event_post(event_id):
     """Handle event edit form submission"""
     event = EventService.get_event_by_id(event_id)

@@ -24,11 +24,24 @@
     <div class="bg-white p-6 rounded shadow">
         <h3 class="text-xl font-bold mb-4">Management</h3>
         <ul class="space-y-2">
+            {% if current_user.has_permission('members.read') %}
             <li><a href="{{ url_for('admin.members') }}" class="text-blue-600 hover:underline">Manage Members</a></li>
+            {% endif %}
+            {% if current_user.has_permission('shoots.read') %}
             <li><a href="{{ url_for('admin.shoots') }}" class="text-blue-600 hover:underline">Manage Shoots</a></li>
+            {% endif %}
+            {% if current_user.has_permission('news.read') %}
             <li><a href="{{ url_for('admin.news') }}" class="text-blue-600 hover:underline">Manage News</a></li>
+            {% endif %}
+            {% if current_user.has_permission('events.read') %}
             <li><a href="{{ url_for('admin.events') }}" class="text-blue-600 hover:underline">Manage Events</a></li>
+            {% endif %}
+            {% if current_user.has_permission('settings.read') %}
             <li><a href="{{ url_for('admin.settings') }}" class="text-blue-600 hover:underline">Application Settings</a></li>
+            {% endif %}
+            {% if current_user.has_permission('roles.manage') %}
+            <li><a href="{{ url_for('admin.roles_index') }}" class="text-blue-600 hover:underline">Manage Roles &amp; Permissions</a></li>
+            {% endif %}
         </ul>
     </div>
     

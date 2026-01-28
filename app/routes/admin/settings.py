@@ -5,12 +5,13 @@ from flask import flash, redirect, render_template, url_for
 from app import db
 from app.forms.admin_forms import SettingsForm
 from app.services.settings_service import SettingsService
+from app.utils.decorators import permission_required
 
-from . import admin_required, bp
+from . import bp
 
 
 @bp.get("/settings")
-@admin_required
+@permission_required("settings.read")
 def settings():
     """Display application settings."""
     settings_obj = SettingsService.get()
@@ -27,7 +28,7 @@ def settings():
 
 
 @bp.post("/settings")
-@admin_required
+@permission_required("settings.write")
 def settings_post():
     """Update application settings."""
     form = SettingsForm()

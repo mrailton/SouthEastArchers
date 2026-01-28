@@ -95,7 +95,6 @@ def test_edit_member_success(client, admin_user, test_user):
             "email": test_user.email,
             "phone": "9876543210",
             "qualification": test_user.qualification,
-            "is_admin": "",
             "is_active": "on",
         },
         follow_redirects=True,

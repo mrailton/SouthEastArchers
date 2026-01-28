@@ -5,7 +5,8 @@ from datetime import date, timedelta
 import pytest
 
 from app import create_app, db
-from app.models import Membership, User
+from app.models import Membership, Role, User
+from app.models.rbac import seed_rbac
 from tests.helpers import FakeMailer, FakeQueue
 
 
@@ -20,6 +21,7 @@ def app_instance(tmp_path_factory):
 
     with app.app_context():
         db.create_all()
+        seed_rbac(db.session)
         yield app
         # Clean up after all tests
         db.session.remove()
@@ -31,6 +33,7 @@ def app_instance(tmp_path_factory):
 def app(app_instance):
     """Provide application context for each test"""
     with app_instance.app_context():
+        seed_rbac(db.session)
         yield app_instance
         # Clean up data after each test
         db.session.rollback()  # Rollback any failed transactions
@@ -100,10 +103,12 @@ def admin_user(app):
         name="Admin User",
         email="admin@example.com",
         qualification="none",
-        is_admin=True,
         is_active=True,
     )
     user.set_password("adminpass")
+    admin_role = Role.query.filter_by(name="Admin").first()
+    if admin_role:
+        user.roles.append(admin_role)
     db.session.add(user)
     db.session.commit()
 

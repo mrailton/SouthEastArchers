@@ -4,6 +4,7 @@ from .event import Event
 from .membership import Membership
 from .news import News
 from .payment import Payment
+from .rbac import Permission, Role
 from .shoot import Shoot, ShootLocation
 from .user import User
 
@@ -17,4 +18,6 @@ __all__ = [
     "Event",
     "Payment",
     "ApplicationSettings",
+    "Role",
+    "Permission",
 ]

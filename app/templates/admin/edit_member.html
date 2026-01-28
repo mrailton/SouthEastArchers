@@ -6,54 +6,73 @@
     
     <form method="POST" class="bg-white p-8 rounded shadow space-y-6">
         {{ form.hidden_tag() }}
+        {% if form.errors %}
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <ul class="list-disc list-inside text-sm">
+                {% for field, errors in form.errors.items() %}
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <div>
             <h2 class="text-xl font-semibold mb-4">Member Details</h2>
-            
             <div class="space-y-4">
                 <div>
                     <label for="name" class="block text-gray-700 font-bold mb-2">Name *</label>
-                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                           type="text" id="name" name="name" value="{{ member.name }}" required>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2"
+                           type="text" id="name" name="name" value="{{ form.name.data or '' }}" required>
                 </div>
-                
+
                 <div>
                     <label for="email" class="block text-gray-700 font-bold mb-2">Email *</label>
-                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                           type="email" id="email" name="email" value="{{ member.email }}" required>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2"
+                           type="email" id="email" name="email" value="{{ form.email.data or '' }}" required>
                 </div>
-                
+
                 <div>
                     <label for="phone" class="block text-gray-700 font-bold mb-2">Phone</label>
-                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                           type="tel" id="phone" name="phone" value="{{ member.phone or '' }}">
+                    <input class="w-full border border-gray-300 rounded px-3 py-2"
+                           type="tel" id="phone" name="phone" value="{{ form.phone.data or '' }}">
                 </div>
-                
+
                 <div>
                     <label for="qualification" class="block text-gray-700 font-bold mb-2">Qualification *</label>
-                    <select class="w-full border border-gray-300 rounded px-3 py-2" 
-                            id="qualification" name="qualification" required>
-                        <option value="none" {% if member.qualification == 'none' %}selected{% endif %}>None</option>
-                        <option value="beginner" {% if member.qualification == 'beginner' %}selected{% endif %}>Beginner Course Completed</option>
-                        <option value="ai" {% if member.qualification == 'ai' %}selected{% endif %}>Archery Ireland Member</option>
-                        <option value="ifaf" {% if member.qualification == 'ifaf' %}selected{% endif %}>Irish Field Archery Federation Member</option>
+                    <select class="w-full border border-gray-300 rounded px-3 py-2" id="qualification" name="qualification" required>
+                        {% for value, label in form.qualification.choices %}
+                            <option value="{{ value }}" {% if form.qualification.data == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
                     </select>
                 </div>
-                
+
                 <div>
                     <label for="password" class="block text-gray-700 font-bold mb-2">New Password (leave blank to keep current)</label>
-                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                    <input class="w-full border border-gray-300 rounded px-3 py-2"
                            type="password" id="password" name="password">
                 </div>
-                
-                <div class="flex items-center space-x-6">
-                    <div class="flex items-center">
-                        <input type="checkbox" name="is_admin" id="is_admin" {% if member.is_admin %}checked{% endif %}
-                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                        <label for="is_admin" class="ml-2 text-sm text-gray-700">Admin privileges</label>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">Roles</label>
+                        <div class="space-y-2">
+                            {% for value, label in form.roles.choices %}
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="roles" value="{{ value }}" {% if form.roles.data and value in form.roles.data %}checked{% endif %}
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <span class="text-sm text-gray-700">{{ label|title }}</span>
+                            </label>
+                            {% endfor %}
+                            {% if not form.roles.choices %}
+                            <p class="text-sm text-gray-500">No roles defined. Run migrations to seed roles.</p>
+                            {% endif %}
+                        </div>
                     </div>
-                    
-                    <div class="flex items-center">
-                        <input type="checkbox" name="is_active" id="is_active" {% if member.is_active %}checked{% endif %}
+
+                    <div class="flex items-center mt-2 md:mt-8">
+                        <input type="checkbox" name="is_active" id="is_active" {% if form.is_active.data %}checked{% endif %}
                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                         <label for="is_active" class="ml-2 text-sm text-gray-700">Active</label>
                     </div>
@@ -68,23 +87,23 @@
             <div class="space-y-4">
                 <div>
                     <label for="membership_start_date" class="block text-gray-700 font-bold mb-2">Start Date</label>
-                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                           type="date" id="membership_start_date" name="membership_start_date" 
-                           value="{{ member.membership.start_date.isoformat() }}">
+                    <input class="w-full border border-gray-300 rounded px-3 py-2"
+                           type="date" id="membership_start_date" name="membership_start_date"
+                           value="{{ form.membership_start_date.data.isoformat() if form.membership_start_date.data else '' }}">
                 </div>
                 
                 <div>
                     <label for="membership_expiry_date" class="block text-gray-700 font-bold mb-2">Expiry Date</label>
-                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                           type="date" id="membership_expiry_date" name="membership_expiry_date" 
-                           value="{{ member.membership.expiry_date.isoformat() }}">
+                    <input class="w-full border border-gray-300 rounded px-3 py-2"
+                           type="date" id="membership_expiry_date" name="membership_expiry_date"
+                           value="{{ form.membership_expiry_date.data.isoformat() if form.membership_expiry_date.data else '' }}">
                 </div>
                 
                 <div>
                     <label for="membership_initial_credits" class="block text-gray-700 font-bold mb-2">Initial Credits</label>
-                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                           type="number" id="membership_initial_credits" name="membership_initial_credits" 
-                           value="{{ member.membership.initial_credits }}" min="-100">
+                    <input class="w-full border border-gray-300 rounded px-3 py-2"
+                           type="number" id="membership_initial_credits" name="membership_initial_credits"
+                           value="{{ form.membership_initial_credits.data if form.membership_initial_credits.data is not none else '' }}" min="-100">
                     <p class="mt-1 text-sm text-gray-500">
                         Credits included with membership (can be negative for admin bookings)
                     </p>
@@ -92,9 +111,9 @@
 
                 <div>
                     <label for="membership_purchased_credits" class="block text-gray-700 font-bold mb-2">Purchased Credits</label>
-                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                           type="number" id="membership_purchased_credits" name="membership_purchased_credits" 
-                           value="{{ member.membership.purchased_credits }}" min="0">
+                    <input class="w-full border border-gray-300 rounded px-3 py-2"
+                           type="number" id="membership_purchased_credits" name="membership_purchased_credits"
+                           value="{{ form.membership_purchased_credits.data if form.membership_purchased_credits.data is not none else '' }}" min="0">
                     <p class="mt-1 text-sm text-gray-500">
                         Additional credits purchased separately (never expire)
                     </p>

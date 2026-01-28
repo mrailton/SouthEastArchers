@@ -30,19 +30,24 @@
                 {% endif %}
             </p>
             <p class="text-gray-700 mb-2">
-                <strong>Status:</strong> 
+                <strong>Roles:</strong>
+                {% if member.roles %}
+                    {% for role in member.roles %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 mr-2">
+                        {{ role.name|title }}
+                    </span>
+                    {% endfor %}
+                {% else %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Member</span>
+                {% endif %}
+            </p>
+            <p class="text-gray-700 mb-2">
+                <strong>Status:</strong>
                 <span class="{% if member.is_active %}text-green-600{% else %}text-red-600{% endif %}">
                     {{ 'Active' if member.is_active else 'Inactive' }}
                 </span>
             </p>
-            {% if member.is_admin %}
-            <p class="text-gray-700">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                    Admin
-                </span>
-            </p>
-            {% endif %}
-            
+
             {% if not member.is_active %}
             <div class="mt-4 pt-4 border-t">
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">

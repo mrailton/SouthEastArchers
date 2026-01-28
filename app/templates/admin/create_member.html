@@ -31,10 +31,20 @@
             <p class="mt-1 text-sm text-gray-500">Default: changeme123</p>
         </div>
         
-        <div class="flex items-center">
-            <input type="checkbox" name="is_admin" id="is_admin"
-                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-            <label for="is_admin" class="ml-2 text-sm text-gray-700">Admin privileges</label>
+        <div>
+            <label class="block text-gray-700 font-bold mb-2">Roles</label>
+            <div class="space-y-2">
+                {% for value, label in form.roles.choices %}
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="roles" value="{{ value }}" {% if form.roles.data and value in form.roles.data %}checked{% endif %}
+                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <span class="text-sm text-gray-700">{{ label|title }}</span>
+                </label>
+                {% endfor %}
+                {% if not form.roles.choices %}
+                <p class="text-sm text-gray-500">No roles defined. Run migrations to seed roles.</p>
+                {% endif %}
+            </div>
         </div>
         
         <div class="flex items-center">

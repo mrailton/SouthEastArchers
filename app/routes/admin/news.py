@@ -2,26 +2,27 @@ from flask import abort, flash, redirect, render_template, url_for
 
 from app.forms import NewsForm
 from app.services import NewsService
+from app.utils.decorators import permission_required
 
-from . import admin_required, bp
+from . import bp
 
 
 @bp.get("/news")
-@admin_required
+@permission_required("news.read")
 def news():
     articles = NewsService.get_all_articles()
     return render_template("admin/news.html", articles=articles)
 
 
 @bp.get("/news/create")
-@admin_required
+@permission_required("news.create")
 def create_news():
     """Display news creation form"""
     return render_template("admin/create_news.html", form=NewsForm())
 
 
 @bp.post("/news/create")
-@admin_required
+@permission_required("news.create")
 def create_news_post():
     """Handle news creation form submission"""
     form = NewsForm()
@@ -49,7 +50,7 @@ def create_news_post():
 
 
 @bp.get("/news/<int:news_id>/edit")
-@admin_required
+@permission_required("news.update")
 def edit_news(news_id):
     """Display news edit form"""
     news = NewsService.get_article_by_id(news_id)
@@ -60,7 +61,7 @@ def edit_news(news_id):
 
 
 @bp.post("/news/<int:news_id>/edit")
-@admin_required
+@permission_required("news.update")
 def edit_news_post(news_id):
     """Handle news edit form submission"""
     news = NewsService.get_article_by_id(news_id)

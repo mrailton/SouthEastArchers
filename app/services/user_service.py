@@ -3,7 +3,7 @@ from datetime import date
 from flask import current_app, session
 
 from app import db
-from app.models import Membership, Payment, User
+from app.models import Membership, Payment, Role, User
 from app.services.settings_service import SettingsService
 
 
@@ -58,7 +58,7 @@ class UserService:
         email: str,
         phone: str = None,
         password: str = "changeme123",
-        is_admin: bool = False,
+        role_ids: list[int] | None = None,
         create_membership: bool = False,
         qualification: str = "none",
     ) -> tuple[User | None, str | None]:
@@ -70,7 +70,6 @@ class UserService:
             name=name,
             email=email,
             phone=phone,
-            is_admin=is_admin,
             qualification=qualification,
             is_active=False,  # Start as inactive, admin must activate
         )
@@ -79,6 +78,10 @@ class UserService:
         try:
             db.session.add(user)
             db.session.flush()
+
+            if role_ids:
+                roles = Role.query.filter(Role.id.in_(role_ids)).all()
+                user.roles = roles
 
             if create_membership:
                 start_date = date.today()
@@ -106,7 +109,7 @@ class UserService:
         email: str,
         phone: str = None,
         qualification: str = None,
-        is_admin: bool = False,
+        role_ids: list[int] | None = None,
         is_active: bool = True,
         password: str = None,
         membership_start_date: date = None,
@@ -120,7 +123,9 @@ class UserService:
         user.phone = phone
         if qualification:
             user.qualification = qualification
-        user.is_admin = is_admin
+        if role_ids is not None:
+            roles = Role.query.filter(Role.id.in_(role_ids)).all()
+            user.roles = roles
         user.is_active = is_active
 
         if password:

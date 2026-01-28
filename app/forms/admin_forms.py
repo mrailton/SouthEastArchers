@@ -30,7 +30,7 @@ class CreateMemberForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired(), Email()])
     phone = StringField("Phone", validators=[Optional()])
     password = PasswordField("Password", validators=[Optional()])
-    is_admin = BooleanField("Is Admin", default=False)
+    roles = SelectMultipleField("Roles", coerce=int, validators=[Optional()])
     create_membership = BooleanField("Create Membership", default=False)
 
 
@@ -49,7 +49,7 @@ class EditMemberForm(FlaskForm):
         validators=[DataRequired()],
     )
     password = PasswordField("Password", validators=[Optional()])
-    is_admin = BooleanField("Is Admin", default=False)
+    roles = SelectMultipleField("Roles", coerce=int, validators=[Optional()])
     is_active = BooleanField("Is Active", default=True)
     membership_start_date = DateField("Membership Start Date", validators=[Optional()])
     membership_expiry_date = DateField("Membership Expiry Date", validators=[Optional()])
@@ -78,3 +78,9 @@ class SettingsForm(FlaskForm):
     additional_shoot_cost = IntegerField(
         "Additional Shoot Cost (€)", validators=[DataRequired(), NumberRange(min=0)], description="Cost per additional shoot in euros"
     )
+
+
+class RoleForm(FlaskForm):
+    name = StringField("Name", validators=[DataRequired(), Length(min=2, max=64)])
+    description = TextAreaField("Description", validators=[Optional(), Length(max=255)])
+    permissions = SelectMultipleField("Permissions", coerce=int, validators=[Optional()])

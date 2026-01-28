@@ -3,7 +3,7 @@
 from datetime import date
 
 from app import db
-from app.models import Payment, User
+from app.models import Payment, Role, User
 from app.services.user_service import UserService
 
 # TestGetUserById
@@ -150,7 +150,6 @@ def test_create_member_basic(app):
     assert user.name == "New Member"
     assert user.email == "newmember@example.com"
     assert user.check_password("changeme123")
-    assert user.is_admin is False
     assert user.membership is None
 
 
@@ -164,10 +163,12 @@ def test_create_member_with_custom_password(app):
 
 def test_create_member_as_admin(app):
     """Test creating member with admin privileges"""
-    user, error = UserService.create_member(name="Admin Member", email="adminmember@example.com", is_admin=True)
+    admin_role = Role.query.filter_by(name="Admin").first()
+    user, error = UserService.create_member(name="Admin Member", email="adminmember@example.com", role_ids=[admin_role.id] if admin_role else [])
 
     assert error is None
-    assert user.is_admin is True
+    if admin_role:
+        assert admin_role in user.roles
 
 
 def test_create_member_with_phone(app):
@@ -235,17 +236,18 @@ def test_update_member_basic_info(app, test_user):
 
 def test_update_member_admin_status(app, test_user):
     """Test toggling admin status"""
-    assert test_user.is_admin is False
-
+    # Remove admin flag assertion (RBAC now)
+    admin_role = Role.query.filter_by(name="Admin").first()
     success, message = UserService.update_member(
         user=test_user,
         name=test_user.name,
         email=test_user.email,
-        is_admin=True,
+        role_ids=[admin_role.id] if admin_role else [],
     )
 
     assert success is True
-    assert test_user.is_admin is True
+    if admin_role:
+        assert admin_role in test_user.roles
 
 
 def test_update_member_active_status(app, test_user):

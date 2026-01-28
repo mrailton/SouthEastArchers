@@ -1,22 +1,26 @@
+from collections.abc import Sequence
+from typing import cast
+
 from flask import abort, current_app, flash, redirect, render_template, url_for
 
 from app.forms import CreateMemberForm, EditMemberForm
-from app.models import Payment
+from app.models import Payment, Role
 from app.services import MembershipService, UserService
+from app.utils.decorators import permission_required
 from app.utils.email import send_payment_receipt
 
-from . import admin_required, bp
+from . import bp
 
 
 @bp.get("/members")
-@admin_required
+@permission_required("members.read")
 def members():
     members = UserService.get_all_users()
     return render_template("admin/members.html", members=members)
 
 
 @bp.get("/members/<int:user_id>")
-@admin_required
+@permission_required("members.read")
 def member_detail(user_id):
     member = UserService.get_user_by_id(user_id)
     if not member:
@@ -25,7 +29,7 @@ def member_detail(user_id):
 
 
 @bp.post("/members/<int:user_id>/membership/renew")
-@admin_required
+@permission_required("members.manage_membership")
 def renew_membership(user_id):
     member = UserService.get_user_by_id(user_id)
     if not member:
@@ -38,7 +42,7 @@ def renew_membership(user_id):
 
 
 @bp.post("/members/<int:user_id>/membership/activate")
-@admin_required
+@permission_required("members.manage_membership")
 def activate_membership(user_id):
     member = UserService.get_user_by_id(user_id)
     if not member:
@@ -70,7 +74,7 @@ def activate_membership(user_id):
 
 
 @bp.post("/members/<int:user_id>/activate")
-@admin_required
+@permission_required("members.activate_account")
 def activate_user(user_id):
     """Activate a user account and send welcome email"""
     member = UserService.get_user_by_id(user_id)
@@ -100,17 +104,20 @@ def activate_user(user_id):
 
 
 @bp.get("/members/create")
-@admin_required
+@permission_required("members.create")
 def create_member():
     """Display member creation form"""
-    return render_template("admin/create_member.html", form=CreateMemberForm())
+    form = CreateMemberForm()
+    form.roles.choices = [(r.id, r.name) for r in Role.query.order_by(Role.name)]
+    return render_template("admin/create_member.html", form=form)
 
 
 @bp.post("/members/create")
-@admin_required
+@permission_required("members.create")
 def create_member_post():
     """Handle member creation form submission"""
     form = CreateMemberForm()
+    form.roles.choices = [(r.id, r.name) for r in Role.query.order_by(Role.name)]
 
     if form.validate_on_submit():
         user, error = UserService.create_member(
@@ -118,18 +125,14 @@ def create_member_post():
             email=form.email.data,
             phone=form.phone.data,
             password=form.password.data or "changeme123",
-            is_admin=form.is_admin.data,
+            role_ids=form.roles.data,
             create_membership=form.create_membership.data,
             qualification=form.qualification.data if hasattr(form, "qualification") else "none",
         )
 
         if error:
             flash(error, "error")
-            return render_template("admin/create_member.html", form=CreateMemberForm())
-
-        if user:
-            flash(f"Member {user.name} created successfully!", "success")
-            return redirect(url_for("admin.members"))
+            return render_template("admin/create_member.html", form=form)
 
     for field, errors in form.errors.items():
         for error in errors:
@@ -139,7 +142,7 @@ def create_member_post():
 
 
 @bp.get("/members/<int:user_id>/edit")
-@admin_required
+@permission_required("members.update")
 def edit_member(user_id):
     """Display member edit form"""
     member = UserService.get_user_by_id(user_id)
@@ -154,18 +157,20 @@ def edit_member(user_id):
         form.membership_initial_credits.data = member.membership.initial_credits
         form.membership_purchased_credits.data = member.membership.purchased_credits
 
+    form.roles.choices = [(r.id, r.name) for r in Role.query.order_by(Role.name)]
+    form.roles.data = [r.id for r in cast(Sequence, member.roles)]
     return render_template("admin/edit_member.html", member=member, form=form)
 
 
 @bp.post("/members/<int:user_id>/edit")
-@admin_required
+@permission_required("members.update")
 def edit_member_post(user_id):
-    """Handle member edit form submission"""
     member = UserService.get_user_by_id(user_id)
     if not member:
         abort(404)
 
     form = EditMemberForm(obj=member)
+    form.roles.choices = [(r.id, r.name) for r in Role.query.order_by(Role.name)]
 
     if form.validate_on_submit():
         success, message = UserService.update_member(
@@ -174,7 +179,7 @@ def edit_member_post(user_id):
             email=form.email.data,
             phone=form.phone.data,
             qualification=form.qualification.data,
-            is_admin=form.is_admin.data,
+            role_ids=form.roles.data,
             is_active=form.is_active.data,
             password=form.password.data or None,
             membership_start_date=form.membership_start_date.data,

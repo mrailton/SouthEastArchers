@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from flask import current_app
 from flask_login import UserMixin
 from itsdangerous import URLSafeTimedSerializer
@@ -15,7 +17,6 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20), nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
     qualification = db.Column(db.String(255), nullable=False, default="None")
-    is_admin = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
@@ -24,6 +25,7 @@ class User(UserMixin, db.Model):
     credits = db.relationship("Credit", backref="user", cascade="all, delete-orphan")
     shoots = db.relationship("Shoot", secondary="user_shoots", backref="users")
     payments = db.relationship("Payment", backref="user", cascade="all, delete-orphan")
+    roles = db.relationship("Role", secondary="user_roles", back_populates="users")
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
@@ -43,6 +45,21 @@ class User(UserMixin, db.Model):
             return User.query.filter_by(email=email).first()
         except Exception:
             return None
+
+    def has_role(self, role_name: str) -> bool:
+        return any(role.name == role_name for role in self.roles)
+
+    def permission_names(self) -> set[str]:
+        return {permission.name for role in self.roles for permission in role.permissions}
+
+    def has_permission(self, permission_name: str) -> bool:
+        return permission_name in self.permission_names()
+
+    def has_any_permission(self, *permission_names: str) -> bool:
+        if not permission_names:
+            return False
+        user_permissions = self.permission_names()
+        return any(name in user_permissions for name in permission_names)
 
     def __repr__(self):
         return f"<User {self.email}>"

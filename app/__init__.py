@@ -7,7 +7,7 @@ from typing import Any
 
 from flask import Flask
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager
+from flask_login import AnonymousUserMixin, LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -19,6 +19,16 @@ migrate = Migrate()
 mail = Mail()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
+
+
+class AnonymousUser(AnonymousUserMixin):
+    """Anonymous user that safely denies all permissions."""
+
+    def has_permission(self, permission_name: str) -> bool:  # pragma: no cover - simple default
+        return False
+
+    def has_any_permission(self, *permission_names: str) -> bool:  # pragma: no cover - simple default
+        return False
 
 
 def _configure_logging(app: Flask) -> None:
@@ -98,6 +108,7 @@ def _init_extensions(app: Flask) -> None:
     login_manager.login_view = "auth.login"
     login_manager.login_message = "Please log in to access this page."
     login_manager.login_message_category = "warning"
+    login_manager.anonymous_user = AnonymousUser
 
     @login_manager.user_loader
     def load_user(user_id):

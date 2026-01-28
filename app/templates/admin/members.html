@@ -18,9 +18,14 @@
                         <div class="flex items-center">
                             <h3 class="text-lg font-medium text-gray-900">
                                 {{ member.name }}
-                                {% if member.is_admin %}
+                                {% for role in member.roles %}
                                 <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                    Admin
+                                    {{ role.name|title }}
+                                </span>
+                                {% endfor %}
+                                {% if not member.roles %}
+                                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    Member
                                 </span>
                                 {% endif %}
                                 {% if not member.is_active %}

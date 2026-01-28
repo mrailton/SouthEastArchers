@@ -2,19 +2,20 @@ from flask import abort, flash, redirect, render_template, url_for
 
 from app.forms import ShootForm
 from app.services import ShootService
+from app.utils.decorators import permission_required
 
-from . import admin_required, bp
+from . import bp
 
 
 @bp.get("/shoots")
-@admin_required
+@permission_required("shoots.read")
 def shoots():
     shoots = ShootService.get_all_shoots()
     return render_template("admin/shoots.html", shoots=shoots)
 
 
 @bp.get("/shoots/create")
-@admin_required
+@permission_required("shoots.create")
 def create_shoot():
     """Display shoot creation form"""
     form = ShootForm()
@@ -24,7 +25,7 @@ def create_shoot():
 
 
 @bp.post("/shoots/create")
-@admin_required
+@permission_required("shoots.create")
 def create_shoot_post():
     """Handle shoot creation form submission"""
     form = ShootForm()
@@ -59,7 +60,7 @@ def create_shoot_post():
 
 
 @bp.get("/shoots/<int:shoot_id>/edit")
-@admin_required
+@permission_required("shoots.update")
 def edit_shoot(shoot_id):
     """Display shoot edit form"""
     shoot = ShootService.get_shoot_by_id(shoot_id)
@@ -80,7 +81,7 @@ def edit_shoot(shoot_id):
 
 
 @bp.post("/shoots/<int:shoot_id>/edit")
-@admin_required
+@permission_required("shoots.update")
 def edit_shoot_post(shoot_id):
     """Handle shoot edit form submission"""
     shoot = ShootService.get_shoot_by_id(shoot_id)

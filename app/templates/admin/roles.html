@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Roles - Admin{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Roles</h1>
+    <a href="{{ url_for('admin.create_role') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Create Role</a>
+</div>
+
+<div class="bg-white shadow rounded p-6">
+    {% if roles %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-left">
+            <thead>
+                <tr class="border-b">
+                    <th class="py-3 px-2 text-sm font-semibold text-gray-600">Name</th>
+                    <th class="py-3 px-2 text-sm font-semibold text-gray-600">Description</th>
+                    <th class="py-3 px-2 text-sm font-semibold text-gray-600">Permissions</th>
+                    <th class="py-3 px-2 text-sm font-semibold text-gray-600">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for role in roles %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-3 px-2 font-semibold text-gray-900">{{ role.name }}</td>
+                    <td class="py-3 px-2 text-gray-700">{{ role.description or 'No description' }}</td>
+                    <td class="py-3 px-2 text-gray-700">{{ role.permissions|length }}</td>
+                    <td class="py-3 px-2">
+                        <div class="flex items-center gap-3">
+                            <a href="{{ url_for('admin.edit_role', role_id=role.id) }}" class="text-blue-600 hover:underline text-sm">Edit</a>
+                            <form method="POST" action="{{ url_for('admin.delete_role', role_id=role.id) }}" class="flex items-center" onsubmit="return confirm('Delete this role?');">
+                                <button type="submit" class="text-red-600 hover:underline text-sm inline-flex items-center leading-none">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-gray-600">No roles found.</p>
+    {% endif %}
+</div>
+{% endblock %}

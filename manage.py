@@ -159,7 +159,7 @@ def user():
 def user_create(name, email, password, phone, admin):
     """Create a new user"""
     from app import create_app, db
-    from app.models import User
+    from app.models import Permission, Role, User
 
     app = create_app()
     with app.app_context():
@@ -168,9 +168,18 @@ def user_create(name, email, password, phone, admin):
             email=email,
             phone=phone if phone else None,
             is_active=True,
-            is_admin=admin,
         )
         user.set_password(password)
+
+        if admin:
+            admin_role = Role.query.filter_by(name="Admin").first()
+            if not admin_role:
+                from app.models.rbac import seed_rbac
+
+                seed_rbac(db.session)
+                admin_role = Role.query.filter_by(name="Admin").first()
+            if admin_role:
+                user.roles.append(admin_role)
 
         db.session.add(user)
         db.session.flush()
@@ -202,7 +211,7 @@ def user_list():
         click.echo("-" * 90)
 
         for user in users:
-            admin_status = "Yes" if user.is_admin else "No"
+            admin_status = "Yes" if any(r.name == "Admin" for r in user.roles) else "No"
             membership = user.membership
             membership_status = membership.status if membership else "None"
             click.echo(
@@ -451,13 +460,13 @@ def shoot_list(upcoming):
 def stats():
     """Show application statistics"""
     from app import create_app, db
-    from app.models import Event, Membership, News, Shoot, User
+    from app.models import Event, Membership, News, Role, Shoot, User
 
     app = create_app()
     with app.app_context():
         total_users = User.query.count()
-        total_members = User.query.filter_by(is_admin=False).count()
-        total_admins = User.query.filter_by(is_admin=True).count()
+        total_admins = db.session.query(User).join(User.roles).filter(Role.name == "Admin").distinct().count()
+        total_members = total_users - total_admins
         active_memberships = Membership.query.filter_by(status="active").count()
         upcoming_shoots = Shoot.query.filter(Shoot.date > datetime.now()).count()
         total_news = News.query.count()
@@ -654,6 +663,24 @@ def schedule_list():
     click.echo(f"\nTotal: {len(events)} scheduled tasks")
     click.echo("\nTo run scheduled tasks: python manage.py schedule run")
     click.echo("For production, add to crontab: * * * * * cd /path/to/project && python manage.py schedule run >> /dev/null 2>&1")
+
+
+@cli.group()
+def rbac():
+    """RBAC management commands"""
+    pass
+
+
+@rbac.command("seed")
+def rbac_seed():
+    """Seed default roles and permissions (idempotent)."""
+    from app import create_app, db
+    from app.models.rbac import seed_rbac
+
+    app = create_app()
+    with app.app_context():
+        seed_rbac(db.session)
+        click.echo("✓ RBAC roles and permissions seeded (idempotent).")
 
 
 if __name__ == "__main__":

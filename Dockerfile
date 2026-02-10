@@ -27,8 +27,7 @@ RUN composer install --no-interaction --optimize-autoloader --no-dev --no-script
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Copy and set up entrypoint
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Environment variables for PHP configuration
 ENV PHP_OPCACHE_ENABLE="1" \

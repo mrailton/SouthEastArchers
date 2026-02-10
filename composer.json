@@ -55,7 +55,16 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@php artisan test"
+            "@php artisan test --coverage"
+        ],
+        "lint": [
+            "@php ./vendor/bin/pint --test"
+        ],
+        "lint:fix": [
+            "@php ./vendor/bin/pint"
+        ],
+        "analyse": [
+            "@php ./vendor/bin/phpstan analyse"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

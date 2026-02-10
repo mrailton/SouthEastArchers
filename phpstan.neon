@@ -5,8 +5,4 @@ parameters:
     paths:
         - app/
 
-    level: 6
-
-    ignoreErrors:
-        - identifier: argument.type
-          path: app/Http/Controllers/Auth/VerifyEmailController.php
+    level: 7

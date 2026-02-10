@@ -57,8 +57,9 @@ class CheckoutController extends Controller
 
         if ($paymentId) {
             $payment = Payment::find($paymentId);
-            if ($payment) {
-                $this->paymentService->completePayment($payment, $result['transaction_id'] ?? null);
+            if ($payment instanceof Payment) {
+                $transactionId = $result['transaction_id'] ?? null;
+                $this->paymentService->completePayment($payment, $transactionId);
             }
         }
 

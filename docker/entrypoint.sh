@@ -24,5 +24,5 @@ php artisan event:cache
 
 echo "Deployment tasks complete. Starting server..."
 
-# Start FrankenPHP server (serversideup default)
-exec docker-php-serversideup-entrypoint "$@"
+# Start supervisord (manages nginx and php-fpm)
+exec /usr/bin/supervisord -c /etc/supervisord.conf

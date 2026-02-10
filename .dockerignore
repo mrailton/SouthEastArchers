@@ -1,0 +1,66 @@
+# Docker
+.docker/
+docker-compose*.yml
+compose.yaml
+
+# Laravel
+/vendor/
+/node_modules/
+/public/build/
+/public/hot
+/public/storage
+/storage/*.key
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/framework/cache/*
+!/storage/framework/cache/.gitignore
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+.env
+.env.backup
+.env.local
+.env.*.local
+
+# IDE and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Testing
+.phpunit.result.cache
+coverage/
+.pest/
+
+# Development files
+phpunit.xml
+phpstan.neon
+pint.json
+.editorconfig
+.styleci.yml
+tests/
+
+# Sail (development only)
+docker-compose.yml
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+CLAUDE.md
+GEMINI.md
+AGENTS.md
+*.md
+
+# Misc
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log

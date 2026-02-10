@@ -43,3 +43,15 @@ test('profile update requires name', function () {
 
     $response->assertSessionHasErrors(['name']);
 });
+
+test('profile shows success message after update', function () {
+    $user = User::factory()->create(['is_active' => true]);
+
+    $response = $this
+        ->actingAs($user)
+        ->put('/profile', [
+            'name' => 'Test User',
+        ]);
+
+    $response->assertSessionHas('success', 'Profile updated successfully.');
+});

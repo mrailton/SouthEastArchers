@@ -72,6 +72,49 @@ test('admin can delete role', function () {
     expect(Role::where('name', 'Deletable Role')->exists())->toBeFalse();
 });
 
+test('admin cannot delete admin role', function () {
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->assignRole('Admin');
+
+    $adminRole = Role::where('name', 'Admin')->first();
+
+    $response = $this->actingAs($admin)->delete("/admin/roles/{$adminRole->id}");
+
+    $response->assertRedirect()
+        ->assertSessionHas('error', 'Cannot delete the Admin role.');
+    expect(Role::where('name', 'Admin')->exists())->toBeTrue();
+});
+
+test('admin can create role with permissions', function () {
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->assignRole('Admin');
+
+    $response = $this->actingAs($admin)->post('/admin/roles', [
+        'name' => 'Role With Permissions',
+        'permissions' => ['admin.dashboard.view', 'settings.read'],
+    ]);
+
+    $response->assertRedirect();
+    $role = Role::where('name', 'Role With Permissions')->first();
+    expect($role)->not->toBeNull()
+        ->and($role->hasPermissionTo('admin.dashboard.view'))->toBeTrue()
+        ->and($role->hasPermissionTo('settings.read'))->toBeTrue();
+});
+
+test('admin can create role without permissions', function () {
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->assignRole('Admin');
+
+    $response = $this->actingAs($admin)->post('/admin/roles', [
+        'name' => 'Empty Role',
+    ]);
+
+    $response->assertRedirect();
+    $role = Role::where('name', 'Empty Role')->first();
+    expect($role)->not->toBeNull()
+        ->and($role->permissions)->toHaveCount(0);
+});
+
 // Settings Tests
 test('admin can view settings', function () {
     $admin = User::factory()->create(['is_active' => true]);

@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Enums\ShootLocation;
+use Database\Factories\ShootFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Shoot extends Model
 {
+    /** @use HasFactory<ShootFactory> */
     use HasFactory;
 
     protected $fillable = [

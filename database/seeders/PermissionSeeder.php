@@ -31,7 +31,8 @@ class PermissionSeeder extends Seeder
         'members.manage_membership' => 'Activate or renew memberships',
         'members.activate_account' => 'Activate user accounts',
         'roles.manage' => 'Manage roles and permissions',
-        'payments.manage' => 'Manage and confirm payments',
+        'payments.manage' => 'View payment history',
+        'payments.confirm' => 'Confirm cash payments',
     ];
 
     /**

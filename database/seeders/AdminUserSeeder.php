@@ -17,7 +17,6 @@ class AdminUserSeeder extends Seeder
             ['email' => 'admin@southeastarchers.ie'],
             [
                 'name' => 'Admin User',
-                'email' => 'admin@southeastarchers.ie',
                 'password' => Hash::make('password'),
                 'phone' => '',
                 'qualification' => '',
@@ -26,6 +25,7 @@ class AdminUserSeeder extends Seeder
             ],
         );
 
-        $admin->assignRole('Admin');
+        // syncRoles replaces all existing roles, making this idempotent
+        $admin->syncRoles(['Admin']);
     }
 }

@@ -140,6 +140,52 @@ test('sumup service processes payment successfully', function () {
         ->and($result['transaction_code'])->toBe('txn_abc123');
 });
 
+test('sumup service formats single digit expiry month', function () {
+    Http::fake([
+        'api.sumup.com/*' => Http::response([
+            'status' => 'PAID',
+        ], 200),
+    ]);
+
+    config(['services.sumup.api_key' => 'test_api_key']);
+    config(['services.sumup.merchant_code' => 'test_merchant']);
+
+    $service = new SumUpService();
+    $result = $service->processCheckoutPayment(
+        'checkout_123',
+        '4111111111111111',
+        'Test User',
+        '1',  // Single digit month - should be padded to "01"
+        '2028',
+        '123',
+    );
+
+    expect($result['success'])->toBeTrue();
+});
+
+test('sumup service formats two digit expiry year', function () {
+    Http::fake([
+        'api.sumup.com/*' => Http::response([
+            'status' => 'PAID',
+        ], 200),
+    ]);
+
+    config(['services.sumup.api_key' => 'test_api_key']);
+    config(['services.sumup.merchant_code' => 'test_merchant']);
+
+    $service = new SumUpService();
+    $result = $service->processCheckoutPayment(
+        'checkout_123',
+        '4111111111111111',
+        'Test User',
+        '12',
+        '28',  // Two digit year - should be converted to "2028"
+        '123',
+    );
+
+    expect($result['success'])->toBeTrue();
+});
+
 test('sumup service handles failed payment', function () {
     Http::fake([
         'api.sumup.com/*' => Http::response([

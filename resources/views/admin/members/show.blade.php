@@ -124,6 +124,9 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        @can('payments.confirm')
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        @endcan
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -142,6 +145,21 @@
                                 {{ ucfirst($payment->status->value) }}
                             </span>
                         </td>
+                        @can('payments.confirm')
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            @if($payment->status === \App\Enums\PaymentStatus::Pending && $payment->payment_method === \App\Enums\PaymentMethod::Cash)
+                                <form action="{{ route('admin.payments.confirm', $payment) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to confirm this payment?')">
+                                    @csrf
+                                    <input type="hidden" name="redirect" value="{{ route('admin.members.show', $member) }}">
+                                    <button type="submit" class="btn btn-primary text-sm px-3 py-1">
+                                        Confirm
+                                    </button>
+                                </form>
+                            @else
+                                <span class="text-gray-400">-</span>
+                            @endif
+                        </td>
+                        @endcan
                     </tr>
                     @endforeach
                 </tbody>

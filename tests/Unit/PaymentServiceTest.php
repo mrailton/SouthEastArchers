@@ -194,3 +194,66 @@ test('initiate credit purchase online fails without checkout creation', function
     expect($result['success'])->toBeFalse()
         ->and($result['error'])->toBeString();
 });
+
+test('membership expiry is this year start when before membership year', function () {
+    // Set membership year to start September 1
+    $settings = app(ApplicationSettings::class);
+    $settings->membership_year_start_month = 9;
+    $settings->membership_year_start_day = 1;
+    $settings->save();
+
+    // Travel to a date before September (e.g., March 15)
+    $this->travelTo(now()->setMonth(3)->setDay(15));
+
+    $user = User::factory()->create();
+
+    $payment = Payment::factory()->create([
+        'user_id' => $user->id,
+        'payment_type' => PaymentType::Membership,
+        'status' => PaymentStatus::Pending,
+    ]);
+
+    $service = app(PaymentService::class);
+    $service->completePayment($payment);
+
+    $user->refresh();
+    $membership = $user->membership;
+
+    // Expiry should be Sept 1 of current year (since we're before Sept)
+    expect($membership->expiry_date->month)->toBe(9)
+        ->and($membership->expiry_date->day)->toBe(1);
+
+    $this->travelBack();
+});
+
+test('membership expiry is next year start when after membership year start', function () {
+    // Set membership year to start September 1
+    $settings = app(ApplicationSettings::class);
+    $settings->membership_year_start_month = 9;
+    $settings->membership_year_start_day = 1;
+    $settings->save();
+
+    // Travel to a date after September (e.g., October 15)
+    $this->travelTo(now()->setMonth(10)->setDay(15));
+
+    $user = User::factory()->create();
+
+    $payment = Payment::factory()->create([
+        'user_id' => $user->id,
+        'payment_type' => PaymentType::Membership,
+        'status' => PaymentStatus::Pending,
+    ]);
+
+    $service = app(PaymentService::class);
+    $service->completePayment($payment);
+
+    $user->refresh();
+    $membership = $user->membership;
+
+    // Expiry should be Sept 1 of next year (since we're after Sept)
+    expect($membership->expiry_date->month)->toBe(9)
+        ->and($membership->expiry_date->day)->toBe(1)
+        ->and($membership->expiry_date->year)->toBe(now()->year + 1);
+
+    $this->travelBack();
+});

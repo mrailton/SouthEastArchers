@@ -127,3 +127,44 @@ test('admin can activate account and sends email', function () {
 
     Mail::assertSent(AccountActivatedMail::class, fn ($mail) => $mail->hasTo($member->email));
 });
+
+test('admin can create member without roles', function () {
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->assignRole('Admin');
+
+    $response = $this->actingAs($admin)->post('/admin/members', [
+        'name' => 'Member Without Roles',
+        'email' => 'noroles@example.com',
+        'phone' => '0851234567',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+        'qualification' => 'beginner',
+        'is_active' => false,
+    ]);
+
+    $response->assertRedirect();
+    $user = User::where('email', 'noroles@example.com')->first();
+    expect($user)->not->toBeNull()
+        ->and($user->roles)->toHaveCount(0);
+});
+
+test('admin can create member with roles', function () {
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->assignRole('Admin');
+
+    $response = $this->actingAs($admin)->post('/admin/members', [
+        'name' => 'Member With Roles',
+        'email' => 'withroles@example.com',
+        'phone' => '0851234567',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+        'qualification' => 'beginner',
+        'is_active' => true,
+        'roles' => ['Admin'],
+    ]);
+
+    $response->assertRedirect();
+    $user = User::where('email', 'withroles@example.com')->first();
+    expect($user)->not->toBeNull()
+        ->and($user->hasRole('Admin'))->toBeTrue();
+});

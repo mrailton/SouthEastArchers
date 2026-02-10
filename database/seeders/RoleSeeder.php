@@ -35,6 +35,7 @@ class RoleSeeder extends Seeder
                 'members.activate_account',
                 'roles.manage',
                 'payments.manage',
+                'payments.confirm',
             ],
         ],
         'Membership Manager' => [
@@ -50,6 +51,7 @@ class RoleSeeder extends Seeder
                 'shoots.create',
                 'shoots.update',
                 'payments.manage',
+                'payments.confirm',
             ],
         ],
         'Content Manager' => [

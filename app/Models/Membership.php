@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\MembershipStatus;
 use App\Settings\ApplicationSettings;
 use Carbon\Carbon;
+use Database\Factories\MembershipFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Membership extends Model
 {
+    /** @use HasFactory<MembershipFactory> */
     use HasFactory;
 
     protected $fillable = [

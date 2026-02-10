@@ -5,12 +5,13 @@ namespace App\Mail;
 use App\Models\Membership;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class MembershipActivatedMail extends Mailable
+class MembershipActivatedMail extends Mailable implements ShouldQueue
 {
     use Queueable;
     use SerializesModels;

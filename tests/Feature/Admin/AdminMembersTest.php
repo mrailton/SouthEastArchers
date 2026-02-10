@@ -125,7 +125,7 @@ test('admin can activate account and sends email', function () {
     $response->assertRedirect();
     expect($member->fresh()->is_active)->toBeTrue();
 
-    Mail::assertSent(AccountActivatedMail::class, fn ($mail) => $mail->hasTo($member->email));
+    Mail::assertQueued(AccountActivatedMail::class, fn ($mail) => $mail->hasTo($member->email));
 });
 
 test('admin can create member without roles', function () {

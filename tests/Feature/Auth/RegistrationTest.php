@@ -36,7 +36,7 @@ test('new users can register with all required fields', function () {
         ->and($user->phone)->toBe('0851234567')
         ->and($user->qualification)->toBe('beginner');
 
-    Mail::assertSent(WelcomeMail::class, fn ($mail) => $mail->hasTo('test@example.com'));
+    Mail::assertQueued(WelcomeMail::class, fn ($mail) => $mail->hasTo('test@example.com'));
 });
 
 test('registration requires qualification field', function () {

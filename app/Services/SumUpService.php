@@ -16,8 +16,8 @@ class SumUpService
 
     public function __construct()
     {
-        $this->apiKey = config('services.sumup.api_key', '');
-        $this->merchantCode = config('services.sumup.merchant_code', '');
+        $this->apiKey = (string) config('services.sumup.api_key', '');
+        $this->merchantCode = (string) config('services.sumup.merchant_code', '');
     }
 
     /**

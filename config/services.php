@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'sumup' => [
+        'api_key' => env('SUMUP_API_KEY'),
+        'merchant_code' => env('SUMUP_MERCHANT_CODE'),
+    ],
+
 ];

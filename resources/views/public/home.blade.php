@@ -1,0 +1,71 @@
+@extends('layouts.app')
+
+@section('title', 'Home')
+
+@section('content')
+<div class="hero">
+    <div class="text-center px-4">
+        <h1 class="hero-title">Welcome to South East Archers</h1>
+        <p class="hero-subtitle">Join our archery club and discover the art of precision shooting</p>
+        
+        @guest
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+                <a href="{{ route('register') }}" class="btn-primary px-8 py-4 text-lg">
+                    Join Now
+                </a>
+                <a href="{{ route('membership') }}" class="inline-block px-8 py-4 text-lg border-2 bg-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200" style="border-color: var(--sea-red); color: var(--sea-red);">
+                    Learn More
+                </a>
+            </div>
+        @endguest
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+    <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border-t-8" style="border-color: var(--sea-primary);">
+        <div class="flex items-center justify-between mb-6">
+            <span class="text-5xl">🏹</span>
+            <img src="{{ asset('images/logo.jpeg') }}" class="h-12 w-auto opacity-20 group-hover:opacity-100 transition-opacity" alt="">
+        </div>
+        <h3 class="text-2xl font-bold mb-4 text-primary">Expert Training</h3>
+        <p class="text-gray-700">Learn from experienced instructors in a safe, supportive environment.</p>
+    </div>
+    
+    <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border-t-8" style="border-color: var(--sea-red);">
+        <div class="flex items-center justify-between mb-6">
+            <span class="text-5xl">🌟</span>
+            <img src="{{ asset('images/logo.jpeg') }}" class="h-12 w-auto opacity-20 group-hover:opacity-100 transition-opacity" alt="">
+        </div>
+        <h3 class="text-2xl font-bold mb-4 text-red">Community</h3>
+        <p class="text-gray-700">Meet fellow archers and build lasting friendships with like-minded people.</p>
+    </div>
+    
+    <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border-t-8" style="border-color: var(--sea-burgundy);">
+        <div class="flex items-center justify-between mb-6">
+            <span class="text-5xl">🎯</span>
+            <img src="{{ asset('images/logo.jpeg') }}" class="h-12 w-auto opacity-20 group-hover:opacity-100 transition-opacity" alt="">
+        </div>
+        <h3 class="text-2xl font-bold mb-4 text-burgundy">All Levels</h3>
+        <p class="text-gray-700">Whether you're a beginner or experienced archer, we have something for you.</p>
+    </div>
+</div>
+
+<div class="card bg-cream">
+    <h2 class="text-3xl font-bold mb-6 text-primary">Upcoming Events</h2>
+    @if($upcomingEvents->count() > 0)
+        <div class="space-y-4">
+            @foreach($upcomingEvents as $event)
+                <div class="bg-white p-4 rounded shadow">
+                    <h3 class="text-xl font-bold">{{ $event->title }}</h3>
+                    <p class="text-gray-600 text-sm">{{ $event->start_date->format('d M Y, H:i') }}</p>
+                    @if($event->location)
+                        <p class="text-gray-600">Location: {{ $event->location }}</p>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    @else
+        <p class="text-gray-700">Check back soon for upcoming events and news from our club.</p>
+    @endif
+</div>
+@endsection

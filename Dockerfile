@@ -23,17 +23,13 @@ RUN apk add --no-cache \
     zip \
     libzip-dev \
     icu-dev \
-    oniguruma-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install -j$(nproc) \
-    pdo_mysql \
-    gd \
-    zip \
-    intl \
-    opcache \
-    mbstring \
-    bcmath \
-    pcntl
+    && docker-php-ext-install -j$(nproc) pdo_mysql \
+    && docker-php-ext-install -j$(nproc) gd \
+    && docker-php-ext-install -j$(nproc) zip \
+    && docker-php-ext-install -j$(nproc) intl \
+    && docker-php-ext-install -j$(nproc) bcmath \
+    && docker-php-ext-install -j$(nproc) pcntl
 
 WORKDIR /var/www/html
 

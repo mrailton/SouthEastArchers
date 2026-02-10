@@ -26,6 +26,10 @@ RUN composer install --no-interaction --optimize-autoloader --no-dev --no-script
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
+# Copy and set up entrypoint
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Environment variables for PHP configuration
 ENV PHP_OPCACHE_ENABLE="1" \
     PHP_UPLOAD_MAX_FILE_SIZE="64M" \
@@ -38,3 +42,6 @@ EXPOSE 8080
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8080/up || exit 1
+
+# Use custom entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

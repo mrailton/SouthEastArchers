@@ -24,5 +24,5 @@ php artisan event:cache
 
 echo "Deployment tasks complete. Starting server..."
 
-# Execute the original entrypoint (serversideup/php default)
-exec /init "$@"
+# Start FrankenPHP server
+exec frankenphp run --config /etc/caddy/Caddyfile "$@"

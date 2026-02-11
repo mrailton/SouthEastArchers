@@ -1,10 +1,5 @@
 <x-guest-layout>
     <div class="text-center mb-8">
-        <div class="inline-block p-2 bg-white rounded-full shadow-lg border border-gray-100 mb-6">
-            <img src="{{ asset('images/logo.jpeg') }}" 
-                 alt="South East Archers" 
-                 class="h-32 w-auto object-contain">
-        </div>
         <h2 class="text-3xl font-bold text-primary">Forgot Password</h2>
         <p class="text-gray-600 mt-2">We'll send you a reset link</p>
     </div>
@@ -20,8 +15,8 @@
         <!-- Email Address -->
         <div>
             <label class="form-label" for="email">Email Address</label>
-            <input class="form-input" 
-                   type="email" id="email" name="email" 
+            <input class="form-input"
+                   type="email" id="email" name="email"
                    value="{{ old('email') }}"
                    required autofocus
                    placeholder="your.email@example.com">

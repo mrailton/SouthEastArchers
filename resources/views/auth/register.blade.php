@@ -1,10 +1,5 @@
 <x-guest-layout>
     <div class="text-center mb-8">
-        <div class="inline-block p-2 bg-white rounded-full shadow-lg border border-gray-100 mb-6">
-            <img src="{{ asset('images/logo.jpeg') }}" 
-                 alt="South East Archers" 
-                 class="h-32 w-auto object-contain">
-        </div>
         <h2 class="text-3xl font-bold text-primary">Join Our Club</h2>
         <p class="text-gray-600 mt-2">Create your account to get started</p>
     </div>
@@ -15,7 +10,7 @@
         <!-- Name -->
         <div>
             <label for="name" class="block text-gray-700 font-bold mb-2">Full Name *</label>
-            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+            <input class="w-full border border-gray-300 rounded px-3 py-2"
                    type="text" id="name" name="name" value="{{ old('name') }}" required autofocus autocomplete="name">
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
@@ -23,7 +18,7 @@
         <!-- Email Address -->
         <div>
             <label for="email" class="block text-gray-700 font-bold mb-2">Email Address *</label>
-            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+            <input class="w-full border border-gray-300 rounded px-3 py-2"
                    type="email" id="email" name="email" value="{{ old('email') }}" required autocomplete="username">
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
@@ -31,7 +26,7 @@
         <!-- Phone -->
         <div>
             <label for="phone" class="block text-gray-700 font-bold mb-2">Phone Number (optional)</label>
-            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+            <input class="w-full border border-gray-300 rounded px-3 py-2"
                    type="tel" id="phone" name="phone" value="{{ old('phone') }}">
             <x-input-error :messages="$errors->get('phone')" class="mt-2" />
         </div>
@@ -39,7 +34,7 @@
         <!-- Password -->
         <div>
             <label for="password" class="block text-gray-700 font-bold mb-2">Password *</label>
-            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+            <input class="w-full border border-gray-300 rounded px-3 py-2"
                    type="password" id="password" name="password" required autocomplete="new-password">
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
@@ -47,7 +42,7 @@
         <!-- Confirm Password -->
         <div>
             <label for="password_confirmation" class="block text-gray-700 font-bold mb-2">Confirm Password *</label>
-            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+            <input class="w-full border border-gray-300 rounded px-3 py-2"
                    type="password" id="password_confirmation" name="password_confirmation" required autocomplete="new-password">
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
@@ -57,11 +52,11 @@
             <label class="block text-gray-700 font-bold mb-3">Qualification *</label>
             <div class="space-y-3">
                 <div class="flex items-start">
-                    <input type="radio" 
+                    <input type="radio"
                            id="qualification_none"
                            name="qualification"
                            value="none"
-                           class="mt-1 mr-3" 
+                           class="mt-1 mr-3"
                            {{ old('qualification', 'none') == 'none' ? 'checked' : '' }}>
                     <div>
                         <label for="qualification_none" class="font-semibold text-gray-900 cursor-pointer">
@@ -72,9 +67,9 @@
                         </p>
                     </div>
                 </div>
-                
+
                 <div class="flex items-start">
-                    <input type="radio" 
+                    <input type="radio"
                            id="qualification_beginner"
                            name="qualification"
                            value="beginner"
@@ -134,7 +129,7 @@
 
     <div class="text-center mt-6">
         <p class="text-gray-700">
-            Already have an account? 
+            Already have an account?
             <a href="{{ route('login') }}" class="link-primary">Login here</a>
         </p>
     </div>

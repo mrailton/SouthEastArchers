@@ -1,10 +1,5 @@
 <x-guest-layout>
     <div class="text-center mb-8">
-        <div class="inline-block p-2 bg-white rounded-full shadow-lg border border-gray-100 mb-6">
-            <img src="{{ asset('images/logo.jpeg') }}" 
-                 alt="South East Archers" 
-                 class="h-32 w-auto object-contain">
-        </div>
         <h2 class="text-3xl font-bold text-primary">Welcome Back</h2>
         <p class="text-gray-600 mt-2">Login to your account</p>
     </div>
@@ -18,8 +13,8 @@
         <!-- Email Address -->
         <div>
             <label class="form-label" for="email">Email Address</label>
-            <input class="form-input" 
-                   type="email" name="email" id="email" 
+            <input class="form-input"
+                   type="email" name="email" id="email"
                    value="{{ old('email') }}"
                    required autofocus autocomplete="username"
                    placeholder="your.email@example.com">
@@ -29,8 +24,8 @@
         <!-- Password -->
         <div>
             <label class="form-label" for="password">Password</label>
-            <input class="form-input" 
-                   type="password" name="password" id="password" 
+            <input class="form-input"
+                   type="password" name="password" id="password"
                    required autocomplete="current-password"
                    placeholder="Enter your password">
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
@@ -46,7 +41,7 @@
             <a href="{{ route('password.request') }}" class="link-primary">Forgot your password?</a>
         </p>
         <p class="text-gray-700">
-            Don't have an account? 
+            Don't have an account?
             <a href="{{ route('register') }}" class="link-primary">Sign up here</a>
         </p>
     </div>

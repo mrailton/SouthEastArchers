@@ -23,7 +23,7 @@ class ConfirmPaymentController extends Controller
                 ->with('error', 'Payment is not pending.');
         }
 
-        $paymentService->completePayment($payment, 'cash_confirmed');
+        $paymentService->completePayment($payment, 'cash_' . $payment->id);
 
         return redirect()->to($redirectUrl)
             ->with('success', 'Payment confirmed successfully.');

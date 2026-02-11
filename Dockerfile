@@ -23,13 +23,18 @@ RUN apk add --no-cache \
     zip \
     libzip-dev \
     icu-dev \
+    linux-headers \
+    $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j$(nproc) pdo_mysql \
     && docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-install -j$(nproc) zip \
     && docker-php-ext-install -j$(nproc) intl \
     && docker-php-ext-install -j$(nproc) bcmath \
-    && docker-php-ext-install -j$(nproc) pcntl
+    && docker-php-ext-install -j$(nproc) pcntl \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del $PHPIZE_DEPS linux-headers
 
 WORKDIR /var/www/html
 

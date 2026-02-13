@@ -47,9 +47,7 @@ class CreateUserCommand extends Command
                 if (! filter_var($value, FILTER_VALIDATE_EMAIL)) {
                     return 'Please enter a valid email address.';
                 }
-                if (strlen($value) > 255) {
-                    return 'Email must be 255 characters or less.';
-                }
+
                 if (User::where('email', strtolower($value))->exists()) {
                     return 'This email is already registered.';
                 }

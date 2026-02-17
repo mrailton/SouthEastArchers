@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Pending Cash Payments - Admin{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Pending Cash Payments</h1>
+            <a href="{{ url_for('admin.dashboard') }}" class="text-blue-600 hover:text-blue-800">
+                ← Back to Dashboard
+            </a>
+        </div>
+
+        {% if payment_data %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Member</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in payment_data %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {% if item.user %}
+                                        <a href="{{ url_for('admin.member_detail', user_id=item.user.id) }}" class="text-blue-600 hover:underline">
+                                            {{ item.user.name }}
+                                        </a>
+                                        {% else %}
+                                        Unknown User
+                                        {% endif %}
+                                    </div>
+                                    {% if item.user %}
+                                    <div class="text-sm text-gray-500">{{ item.user.email }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if item.payment.payment_type == 'membership' %}
+                                bg-purple-100 text-purple-800
+                                {% else %}
+                                bg-blue-100 text-blue-800
+                                {% endif %}">
+                                {{ item.payment.payment_type|capitalize }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ item.payment.description }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            €{{ "%.2f"|format(item.payment.amount) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ item.payment.created_at.strftime('%d/%m/%Y %H:%M') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <form method="POST" action="{{ url_for('admin.approve_payment', payment_id=item.payment.id) }}" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm" onclick="return confirm('Approve this payment and activate membership/add credits?')">
+                                        Approve
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin.reject_payment', payment_id=item.payment.id) }}" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm" onclick="return confirm('Reject this payment? This cannot be undone.')">
+                                        Reject
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No pending payments</h3>
+            <p class="mt-1 text-sm text-gray-500">All cash payments have been processed.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="bg-gray-50 border border-gray-300 rounded p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">About Cash Payments</h3>
+        <div class="text-sm text-gray-700 space-y-2">
+            <p><strong>Approve:</strong> Marks the payment as completed and activates the membership or adds credits to the member's account.</p>
+            <p><strong>Reject:</strong> Cancels the payment request. The member will need to submit a new payment request if they want to try again.</p>
+            <p class="text-yellow-700 font-semibold">⚠️ Only approve payments after you have received the cash in hand.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

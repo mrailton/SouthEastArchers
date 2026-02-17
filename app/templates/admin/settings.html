@@ -104,6 +104,32 @@
                 </div>
             </div>
 
+            <!-- Cash Payment Settings -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">
+                    Cash Payments
+                </h2>
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                    <p class="text-sm text-blue-700">
+                        <strong>Note:</strong> This message is shown to members when they select cash as their payment method.
+                        Cash payments require admin approval before membership is activated or credits are added.
+                    </p>
+                </div>
+                
+                <div>
+                    <label for="cash_payment_instructions" class="block text-gray-700 font-bold mb-2">
+                        Cash Payment Instructions
+                    </label>
+                    {{ form.cash_payment_instructions(class="w-full border border-gray-300 rounded px-3 py-2", rows="4") }}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.cash_payment_instructions.description }}</p>
+                    {% if form.cash_payment_instructions.errors %}
+                        {% for error in form.cash_payment_instructions.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Action Buttons -->
             <div class="flex items-center justify-between pt-4 border-t">
                 <a href="{{ url_for('admin.dashboard') }}" class="text-gray-600 hover:text-gray-800">

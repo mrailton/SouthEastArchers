@@ -18,6 +18,13 @@ class ApplicationSettings(db.Model):
     membership_shoots_included = db.Column(db.Integer, nullable=False, default=20)
     additional_shoot_cost = db.Column(db.Integer, nullable=False, default=500)  # €5.00
 
+    # Cash payment settings
+    cash_payment_instructions = db.Column(
+        db.Text,
+        nullable=False,
+        default="Please pay cash to a committee member at the next shoot night. Your membership/credits will be activated once payment is confirmed.",
+    )
+
     created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 

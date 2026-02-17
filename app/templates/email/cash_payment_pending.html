@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .email-container {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .pending-box {
+            background-color: #FEF3C7;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #FCD34D;
+        }
+        .pending-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #FCD34D;
+        }
+        .pending-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-top: 10px;
+            padding-top: 20px;
+            border-top: 2px solid #F59E0B;
+        }
+        .label {
+            color: #6b7280;
+        }
+        .value {
+            font-weight: 500;
+            color: #111827;
+        }
+        .pending-badge {
+            display: inline-block;
+            background-color: #F59E0B;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .footer {
+            background-color: #1A1A1A;
+            color: #FAF7F2;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #1BA39C 0%, #158B84 100%);
+            color: white !important;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .instructions-box {
+            background-color: #EFF6FF;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #3B82F6;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div style="font-size: 48px; margin-bottom: 10px;">🏹</div>
+            <h1>Cash Payment Submitted</h1>
+            <p style="margin: 5px 0 0 0; opacity: 0.95;">South East Archers</p>
+        </div>
+        
+        <div class="content">
+        <p>Dear {{ name }},</p>
+        
+        <p>Your cash payment request has been submitted and is awaiting confirmation.</p>
+        
+        <div class="pending-badge">⏳ Awaiting Payment</div>
+        
+        <div class="pending-box">
+            <h2 style="margin-top: 0; color: #111827;">Payment Details</h2>
+            
+            <div class="pending-row">
+                <span class="label">Reference:</span>
+                <span class="value">#{{ reference }}</span>
+            </div>
+            
+            <div class="pending-row">
+                <span class="label">Date Submitted:</span>
+                <span class="value">{{ submitted_date }}</span>
+            </div>
+            
+            <div class="pending-row">
+                <span class="label">Description:</span>
+                <span class="value">{{ description }}</span>
+            </div>
+            
+            <div class="pending-row">
+                <span class="label">Payment Method:</span>
+                <span class="value">Cash</span>
+            </div>
+            
+            <div class="pending-row">
+                <span class="label">Amount Due:</span>
+                <span class="value">€{{ "%.2f"|format(amount) }}</span>
+            </div>
+        </div>
+        
+        <div class="instructions-box">
+            <h3 style="margin-top: 0; color: #1E40AF;">Payment Instructions</h3>
+            <p style="margin-bottom: 0;">{{ instructions }}</p>
+        </div>
+        
+        <h3>What Happens Next?</h3>
+        <ul>
+            <li>Bring the exact cash amount to pay in person</li>
+            <li>A committee member will record your payment</li>
+            <li>You'll receive a receipt email once payment is confirmed</li>
+            {% if payment_type == 'membership' %}
+            <li>Your membership will be activated after confirmation</li>
+            {% else %}
+            <li>Your credits will be added to your account after confirmation</li>
+            {% endif %}
+        </ul>
+        
+        <div style="text-align: center;">
+            <a href="{{ history_url }}" class="button">View Payment History</a>
+        </div>
+        
+        <p>If you have any questions, please don't hesitate to contact us.</p>
+        
+        <p>
+            Best regards,<br>
+            <strong>South East Archers</strong>
+        </p>
+    </div>
+    
+    <div class="footer">
+        <p><strong>South East Archers</strong></p>
+        <p>This is a confirmation of your cash payment request.</p>
+    </div>
+</div>
+</body>
+</html>

@@ -141,3 +141,43 @@ def history():
     payments = Payment.query.filter_by(user_id=user.id).order_by(Payment.created_at.desc()).all()
 
     return render_template("payment/history.html", payments=payments)
+
+
+@bp.post("/membership/cash")
+@login_required
+def membership_cash_payment():
+    """Handle cash membership payment initiation"""
+    payment_service = PaymentService()
+    result = payment_service.initiate_cash_membership_payment(current_user)
+
+    if result.get("success"):
+        return render_template(
+            "payment/cash_pending.html",
+            payment_type="membership",
+            amount=result["amount"],
+            instructions=result["instructions"],
+        )
+    else:
+        flash(result.get("error", "Error creating payment."), "error")
+        return redirect(url_for("payment.membership_payment"))
+
+
+@bp.post("/credits/cash")
+@login_required
+def credits_cash_payment():
+    """Handle cash credits purchase initiation"""
+    quantity = int(request.form.get("quantity", 1))
+    payment_service = PaymentService()
+    result = payment_service.initiate_cash_credit_purchase(current_user, quantity)
+
+    if result.get("success"):
+        return render_template(
+            "payment/cash_pending.html",
+            payment_type="credits",
+            amount=result["amount"],
+            quantity=result["quantity"],
+            instructions=result["instructions"],
+        )
+    else:
+        flash(result.get("error", "Error creating payment."), "error")
+        return redirect(url_for("payment.credits"))

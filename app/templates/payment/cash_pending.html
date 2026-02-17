@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Cash Payment Submitted - South East Archers{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white p-8 rounded shadow mb-6">
+        <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 mb-4">
+                <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Cash Payment Pending</h1>
+            <p class="text-gray-600">Your payment request has been submitted and is awaiting approval.</p>
+        </div>
+        
+        <div class="bg-gray-50 rounded p-6 mb-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-3">Payment Details</h2>
+            <dl class="space-y-2">
+                <div class="flex justify-between">
+                    <dt class="text-gray-600">Payment Type:</dt>
+                    <dd class="font-semibold">
+                        {% if payment_type == 'membership' %}
+                            Annual Membership
+                        {% else %}
+                            {{ quantity }} Shooting Credit{% if quantity > 1 %}s{% endif %}
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-600">Amount Due:</dt>
+                    <dd class="font-semibold text-lg text-blue-600">€{{ "%.2f"|format(amount) }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-600">Payment Method:</dt>
+                    <dd class="font-semibold">Cash</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-600">Status:</dt>
+                    <dd class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        Awaiting Payment
+                    </dd>
+                </div>
+            </dl>
+        </div>
+        
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+            <h3 class="font-bold text-blue-800 mb-2">Payment Instructions</h3>
+            <p class="text-blue-700">{{ instructions }}</p>
+        </div>
+        
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <p class="text-yellow-800">
+                <strong>Important:</strong> 
+                {% if payment_type == 'membership' %}
+                    Your membership will be activated once an admin confirms receipt of your cash payment.
+                {% else %}
+                    Your credits will be added to your account once an admin confirms receipt of your cash payment.
+                {% endif %}
+            </p>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-4">
+            <a href="{{ url_for('member.dashboard') }}" class="flex-1 text-center bg-blue-600 text-white font-bold py-3 px-6 rounded hover:bg-blue-700">
+                Return to Dashboard
+            </a>
+            <a href="{{ url_for('payment.history') }}" class="flex-1 text-center bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded hover:bg-gray-300">
+                View Payment History
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

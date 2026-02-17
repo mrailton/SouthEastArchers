@@ -23,6 +23,7 @@ def settings():
     form.annual_membership_cost.data = settings_obj.annual_membership_cost // 100  # Convert cents to euros
     form.membership_shoots_included.data = settings_obj.membership_shoots_included
     form.additional_shoot_cost.data = settings_obj.additional_shoot_cost // 100  # Convert cents to euros
+    form.cash_payment_instructions.data = settings_obj.cash_payment_instructions
 
     return render_template("admin/settings.html", form=form)
 
@@ -43,6 +44,7 @@ def settings_post():
             settings_obj.annual_membership_cost = form.annual_membership_cost.data * 100  # Convert to cents
             settings_obj.membership_shoots_included = form.membership_shoots_included.data
             settings_obj.additional_shoot_cost = form.additional_shoot_cost.data * 100  # Convert to cents
+            settings_obj.cash_payment_instructions = form.cash_payment_instructions.data
 
             SettingsService.save(settings_obj)
 

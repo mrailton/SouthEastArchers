@@ -79,6 +79,13 @@ class SettingsForm(FlaskForm):
         "Additional Shoot Cost (€)", validators=[DataRequired(), NumberRange(min=0)], description="Cost per additional shoot in euros"
     )
 
+    # Cash payment settings
+    cash_payment_instructions = TextAreaField(
+        "Cash Payment Instructions",
+        validators=[DataRequired(), Length(min=10, max=1000)],
+        description="Instructions shown to users when they select cash payment",
+    )
+
 
 class RoleForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(min=2, max=64)])

@@ -70,6 +70,7 @@ PERMISSIONS: dict[str, str] = {
     "members.update": "Edit members",
     "members.manage_membership": "Activate or renew memberships",
     "members.activate_account": "Activate user accounts",
+    "payments.approve": "Approve or reject cash payments",
     "roles.manage": "Manage roles and permissions",
 }
 
@@ -87,6 +88,7 @@ ROLE_DEFINITIONS: dict[str, dict[str, list[str] | str]] = {
             "members.update",
             "members.manage_membership",
             "members.activate_account",
+            "payments.approve",
             "shoots.read",
             "shoots.create",
             "shoots.update",

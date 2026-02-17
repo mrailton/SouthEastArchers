@@ -46,6 +46,7 @@ def test_update_settings_success(client, admin_user, app):
             "annual_membership_cost": "120",
             "membership_shoots_included": "25",
             "additional_shoot_cost": "6",
+            "cash_payment_instructions": "Please pay at the next shoot night.",
         },
         follow_redirects=True,
     )
@@ -61,6 +62,7 @@ def test_update_settings_success(client, admin_user, app):
         assert settings.annual_membership_cost == 12000  # 120 euros = 12000 cents
         assert settings.membership_shoots_included == 25
         assert settings.additional_shoot_cost == 600  # 6 euros = 600 cents
+        assert settings.cash_payment_instructions == "Please pay at the next shoot night."
 
 
 def test_update_settings_validates_month(client, admin_user):
@@ -136,6 +138,7 @@ def test_settings_euro_to_cents_conversion(client, admin_user, app):
             "annual_membership_cost": "150",  # 150 euros
             "membership_shoots_included": "20",
             "additional_shoot_cost": "10",  # 10 euros
+            "cash_payment_instructions": "Pay cash at reception.",
         },
         follow_redirects=True,
     )
@@ -180,6 +183,7 @@ def test_settings_persists_across_requests(client, admin_user, app):
             "annual_membership_cost": "95",
             "membership_shoots_included": "15",
             "additional_shoot_cost": "8",
+            "cash_payment_instructions": "Bring exact change.",
         },
         follow_redirects=True,
     )

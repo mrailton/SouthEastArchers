@@ -96,3 +96,46 @@ def send_welcome_email(user_id: int) -> None:
         current_app.logger.info(f"Welcome email sent to {user.email}")
     except Exception as e:
         current_app.logger.error(f"Failed to send welcome email: {e}")
+
+
+def send_cash_payment_pending_email(user_id: int, payment_id: int) -> None:
+    """Send a confirmation email when a cash payment request is submitted."""
+    from flask import render_template, url_for
+    from flask_mail import Message
+
+    from app import db, mail
+    from app.models import Payment, User
+    from app.services.settings_service import SettingsService
+
+    try:
+        user = db.session.get(User, user_id)
+        payment = db.session.get(Payment, payment_id)
+
+        if not user or not payment:
+            current_app.logger.error(f"Cannot send cash pending email — user or payment not found (user_id={user_id}, payment_id={payment_id})")
+            return
+
+        settings = SettingsService.get()
+
+        html_body = render_template(
+            "email/cash_payment_pending.html",
+            name=user.name,
+            reference=f"CASH-{payment.id}",
+            submitted_date=payment.created_at.strftime("%d %B %Y"),
+            description=payment.description,
+            amount=payment.amount,
+            instructions=settings.cash_payment_instructions,
+            payment_type=payment.payment_type,
+            history_url=url_for("payment.history", _external=True),
+        )
+
+        msg = Message(
+            subject="Cash Payment Submitted - South East Archers",
+            recipients=[user.email],
+            html=html_body,
+        )
+        mail.send(msg)
+
+        current_app.logger.info(f"Cash payment pending email sent to {user.email} for payment {payment_id}")
+    except Exception as e:
+        current_app.logger.error(f"Failed to send cash payment pending email: {e}")

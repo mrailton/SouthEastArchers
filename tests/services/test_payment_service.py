@@ -410,3 +410,106 @@ def test_handle_credit_purchase_email_failure(mock_send_email, app, test_user):
 
         # Verify email was attempted
         mock_send_email.assert_called_once()
+
+
+# Cash Payment Service Tests
+
+
+@patch("app.services.mail_service.send_cash_payment_pending_email")
+def test_initiate_cash_membership_payment_success(mock_send_email, app, test_user):
+    """Test initiating cash membership payment creates pending payment"""
+    service = PaymentService()
+    result = service.initiate_cash_membership_payment(test_user)
+
+    assert result["success"] is True
+    assert "payment_id" in result
+    assert result["amount"] == app.config["ANNUAL_MEMBERSHIP_COST"] / 100.0
+    assert "instructions" in result
+
+    # Verify payment record was created with correct attributes
+    payment = Payment.query.filter_by(
+        user_id=test_user.id,
+        payment_type="membership",
+        payment_method="cash",
+        status="pending",
+    ).first()
+    assert payment is not None
+    assert payment.amount_cents == app.config["ANNUAL_MEMBERSHIP_COST"]
+
+    # Verify email was sent
+    mock_send_email.assert_called_once_with(test_user.id, payment.id)
+
+
+@patch("app.services.mail_service.send_cash_payment_pending_email")
+def test_initiate_cash_credit_purchase_success(mock_send_email, app, test_user):
+    """Test initiating cash credit purchase creates pending payment"""
+    from app.services.settings_service import SettingsService
+
+    service = PaymentService()
+    quantity = 5
+    result = service.initiate_cash_credit_purchase(test_user, quantity)
+
+    settings = SettingsService.get()
+    assert result["success"] is True
+    assert "payment_id" in result
+    assert result["quantity"] == quantity
+    expected_amount = quantity * settings.additional_shoot_cost / 100.0
+    assert result["amount"] == expected_amount
+    assert "instructions" in result
+
+    # Verify payment record was created with correct attributes
+    payment = Payment.query.filter_by(
+        user_id=test_user.id,
+        payment_type="credits",
+        payment_method="cash",
+        status="pending",
+    ).first()
+    assert payment is not None
+    assert payment.amount_cents == quantity * settings.additional_shoot_cost
+    assert f"{quantity} shooting credits" in payment.description
+
+    # Verify email was sent
+    mock_send_email.assert_called_once_with(test_user.id, payment.id)
+
+
+@patch("app.services.mail_service.send_cash_payment_pending_email")
+def test_initiate_cash_credit_purchase_different_quantities(mock_send_email, app, test_user):
+    """Test cash credit purchase with different quantities"""
+    from app.services.settings_service import SettingsService
+
+    service = PaymentService()
+    settings = SettingsService.get()
+
+    for quantity in [1, 5, 10, 20]:
+        result = service.initiate_cash_credit_purchase(test_user, quantity)
+        assert result["success"] is True
+        assert result["quantity"] == quantity
+
+        expected_amount = quantity * settings.additional_shoot_cost
+        payment = Payment.query.filter_by(
+            user_id=test_user.id,
+            payment_type="credits",
+            payment_method="cash",
+        ).order_by(Payment.id.desc()).first()
+        assert payment.amount_cents == expected_amount
+
+
+@patch("app.services.mail_service.send_cash_payment_pending_email")
+def test_initiate_cash_membership_email_failure_does_not_block(mock_send_email, app, test_user):
+    """Test cash membership payment succeeds even if confirmation email fails"""
+    mock_send_email.side_effect = Exception("Mail server down")
+
+    service = PaymentService()
+    result = service.initiate_cash_membership_payment(test_user)
+
+    # Payment should still succeed even if email fails
+    assert result["success"] is True
+    assert "payment_id" in result
+
+    # Verify payment was created
+    payment = Payment.query.filter_by(
+        user_id=test_user.id,
+        payment_method="cash",
+        status="pending",
+    ).first()
+    assert payment is not None

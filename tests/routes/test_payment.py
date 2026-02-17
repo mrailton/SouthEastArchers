@@ -712,3 +712,91 @@ def test_payment_history_displays_user_payments(client, app, test_user):
 
         response = client.get("/payment/history")
         assert response.status_code == 200
+
+
+# Cash payment route tests
+
+
+@patch("app.services.mail_service.send_cash_payment_pending_email")
+def test_membership_cash_payment_success(mock_send_email, client, test_user):
+    """Test successful cash membership payment submission"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    response = client.post("/payment/membership/cash", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"Cash Payment Pending" in response.data
+    assert b"Annual Membership" in response.data
+    assert b"Awaiting Payment" in response.data
+
+    # Verify payment was created
+    payment = Payment.query.filter_by(
+        user_id=test_user.id,
+        payment_method="cash",
+        payment_type="membership",
+        status="pending",
+    ).first()
+    assert payment is not None
+
+    # Verify email was sent
+    mock_send_email.assert_called_once()
+
+
+@patch("app.services.mail_service.send_cash_payment_pending_email")
+def test_credits_cash_payment_success(mock_send_email, client, test_user):
+    """Test successful cash credits payment submission"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    response = client.post("/payment/credits/cash", data={"quantity": "5"}, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"Cash Payment Pending" in response.data
+    assert b"5 Shooting Credit" in response.data
+    assert b"Awaiting Payment" in response.data
+
+    # Verify payment was created
+    payment = Payment.query.filter_by(
+        user_id=test_user.id,
+        payment_method="cash",
+        payment_type="credits",
+        status="pending",
+    ).first()
+    assert payment is not None
+    assert "5 shooting credits" in payment.description
+
+    # Verify email was sent
+    mock_send_email.assert_called_once()
+
+
+def test_membership_cash_payment_requires_login(client):
+    """Test cash membership payment requires authentication"""
+    response = client.post("/payment/membership/cash", follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Login" in response.data
+
+
+def test_credits_cash_payment_requires_login(client):
+    """Test cash credits payment requires authentication"""
+    response = client.post("/payment/credits/cash", data={"quantity": "1"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Login" in response.data
+
+
+def test_membership_page_shows_cash_option(client, test_user):
+    """Test membership payment page shows cash payment option"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    response = client.get("/payment/membership")
+    assert response.status_code == 200
+    assert b"Pay with Cash" in response.data
+    assert b"Pay Online with Card" in response.data
+
+
+def test_credits_page_shows_cash_option(client, test_user):
+    """Test credits payment page shows cash payment option"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    response = client.get("/payment/credits")
+    assert response.status_code == 200
+    assert b"Pay with Cash" in response.data
+    assert b"Pay Online with Card" in response.data

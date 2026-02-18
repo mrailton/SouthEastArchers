@@ -1,9 +1,12 @@
 """Admin routes for managing pending cash payments."""
 
+from datetime import date
+
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 
 from app import db
-from app.models import Credit, Payment, User
+from app.models import Credit, Membership, Payment, User
+from app.services.settings_service import SettingsService
 from app.utils.decorators import permission_required
 
 from . import bp
@@ -48,15 +51,25 @@ def approve_payment(payment_id):
         payment.mark_completed(processor="cash")
 
         if payment.payment_type == "membership":
-            # Activate or renew membership
+            # Activate, renew, or create membership
             if user.membership:
                 if user.membership.status != "active":
                     user.membership.activate()
                 else:
                     user.membership.renew()
             else:
-                flash("User has no membership to activate.", "error")
-                return redirect(redirect_to)
+                # Create new membership for user (e.g., new signup with cash payment)
+                settings = SettingsService.get()
+                expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
+                membership = Membership(
+                    user_id=user.id,
+                    start_date=date.today(),
+                    expiry_date=expiry_date,
+                    initial_credits=settings.membership_shoots_included,
+                    purchased_credits=0,
+                    status="active",
+                )
+                db.session.add(membership)
 
         elif payment.payment_type == "credits":
             # Add credits to membership

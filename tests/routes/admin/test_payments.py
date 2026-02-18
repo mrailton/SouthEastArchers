@@ -386,14 +386,18 @@ def test_approve_membership_payment_user_not_found(client, admin_user, test_user
 
 
 @patch("app.services.mail_service.send_payment_receipt")
-def test_approve_membership_without_membership_record(mock_send_receipt, client, admin_user, app):
-    """Test approving membership payment when user has no membership record"""
+def test_approve_membership_creates_membership_for_new_user(mock_send_receipt, client, admin_user, app):
+    """Test approving membership payment creates membership for user without one.
+
+    This is the case when a new user signs up and selects cash payment for their
+    initial membership - they won't have a membership record yet.
+    """
     from app.models import User
 
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
-    # Create a user without membership
-    user = User(name="No Membership User", email="nomembership@example.com", is_active=True)
+    # Create a user without membership (simulates new signup with cash payment)
+    user = User(name="New Cash User", email="newcashuser@example.com", is_active=True)
     user.set_password("password")
     db.session.add(user)
     db.session.flush()
@@ -409,7 +413,19 @@ def test_approve_membership_without_membership_record(mock_send_receipt, client,
     response = client.post(f"/admin/payments/{payment.id}/approve", follow_redirects=True)
 
     assert response.status_code == 200
-    assert b"no membership to activate" in response.data
+    assert b"Payment approved" in response.data
+
+    # Verify membership was created
+    db.session.refresh(user)
+    assert user.membership is not None
+    assert user.membership.status == "active"
+
+    # Verify payment was completed
+    db.session.refresh(payment)
+    assert payment.status == "completed"
+
+    # Verify email was sent
+    mock_send_receipt.assert_called_once()
 
 
 @patch("app.services.mail_service.send_payment_receipt")

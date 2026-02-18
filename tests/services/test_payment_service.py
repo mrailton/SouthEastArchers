@@ -486,11 +486,15 @@ def test_initiate_cash_credit_purchase_different_quantities(mock_send_email, app
         assert result["quantity"] == quantity
 
         expected_amount = quantity * settings.additional_shoot_cost
-        payment = Payment.query.filter_by(
-            user_id=test_user.id,
-            payment_type="credits",
-            payment_method="cash",
-        ).order_by(Payment.id.desc()).first()
+        payment = (
+            Payment.query.filter_by(
+                user_id=test_user.id,
+                payment_type="credits",
+                payment_method="cash",
+            )
+            .order_by(Payment.id.desc())
+            .first()
+        )
         assert payment.amount_cents == expected_amount
 
 

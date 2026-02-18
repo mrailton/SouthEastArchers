@@ -22,9 +22,7 @@ class AdminService:
 
         # Pending cash payments
         pending_cash_payments = Payment.query.filter_by(payment_method="cash", status="pending").count()
-        pending_payments_list = (
-            Payment.query.filter_by(payment_method="cash", status="pending").order_by(Payment.created_at.desc()).limit(5).all()
-        )
+        pending_payments_list = Payment.query.filter_by(payment_method="cash", status="pending").order_by(Payment.created_at.desc()).limit(5).all()
 
         # Add user info to pending payments
         from app import db

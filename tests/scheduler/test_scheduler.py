@@ -9,6 +9,7 @@ from app.scheduler import Event, Schedule
 
 # Event tests
 
+
 def test_event_creation():
     """Test creating a basic event"""
     callback = Mock()
@@ -288,6 +289,7 @@ def test_chaining_methods():
 
 
 # Schedule tests
+
 
 def test_schedule_creation():
     """Test creating a schedule"""

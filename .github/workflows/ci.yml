@@ -49,7 +49,7 @@ jobs:
         run: uv run python manage.py install
 
       - name: Check code quality and formatting
-        run: uv run python manage.py lint format --check && uv run python manage.py lint check
+        run: uv run python manage.py lint check
 
       - name: Build assets
         run: uv run python manage.py assets build

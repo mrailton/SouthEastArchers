@@ -342,9 +342,7 @@ def test_reject_payment_with_redirect(client, admin_user, test_user):
     assert f"/admin/members/{test_user.id}" in response.location
 
 
-def test_member_detail_shows_approve_button_for_pending_cash_payment(
-    client, admin_user, test_user
-):
+def test_member_detail_shows_approve_button_for_pending_cash_payment(client, admin_user, test_user):
     """Test that member detail page shows approve button for pending cash payments"""
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 

@@ -235,9 +235,7 @@ def add_credits(user_id):
     db.session.add(credit)
     db.session.commit()
 
-    current_app.logger.info(
-        f"Admin added {quantity} credits to user {member.id} ({member.email}). Reason: {reason}"
-    )
+    current_app.logger.info(f"Admin added {quantity} credits to user {member.id} ({member.email}). Reason: {reason}")
 
     flash(f"Added {quantity} credit(s) to {member.name}'s account.", "success")
     return redirect(url_for("admin.member_detail", user_id=user_id))

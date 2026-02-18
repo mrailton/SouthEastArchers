@@ -9,6 +9,7 @@ from app.scheduler.jobs import expire_memberships, send_low_credits_reminder
 
 # Expire memberships tests
 
+
 def test_expire_memberships_on_start_date(app):
     """Test that memberships are expired on the year start date"""
     from app.models import ApplicationSettings
@@ -52,6 +53,7 @@ def test_expire_memberships_skipped_on_other_dates(app):
 
 
 # Low credits reminder tests
+
 
 def test_low_credits_reminder_sends_to_members_with_3_credits(app):
     """Test that emails are sent to members with 3 credits"""

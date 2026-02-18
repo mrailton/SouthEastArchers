@@ -13,11 +13,7 @@ from . import bp
 @permission_required("payments.approve")
 def pending_payments():
     """Display list of pending cash payments awaiting approval."""
-    payments = (
-        Payment.query.filter_by(payment_method="cash", status="pending")
-        .order_by(Payment.created_at.desc())
-        .all()
-    )
+    payments = Payment.query.filter_by(payment_method="cash", status="pending").order_by(Payment.created_at.desc()).all()
 
     # Get user info for each payment
     payment_data = []

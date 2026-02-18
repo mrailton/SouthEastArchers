@@ -184,22 +184,4 @@
     </div>
 </div>
 </div>
-
-<script>
-function dashboardActions() {
-    return {
-        showModal: false,
-        modalTitle: '',
-        modalMessage: '',
-        formAction: '',
-        
-        showApproveModal(paymentId, memberName, paymentType) {
-            this.modalTitle = 'Approve Payment';
-            this.modalMessage = `Approve ${paymentType} payment for ${memberName}? This will activate their membership or add credits to their account.`;
-            this.formAction = `/admin/payments/${paymentId}/approve`;
-            this.showModal = true;
-        }
-    }
-}
-</script>
 {% endblock %}

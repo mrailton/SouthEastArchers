@@ -169,35 +169,4 @@
         </div>
     </template>
 </div>
-
-<script>
-function paymentActions() {
-    return {
-        showModal: false,
-        modalType: 'success',
-        modalTitle: '',
-        modalMessage: '',
-        confirmText: '',
-        formAction: '',
-        
-        showApproveModal(paymentId, memberName, paymentType) {
-            this.modalType = 'success';
-            this.modalTitle = 'Approve Payment';
-            this.modalMessage = `Approve ${paymentType} payment for ${memberName}? This will activate their membership or add credits to their account.`;
-            this.confirmText = 'Approve';
-            this.formAction = `/admin/payments/${paymentId}/approve`;
-            this.showModal = true;
-        },
-        
-        showRejectModal(paymentId, memberName) {
-            this.modalType = 'danger';
-            this.modalTitle = 'Reject Payment';
-            this.modalMessage = `Reject payment for ${memberName}? This action cannot be undone.`;
-            this.confirmText = 'Reject';
-            this.formAction = `/admin/payments/${paymentId}/reject`;
-            this.showModal = true;
-        }
-    }
-}
-</script>
 {% endblock %}

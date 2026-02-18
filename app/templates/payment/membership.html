@@ -107,20 +107,4 @@
         </div>
     </div>
 </div>
-
-<script>
-function paymentForm() {
-    return {
-        isSubmitting: false,
-        handleSubmit(event) {
-            if (this.isSubmitting) {
-                event.preventDefault();
-                return false;
-            }
-            this.isSubmitting = true;
-            return true;
-        }
-    }
-}
-</script>
 {% endblock %}

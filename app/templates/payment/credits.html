@@ -101,21 +101,4 @@
         </div>
     </div>
 </div>
-
-<script>
-function creditPaymentForm() {
-    return {
-        quantity: '1',
-        isSubmitting: false,
-        handleSubmit(event) {
-            if (this.isSubmitting) {
-                event.preventDefault();
-                return false;
-            }
-            this.isSubmitting = true;
-            return true;
-        }
-    }
-}
-</script>
 {% endblock %}

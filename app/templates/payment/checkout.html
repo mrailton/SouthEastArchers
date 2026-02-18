@@ -135,13 +135,4 @@
         </div>
     </div>
 </div>
-
-<script>
-// Format card number with spaces
-document.querySelector('input[name="card_number"]').addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\s/g, '');
-    let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-    e.target.value = formattedValue;
-});
-</script>
 {% endblock %}

@@ -101,20 +101,4 @@
     </div>
 </template>
 </div>
-
-<script>
-function rolesActions() {
-    return {
-        showModal: false,
-        roleName: '',
-        formAction: '',
-        
-        showDeleteModal(roleId, roleName) {
-            this.roleName = roleName;
-            this.formAction = `/admin/roles/${roleId}/delete`;
-            this.showModal = true;
-        }
-    }
-}
-</script>
 {% endblock %}

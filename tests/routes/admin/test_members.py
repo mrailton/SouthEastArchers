@@ -219,6 +219,111 @@ def test_edit_member_without_membership(client, admin_user, app):
     assert user.name == "Updated Name"
 
 
+def test_add_credits_success(client, admin_user, test_user):
+    """Test adding credits to a member's account"""
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    initial_credits = test_user.membership.purchased_credits
+
+    response = client.post(
+        f"/admin/members/{test_user.id}/credits/add",
+        data={
+            "quantity": "5",
+            "reason": "Promotional credits",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Added 5 credit(s)" in response.data
+
+    # Verify credits were added
+    db.session.refresh(test_user)
+    assert test_user.membership.purchased_credits == initial_credits + 5
+
+
+def test_add_credits_creates_credit_record(client, admin_user, test_user):
+    """Test that adding credits creates a Credit record"""
+    from app.models import Credit
+
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    initial_count = Credit.query.filter_by(user_id=test_user.id).count()
+
+    client.post(
+        f"/admin/members/{test_user.id}/credits/add",
+        data={"quantity": "3"},
+        follow_redirects=True,
+    )
+
+    # Verify credit record was created
+    credits = Credit.query.filter_by(user_id=test_user.id).all()
+    assert len(credits) == initial_count + 1
+    assert credits[-1].amount == 3
+    assert credits[-1].payment_id is None  # No payment for admin-added credits
+
+
+def test_add_credits_invalid_quantity(client, admin_user, test_user):
+    """Test adding credits with invalid quantity shows error"""
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    initial_credits = test_user.membership.purchased_credits
+
+    response = client.post(
+        f"/admin/members/{test_user.id}/credits/add",
+        data={"quantity": "0"},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"valid number" in response.data
+
+    # Verify credits were not changed
+    db.session.refresh(test_user)
+    assert test_user.membership.purchased_credits == initial_credits
+
+
+def test_add_credits_no_membership(client, admin_user, app):
+    """Test adding credits to member without membership shows error"""
+    user = User(
+        name="No Membership User",
+        email="nomembership2@example.com",
+        qualification="none",
+    )
+    user.set_password("password")
+    db.session.add(user)
+    db.session.commit()
+
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    response = client.post(
+        f"/admin/members/{user.id}/credits/add",
+        data={"quantity": "5"},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"does not have an active membership" in response.data
+
+
+def test_add_credits_requires_permission(client, test_user):
+    """Test that adding credits requires members.manage_membership permission"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    response = client.post(f"/admin/members/{test_user.id}/credits/add", data={"quantity": "5"})
+    assert response.status_code == 403
+
+
+def test_member_detail_shows_add_credits_form(client, admin_user, test_user):
+    """Test that member detail page shows add credits form for admin"""
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    response = client.get(f"/admin/members/{test_user.id}")
+    assert response.status_code == 200
+    assert b"Add Credits" in response.data
+    assert b"+ Add Credits" in response.data
+
+
 def test_members_requires_admin(client, test_user):
     """Test that members list requires admin"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})

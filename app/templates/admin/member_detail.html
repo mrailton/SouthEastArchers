@@ -93,6 +93,20 @@
                     <span class="text-sm text-gray-500">({{ member.membership.initial_credits }} initial + {{ member.membership.purchased_credits }} purchased)</span>
                 </p>
                 
+                {% if current_user.has_permission('members.manage_membership') %}
+                <div class="border-t pt-4 mb-4">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Add Credits</p>
+                    <form method="POST" action="{{ url_for('admin.add_credits', user_id=member.id) }}" class="flex flex-wrap gap-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                        <input type="number" name="quantity" min="1" value="1" class="w-20 px-3 py-2 border border-gray-300 rounded-md text-sm" required>
+                        <input type="text" name="reason" placeholder="Reason (optional)" class="flex-1 min-w-32 px-3 py-2 border border-gray-300 rounded-md text-sm">
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-medium">
+                            + Add Credits
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+                
                 {% if member.membership.status == 'pending' %}
                     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
                         <div class="flex">

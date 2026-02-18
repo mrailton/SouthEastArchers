@@ -1,10 +1,11 @@
 from collections.abc import Sequence
 from typing import cast
 
-from flask import abort, current_app, flash, redirect, render_template, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, url_for
 
+from app import db
 from app.forms import CreateMemberForm, EditMemberForm
-from app.models import Payment, Role
+from app.models import Credit, Payment, Role
 from app.services import MembershipService, UserService
 from app.utils.decorators import permission_required
 from app.utils.email import send_payment_receipt
@@ -197,3 +198,46 @@ def edit_member_post(user_id):
             flash(error, "error")
 
     return render_template("admin/edit_member.html", member=member, form=form)
+
+
+@bp.post("/members/<int:user_id>/credits/add")
+@permission_required("members.manage_membership")
+def add_credits(user_id):
+    """Add shooting credits to a member's account"""
+    member = UserService.get_user_by_id(user_id)
+    if not member:
+        abort(404)
+
+    if not member.membership:
+        flash("Member does not have an active membership.", "error")
+        return redirect(url_for("admin.member_detail", user_id=user_id))
+
+    try:
+        quantity = int(request.form.get("quantity", 0))
+        if quantity < 1:
+            flash("Please enter a valid number of credits.", "error")
+            return redirect(url_for("admin.member_detail", user_id=user_id))
+    except ValueError:
+        flash("Please enter a valid number of credits.", "error")
+        return redirect(url_for("admin.member_detail", user_id=user_id))
+
+    reason = request.form.get("reason", "").strip() or "Admin adjustment"
+
+    # Add credits to membership
+    member.membership.add_credits(quantity)
+
+    # Create credit record (no payment associated)
+    credit = Credit(
+        user_id=member.id,
+        amount=quantity,
+        payment_id=None,
+    )
+    db.session.add(credit)
+    db.session.commit()
+
+    current_app.logger.info(
+        f"Admin added {quantity} credits to user {member.id} ({member.email}). Reason: {reason}"
+    )
+
+    flash(f"Added {quantity} credit(s) to {member.name}'s account.", "success")
+    return redirect(url_for("admin.member_detail", user_id=user_id))

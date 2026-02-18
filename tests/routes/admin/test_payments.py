@@ -361,3 +361,114 @@ def test_member_detail_shows_approve_button_for_pending_cash_payment(
     assert response.status_code == 200
     assert b"Approve" in response.data
     assert b"Reject" in response.data
+
+
+def test_approve_membership_payment_user_not_found(client, admin_user, test_user):
+    """Test approving payment when user_id references nonexistent user"""
+    from app.models import Payment
+
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    # Create a payment with invalid user_id directly
+    payment = Payment(
+        user_id=99999,  # Non-existent user
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        payment_method="cash",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    response = client.post(f"/admin/payments/{payment.id}/approve", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"User not found" in response.data
+
+
+@patch("app.services.mail_service.send_payment_receipt")
+def test_approve_membership_without_membership_record(mock_send_receipt, client, admin_user, app):
+    """Test approving membership payment when user has no membership record"""
+    from app.models import User
+
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    # Create a user without membership
+    user = User(name="No Membership User", email="nomembership@example.com", is_active=True)
+    user.set_password("password")
+    db.session.add(user)
+    db.session.flush()
+
+    payment = create_payment_for_user(
+        db,
+        user,
+        payment_method="cash",
+        status="pending",
+        payment_type="membership",
+    )
+
+    response = client.post(f"/admin/payments/{payment.id}/approve", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"no membership to activate" in response.data
+
+
+@patch("app.services.mail_service.send_payment_receipt")
+def test_approve_membership_renews_active_membership(mock_send_receipt, client, admin_user, test_user):
+    """Test approving payment for already active membership calls renew"""
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    # Ensure membership is already active
+    test_user.membership.status = "active"
+    db.session.commit()
+
+    payment = create_payment_for_user(
+        db,
+        test_user,
+        payment_method="cash",
+        status="pending",
+        payment_type="membership",
+    )
+
+    response = client.post(f"/admin/payments/{payment.id}/approve", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"Payment approved" in response.data
+
+    # Payment should be completed
+    db.session.refresh(payment)
+    assert payment.status == "completed"
+
+
+@patch("app.services.mail_service.send_credit_purchase_receipt")
+def test_approve_credits_without_membership_still_creates_credit(mock_send_receipt, client, admin_user, app):
+    """Test approving credits payment for user without membership still creates Credit record"""
+    from app.models import User
+
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    # Create user without membership
+    user = User(name="No Membership", email="nocred@example.com", is_active=True)
+    user.set_password("password")
+    db.session.add(user)
+    db.session.flush()
+
+    payment = create_payment_for_user(
+        db,
+        user,
+        payment_method="cash",
+        status="pending",
+        payment_type="credits",
+        description="5 shooting credits (Cash)",
+    )
+
+    response = client.post(f"/admin/payments/{payment.id}/approve", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"Payment approved" in response.data
+
+    # Verify Credit record was created
+    credit = Credit.query.filter_by(user_id=user.id).first()
+    assert credit is not None
+    assert credit.amount == 5

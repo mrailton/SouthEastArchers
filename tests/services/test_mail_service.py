@@ -282,3 +282,95 @@ def test_send_welcome_email_exception_handling(app, test_user, mocker, caplog):
 
     # Should log the error
     assert "Failed to send welcome email" in caplog.text
+
+
+def test_send_cash_payment_pending_email_success(app, test_user, mocker):
+    """Test sending cash payment pending confirmation email"""
+    from app import db
+    from app.models import Payment
+    from app.services.mail_service import send_cash_payment_pending_email
+
+    mock_mail = mocker.patch("app.mail")
+
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        payment_method="cash",
+        description="Annual Membership (Cash)",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    send_cash_payment_pending_email(test_user.id, payment.id)
+
+    assert mock_mail.send.called
+    sent_message = mock_mail.send.call_args[0][0]
+    assert test_user.email in sent_message.recipients
+    assert "Cash Payment" in sent_message.subject
+
+
+def test_send_cash_payment_pending_email_user_not_found(app, test_user, mocker, caplog):
+    """Test cash payment email when user not found"""
+    from app import db
+    from app.models import Payment
+    from app.services.mail_service import send_cash_payment_pending_email
+
+    mock_mail = mocker.patch("app.mail")
+
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        payment_method="cash",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    # Call with invalid user_id
+    send_cash_payment_pending_email(99999, payment.id)
+
+    assert not mock_mail.send.called
+    assert "not found" in caplog.text.lower()
+
+
+def test_send_cash_payment_pending_email_payment_not_found(app, test_user, mocker, caplog):
+    """Test cash payment email when payment not found"""
+    from app.services.mail_service import send_cash_payment_pending_email
+
+    mock_mail = mocker.patch("app.mail")
+
+    send_cash_payment_pending_email(test_user.id, 99999)
+
+    assert not mock_mail.send.called
+    assert "not found" in caplog.text.lower()
+
+
+def test_send_cash_payment_pending_email_exception_handling(app, test_user, mocker, caplog):
+    """Test cash payment email handles exceptions gracefully"""
+    from app import db
+    from app.models import Payment
+    from app.services.mail_service import send_cash_payment_pending_email
+
+    mock_mail = mocker.patch("app.mail")
+    mock_mail.send.side_effect = Exception("SMTP error")
+
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        payment_method="cash",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    # Should not raise
+    send_cash_payment_pending_email(test_user.id, payment.id)
+
+    assert "Failed to send cash payment pending email" in caplog.text

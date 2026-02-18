@@ -12,7 +12,7 @@ class SignupForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(min=2)])
     email = EmailField("Email", validators=[DataRequired(), Email()])
     phone = TelField("Phone", validators=[Optional()])
-    password = PasswordField("Password", validators=[DataRequired(), Length(min=6)])
+    password = PasswordField("Password", validators=[DataRequired(), Length(min=8)])
     password_confirm = PasswordField("Confirm Password", validators=[DataRequired(), EqualTo("password", message="Passwords do not match")])
     qualification = StringField("Qualification", default="none")
 

@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from flask import current_app
 from sumup import APIError, Sumup
@@ -6,18 +7,18 @@ from sumup.checkouts import CreateCheckoutBody
 
 
 class SumUpService:
-    def __init__(self, api_key=None):
+    def __init__(self, api_key: str | None = None) -> None:
         self.api_key = api_key or current_app.config.get("SUMUP_API_KEY")
         self.client = Sumup(api_key=self.api_key)
 
     def create_checkout(
         self,
-        amount,
-        currency="EUR",
-        description="",
-        checkout_reference="",
-        merchant_code=None,
-    ):
+        amount: int,
+        currency: str = "EUR",
+        description: str = "",
+        checkout_reference: str = "",
+        merchant_code: str | None = None,
+    ) -> dict[str, Any] | None:
         try:
             # Get merchant code from config if not provided
             if not merchant_code:
@@ -73,7 +74,7 @@ class SumUpService:
             current_app.logger.error(f"Error creating SumUp checkout: {str(e)}")
             return None
 
-    def get_checkout(self, checkout_id):
+    def get_checkout(self, checkout_id: str) -> Any | None:
         try:
             checkout = self.client.checkouts.get(checkout_id=checkout_id)
             return checkout
@@ -84,7 +85,7 @@ class SumUpService:
             current_app.logger.error(f"Error getting SumUp checkout: {str(e)}")
             return None
 
-    def verify_payment(self, checkout_id):
+    def verify_payment(self, checkout_id: str) -> bool:
         try:
             checkout = self.get_checkout(checkout_id)
 
@@ -101,14 +102,14 @@ class SumUpService:
 
     def process_checkout_payment(
         self,
-        checkout_id,
-        card_number,
-        card_name,
-        expiry_month,
-        expiry_year,
-        cvv,
-        payment_type="card",
-    ):
+        checkout_id: str,
+        card_number: str,
+        card_name: str,
+        expiry_month: str,
+        expiry_year: str,
+        cvv: str,
+        payment_type: str = "card",
+    ) -> dict[str, Any]:
         try:
             from sumup.checkouts import ProcessCheckoutBody
             from sumup.checkouts.types import Card

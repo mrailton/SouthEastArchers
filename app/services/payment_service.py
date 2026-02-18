@@ -1,3 +1,5 @@
+from typing import Any
+
 from flask import current_app, session
 
 from app import db
@@ -7,18 +9,25 @@ from app.services.sumup_service import SumUpService
 
 
 class PaymentService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.processor = SumUpService()
 
-    def create_checkout(self, amount_cents, description):
+    def create_checkout(self, amount_cents: int, description: str) -> dict[str, Any] | None:
         return self.processor.create_checkout(
             amount=amount_cents,
             currency="EUR",
             description=description,
-            checkout_reference=None,  # Can be added if needed
         )
 
-    def process_payment(self, checkout_id, card_number, card_name, expiry_month, expiry_year, cvv):
+    def process_payment(
+        self,
+        checkout_id: str,
+        card_number: str,
+        card_name: str,
+        expiry_month: str,
+        expiry_year: str,
+        cvv: str,
+    ) -> dict[str, Any]:
         return self.processor.process_checkout_payment(
             checkout_id=checkout_id,
             card_number=card_number,

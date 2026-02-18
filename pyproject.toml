@@ -46,6 +46,7 @@ omit = [
     "*/conftest.py",
     "*/.venv/*",
     "*/venv/*",
+    "app/schedule.py",  # Schedule configuration file - no logic to test
 ]
 
 [tool.coverage.report]

@@ -144,8 +144,8 @@ def test_signup_password_mismatch(client):
 
 def test_forgot_password_email_send_failure(client, test_user, mocker):
     """Test forgot password when email sending fails"""
-    # Mock send_password_reset_email to raise an exception
-    mock_send = mocker.patch("app.routes.auth.send_password_reset_email", side_effect=Exception("SMTP Error"))
+    # Mock send_password_reset to raise an exception
+    mock_send = mocker.patch("app.routes.auth.send_password_reset", side_effect=Exception("SMTP Error"))
 
     response = client.post(
         "/auth/forgot-password",
@@ -168,3 +168,67 @@ def test_forgot_password_form_validation_error(client):
 
     assert response.status_code == 200
     # Form should be re-displayed with errors
+
+
+def test_signup_sends_new_member_notification(client, mocker):
+    """A successful signup triggers send_new_member_notification with the new user's id."""
+    mock_notify = mocker.patch("app.routes.auth.send_new_member_notification")
+
+    response = client.post(
+        "/auth/signup",
+        data={
+            "name": "Notify User",
+            "email": "notify_user@example.com",
+            "phone": "0871234567",
+            "password": "password123",
+            "password_confirm": "password123",
+            "qualification": "Beginner Certificate",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert mock_notify.called
+    # The notification should be called with the newly created user's id (an integer)
+    called_user_id = mock_notify.call_args[0][0]
+    assert isinstance(called_user_id, int)
+
+
+def test_signup_notification_not_called_on_duplicate_email(client, test_user, mocker):
+    """Notification is NOT triggered when signup fails due to duplicate email."""
+    mock_notify = mocker.patch("app.routes.auth.send_new_member_notification")
+
+    client.post(
+        "/auth/signup",
+        data={
+            "name": "Duplicate",
+            "email": test_user.email,
+            "phone": "1234567890",
+            "password": "password123",
+            "password_confirm": "password123",
+            "qualification": "none",
+        },
+        follow_redirects=True,
+    )
+
+    assert not mock_notify.called
+
+
+def test_signup_notification_not_called_on_validation_failure(client, mocker):
+    """Notification is NOT triggered when form validation fails."""
+    mock_notify = mocker.patch("app.routes.auth.send_new_member_notification")
+
+    client.post(
+        "/auth/signup",
+        data={
+            "name": "Bad Form",
+            "email": "bademail",
+            "phone": "1234567890",
+            "password": "password123",
+            "password_confirm": "different",
+            "qualification": "none",
+        },
+        follow_redirects=True,
+    )
+
+    assert not mock_notify.called

@@ -313,9 +313,9 @@ def test_send_payment_receipt_synchronously(app, test_user):
     payment = create_payment_for_user(db, test_user)
 
     with app.test_request_context():
-        with patch("app.utils.email.send_payment_receipt") as mock_send:
+        with patch("app.services.mail_service.mail") as mock_mail:
             PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
-            mock_send.assert_called_once()
+            assert mock_mail.send.called
 
 
 def test_send_payment_receipt_with_exception(app, test_user):
@@ -323,7 +323,8 @@ def test_send_payment_receipt_with_exception(app, test_user):
     payment = create_payment_for_user(db, test_user)
 
     with app.test_request_context():
-        with patch("app.utils.email.send_payment_receipt", side_effect=Exception("Email error")):
+        with patch("app.services.mail_service.mail") as mock_mail:
+            mock_mail.send.side_effect = Exception("Email error")
             # Should not raise, just log error
             PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
 

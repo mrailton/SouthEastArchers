@@ -12,10 +12,9 @@ def test_forgot_password_page_loads(client):
 def test_forgot_password_with_valid_email(client, test_user, app, fake_mailer):
     """Test forgot password with valid email"""
     with app.app_context():
-        import app.utils.email as email_mod
+        import app.services.mail_service as mail_service_mod
 
-        # Ensure the email util uses the fake mailer
-        email_mod.mail = fake_mailer
+        mail_service_mod.mail = fake_mailer
 
         response = client.post(
             "/auth/forgot-password",
@@ -29,15 +28,15 @@ def test_forgot_password_with_valid_email(client, test_user, app, fake_mailer):
     # Verify email was attempted to be sent
     from tests.helpers import assert_email_sent
 
-    assert_email_sent(fake_mailer, subject_contains="Password Reset", recipients=[test_user.email])
+    assert_email_sent(fake_mailer, subject_contains="Reset Your Password", recipients=[test_user.email])
 
 
 def test_forgot_password_with_invalid_email(client, app, fake_mailer):
     """Test forgot password with non-existent email"""
     with app.app_context():
-        import app.utils.email as email_mod
+        import app.services.mail_service as mail_service_mod
 
-        email_mod.mail = fake_mailer
+        mail_service_mod.mail = fake_mailer
 
         response = client.post(
             "/auth/forgot-password",

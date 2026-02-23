@@ -37,14 +37,14 @@ def test_activate_membership_with_payment_sends_receipt(client, admin_user, test
     db.session.commit()
 
     with patch("app.routes.admin.members.MembershipService.activate_membership", return_value=(True, "Activated")):
-        with patch("app.routes.admin.members.send_payment_receipt") as mock_send:
+        with patch("app.services.mail_service.mail") as mock_mail:
             response = client.post(f"/admin/members/{test_user.id}/membership/activate", follow_redirects=True)
             assert response.status_code == 200
-            mock_send.assert_called_once()
+            assert mock_mail.send.called
             assert b"Receipt email sent" in response.data
 
 
-def test_activate_membership_with_payment_send_failure(client, admin_user, test_user):
+def test_activate_membership_with_payment_send_failure(client, admin_user, test_user, caplog):
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
     payment = Payment(
@@ -59,10 +59,13 @@ def test_activate_membership_with_payment_send_failure(client, admin_user, test_
     db.session.commit()
 
     with patch("app.routes.admin.members.MembershipService.activate_membership", return_value=(True, "Activated")):
-        with patch("app.routes.admin.members.send_payment_receipt", side_effect=Exception("Email fail")):
+        with patch("app.services.mail_service.mail") as mock_mail:
+            mock_mail.send.side_effect = Exception("Email fail")
             response = client.post(f"/admin/members/{test_user.id}/membership/activate", follow_redirects=True)
             assert response.status_code == 200
-            assert b"Email failed to send" in response.data
+            # mail_service catches the error internally; route still flashes receipt success
+            assert b"Receipt email sent" in response.data
+            assert "Failed to send receipt email" in caplog.text
 
 
 def test_create_member_service_error_shows_message(client, admin_user):

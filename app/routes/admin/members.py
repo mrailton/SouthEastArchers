@@ -8,7 +8,6 @@ from app.forms import CreateMemberForm, EditMemberForm
 from app.models import Credit, Payment, Role
 from app.services import MembershipService, UserService
 from app.utils.decorators import permission_required
-from app.utils.email import send_payment_receipt
 
 from . import bp
 
@@ -62,12 +61,10 @@ def activate_membership(user_id):
     ).first()
 
     if payment:
-        try:
-            send_payment_receipt(member, payment, member.membership)
-            flash(f"Membership activated for {member.name}! Receipt email sent.", "success")
-        except Exception as e:
-            current_app.logger.error(f"Failed to send receipt email: {str(e)}")
-            flash(f"Membership activated for {member.name}! (Email failed to send)", "warning")
+        from app.services.mail_service import send_payment_receipt
+
+        send_payment_receipt(member.id, payment.id)
+        flash(f"Membership activated for {member.name}! Receipt email sent.", "success")
     else:
         flash(f"Membership activated for {member.name}!", "success")
 

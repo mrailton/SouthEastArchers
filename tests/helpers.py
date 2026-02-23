@@ -74,13 +74,10 @@ def create_payment_for_user(db, user, **kwargs):
 
 
 def inject_fake_mailer(fake_mailer):
-    """Inject `fake_mailer` into commonly-used mail locations so tests don't need to patch.
+    """Inject `fake_mailer` into mail_service so email sending uses the fake mailer in tests."""
+    import app.services.mail_service as mail_service_mod
 
-    This sets the mail object on `app.utils.email` so email sending uses the fake mailer in tests.
-    """
-    import app.utils.email as email_mod
-
-    email_mod.mail = fake_mailer
+    mail_service_mod.mail = fake_mailer
 
 
 def assert_email_sent(fake_mailer, subject_contains=None, recipients=None, html_contains=None, body_contains=None):

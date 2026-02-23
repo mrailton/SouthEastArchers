@@ -1,0 +1,15 @@
+New Member Sign-Up – South East Archers
+
+A new member has signed up and is awaiting review.
+
+Name:          {{ new_member_name }}
+Email:         {{ new_member_email }}
+{% if new_member_phone %}Phone:         {{ new_member_phone }}
+{% endif %}{% if new_member_qualification %}Qualification: {{ new_member_qualification }}
+{% endif %}
+Please log in to the admin panel to review and activate this account:
+{{ admin_url }}
+
+---
+South East Archers – automated notification
+

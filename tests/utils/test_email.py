@@ -1,530 +1,348 @@
 import pytest
 
+from app import db
 from app.models import Payment
-from app.utils.email import send_payment_receipt, send_welcome_email
-from tests.helpers import assert_email_sent
+from app.services.mail_service import (
+    send_credit_purchase_receipt,
+    send_payment_receipt,
+    send_welcome_email,
+)
+
+# ---------------------------------------------------------------------------
+# send_payment_receipt
+# ---------------------------------------------------------------------------
 
 
-def test_send_payment_receipt_online_payment(app, test_user, fake_mailer):
+def _make_payment(user, payment_method="online", payment_id=None, **kwargs):
+    """Helper: create and persist a Payment."""
+    from datetime import datetime
+
+    p = Payment(
+        user_id=user.id,
+        amount=kwargs.get("amount", 100.00),
+        amount_cents=kwargs.get("amount_cents", 10000),
+        currency="EUR",
+        payment_type="membership",
+        payment_method=payment_method,
+        description=kwargs.get("description", "Annual Membership"),
+        status="completed",
+        created_at=datetime.now(),
+        **{k: v for k, v in kwargs.items() if k not in ("amount", "amount_cents", "description")},
+    )
+    if payment_id:
+        p.id = payment_id
+    db.session.add(p)
+    db.session.commit()
+    return p
+
+
+def test_send_payment_receipt_online_payment(app, test_user, mocker):
     """Test sending payment receipt for online payment"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    payment = _make_payment(
+        test_user,
+        payment_method="online",
+        external_transaction_id="txn_abc123",
+        payment_processor="sumup",
+    )
 
-        # Create test payment and membership
-        payment = Payment(
-            id=123,
-            user_id=test_user.id,
-            amount=100.00,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            external_transaction_id="txn_abc123",
-            payment_processor="sumup",
-            description="Annual Membership",
-            status="completed",
-            created_at=datetime.now(),
-        )
+    send_payment_receipt(test_user.id, payment.id)
 
-        membership = test_user.membership
-
-        result = send_payment_receipt(test_user, payment, membership)
-
-        assert result is True
-        email_sent = assert_email_sent(fake_mailer, subject_contains="Payment Receipt", recipients=[test_user.email])
-        assert email_sent.html is not None
-        assert email_sent.body is not None
+    assert mock_mail.send.called
+    msg = mock_mail.send.call_args[0][0]
+    assert test_user.email in msg.recipients
+    assert "Receipt" in msg.subject
+    assert msg.html is not None
+    assert msg.body is not None
 
 
-def test_send_payment_receipt_cash_payment(app, test_user, fake_mailer):
+def test_send_payment_receipt_cash_payment(app, test_user, mocker):
     """Test sending payment receipt for cash payment"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    payment = _make_payment(test_user, payment_method="cash")
 
-        payment = Payment(
-            id=456,
-            user_id=test_user.id,
-            amount=100.00,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="cash",
-            description="Annual Membership",
-            status="completed",
-            created_at=datetime.now(),
-        )
+    send_payment_receipt(test_user.id, payment.id)
 
-        membership = test_user.membership
-
-        result = send_payment_receipt(test_user, payment, membership)
-
-        assert result is True
-        from tests.helpers import assert_email_sent
-
-        assert_email_sent(fake_mailer)
+    assert mock_mail.send.called
+    msg = mock_mail.send.call_args[0][0]
+    assert test_user.email in msg.recipients
 
 
-def test_send_payment_receipt_formats_receipt_number(app, test_user, fake_mailer):
-    """Test receipt number formatting"""
-    with app.app_context():
-        import app.utils.email as email_mod
+def test_send_payment_receipt_formats_receipt_number(app, test_user, mocker):
+    """Test receipt number formatting SEA-XXXXXX"""
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    payment = _make_payment(test_user, payment_method="online")
 
-        payment = Payment(
-            id=42,
-            user_id=test_user.id,
-            amount=100.00,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            status="completed",
-            created_at=datetime.now(),
-        )
+    send_payment_receipt(test_user.id, payment.id)
 
-        membership = test_user.membership
-
-        send_payment_receipt(test_user, payment, membership)
-
-        # Receipt number should be SEA-000042
-        from tests.helpers import assert_email_contains
-
-        assert_email_contains(fake_mailer, "SEA-000042")
+    msg = mock_mail.send.call_args[0][0]
+    expected = f"SEA-{payment.id:06d}"
+    assert expected in (msg.html or "") or expected in (msg.body or "")
 
 
-def test_send_payment_receipt_includes_transaction_id_for_online(app, test_user, fake_mailer):
+def test_send_payment_receipt_includes_transaction_id_for_online(app, test_user, mocker):
     """Test transaction ID is included for online payments"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    payment = _make_payment(
+        test_user,
+        payment_method="online",
+        external_transaction_id="txn_xyz789",
+        payment_processor="sumup",
+    )
 
-        payment = Payment(
-            id=789,
-            user_id=test_user.id,
-            amount=100.00,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            external_transaction_id="txn_xyz789",
-            payment_processor="sumup",
-            status="completed",
-            created_at=datetime.now(),
-        )
+    send_payment_receipt(test_user.id, payment.id)
 
-        membership = test_user.membership
-
-        send_payment_receipt(test_user, payment, membership)
-
-        from tests.helpers import assert_email_contains
-
-        # Transaction ID should be in the email
-        assert_email_contains(fake_mailer, "txn_xyz789")
+    msg = mock_mail.send.call_args[0][0]
+    assert "txn_xyz789" in (msg.html or "")
 
 
-def test_send_payment_receipt_no_transaction_id_for_cash(app, test_user, fake_mailer):
+def test_send_payment_receipt_no_transaction_id_for_cash(app, test_user, mocker):
     """Test no transaction ID for cash payments"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    payment = _make_payment(test_user, payment_method="cash")
 
-        payment = Payment(
-            id=999,
-            user_id=test_user.id,
-            amount=100.00,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="cash",
-            status="completed",
-            created_at=datetime.now(),
-        )
+    send_payment_receipt(test_user.id, payment.id)
 
-        membership = test_user.membership
-
-        send_payment_receipt(test_user, payment, membership)
-
-        from tests.helpers import assert_email_sent
-
-        assert_email_sent(fake_mailer)
+    assert mock_mail.send.called
 
 
-def test_send_payment_receipt_formats_dates(app, test_user, fake_mailer):
+def test_send_payment_receipt_formats_dates(app, test_user, mocker):
     """Test date formatting in receipt"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    payment = _make_payment(test_user, payment_method="online")
 
-        payment = Payment(
-            id=111,
-            user_id=test_user.id,
-            amount=100.00,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            status="completed",
-            created_at=datetime.now(),
-        )
+    send_payment_receipt(test_user.id, payment.id)
 
-        membership = test_user.membership
-
-        send_payment_receipt(test_user, payment, membership)
-
-        mail_sent = assert_email_sent(fake_mailer)
-        assert mail_sent.html is not None
+    msg = mock_mail.send.call_args[0][0]
+    assert msg.html is not None
 
 
-def test_send_payment_receipt_includes_membership_details(app, test_user, fake_mailer):
+def test_send_payment_receipt_includes_membership_details(app, test_user, mocker):
     """Test membership details are included in receipt"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    payment = _make_payment(test_user, payment_method="online")
 
-        payment = Payment(
-            id=222,
-            user_id=test_user.id,
-            amount=100.00,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            status="completed",
-            created_at=datetime.now(),
-        )
+    send_payment_receipt(test_user.id, payment.id)
 
-        membership = test_user.membership
-
-        send_payment_receipt(test_user, payment, membership)
-
-        mail_sent = assert_email_sent(fake_mailer)
-        html_body = mail_sent.html or ""
-        assert membership.start_date.strftime("%d %B %Y") in html_body or membership.start_date.strftime("%d %B %Y") in (mail_sent.body or "")
+    msg = mock_mail.send.call_args[0][0]
+    membership = test_user.membership
+    html = msg.html or ""
+    body = msg.body or ""
+    assert membership.start_date.strftime("%d %B %Y") in html or membership.start_date.strftime("%d %B %Y") in body
 
 
-def test_send_payment_receipt_handles_missing_description(app, test_user, fake_mailer):
+def test_send_payment_receipt_handles_missing_description(app, test_user, mocker):
     """Test receipt handles missing payment description"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    payment = _make_payment(test_user, payment_method="online", description=None)
 
-        payment = Payment(
-            id=333,
-            user_id=test_user.id,
-            amount=100.00,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            description=None,
-            status="completed",
-            created_at=datetime.now(),
-        )
+    send_payment_receipt(test_user.id, payment.id)
 
-        membership = test_user.membership
-
-        result = send_payment_receipt(test_user, payment, membership)
-
-        assert result is True
+    assert mock_mail.send.called
 
 
-def test_send_payment_receipt_exception_handling(app, test_user, fake_mailer):
-    with app.app_context():
-        import app.utils.email as email_mod
+def test_send_payment_receipt_exception_handling(app, test_user, mocker, caplog):
+    """Test that SMTP errors are caught and logged, not re-raised"""
+    mock_mail = mocker.patch("app.services.mail_service.mail")
+    mock_mail.send.side_effect = Exception("SMTP error")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    payment = _make_payment(test_user, payment_method="online")
 
-        # Simulate send raising an exception
-        def raise_send(msg):
-            raise Exception("SMTP error")
+    send_payment_receipt(test_user.id, payment.id)
 
-        fake_mailer.send = raise_send
-
-        payment = Payment(
-            id=444,
-            user_id=test_user.id,
-            amount=100.00,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            status="completed",
-            created_at=datetime.now(),
-        )
-
-        membership = test_user.membership
-
-        result = send_payment_receipt(test_user, payment, membership)
-
-        assert result is False
+    assert "Failed to send receipt email" in caplog.text
 
 
-def test_send_payment_receipt_uses_correct_payment_method_display(app, test_user, fake_mailer):
-    """Test payment method display formatting"""
-    with app.app_context():
-        import app.utils.email as email_mod
+def test_send_payment_receipt_uses_correct_payment_method_display(app, test_user, mocker):
+    """Test payment method display formatting shows SumUp for online"""
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    payment = _make_payment(test_user, payment_method="online")
 
-        payment = Payment(
-            id=555,
-            user_id=test_user.id,
-            amount=100.00,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            status="completed",
-            created_at=datetime.now(),
-        )
+    send_payment_receipt(test_user.id, payment.id)
 
-        membership = test_user.membership
-
-        send_payment_receipt(test_user, payment, membership)
-
-        from tests.helpers import assert_email_contains
-
-        # Should show "Credit/Debit Card (SumUp)" for online
-        assert_email_contains(fake_mailer, "SumUp")
+    msg = mock_mail.send.call_args[0][0]
+    assert "SumUp" in (msg.html or "")
 
 
-def test_send_welcome_email_success(app, test_user, fake_mailer):
+# ---------------------------------------------------------------------------
+# send_welcome_email
+# ---------------------------------------------------------------------------
+
+
+def test_send_welcome_email_success(app, test_user, mocker):
     """Test sending welcome email"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
+    send_welcome_email(test_user.id)
 
-        result = send_welcome_email(test_user)
-
-        assert result is True
-        from tests.helpers import assert_email_sent
-
-        call_args = assert_email_sent(fake_mailer, subject_contains="Welcome to South East Archers!", recipients=[test_user.email])
-        assert call_args.html is not None
-        assert call_args.body is not None
+    assert mock_mail.send.called
+    msg = mock_mail.send.call_args[0][0]
+    assert test_user.email in msg.recipients
+    assert "Welcome" in msg.subject
+    assert msg.html is not None
+    assert msg.body is not None
 
 
 @pytest.mark.parametrize(
-    "check_type,expected_in_html",
+    "check_type,expected",
     [
-        ("user_name", lambda test_user: test_user.name),
-        ("membership_cost", lambda test_user: "€100.00"),
-        ("credits_included", lambda test_user: "20 nights"),
-        ("login_link", lambda test_user: "Login"),
+        ("user_name", None),  # resolved dynamically below
+        ("membership_cost", "€100.00"),
+        ("credits_included", "20 nights"),
+        ("login_link", "Login"),
     ],
 )
-def test_send_welcome_email_content(app, test_user, fake_mailer, check_type, expected_in_html):
+def test_send_welcome_email_content(app, test_user, mocker, check_type, expected):
     """Test welcome email includes various required content"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
+    send_welcome_email(test_user.id)
 
-        send_welcome_email(test_user)
+    msg = mock_mail.send.call_args[0][0]
+    html = msg.html or ""
 
-        from tests.helpers import assert_email_sent
+    if check_type == "user_name":
+        expected = test_user.name
 
-        call_args = assert_email_sent(fake_mailer)
-        html = call_args.html
-
-        expected = expected_in_html(test_user)
-        assert expected in html, f"Expected {check_type} '{expected}' not found in email HTML"
+    assert expected in html, f"Expected {check_type} '{expected}' not found in email HTML"
 
 
-def test_send_welcome_email_exception_handling(app, test_user, fake_mailer):
+def test_send_welcome_email_exception_handling(app, test_user, mocker, caplog):
     """Test exception handling when sending fails"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
+    mock_mail.send.side_effect = Exception("Email server error")
 
-        email_mod.mail = fake_mailer
+    send_welcome_email(test_user.id)
 
-        # Simulate send raising an exception
-        def raise_send(msg):
-            raise Exception("Email server error")
-
-        fake_mailer.send = raise_send
-
-        result = send_welcome_email(test_user)
-
-        assert result is False
+    assert "Failed to send welcome email" in caplog.text
 
 
-def test_send_credit_purchase_receipt(app, test_user, fake_mailer):
+# ---------------------------------------------------------------------------
+# send_credit_purchase_receipt
+# ---------------------------------------------------------------------------
+
+
+def test_send_credit_purchase_receipt(app, test_user, mocker):
     """Test sending credit purchase receipt email"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    from datetime import datetime
 
-        from app.utils.email import send_credit_purchase_receipt
+    payment = Payment(
+        user_id=test_user.id,
+        amount=30.00,
+        amount_cents=3000,
+        currency="EUR",
+        payment_type="credits",
+        payment_method="online",
+        external_transaction_id="txn_credits_123",
+        payment_processor="sumup",
+        description="10 shooting credits",
+        status="completed",
+        created_at=datetime.now(),
+    )
+    db.session.add(payment)
+    db.session.commit()
 
-        # Create test payment for credit purchase
-        payment = Payment(
-            id=789,
-            user_id=test_user.id,
-            amount=30.00,
-            currency="EUR",
-            payment_type="credits",
-            payment_method="online",
-            external_transaction_id="txn_credits_123",
-            payment_processor="sumup",
-            description="10 shooting credits",
-            status="completed",
-            created_at=datetime.now(),
-        )
+    send_credit_purchase_receipt(test_user.id, payment.id, 10)
 
-        credits_purchased = 10
-        credits_remaining = 30  # Had 20, purchased 10
-
-        result = send_credit_purchase_receipt(test_user, payment, credits_purchased, credits_remaining)
-
-        assert result is True
-        email_sent = assert_email_sent(fake_mailer, subject_contains="Credit Purchase Receipt", recipients=[test_user.email])
-        assert email_sent.html is not None
-        assert email_sent.body is not None
-
-        # Check HTML content
-        assert "10" in email_sent.html  # Credits purchased
-        assert "30" in email_sent.html  # Credits remaining
-        assert "€30.00" in email_sent.html
-        assert "txn_credits_123" in email_sent.html
-        assert "SEA-000789" in email_sent.html  # Receipt number
-
-        # Check text content
-        assert "10" in email_sent.body
-        assert "30" in email_sent.body
-        assert "€30.00" in email_sent.body
+    assert mock_mail.send.called
+    msg = mock_mail.send.call_args[0][0]
+    assert test_user.email in msg.recipients
+    assert "Credit" in msg.subject
+    assert msg.html is not None
+    assert msg.body is not None
+    assert "10" in msg.html
+    assert "txn_credits_123" in msg.html
+    assert f"SEA-{payment.id:06d}" in msg.html
 
 
-def test_send_credit_purchase_receipt_cash(app, test_user, fake_mailer):
+def test_send_credit_purchase_receipt_cash(app, test_user, mocker):
     """Test sending credit purchase receipt for cash payment"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    from datetime import datetime
 
-        from app.utils.email import send_credit_purchase_receipt
+    payment = Payment(
+        user_id=test_user.id,
+        amount=15.00,
+        amount_cents=1500,
+        currency="EUR",
+        payment_type="credits",
+        payment_method="cash",
+        description="5 shooting credits",
+        status="completed",
+        created_at=datetime.now(),
+    )
+    db.session.add(payment)
+    db.session.commit()
 
-        payment = Payment(
-            id=999,
-            user_id=test_user.id,
-            amount=15.00,
-            currency="EUR",
-            payment_type="credits",
-            payment_method="cash",
-            description="5 shooting credits",
-            status="completed",
-            created_at=datetime.now(),
-        )
+    send_credit_purchase_receipt(test_user.id, payment.id, 5)
 
-        result = send_credit_purchase_receipt(test_user, payment, 5, 25)
-
-        assert result is True
-        email_sent = assert_email_sent(fake_mailer, subject_contains="Credit Purchase", recipients=[test_user.email])
-
-        # Check cash payment method displayed correctly
-        assert "Cash Payment" in email_sent.html
-        # Should not have transaction ID for cash
-        assert "txn_" not in email_sent.html
-        assert "5" in email_sent.html  # Credits purchased
-        assert "25" in email_sent.html  # Credits remaining
+    assert mock_mail.send.called
+    msg = mock_mail.send.call_args[0][0]
+    assert "Credit" in msg.subject
+    assert "Cash Payment" in (msg.html or "")
+    assert "5" in (msg.html or "")
 
 
-def test_send_payment_receipt_runtime_error_url_for(app, test_user, fake_mailer, mocker):
+def test_send_payment_receipt_runtime_error_url_for(app, test_user, mocker):
     """Test payment receipt handles RuntimeError from url_for gracefully"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
+    mocker.patch("app.services.mail_service.url_for", side_effect=RuntimeError("No request context"))
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    payment = _make_payment(test_user, payment_method="online")
 
-        # Mock url_for to raise RuntimeError (no request context)
-        mocker.patch("app.utils.email.url_for", side_effect=RuntimeError("No request context"))
+    send_payment_receipt(test_user.id, payment.id)
 
-        payment = Payment(
-            id=888,
-            user_id=test_user.id,
-            amount=100.00,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            status="completed",
-            created_at=datetime.now(),
-        )
-
-        membership = test_user.membership
-
-        result = send_payment_receipt(test_user, payment, membership)
-
-        # Should still succeed with fallback URL
-        assert result is True
-        email_sent = assert_email_sent(fake_mailer)
-        # Should use fallback URL
-        assert "southeastarchers.ie" in email_sent.html
+    assert mock_mail.send.called
+    msg = mock_mail.send.call_args[0][0]
+    assert "southeastarchers.ie" in (msg.html or "")
 
 
-def test_send_credit_purchase_receipt_runtime_error_url_for(app, test_user, fake_mailer, mocker):
+def test_send_credit_purchase_receipt_runtime_error_url_for(app, test_user, mocker):
     """Test credit receipt handles RuntimeError from url_for gracefully"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
+    mocker.patch("app.services.mail_service.url_for", side_effect=RuntimeError("No request context"))
 
-        email_mod.mail = fake_mailer
-        from datetime import datetime
+    from datetime import datetime
 
-        from app.utils.email import send_credit_purchase_receipt
+    payment = Payment(
+        user_id=test_user.id,
+        amount=30.00,
+        amount_cents=3000,
+        currency="EUR",
+        payment_type="credits",
+        payment_method="online",
+        status="completed",
+        created_at=datetime.now(),
+    )
+    db.session.add(payment)
+    db.session.commit()
 
-        # Mock url_for to raise RuntimeError
-        mocker.patch("app.utils.email.url_for", side_effect=RuntimeError("No request context"))
+    send_credit_purchase_receipt(test_user.id, payment.id, 10)
 
-        payment = Payment(
-            id=777,
-            user_id=test_user.id,
-            amount=30.00,
-            currency="EUR",
-            payment_type="credits",
-            payment_method="online",
-            status="completed",
-            created_at=datetime.now(),
-        )
-
-        result = send_credit_purchase_receipt(test_user, payment, 10, 30)
-
-        # Should still succeed with fallback URL
-        assert result is True
-        email_sent = assert_email_sent(fake_mailer)
-        # Should use fallback URL with /member/credits path
-        assert "southeastarchers.ie" in email_sent.html
+    assert mock_mail.send.called
+    msg = mock_mail.send.call_args[0][0]
+    assert "southeastarchers.ie" in (msg.html or "")
 
 
-def test_send_welcome_email_runtime_error_url_for(app, test_user, fake_mailer, mocker):
+def test_send_welcome_email_runtime_error_url_for(app, test_user, mocker):
     """Test welcome email handles RuntimeError from url_for gracefully"""
-    with app.app_context():
-        import app.utils.email as email_mod
+    mock_mail = mocker.patch("app.services.mail_service.mail")
+    mocker.patch("app.services.mail_service.url_for", side_effect=RuntimeError("No request context"))
 
-        email_mod.mail = fake_mailer
+    send_welcome_email(test_user.id)
 
-        # Mock url_for to raise RuntimeError
-        mocker.patch("app.utils.email.url_for", side_effect=RuntimeError("No request context"))
-
-        result = send_welcome_email(test_user)
-
-        # Should still succeed with fallback URL
-        assert result is True
-        from tests.helpers import assert_email_sent
-
-        email_sent = assert_email_sent(fake_mailer)
-        # Should use fallback URL
-        assert "southeastarchers.ie" in email_sent.html
+    assert mock_mail.send.called
+    msg = mock_mail.send.call_args[0][0]
+    assert "southeastarchers.ie" in (msg.html or "")

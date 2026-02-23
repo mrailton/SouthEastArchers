@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .email-container {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #1BA39C 0%, #0F6962 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .content {
+            padding: 30px;
+        }
+        .info-box {
+            background-color: #f9fafb;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #e5e7eb;
+        }
+        .info-row {
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            color: #6b7280;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        .value {
+            color: #111827;
+            margin-top: 3px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #1BA39C 0%, #158B84 100%);
+            color: white !important;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 16px 0;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .footer {
+            background-color: #1A1A1A;
+            color: #FAF7F2;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .highlight {
+            color: #1BA39C;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div style="font-size: 40px; margin-bottom: 10px;">🏹</div>
+            <h1>New Member Sign-Up</h1>
+        </div>
+
+        <div class="content">
+            <p>A new member has signed up and is awaiting review.</p>
+
+            <div class="info-box">
+                <div class="info-row">
+                    <div class="label">Name</div>
+                    <div class="value">{{ new_member_name }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="label">Email</div>
+                    <div class="value">{{ new_member_email }}</div>
+                </div>
+                {% if new_member_phone %}
+                <div class="info-row">
+                    <div class="label">Phone</div>
+                    <div class="value">{{ new_member_phone }}</div>
+                </div>
+                {% endif %}
+                {% if new_member_qualification %}
+                <div class="info-row">
+                    <div class="label">Qualification</div>
+                    <div class="value">{{ new_member_qualification }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <p>Please log in to the admin panel to review and activate this account.</p>
+
+            <div style="text-align: center;">
+                <a href="{{ admin_url }}" class="cta-button">View in Admin Panel</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>South East Archers</strong></p>
+            <p>This is an automated notification. Please do not reply directly to this message.</p>
+        </div>
+    </div>
+</body>
+</html>
+

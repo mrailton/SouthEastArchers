@@ -20,7 +20,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-32">
                 <div class="flex items-center">
-                    <a href="{{ url_for('public.index') }}" class="flex items-center space-x-4 group">
+                    <a href="{{ url_for('member.dashboard') if current_user.is_authenticated else url_for('public.index') }}" class="flex items-center space-x-4 group">
                         <div class="relative p-1">
                             <img src="{{ url_for('static', filename='images/logo.jpeg') }}" 
                                  alt="South East Archers Logo" 

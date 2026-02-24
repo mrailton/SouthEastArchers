@@ -8,7 +8,7 @@
         <h1 class="hero-title">Welcome to South East Archers</h1>
         <p class="hero-subtitle">Join our archery club and discover the art of precision shooting</p>
         
-        {% if not session.user_id %}
+        {% if not current_user.is_authenticated %}
             <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
                 <a href="{{ url_for('auth.signup') }}" class="btn-primary px-8 py-4 text-lg">
                     Join Now

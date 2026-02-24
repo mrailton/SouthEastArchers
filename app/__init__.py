@@ -3,7 +3,6 @@ import os
 import warnings
 from datetime import UTC, datetime
 from logging.handlers import RotatingFileHandler
-from typing import Any
 
 from flask import Flask
 from flask_bcrypt import Bcrypt
@@ -11,6 +10,7 @@ from flask_login import AnonymousUserMixin, LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from flask_vite_assets import ViteAssets
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="sumup")
 
@@ -19,15 +19,16 @@ migrate = Migrate()
 mail = Mail()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
+vite = ViteAssets()
 
 
 class AnonymousUser(AnonymousUserMixin):
-    """Anonymous user that safely denies all permissions."""
-
-    def has_permission(self, permission_name: str) -> bool:  # pragma: no cover - simple default
+    @staticmethod
+    def has_permission(permission_name: str) -> bool:  # pragma: no cover - simple default
         return False
 
-    def has_any_permission(self, *permission_names: str) -> bool:  # pragma: no cover - simple default
+    @staticmethod
+    def has_any_permission(*permission_names: str) -> bool:  # pragma: no cover - simple default
         return False
 
 
@@ -52,56 +53,11 @@ def _configure_logging(app: Flask) -> None:
 
 
 def _init_extensions(app: Flask) -> None:
-    """Initialize flask extensions and login manager callbacks."""
     db.init_app(app)
     migrate.init_app(app, db)
     mail.init_app(app)
     bcrypt.init_app(app)
-
-    # Initialize Talisman if enabled
-    if app.config.get("TALISMAN_ENABLED", True):
-        from flask_talisman import Talisman  # type: ignore[import-untyped]
-
-        csp: dict[str, Any] = {
-            "default-src": "'self'",
-            "style-src": [
-                "'self'",
-                "'unsafe-inline'",
-                "https://fonts.googleapis.com",
-            ],
-            "font-src": [
-                "'self'",
-                "https://fonts.gstatic.com",
-            ],
-            "script-src": [
-                "'self'",
-                "'unsafe-inline'",
-                # Add any external script sources here
-            ],
-            "img-src": [
-                "'self'",
-                "data:",
-                # Add any external image sources here
-            ],
-        }
-
-        # If in development, we might need to allow Vite dev server
-        if app.debug:
-            # Type safety for mypy: cast to list if needed, though defined as list above
-            script_src = csp.setdefault("script-src", [])
-            if isinstance(script_src, list):
-                script_src.append("http://localhost:5173")
-                script_src.append("http://localhost:5174")
-            csp["connect-src"] = ["'self'", "ws://localhost:5173", "ws://localhost:5174", "http://localhost:5173", "http://localhost:5174"]
-
-        Talisman(
-            app,
-            content_security_policy=csp,
-            force_https=not (app.debug or app.testing),
-            session_cookie_secure=app.config.get("SESSION_COOKIE_SECURE", True),
-            session_cookie_http_only=True,
-            strict_transport_security=True,
-        )
+    vite.init_app(app)
 
     # Setup flask login
     login_manager.init_app(app)
@@ -147,26 +103,6 @@ def _register_error_handlers(app: Flask) -> None:
 
 
 def _register_context_processor(app: Flask) -> None:
-    """Register context processor for cache-busted static assets and vite helpers."""
-
-    @app.context_processor
-    def override_url_for():
-        from flask import url_for as flask_url_for
-
-        from app.utils.vite import vite_asset, vite_hmr_client
-
-        def dated_url_for(endpoint, **values):
-            if endpoint == "static":
-                filename = values.get("filename", None)
-                if filename and app.static_folder:
-                    file_path = os.path.join(app.static_folder, filename)
-                    if os.path.exists(file_path):
-                        values["v"] = int(os.stat(file_path).st_mtime)
-
-            return flask_url_for(endpoint, **values)
-
-        return dict(url_for=dated_url_for, vite_asset=vite_asset, vite_hmr_client=vite_hmr_client)
-
     @app.context_processor
     def inject_now():
         return {"now": datetime.now(UTC)}

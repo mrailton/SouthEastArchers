@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from flask import abort, url_for
+from flask import abort
 
 from app import create_app, db, login_manager
 
@@ -119,45 +119,6 @@ def test_500_error_rolls_back_db_session(app):
         # The actual rollback is tested implicitly through other tests
         assert app.error_handler_spec is not None
         assert 500 in app.error_handler_spec[None] or None in app.error_handler_spec
-
-
-# TestCacheBusting
-
-
-def test_cache_busting_for_static_files(app):
-    """Test that cache busting context processor is configured"""
-    with app.test_request_context():
-        # Test that the context processor exists
-        context_processors = app.template_context_processors[None]
-        assert len(context_processors) > 0
-
-        # Get the context and check url_for is available
-        context = {}
-        for processor in context_processors:
-            context.update(processor())
-
-        assert "url_for" in context
-
-
-def test_cache_busting_with_nonexistent_file(app):
-    """Test cache busting with non-existent file"""
-    with app.test_request_context():
-        # Test with a non-existent file
-        url = url_for("static", filename="nonexistent.css")
-
-        # Should still return a valid URL (just no version parameter)
-        assert "nonexistent.css" in url
-
-
-def test_cache_busting_non_static_endpoint(app):
-    """Test that non-static endpoints are not affected"""
-    with app.test_request_context():
-        # Test with a non-static endpoint
-        url = url_for("public.index")
-
-        # Should not have version parameter
-        assert "?v=" not in url
-        assert url == "/"
 
 
 # TestLogging

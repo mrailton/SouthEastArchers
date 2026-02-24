@@ -5,6 +5,7 @@ description = "South East Archers Club Website"
 requires-python = ">=3.14"
 dependencies = [
     "Flask==3.1.2",
+    "flask-vite-assets>=0.1.0",
     "Flask-SQLAlchemy==3.1.1",
     "Flask-Migrate==4.1.0",
     "Flask-Mail==0.10.0",
@@ -24,7 +25,6 @@ dependencies = [
     "gunicorn==24.1.0",
     "whitenoise==6.11.0",
     "sumup==0.0.13",
-    "flask-talisman==1.1.0",
 ]
 
 [dependency-groups]

@@ -423,12 +423,16 @@ wheels = [
 ]
 
 [[package]]
-name = "flask-talisman"
-version = "1.1.0"
+name = "flask-vite-assets"
+version = "0.1.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/38/5c/157d51e32eaffdb34ee316261239937d66400a57cd8146176fd8ce50c43a/flask-talisman-1.1.0.tar.gz", hash = "sha256:c5f486f5f54420729f84b3c3850cd63f96e8b033a9629bee66c524ea363797ff", size = 22656, upload-time = "2023-08-03T12:00:28.09Z" }
+dependencies = [
+    { name = "flask" },
+    { name = "markupsafe" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/76/f1/f1a3d01a5176ccd649379fb85558e5f1fd52eb740a962c228cbb56171785/flask_vite_assets-0.1.0.tar.gz", hash = "sha256:3e0485dc402386b6d3fbf5daaec6f309219662eaeb0d5106c3bdb87a8bb46b7d", size = 8053, upload-time = "2026-02-24T17:18:53.039Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/1c/a15ac936dc3ae4491c5ff089dccdccd72cd3608b15fcf4e2de961f9ee8f3/flask_talisman-1.1.0-py2.py3-none-any.whl", hash = "sha256:3c42b610ebe49b0e35ca150e179bf51aa1da01e4635b49a674868ea681046208", size = 18967, upload-time = "2023-08-03T12:00:26.041Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/70/70373ab061daacc1c853e756dbc115e61d70dc26fff0c22eb3263d9f77d0/flask_vite_assets-0.1.0-py3-none-any.whl", hash = "sha256:60e7b81f618bb3c5176e4dcd916f1c3978fded8616a91099bbd33d9314397aed", size = 7201, upload-time = "2026-02-24T17:18:51.961Z" },
 ]
 
 [[package]]
@@ -1032,7 +1036,7 @@ dependencies = [
     { name = "flask-mail" },
     { name = "flask-migrate" },
     { name = "flask-sqlalchemy" },
-    { name = "flask-talisman" },
+    { name = "flask-vite-assets" },
     { name = "flask-wtf" },
     { name = "gunicorn" },
     { name = "itsdangerous" },
@@ -1070,7 +1074,7 @@ requires-dist = [
     { name = "flask-mail", specifier = "==0.10.0" },
     { name = "flask-migrate", specifier = "==4.1.0" },
     { name = "flask-sqlalchemy", specifier = "==3.1.1" },
-    { name = "flask-talisman", specifier = "==1.1.0" },
+    { name = "flask-vite-assets", specifier = ">=0.1.0" },
     { name = "flask-wtf", specifier = "==1.2.2" },
     { name = "gunicorn", specifier = "==24.1.0" },
     { name = "itsdangerous", specifier = "==2.2.0" },

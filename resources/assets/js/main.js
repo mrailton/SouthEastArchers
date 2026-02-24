@@ -84,12 +84,22 @@ Alpine.data('dashboardActions', () => ({
 Alpine.data('memberDetailActions', () => ({
     showActivateModal: false,
     showConfirmModal: false,
+    showCreditsModal: false,
     modalType: 'success',
     modalTitle: '',
     modalMessage: '',
     confirmText: '',
     formAction: '',
-    
+    // add-credits modal state
+    creditsQuantity: 1,
+    creditsReason: '',
+    creditsAction: '',
+
+    showAddCreditsModal(actionUrl) {
+        this.creditsAction = actionUrl
+        this.showCreditsModal = true
+    },
+
     showMembershipModal(action, actionUrl) {
         if (action === 'activate') {
             this.modalType = 'success'

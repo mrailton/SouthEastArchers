@@ -229,6 +229,7 @@ def add_credits(user_id):
         user_id=member.id,
         amount=quantity,
         payment_id=None,
+        reason=reason,
     )
     db.session.add(credit)
     db.session.commit()

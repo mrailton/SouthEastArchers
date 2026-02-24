@@ -42,6 +42,19 @@ def renew_membership(user_id):
     return redirect(url_for("admin.member_detail", user_id=user_id))
 
 
+@bp.post("/members/<int:user_id>/membership/create")
+@permission_required("members.manage_membership")
+def create_membership(user_id):
+    """Create a membership for an existing user who doesn't have one."""
+    member = UserService.get_user_by_id(user_id)
+    if not member:
+        abort(404)
+
+    success, message = MembershipService.create_membership(member)
+    flash(message, "success" if success else "error")
+    return redirect(url_for("admin.member_detail", user_id=user_id))
+
+
 @bp.post("/members/<int:user_id>/membership/activate")
 @permission_required("members.manage_membership")
 def activate_membership(user_id):

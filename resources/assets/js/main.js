@@ -102,7 +102,12 @@ Alpine.data('memberDetailActions', () => ({
     },
 
     showMembershipModal(action, actionUrl) {
-        if (action === 'activate') {
+        if (action === 'create') {
+            this.modalType = 'success'
+            this.modalTitle = 'Create Membership'
+            this.modalMessage = 'This will create a new active membership with the default credits and a 1-year expiry. Continue?'
+            this.confirmText = 'Create Membership'
+        } else if (action === 'activate') {
             this.modalType = 'success'
             this.modalTitle = 'Activate Membership'
             this.modalMessage = 'Are you sure you want to activate this membership?'

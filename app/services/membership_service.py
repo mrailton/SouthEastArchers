@@ -7,6 +7,30 @@ from app.services.settings_service import SettingsService
 
 class MembershipService:
     @staticmethod
+    def create_membership(user: User) -> tuple[bool, str]:
+        """Create a new membership for a user who doesn't have one."""
+        if user.membership:
+            return False, "User already has a membership."
+
+        settings = SettingsService.get()
+        start_date = date.today()
+        membership = Membership(
+            user_id=user.id,
+            start_date=start_date,
+            expiry_date=SettingsService.calculate_membership_expiry(start_date).date(),
+            initial_credits=settings.membership_shoots_included,
+            purchased_credits=0,
+            status="active",
+        )
+        try:
+            db.session.add(membership)
+            db.session.commit()
+            return True, f"Membership created for {user.name}."
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Error creating membership: {str(e)}"
+
+    @staticmethod
     def activate_membership(user: User) -> tuple[bool, str]:
         if not user.membership:
             return False, "No membership found."

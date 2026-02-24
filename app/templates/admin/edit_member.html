@@ -156,7 +156,10 @@
         {% else %}
         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
             <p class="text-sm text-yellow-700">
-                This member does not have a membership. You can create one from the member detail page.
+                This member does not have a membership.
+                <a href="{{ url_for('admin.member_detail', user_id=member.id) }}" class="underline font-medium hover:text-yellow-900">
+                    Create one from the member detail page.
+                </a>
             </p>
         </div>
         {% endif %}

@@ -12,7 +12,7 @@
             <li>Community events and training</li>
             <li>Purchase additional credits as needed</li>
         </ul>
-        {% if not current_user.is_authenticated %}
+        {% if not current_user.is_authenticated or not (current_user.membership and current_user.membership.is_active()) %}
             <a href="{{ url_for('auth.signup') }}" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Join Now</a>
         {% endif %}
     </div>

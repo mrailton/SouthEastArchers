@@ -90,12 +90,13 @@ Alpine.data('memberDetailActions', () => ({
     modalMessage: '',
     confirmText: '',
     formAction: '',
-    // add-credits modal state
+    // add/remove credits modal state
     creditsQuantity: 1,
     creditsReason: '',
     creditsAction: '',
+    creditsAdjustAction: 'add',
 
-    showAddCreditsModal(actionUrl) {
+    showAdjustCreditsModal(actionUrl) {
         this.creditsAction = actionUrl
         this.showCreditsModal = true
     },

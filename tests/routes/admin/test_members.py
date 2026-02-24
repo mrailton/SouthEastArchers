@@ -226,10 +226,11 @@ def test_add_credits_success(client, admin_user, test_user):
     initial_credits = test_user.membership.purchased_credits
 
     response = client.post(
-        f"/admin/members/{test_user.id}/credits/add",
+        f"/admin/members/{test_user.id}/credits/adjust",
         data={
             "quantity": "5",
             "reason": "Promotional credits",
+            "action": "add",
         },
         follow_redirects=True,
     )
@@ -251,16 +252,85 @@ def test_add_credits_creates_credit_record(client, admin_user, test_user):
     initial_count = Credit.query.filter_by(user_id=test_user.id).count()
 
     client.post(
-        f"/admin/members/{test_user.id}/credits/add",
-        data={"quantity": "3"},
+        f"/admin/members/{test_user.id}/credits/adjust",
+        data={"quantity": "3", "action": "add"},
         follow_redirects=True,
     )
 
-    # Verify credit record was created
+    # Verify credit record was created with positive amount
     credits = Credit.query.filter_by(user_id=test_user.id).all()
     assert len(credits) == initial_count + 1
     assert credits[-1].amount == 3
-    assert credits[-1].payment_id is None  # No payment for admin-added credits
+    assert credits[-1].payment_id is None
+
+
+def test_remove_credits_success(client, admin_user, test_user):
+    """Test removing credits from a member's account (initial credits first)"""
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    # Set known starting state
+    test_user.membership.initial_credits = 10
+    test_user.membership.purchased_credits = 5
+    db.session.commit()
+
+    response = client.post(
+        f"/admin/members/{test_user.id}/credits/adjust",
+        data={
+            "quantity": "4",
+            "reason": "Correction",
+            "action": "remove",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Removed 4 credit(s)" in response.data
+
+    db.session.refresh(test_user)
+    # Should take from initial credits first
+    assert test_user.membership.initial_credits == 6
+    assert test_user.membership.purchased_credits == 5
+
+
+def test_remove_credits_spills_into_purchased(client, admin_user, test_user):
+    """Test removing more credits than initial spills into purchased credits"""
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    test_user.membership.initial_credits = 3
+    test_user.membership.purchased_credits = 10
+    db.session.commit()
+
+    client.post(
+        f"/admin/members/{test_user.id}/credits/adjust",
+        data={"quantity": "5", "action": "remove"},
+        follow_redirects=True,
+    )
+
+    db.session.refresh(test_user)
+    assert test_user.membership.initial_credits == 0
+    assert test_user.membership.purchased_credits == 8
+
+
+def test_remove_credits_creates_negative_credit_record(client, admin_user, test_user):
+    """Test that removing credits creates a Credit record with negative amount"""
+    from app.models import Credit
+
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    initial_count = Credit.query.filter_by(user_id=test_user.id).count()
+
+    client.post(
+        f"/admin/members/{test_user.id}/credits/adjust",
+        data={"quantity": "2", "reason": "Error correction", "action": "remove"},
+        follow_redirects=True,
+    )
+
+    credits = Credit.query.filter_by(user_id=test_user.id).all()
+    assert len(credits) == initial_count + 1
+    new_credit = credits[-1]
+    assert new_credit.amount == -2
+    assert new_credit.reason == "Error correction"
+    assert new_credit.payment_id is None
 
 
 def test_add_credits_invalid_quantity(client, admin_user, test_user):
@@ -270,8 +340,8 @@ def test_add_credits_invalid_quantity(client, admin_user, test_user):
     initial_credits = test_user.membership.purchased_credits
 
     response = client.post(
-        f"/admin/members/{test_user.id}/credits/add",
-        data={"quantity": "0"},
+        f"/admin/members/{test_user.id}/credits/adjust",
+        data={"quantity": "0", "action": "add"},
         follow_redirects=True,
     )
 
@@ -297,31 +367,47 @@ def test_add_credits_no_membership(client, admin_user, app):
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
     response = client.post(
-        f"/admin/members/{user.id}/credits/add",
-        data={"quantity": "5"},
+        f"/admin/members/{user.id}/credits/adjust",
+        data={"quantity": "5", "action": "add"},
         follow_redirects=True,
     )
 
     assert response.status_code == 200
-    assert b"does not have an active membership" in response.data
+    assert b"does not have a membership" in response.data
 
 
 def test_add_credits_requires_permission(client, test_user):
-    """Test that adding credits requires members.manage_membership permission"""
+    """Test that adjusting credits requires members.manage_membership permission"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
-    response = client.post(f"/admin/members/{test_user.id}/credits/add", data={"quantity": "5"})
+    response = client.post(f"/admin/members/{test_user.id}/credits/adjust", data={"quantity": "5", "action": "add"})
     assert response.status_code == 403
 
 
-def test_member_detail_shows_add_credits_form(client, admin_user, test_user):
-    """Test that member detail page shows add credits form for admin"""
+def test_member_detail_shows_adjust_credits_form(client, admin_user, test_user):
+    """Test that member detail page shows adjust credits controls for admin"""
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
     response = client.get(f"/admin/members/{test_user.id}")
     assert response.status_code == 200
-    assert b"Add Credits" in response.data
-    assert b"+ Add Credits" in response.data
+    assert b"Adjust Credits" in response.data
+
+
+def test_adjust_credits_stores_adjusted_by(client, admin_user, test_user):
+    """Test that adjusting credits records which admin made the change"""
+    from app.models import Credit
+
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    client.post(
+        f"/admin/members/{test_user.id}/credits/adjust",
+        data={"quantity": "1", "action": "add", "reason": "Test"},
+        follow_redirects=True,
+    )
+
+    credit = Credit.query.filter_by(user_id=test_user.id).order_by(Credit.id.desc()).first()
+    assert credit is not None
+    assert credit.adjusted_by_id == admin_user.id
 
 
 def test_members_requires_admin(client, test_user):

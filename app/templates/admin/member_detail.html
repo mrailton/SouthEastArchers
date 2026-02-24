@@ -104,16 +104,22 @@
                 
                 {% if current_user.has_permission('members.manage_membership') %}
                 <div class="border-t pt-4 mb-4">
-                    <p class="text-sm font-medium text-gray-700 mb-2">Add Credits</p>
+                    <p class="text-sm font-medium text-gray-700 mb-2">Adjust Credits</p>
                     <div class="flex flex-wrap gap-2">
+                        <select x-model="creditsAdjustAction"
+                                class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
+                            <option value="add">Add</option>
+                            <option value="remove">Remove</option>
+                        </select>
                         <input type="number" x-model.number="creditsQuantity" min="1" value="1"
                                class="w-20 px-3 py-2 border border-gray-300 rounded-md text-sm" required>
                         <input type="text" x-model="creditsReason" placeholder="Reason (optional)"
                                class="flex-1 min-w-32 px-3 py-2 border border-gray-300 rounded-md text-sm">
                         <button type="button"
-                                @click="showAddCreditsModal('{{ url_for('admin.add_credits', user_id=member.id) }}')"
-                                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-medium">
-                            + Add Credits
+                                @click="showAdjustCreditsModal('{{ url_for('admin.adjust_credits', user_id=member.id) }}')"
+                                class="text-white px-4 py-2 rounded text-sm font-medium"
+                                :class="creditsAdjustAction === 'remove' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'"
+                                x-text="creditsAdjustAction === 'remove' ? '− Remove' : '+ Add'">
                         </button>
                     </div>
                 </div>
@@ -230,6 +236,7 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credits</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adjusted By</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -246,6 +253,9 @@
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-700">
                                 {{ credit.reason or '—' }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                                {{ credit.adjusted_by.name if credit.adjusted_by else '—' }}
                             </td>
                         </tr>
                         {% endfor %}
@@ -381,18 +391,26 @@
                      x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                      x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                      class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
-                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                         <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full sm:mx-0 sm:h-10 sm:w-10"
+                                 :class="creditsAdjustAction === 'remove' ? 'bg-red-100' : 'bg-blue-100'">
+                                <svg x-show="creditsAdjustAction === 'add'" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6" />
+                                </svg>
+                                <svg x-show="creditsAdjustAction === 'remove'" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 12H6" />
                                 </svg>
                             </div>
                             <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                                <h3 class="text-base font-semibold leading-6 text-gray-900">Confirm Add Credits</h3>
+                                <h3 class="text-base font-semibold leading-6 text-gray-900">
+                                    <span x-text="creditsAdjustAction === 'remove' ? 'Remove' : 'Add'"></span> Credits
+                                </h3>
                                 <div class="mt-2">
                                     <p class="text-sm text-gray-500">
-                                        You are about to add <strong x-text="creditsQuantity"></strong> credit(s) to
+                                        You are about to <span x-text="creditsAdjustAction === 'remove' ? 'remove' : 'add'"></span>
+                                        <strong x-text="creditsQuantity"></strong> credit(s)
+                                        <span x-text="creditsAdjustAction === 'remove' ? 'from' : 'to'"></span>
                                         <strong>{{ member.name }}</strong>'s account.
                                     </p>
                                     <div x-show="creditsReason" class="mt-2">
@@ -407,9 +425,11 @@
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
                             <input type="hidden" name="quantity" :value="creditsQuantity"/>
                             <input type="hidden" name="reason" :value="creditsReason"/>
+                            <input type="hidden" name="action" :value="creditsAdjustAction"/>
                             <button type="submit"
-                                    class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
-                                Confirm
+                                    class="inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm sm:ml-3 sm:w-auto"
+                                    :class="creditsAdjustAction === 'remove' ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'"
+                                    x-text="(creditsAdjustAction === 'remove' ? 'Remove' : 'Add') + ' Credits'">
                             </button>
                         </form>
                         <button type="button"

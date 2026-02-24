@@ -62,6 +62,24 @@ class Membership(db.Model):
         current = self.purchased_credits if self.purchased_credits is not None else 0
         self.purchased_credits = current + amount
 
+    def remove_credits(self, amount: int) -> None:
+        """Remove credits from the membership, taking from initial credits first.
+
+        Will reduce initial_credits to zero before touching purchased_credits.
+        Credits are allowed to go negative (admin override).
+        """
+        initial = self.initial_credits if self.initial_credits is not None else 0
+        purchased = self.purchased_credits if self.purchased_credits is not None else 0
+
+        remaining = amount
+        # Deduct from initial credits first
+        deduct_initial = min(remaining, max(initial, 0))
+        self.initial_credits = initial - deduct_initial
+        remaining -= deduct_initial
+        # Then deduct from purchased credits
+        if remaining > 0:
+            self.purchased_credits = purchased - remaining
+
     def renew(self, initial_credits: int = 20):
         """Renew the membership.
 

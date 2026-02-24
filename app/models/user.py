@@ -23,7 +23,7 @@ class User(UserMixin, db.Model):
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     membership = db.relationship("Membership", backref="user", uselist=False, cascade="all, delete-orphan")
-    credits = db.relationship("Credit", backref="user", cascade="all, delete-orphan")
+    credits = db.relationship("Credit", backref="user", foreign_keys="Credit.user_id", cascade="all, delete-orphan")
     shoots = db.relationship("Shoot", secondary="user_shoots", backref="users")
     payments = db.relationship("Payment", backref="user", cascade="all, delete-orphan")
     roles = db.relationship("Role", secondary="user_roles", back_populates="users")

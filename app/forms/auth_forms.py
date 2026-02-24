@@ -15,6 +15,7 @@ class SignupForm(FlaskForm):
     password = PasswordField("Password", validators=[DataRequired(), Length(min=8)])
     password_confirm = PasswordField("Confirm Password", validators=[DataRequired(), EqualTo("password", message="Passwords do not match")])
     qualification = StringField("Qualification", default="none")
+    qualification_detail = StringField("Qualification Detail", validators=[Optional()])
 
 
 class ForgotPasswordForm(FlaskForm):

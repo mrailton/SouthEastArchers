@@ -21,10 +21,19 @@
                     None
                 {% elif member.qualification == 'beginner' %}
                     Beginner Course Completed
+                    {% if member.qualification_detail %}
+                        <span class="text-gray-500">— Certificate from: {{ member.qualification_detail }}</span>
+                    {% endif %}
                 {% elif member.qualification == 'ai' %}
                     Archery Ireland Member
+                    {% if member.qualification_detail %}
+                        <span class="text-gray-500">— Membership No: {{ member.qualification_detail }}</span>
+                    {% endif %}
                 {% elif member.qualification == 'ifaf' %}
                     Irish Field Archery Federation Member
+                    {% if member.qualification_detail %}
+                        <span class="text-gray-500">— Membership No: {{ member.qualification_detail }}</span>
+                    {% endif %}
                 {% else %}
                     {{ member.qualification|title }}
                 {% endif %}

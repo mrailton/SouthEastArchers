@@ -109,6 +109,7 @@ class UserService:
         email: str,
         phone: str = None,
         qualification: str = None,
+        qualification_detail: str = None,
         role_ids: list[int] | None = None,
         is_active: bool = True,
         password: str = None,
@@ -123,6 +124,8 @@ class UserService:
         user.phone = phone
         if qualification:
             user.qualification = qualification
+        # Clear the detail when qualification is none, regardless of submitted value
+        user.qualification_detail = None if qualification == "none" else (qualification_detail or None)
         if role_ids is not None:
             roles = Role.query.filter(Role.id.in_(role_ids)).all()
             user.roles = roles
@@ -156,6 +159,7 @@ class UserService:
         password: str,
         phone: str = None,
         qualification: str = "None",
+        qualification_detail: str = None,
     ) -> tuple[User | None, str | None]:
         if User.query.filter_by(email=email).first():
             return None, "Email already registered."
@@ -167,6 +171,7 @@ class UserService:
             email=email,
             phone=phone,
             qualification=qualification,
+            qualification_detail=None if qualification in (None, "none", "None") else (qualification_detail or None),
             is_active=False,
         )
         user.set_password(password)

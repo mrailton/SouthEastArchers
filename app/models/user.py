@@ -17,6 +17,7 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20), nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
     qualification = db.Column(db.String(255), nullable=False, default="None")
+    qualification_detail = db.Column(db.String(255), nullable=True)
     is_active = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)

@@ -39,13 +39,32 @@
                            type="tel" id="phone" name="phone" value="{{ form.phone.data or '' }}">
                 </div>
 
-                <div>
+                <div x-data="{ qualification: '{{ form.qualification.data or 'none' }}', qualificationDetail: '{{ form.qualification_detail.data or '' }}' }">
                     <label for="qualification" class="block text-gray-700 font-bold mb-2">Qualification *</label>
-                    <select class="w-full border border-gray-300 rounded px-3 py-2" id="qualification" name="qualification" required>
+                    <select class="w-full border border-gray-300 rounded px-3 py-2" id="qualification" name="qualification" required
+                            x-model="qualification">
                         {% for value, label in form.qualification.choices %}
                             <option value="{{ value }}" {% if form.qualification.data == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
+
+                    <div x-show="qualification !== 'none'" x-cloak class="mt-3">
+                        <label class="block text-gray-700 font-bold mb-2">
+                            <span x-show="qualification === 'beginner'">Certificate Issued By</span>
+                            <span x-show="qualification === 'ai'">Archery Ireland Membership Number</span>
+                            <span x-show="qualification === 'ifaf'">IFAF Membership Number</span>
+                        </label>
+                        <input class="w-full border border-gray-300 rounded px-3 py-2"
+                               type="text"
+                               name="qualification_detail"
+                               x-model="qualificationDetail"
+                               :placeholder="qualification === 'beginner' ? 'e.g. Dublin Archery Club, 2024' : qualification === 'ai' ? 'e.g. 12345' : 'e.g. 67890'">
+                        <p class="text-sm text-gray-500 mt-1">
+                            <span x-show="qualification === 'beginner'">Club or organisation that provided the beginners certificate.</span>
+                            <span x-show="qualification === 'ai'">Archery Ireland membership number (numeric).</span>
+                            <span x-show="qualification === 'ifaf'">Irish Field Archery Federation membership number.</span>
+                        </p>
+                    </div>
                 </div>
 
                 <div>

@@ -48,6 +48,7 @@ class EditMemberForm(FlaskForm):
         ],
         validators=[DataRequired()],
     )
+    qualification_detail = StringField("Qualification Detail", validators=[Optional()])
     password = PasswordField("Password", validators=[Optional()])
     roles = SelectMultipleField("Roles", coerce=int, validators=[Optional()])
     is_active = BooleanField("Is Active", default=True)

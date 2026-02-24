@@ -18,19 +18,19 @@
         <div>
             <label for="name" class="block text-gray-700 font-bold mb-2">Full Name *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="text" id="name" name="name" value="{{ name or '' }}" required>
+                   type="text" id="name" name="name" value="{{ form.name.data or '' }}" required>
         </div>
         
         <div>
             <label for="email" class="block text-gray-700 font-bold mb-2">Email Address *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="email" id="email" name="email" value="{{ email or '' }}" required>
+                   type="email" id="email" name="email" value="{{ form.email.data or '' }}" required>
         </div>
         
         <div>
             <label for="phone" class="block text-gray-700 font-bold mb-2">Phone Number (optional)</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="tel" id="phone" name="phone" value="{{ phone or '' }}">
+                   type="tel" id="phone" name="phone" value="{{ form.phone.data or '' }}">
         </div>
         
         <div>
@@ -46,7 +46,7 @@
         </div>
         
         <!-- QualificationSelection -->
-        <div class="border-t pt-4 mt-4">
+        <div class="border-t pt-4 mt-4" x-data="{ qualification: '{{ form.qualification.data or 'none' }}', qualificationDetail: '{{ form.qualification_detail.data or '' }}' }">
             <label class="block text-gray-700 font-bold mb-3">Qualification *</label>
             <div class="space-y-3">
                 <div class="flex items-start">
@@ -54,32 +54,24 @@
                            id="qualification_none"
                            name="qualification"
                            value="none"
-                           class="mt-1 mr-3" 
-                           {% if not payment_method or payment_method == 'none' %}checked{% endif %}>
+                           class="mt-1 mr-3"
+                           x-model="qualification">
                     <div>
-                        <label for="qualification_none" class="font-semibold text-gray-900 cursor-pointer">
-                            None
-                        </label>
-                        <p class="text-sm text-gray-600">
-                            Select this if you have never taken a beginners course and are not a member of Archery Ireland or the Irish Field Archery Federation.
-                        </p>
+                        <label for="qualification_none" class="font-semibold text-gray-900 cursor-pointer">None</label>
+                        <p class="text-sm text-gray-600">Select this if you have never taken a beginners course and are not a member of Archery Ireland or the Irish Field Archery Federation.</p>
                     </div>
                 </div>
-                
+
                 <div class="flex items-start">
-                    <input type="radio" 
+                    <input type="radio"
                            id="qualification_beginner"
                            name="qualification"
                            value="beginner"
                            class="mt-1 mr-3"
-                           {% if qualification == 'beginner' %}checked{% endif %}>
+                           x-model="qualification">
                     <div>
-                        <label for="qualification_beginner" class="font-semibold text-gray-900 cursor-pointer">
-                            Beginner Course Completed
-                        </label>
-                        <p class="text-sm text-gray-600">
-                            Select this if you have completed a recognised beginners course but are not a member of Archery Ireland or the Irish Field Archery Federation.
-                        </p>
+                        <label for="qualification_beginner" class="font-semibold text-gray-900 cursor-pointer">Beginner Course Completed</label>
+                        <p class="text-sm text-gray-600">Select this if you have completed a recognised beginners course but are not a member of Archery Ireland or the Irish Field Archery Federation.</p>
                     </div>
                 </div>
 
@@ -89,14 +81,10 @@
                            name="qualification"
                            value="ai"
                            class="mt-1 mr-3"
-                           {% if qualification == 'ai' %}checked{% endif %}>
+                           x-model="qualification">
                     <div>
-                        <label for="qualification_ai" class="font-semibold text-gray-900 cursor-pointer">
-                            Archery Ireland Member
-                        </label>
-                        <p class="text-sm text-gray-600">
-                            Select this if you have completed a recognised beginners course and are a member of Archery Ireland.
-                        </p>
+                        <label for="qualification_ai" class="font-semibold text-gray-900 cursor-pointer">Archery Ireland Member</label>
+                        <p class="text-sm text-gray-600">Select this if you have completed a recognised beginners course and are a member of Archery Ireland.</p>
                     </div>
                 </div>
 
@@ -104,18 +92,34 @@
                     <input type="radio"
                            id="qualification_ifaf"
                            name="qualification"
-                           value="cash"
+                           value="ifaf"
                            class="mt-1 mr-3"
-                           {% if qualification == 'ifaf' %}checked{% endif %}>
+                           x-model="qualification">
                     <div>
-                        <label for="qualification_ifaf" class="font-semibold text-gray-900 cursor-pointer">
-                            Irish Field Archery Federation Member
-                        </label>
-                        <p class="text-sm text-gray-600">
-                            Select this if you have completed a recognised beginners course and are a member of the Irish Field Archery Federation.
-                        </p>
+                        <label for="qualification_ifaf" class="font-semibold text-gray-900 cursor-pointer">Irish Field Archery Federation Member</label>
+                        <p class="text-sm text-gray-600">Select this if you have completed a recognised beginners course and are a member of the Irish Field Archery Federation.</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Conditional detail field: single input, label/placeholder driven by Alpine -->
+            <div x-show="qualification !== 'none'" x-cloak class="mt-4">
+                <label class="block text-gray-700 font-bold mb-2">
+                    <span x-show="qualification === 'beginner'">Where did you complete your beginners course? *</span>
+                    <span x-show="qualification === 'ai'">Archery Ireland Membership Number *</span>
+                    <span x-show="qualification === 'ifaf'">IFAF Membership Number *</span>
+                </label>
+                <input class="w-full border border-gray-300 rounded px-3 py-2"
+                       type="text"
+                       name="qualification_detail"
+                       x-model="qualificationDetail"
+                       :placeholder="qualification === 'beginner' ? 'e.g. Dublin Archery Club, 2024' : qualification === 'ai' ? 'e.g. 12345' : 'e.g. 67890'"
+                       :required="qualification !== 'none'">
+                <p class="text-sm text-gray-500 mt-1">
+                    <span x-show="qualification === 'beginner'">Please enter the club or organisation that provided your certificate.</span>
+                    <span x-show="qualification === 'ai'">Please enter your Archery Ireland membership number.</span>
+                    <span x-show="qualification === 'ifaf'">Please enter your Irish Field Archery Federation membership number.</span>
+                </p>
             </div>
         </div>
         

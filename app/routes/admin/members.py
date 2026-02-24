@@ -177,6 +177,7 @@ def edit_member_post(user_id):
             email=form.email.data,
             phone=form.phone.data,
             qualification=form.qualification.data,
+            qualification_detail=form.qualification_detail.data or None,
             role_ids=form.roles.data,
             is_active=form.is_active.data,
             password=form.password.data or None,

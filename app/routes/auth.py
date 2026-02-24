@@ -67,6 +67,7 @@ def signup_post():
             password=form.password.data,
             phone=form.phone.data,
             qualification=form.qualification.data,
+            qualification_detail=form.qualification_detail.data,
         )
 
         if error:

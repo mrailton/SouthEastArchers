@@ -71,5 +71,5 @@ class EventService:
         """Parse ISO format date string."""
         try:
             return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-        except (ValueError, AttributeError):
+        except ValueError, AttributeError:
             return None

@@ -7,8 +7,8 @@ class AdminService:
         """Get statistics for the admin dashboard."""
         total_members = UserRepository.count()
         active_memberships = MembershipRepository.count_active()
-        expiring_soon = MembershipRepository.count_expiring_soon(days=30)
         recent_members = UserRepository.get_recent(limit=5)
+        count_pending_users = UserRepository.count_pending_users()
 
         # Pending cash payments
         pending_cash_payments = PaymentRepository.count_pending_cash()
@@ -23,8 +23,8 @@ class AdminService:
         return {
             "total_members": total_members,
             "active_memberships": active_memberships,
-            "expiring_soon": expiring_soon,
             "recent_members": recent_members,
             "pending_cash_payments": pending_cash_payments,
             "pending_payments_data": pending_payments_data,
+            "count_pending_users": count_pending_users,
         }

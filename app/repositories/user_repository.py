@@ -32,6 +32,10 @@ class UserRepository(BaseRepository):
         return User.query.count()
 
     @staticmethod
+    def count_pending_users():
+        return User.query.filter_by(is_active=False).count()
+
+    @staticmethod
     def get_active_with_membership() -> list[User]:
         return User.query.filter_by(is_active=True).order_by(User.name).all()
 

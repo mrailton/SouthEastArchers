@@ -6,8 +6,13 @@
 
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
     <div class="bg-white p-6 rounded shadow">
-        <h3 class="text-gray-600 text-sm font-bold">Total Members</h3>
+        <h3 class="text-gray-600 text-sm font-bold">Total Member Accounts</h3>
         <p class="text-3xl font-bold">{{ total_members }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-gray-600 text-sm font-bold">Pending Member Accounts</h3>
+        <p class="text-3xl font-bold">{{ count_pending_users }}</p>
     </div>
     
     <div class="bg-white p-6 rounded shadow">
@@ -15,19 +20,14 @@
         <p class="text-3xl font-bold">{{ active_memberships }}</p>
     </div>
     
-    <div class="bg-white p-6 rounded shadow">
-        <h3 class="text-gray-600 text-sm font-bold">Memberships Expiring in 30 Days</h3>
-        <p class="text-3xl font-bold">{{ expiring_soon }}</p>
-    </div>
-    
     {% if current_user.has_permission('payments.approve') %}
-    <div class="bg-white p-6 rounded shadow {% if pending_cash_payments > 0 %}border-l-4 border-yellow-400{% endif %}">
-        <h3 class="text-gray-600 text-sm font-bold">Pending Cash Payments</h3>
-        <p class="text-3xl font-bold {% if pending_cash_payments > 0 %}text-yellow-600{% endif %}">{{ pending_cash_payments }}</p>
-        {% if pending_cash_payments > 0 %}
-        <a href="{{ url_for('admin.pending_payments') }}" class="text-sm text-blue-600 hover:underline">View &amp; Approve →</a>
-        {% endif %}
-    </div>
+        <div class="bg-white p-6 rounded shadow {% if pending_cash_payments > 0 %}border-l-4 border-yellow-400{% endif %}">
+            <h3 class="text-gray-600 text-sm font-bold">Pending Cash Payments</h3>
+            <p class="text-3xl font-bold {% if pending_cash_payments > 0 %}text-yellow-600{% endif %}">{{ pending_cash_payments }}</p>
+            {% if pending_cash_payments > 0 %}
+                <a href="{{ url_for('admin.pending_payments') }}" class="text-sm text-blue-600 hover:underline">View &amp; Approve →</a>
+            {% endif %}
+        </div>
     {% endif %}
 </div>
 
@@ -172,6 +172,7 @@
             {% for member in recent_members %}
             <li class="text-gray-700">
                 <a href="{{ url_for('admin.member_detail', user_id=member.id) }}" class="text-blue-600 hover:underline">{{ member.name }}</a>
+                <span class="text-sm text-gray-300">- {{ 'Active' if member.is_active else 'Pending' }}</span>
                 <span class="text-sm text-gray-500">- {{ member.created_at.strftime('%d/%m/%Y') }}</span>
             </li>
             {% endfor %}

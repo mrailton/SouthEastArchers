@@ -80,7 +80,7 @@ def approve_payment(payment_id):
             if "shooting credits" in description.lower():
                 try:
                     quantity = int(description.split()[0])
-                except (ValueError, IndexError):
+                except ValueError, IndexError:
                     quantity = 1
 
             if user.membership:
@@ -99,7 +99,7 @@ def approve_payment(payment_id):
                 if "shooting credits" in (payment.description or "").lower():
                     try:
                         quantity = int(payment.description.split()[0])
-                    except (ValueError, IndexError):
+                    except ValueError, IndexError:
                         quantity = 1
                 credit_purchased.send(user_id=user.id, payment_id=payment.id, quantity=quantity)
             else:

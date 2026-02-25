@@ -32,7 +32,7 @@ class UserRepository(BaseRepository):
         return User.query.count()
 
     @staticmethod
-    def count_pending_users():
+    def count_pending_users() -> int:
         return User.query.filter_by(is_active=False).count()
 
     @staticmethod

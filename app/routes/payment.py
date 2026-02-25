@@ -10,7 +10,7 @@ from flask import (
 )
 from flask_login import current_user, login_required
 
-from app.models import Payment
+from app.repositories import PaymentRepository
 from app.services import PaymentProcessingService, PaymentService
 from app.utils.session import get_user_id_from_session
 
@@ -138,7 +138,7 @@ def credits_post():
 @login_required
 def history():
     user = current_user
-    payments = Payment.query.filter_by(user_id=user.id).order_by(Payment.created_at.desc()).all()
+    payments = PaymentRepository.get_by_user(user.id)
 
     return render_template("payment/history.html", payments=payments)
 

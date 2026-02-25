@@ -9,10 +9,10 @@ from flask import (
 )
 from flask_login import login_required, login_user, logout_user
 
+from app.events import password_reset_requested, user_registered
 from app.forms import ForgotPasswordForm, LoginForm, ResetPasswordForm, SignupForm
 from app.models import User
 from app.services import UserService
-from app.services.mail_service import send_new_member_notification, send_password_reset
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -75,7 +75,7 @@ def signup_post():
             return render_template("auth/signup.html", form=form)
 
         assert user is not None
-        send_new_member_notification(user.id)
+        user_registered.send(user_id=user.id)
 
         flash("Thank you for signing up. A coach will review your information shortly and get back to you to discuss membership.", "success")
         return redirect(url_for("auth.login"))
@@ -113,7 +113,7 @@ def forgot_password_post():
             token = UserService.create_password_reset_token(user)
 
             try:
-                send_password_reset(user.id, token)
+                password_reset_requested.send(user_id=user.id, token=token)
             except Exception as e:
                 current_app.logger.error(f"Failed to send password reset email to {user.email}: {str(e)}", exc_info=True)
                 flash("An error occurred sending the email. Please try again later.", "error")

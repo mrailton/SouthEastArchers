@@ -374,7 +374,10 @@ def lint_all(fix):
     else:
         exit_code_format = os.system("ruff format --check app/ tests/")
     
-    if exit_code_lint == 0 and exit_code_format == 0:
+    click.echo("\n=== Checking Module Boundaries ===")
+    exit_code_imports = os.system("lint-imports")
+
+    if exit_code_lint == 0 and exit_code_format == 0 and exit_code_imports == 0:
         click.echo("\n✓ All checks passed!")
         sys.exit(0)
     else:
@@ -627,6 +630,16 @@ def lint_typecheck():
     exit_code = os.system("mypy app/")
     if exit_code == 0:
         click.echo("✓ Type checking passed!")
+    sys.exit(exit_code >> 8)
+
+
+@lint.command("imports")
+def lint_imports():
+    """Check module boundary contracts with import-linter"""
+    click.echo("Checking module boundaries...")
+    exit_code = os.system("lint-imports")
+    if exit_code == 0:
+        click.echo("✓ Module boundary checks passed!")
     sys.exit(exit_code >> 8)
 
 

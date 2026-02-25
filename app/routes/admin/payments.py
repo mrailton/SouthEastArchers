@@ -4,8 +4,9 @@ from datetime import date
 
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 
-from app import db
-from app.models import Credit, Membership, Payment, User
+from app.events import credit_purchased, payment_completed
+from app.models import Credit, Membership
+from app.repositories import CreditRepository, MembershipRepository, PaymentRepository, UserRepository
 from app.services.settings_service import SettingsService
 from app.utils.decorators import permission_required
 
@@ -16,12 +17,12 @@ from . import bp
 @permission_required("payments.approve")
 def pending_payments():
     """Display list of pending cash payments awaiting approval."""
-    payments = Payment.query.filter_by(payment_method="cash", status="pending").order_by(Payment.created_at.desc()).all()
+    payments = PaymentRepository.get_pending_cash()
 
     # Get user info for each payment
     payment_data = []
     for payment in payments:
-        user = db.session.get(User, payment.user_id)
+        user = UserRepository.get_by_id(payment.user_id)
         payment_data.append({"payment": payment, "user": user})
 
     return render_template("admin/pending_payments.html", payment_data=payment_data)
@@ -33,7 +34,7 @@ def approve_payment(payment_id):
     """Approve a pending cash payment."""
     redirect_to = request.form.get("redirect_to") or url_for("admin.pending_payments")
 
-    payment = db.session.get(Payment, payment_id)
+    payment = PaymentRepository.get_by_id(payment_id)
     if not payment:
         abort(404)
 
@@ -41,7 +42,7 @@ def approve_payment(payment_id):
         flash("This payment cannot be approved.", "error")
         return redirect(redirect_to)
 
-    user = db.session.get(User, payment.user_id)
+    user = UserRepository.get_by_id(payment.user_id)
     if not user:
         flash("User not found.", "error")
         return redirect(redirect_to)
@@ -69,7 +70,7 @@ def approve_payment(payment_id):
                     purchased_credits=0,
                     status="active",
                 )
-                db.session.add(membership)
+                MembershipRepository.add(membership)
 
         elif payment.payment_type == "credits":
             # Add credits to membership
@@ -87,33 +88,29 @@ def approve_payment(payment_id):
 
             # Create credit record
             credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
-            db.session.add(credit)
+            CreditRepository.add(credit)
 
-        db.session.commit()
+        PaymentRepository.save()
 
-        # Send receipt email
+        # Emit event — handler sends receipt email
         try:
             if payment.payment_type == "credits":
-                from app.services.mail_service import send_credit_purchase_receipt
-
                 quantity = 1
                 if "shooting credits" in (payment.description or "").lower():
                     try:
                         quantity = int(payment.description.split()[0])
                     except (ValueError, IndexError):
                         quantity = 1
-                send_credit_purchase_receipt(user.id, payment.id, quantity)
+                credit_purchased.send(user_id=user.id, payment_id=payment.id, quantity=quantity)
             else:
-                from app.services.mail_service import send_payment_receipt
-
-                send_payment_receipt(user.id, payment.id)
+                payment_completed.send(user_id=user.id, payment_id=payment.id, payment_type=payment.payment_type)
         except Exception as e:
-            current_app.logger.error(f"Failed to send receipt email: {str(e)}")
+            current_app.logger.error(f"Failed to emit payment event: {str(e)}")
 
         flash(f"Payment approved for {user.name}!", "success")
 
     except Exception as e:
-        db.session.rollback()
+        # rollback handled by save()
         current_app.logger.error(f"Error approving payment: {str(e)}")
         flash(f"Error approving payment: {str(e)}", "error")
 
@@ -126,7 +123,7 @@ def reject_payment(payment_id):
     """Reject a pending cash payment."""
     redirect_to = request.form.get("redirect_to") or url_for("admin.pending_payments")
 
-    payment = db.session.get(Payment, payment_id)
+    payment = PaymentRepository.get_by_id(payment_id)
     if not payment:
         abort(404)
 
@@ -134,15 +131,15 @@ def reject_payment(payment_id):
         flash("This payment cannot be rejected.", "error")
         return redirect(redirect_to)
 
-    user = db.session.get(User, payment.user_id)
+    user = UserRepository.get_by_id(payment.user_id)
     user_name = user.name if user else "Unknown"
 
     try:
         payment.status = "cancelled"
-        db.session.commit()
+        PaymentRepository.save()
         flash(f"Payment rejected for {user_name}.", "success")
     except Exception as e:
-        db.session.rollback()
+        # rollback handled by save()
         current_app.logger.error(f"Error rejecting payment: {str(e)}")
         flash(f"Error rejecting payment: {str(e)}", "error")
 

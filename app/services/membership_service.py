@@ -1,7 +1,7 @@
-from datetime import date, timedelta
+from datetime import date
 
-from app import db
-from app.models import Membership, Payment, User
+from app.models import Membership, User
+from app.repositories import MembershipRepository, PaymentRepository
 from app.services.settings_service import SettingsService
 
 
@@ -23,11 +23,10 @@ class MembershipService:
             status="active",
         )
         try:
-            db.session.add(membership)
-            db.session.commit()
+            MembershipRepository.add(membership)
+            MembershipRepository.save()
             return True, f"Membership created for {user.name}."
         except Exception as e:
-            db.session.rollback()
             return False, f"Error creating membership: {str(e)}"
 
     @staticmethod
@@ -38,22 +37,16 @@ class MembershipService:
         if user.membership.status == "active":
             return False, "Membership is already active."
 
-        pending_payment = Payment.query.filter_by(
-            user_id=user.id,
-            payment_type="membership",
-            payment_method="cash",
-            status="pending",
-        ).first()
+        pending_payment = PaymentRepository.get_pending_cash_for_user(user.id, "membership")
 
         if pending_payment:
             pending_payment.mark_completed(processor="cash")
 
         user.membership.activate()
         try:
-            db.session.commit()
+            MembershipRepository.save()
             return True, "Membership activated successfully."
         except Exception as e:
-            db.session.rollback()
             return False, f"Error activating membership: {str(e)}"
 
     @staticmethod
@@ -65,10 +58,9 @@ class MembershipService:
         initial_credits = settings.membership_shoots_included
         user.membership.renew(initial_credits=initial_credits)
         try:
-            db.session.commit()
+            MembershipRepository.save()
             return True, "Membership renewed successfully."
         except Exception as e:
-            db.session.rollback()
             return False, f"Error renewing membership: {str(e)}"
 
     @staticmethod
@@ -78,31 +70,22 @@ class MembershipService:
 
         user.membership.status = "inactive"
         try:
-            db.session.commit()
+            MembershipRepository.save()
             return True, "Membership deactivated successfully."
         except Exception as e:
-            db.session.rollback()
             return False, f"Error deactivating membership: {str(e)}"
 
     @staticmethod
     def get_expiring_memberships(days: int = 30) -> list[Membership]:
-        cutoff_date = date.today() + timedelta(days=days)
-        return Membership.query.filter(Membership.status == "active", Membership.expiry_date <= cutoff_date).all()
+        return MembershipRepository.get_expiring_soon(days)
 
     @staticmethod
     def get_expired_memberships() -> list[Membership]:
-        return Membership.query.filter(Membership.status == "active", Membership.expiry_date < date.today()).all()
+        return MembershipRepository.get_expired()
 
     @staticmethod
     def expire_memberships_for_year_end() -> int:
-        """Expire initial credits for memberships that have expired.
-
-        This is called on the configured membership year start date.
-        Only affects memberships that have expired and not been renewed.
-
-        Returns:
-            Number of memberships processed
-        """
+        """Expire initial credits for memberships that have expired."""
         expired_memberships = MembershipService.get_expired_memberships()
         count = 0
 
@@ -111,6 +94,6 @@ class MembershipService:
             count += 1
 
         if count > 0:
-            db.session.commit()
+            MembershipRepository.save()
 
         return count

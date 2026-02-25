@@ -144,8 +144,8 @@ def test_signup_password_mismatch(client):
 
 def test_forgot_password_email_send_failure(client, test_user, mocker):
     """Test forgot password when email sending fails"""
-    # Mock send_password_reset to raise an exception
-    mock_send = mocker.patch("app.routes.auth.send_password_reset", side_effect=Exception("SMTP Error"))
+    # Mock password_reset_requested signal to raise an exception
+    mock_send = mocker.patch("app.routes.auth.password_reset_requested.send", side_effect=Exception("SMTP Error"))
 
     response = client.post(
         "/auth/forgot-password",
@@ -171,8 +171,8 @@ def test_forgot_password_form_validation_error(client):
 
 
 def test_signup_sends_new_member_notification(client, mocker):
-    """A successful signup triggers send_new_member_notification with the new user's id."""
-    mock_notify = mocker.patch("app.routes.auth.send_new_member_notification")
+    """A successful signup triggers user_registered event with the new user's id."""
+    mock_signal = mocker.patch("app.routes.auth.user_registered.send")
 
     response = client.post(
         "/auth/signup",
@@ -188,15 +188,15 @@ def test_signup_sends_new_member_notification(client, mocker):
     )
 
     assert response.status_code == 200
-    assert mock_notify.called
-    # The notification should be called with the newly created user's id (an integer)
-    called_user_id = mock_notify.call_args[0][0]
-    assert isinstance(called_user_id, int)
+    assert mock_signal.called
+    # The signal should be sent with user_id as a keyword arg
+    called_kwargs = mock_signal.call_args[1]
+    assert isinstance(called_kwargs["user_id"], int)
 
 
 def test_signup_notification_not_called_on_duplicate_email(client, test_user, mocker):
     """Notification is NOT triggered when signup fails due to duplicate email."""
-    mock_notify = mocker.patch("app.routes.auth.send_new_member_notification")
+    mock_signal = mocker.patch("app.routes.auth.user_registered.send")
 
     client.post(
         "/auth/signup",
@@ -211,12 +211,12 @@ def test_signup_notification_not_called_on_duplicate_email(client, test_user, mo
         follow_redirects=True,
     )
 
-    assert not mock_notify.called
+    assert not mock_signal.called
 
 
 def test_signup_notification_not_called_on_validation_failure(client, mocker):
     """Notification is NOT triggered when form validation fails."""
-    mock_notify = mocker.patch("app.routes.auth.send_new_member_notification")
+    mock_signal = mocker.patch("app.routes.auth.user_registered.send")
 
     client.post(
         "/auth/signup",
@@ -231,4 +231,4 @@ def test_signup_notification_not_called_on_validation_failure(client, mocker):
         follow_redirects=True,
     )
 
-    assert not mock_notify.called
+    assert not mock_signal.called

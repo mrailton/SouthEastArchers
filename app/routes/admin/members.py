@@ -4,9 +4,10 @@ from typing import cast
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
-from app import db
+from app.events import membership_activated, user_activated
 from app.forms import CreateMemberForm, EditMemberForm
-from app.models import Credit, Payment, Role
+from app.models import Credit
+from app.repositories import CreditRepository, PaymentRepository, RBACRepository, UserRepository
 from app.services import MembershipService, UserService
 from app.utils.decorators import permission_required
 
@@ -68,16 +69,10 @@ def activate_membership(user_id):
         flash(message, "error")
         return redirect(url_for("admin.member_detail", user_id=user_id))
 
-    payment = Payment.query.filter_by(
-        user_id=user_id,
-        payment_type="membership",
-        status="completed",
-    ).first()
+    payment = PaymentRepository.get_completed_for_user(user_id, "membership")
 
     if payment:
-        from app.services.mail_service import send_payment_receipt
-
-        send_payment_receipt(member.id, payment.id)
+        membership_activated.send(user_id=member.id, payment_id=payment.id)
         flash(f"Membership activated for {member.name}! Receipt email sent.", "success")
     else:
         flash(f"Membership activated for {member.name}!", "success")
@@ -98,19 +93,11 @@ def activate_user(user_id):
         return redirect(url_for("admin.member_detail", user_id=user_id))
 
     member.is_active = True
-    from app import db
+    UserRepository.save()
 
-    db.session.commit()
-
-    # Send welcome email
-    from app.services.mail_service import send_welcome_email
-
-    try:
-        send_welcome_email(user_id)
-        flash(f"Account activated for {member.name}! Welcome email sent.", "success")
-    except Exception as e:
-        current_app.logger.error(f"Failed to send welcome email: {str(e)}")
-        flash(f"Account activated for {member.name}! (Email failed to send)", "warning")
+    # Emit event — handler sends welcome email
+    user_activated.send(user_id=user_id)
+    flash(f"Account activated for {member.name}! Welcome email sent.", "success")
 
     return redirect(url_for("admin.member_detail", user_id=user_id))
 
@@ -120,7 +107,7 @@ def activate_user(user_id):
 def create_member():
     """Display member creation form"""
     form = CreateMemberForm()
-    form.roles.choices = [(r.id, r.name) for r in Role.query.order_by(Role.name)]
+    form.roles.choices = [(r.id, r.name) for r in RBACRepository.list_roles()]
     return render_template("admin/create_member.html", form=form)
 
 
@@ -129,7 +116,7 @@ def create_member():
 def create_member_post():
     """Handle member creation form submission"""
     form = CreateMemberForm()
-    form.roles.choices = [(r.id, r.name) for r in Role.query.order_by(Role.name)]
+    form.roles.choices = [(r.id, r.name) for r in RBACRepository.list_roles()]
 
     if form.validate_on_submit():
         user, error = UserService.create_member(
@@ -169,7 +156,7 @@ def edit_member(user_id):
         form.membership_initial_credits.data = member.membership.initial_credits
         form.membership_purchased_credits.data = member.membership.purchased_credits
 
-    form.roles.choices = [(r.id, r.name) for r in Role.query.order_by(Role.name)]
+    form.roles.choices = [(r.id, r.name) for r in RBACRepository.list_roles()]
     form.roles.data = [r.id for r in cast(Sequence, member.roles)]
     return render_template("admin/edit_member.html", member=member, form=form)
 
@@ -182,7 +169,7 @@ def edit_member_post(user_id):
         abort(404)
 
     form = EditMemberForm(obj=member)
-    form.roles.choices = [(r.id, r.name) for r in Role.query.order_by(Role.name)]
+    form.roles.choices = [(r.id, r.name) for r in RBACRepository.list_roles()]
 
     if form.validate_on_submit():
         success, message = UserService.update_member(
@@ -254,8 +241,8 @@ def adjust_credits(user_id):
         reason=reason,
         adjusted_by_id=current_user.id,
     )
-    db.session.add(credit)
-    db.session.commit()
+    CreditRepository.add(credit)
+    CreditRepository.save()
 
     current_app.logger.info(f"Admin {verb.lower()} {quantity} credits {preposition} user {member.id} ({member.email}). Reason: {reason}")
 

@@ -3,8 +3,9 @@ from datetime import date
 from flask import current_app, flash, redirect, session, url_for
 from werkzeug.wrappers import Response
 
-from app import db
+from app.events import credit_purchased, payment_completed
 from app.models import Credit, Membership, Payment, User
+from app.repositories import CreditRepository, MembershipRepository, PaymentRepository, UserRepository
 from app.services.settings_service import SettingsService
 from app.utils.session import clear_session_keys
 
@@ -31,10 +32,9 @@ class PaymentProcessingService:
         """
         if send_receipt:
             try:
-                # Send or queue the payment receipt
-                PaymentProcessingService.send_payment_receipt(user.id, payment.id)
+                payment_completed.send(user_id=user.id, payment_id=payment.id, payment_type=payment.payment_type)
             except Exception as e:
-                current_app.logger.error(f"Failed to hand off receipt email to MailService: {str(e)}")
+                current_app.logger.error(f"Failed to emit payment_completed event: {str(e)}")
 
         # Clear session keys
         if clear_keys:
@@ -64,9 +64,11 @@ class PaymentProcessingService:
     @staticmethod
     def handle_signup_payment(user_id: int, checkout_id: str, result: dict) -> Response | None:
         """Handle successful payment during signup."""
-        payment_id = session.get("signup_payment_id")
-        payment = db.session.get(Payment, payment_id)
-        user = db.session.get(User, user_id)
+        payment_id: int | None = session.get("signup_payment_id")
+        if payment_id is None:
+            return None
+        payment = PaymentRepository.get_by_id(payment_id)
+        user = UserRepository.get_by_id(user_id)
 
         if not payment or not user:
             return None
@@ -75,7 +77,7 @@ class PaymentProcessingService:
         payment.mark_completed(transaction_id, processor="sumup")
         if user.membership:
             user.membership.activate()
-        db.session.commit()
+        UserRepository.save()
 
         return PaymentProcessingService._finalize_and_redirect(
             user,
@@ -89,9 +91,11 @@ class PaymentProcessingService:
     @staticmethod
     def handle_membership_renewal(user_id: int, checkout_id: str, result: dict) -> Response | None:
         """Handle successful membership renewal payment."""
-        payment_id = session.get("membership_renewal_payment_id")
-        payment = db.session.get(Payment, payment_id)
-        user = db.session.get(User, user_id)
+        payment_id: int | None = session.get("membership_renewal_payment_id")
+        if payment_id is None:
+            return None
+        payment = PaymentRepository.get_by_id(payment_id)
+        user = UserRepository.get_by_id(user_id)
 
         if not payment or not user:
             return None
@@ -110,9 +114,9 @@ class PaymentProcessingService:
                 expiry_date=SettingsService.calculate_membership_expiry(start_date).date(),
                 status="active",
             )
-            db.session.add(membership)
+            MembershipRepository.add(membership)
 
-        db.session.commit()
+        UserRepository.save()
 
         return PaymentProcessingService._finalize_and_redirect(
             user,
@@ -126,10 +130,12 @@ class PaymentProcessingService:
     @staticmethod
     def handle_credit_purchase(user_id: int, checkout_id: str, result: dict) -> Response | None:
         """Handle successful credit purchase payment."""
-        payment_id = session.get("credit_purchase_payment_id")
+        payment_id: int | None = session.get("credit_purchase_payment_id")
+        if payment_id is None:
+            return None
         quantity = session.get("credit_purchase_quantity", 1)
-        payment = db.session.get(Payment, payment_id)
-        user = db.session.get(User, user_id)
+        payment = PaymentRepository.get_by_id(payment_id)
+        user = UserRepository.get_by_id(user_id)
 
         if not payment or not user:
             return None
@@ -143,16 +149,14 @@ class PaymentProcessingService:
 
         # Record the credit purchase
         credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
-        db.session.add(credit)
-        db.session.commit()
+        CreditRepository.add(credit)
+        CreditRepository.save()
 
-        # Send credit purchase receipt
+        # Emit credit purchase event — handler sends receipt
         try:
-            from app.services.mail_service import send_credit_purchase_receipt
-
-            send_credit_purchase_receipt(user_id, payment.id, quantity)
+            credit_purchased.send(user_id=user_id, payment_id=payment.id, quantity=quantity)
         except Exception as e:
-            current_app.logger.error(f"Failed to send credit purchase receipt: {str(e)}")
+            current_app.logger.error(f"Failed to emit credit_purchased event: {str(e)}")
 
         return PaymentProcessingService._finalize_and_redirect(
             user,

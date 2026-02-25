@@ -1,8 +1,7 @@
 from datetime import datetime
 
-from app import db
 from app.models import Event
-from app.utils.datetime_utils import utc_now
+from app.repositories import EventRepository
 
 
 class EventService:
@@ -24,11 +23,10 @@ class EventService:
         )
 
         try:
-            db.session.add(event)
-            db.session.commit()
+            EventRepository.add(event)
+            EventRepository.save()
             return event, None
         except Exception as e:
-            db.session.rollback()
             return None, f"Error creating event: {str(e)}"
 
     @staticmethod
@@ -48,26 +46,25 @@ class EventService:
         event.published = published
 
         try:
-            db.session.commit()
+            EventRepository.save()
             return True, None
         except Exception as e:
-            db.session.rollback()
             return False, f"Error updating event: {str(e)}"
 
     @staticmethod
     def get_all_events() -> list[Event]:
         """Get all events ordered by start date descending."""
-        return Event.query.order_by(Event.start_date.desc()).all()
+        return EventRepository.get_all()
 
     @staticmethod
     def get_upcoming_published_events() -> list[Event]:
         """Get all upcoming published events ordered by start date."""
-        return Event.query.filter_by(published=True).filter(Event.start_date >= utc_now()).order_by(Event.start_date).all()
+        return EventRepository.get_upcoming_published()
 
     @staticmethod
     def get_event_by_id(event_id: int) -> Event | None:
         """Get an event by ID."""
-        return db.session.get(Event, event_id)
+        return EventRepository.get_by_id(event_id)
 
     @staticmethod
     def parse_date(date_str: str) -> datetime | None:

@@ -2,8 +2,9 @@ from typing import Any
 
 from flask import current_app, session
 
-from app import db
+from app.events import cash_payment_submitted
 from app.models import Payment, User
+from app.repositories import PaymentRepository
 from app.services.settings_service import SettingsService
 from app.services.sumup_service import SumUpService
 
@@ -50,8 +51,8 @@ class PaymentService:
             description=f"Annual Membership - {user.name}",
             status="pending",
         )
-        db.session.add(payment)
-        db.session.commit()
+        PaymentRepository.add(payment)
+        PaymentRepository.save()
 
         checkout = self.create_checkout(
             amount_cents=amount_cents,
@@ -65,8 +66,8 @@ class PaymentService:
             session["checkout_description"] = f"Annual Membership - {user.name}"
             return {"success": True, "checkout_id": checkout.get("id")}
         else:
-            db.session.delete(payment)
-            db.session.commit()
+            PaymentRepository.delete(payment)
+            PaymentRepository.save()
             return {"success": False, "error": "Error creating payment. Please try again."}
 
     def initiate_credit_purchase(self, user: User, quantity: int) -> dict:
@@ -82,8 +83,8 @@ class PaymentService:
             description=f"{quantity} shooting credits",
             status="pending",
         )
-        db.session.add(payment)
-        db.session.commit()
+        PaymentRepository.add(payment)
+        PaymentRepository.save()
 
         checkout = self.create_checkout(
             amount_cents=amount_cents,
@@ -98,15 +99,12 @@ class PaymentService:
             session["checkout_description"] = f"{quantity} credits - {user.name}"
             return {"success": True, "checkout_id": checkout.get("id")}
         else:
-            db.session.delete(payment)
-            db.session.commit()
+            PaymentRepository.delete(payment)
+            PaymentRepository.save()
             return {"success": False, "error": "Error creating payment. Please try again."}
 
     def initiate_cash_membership_payment(self, user: User) -> dict:
-        """Create pending cash payment record for membership.
-
-        The payment will remain pending until approved by an admin.
-        """
+        """Create pending cash payment record for membership."""
         settings = SettingsService.get()
         amount_cents = settings.annual_membership_cost
 
@@ -119,16 +117,14 @@ class PaymentService:
             description=f"Annual Membership (Cash) - {user.name}",
             status="pending",
         )
-        db.session.add(payment)
-        db.session.commit()
+        PaymentRepository.add(payment)
+        PaymentRepository.save()
 
-        # Send confirmation email
+        # Emit event — handler sends confirmation email
         try:
-            from app.services.mail_service import send_cash_payment_pending_email
-
-            send_cash_payment_pending_email(user.id, payment.id)
+            cash_payment_submitted.send(user_id=user.id, payment_id=payment.id)
         except Exception as e:
-            current_app.logger.error(f"Failed to send cash payment pending email: {e}")
+            current_app.logger.error(f"Failed to emit cash_payment_submitted event: {e}")
 
         return {
             "success": True,
@@ -138,10 +134,7 @@ class PaymentService:
         }
 
     def initiate_cash_credit_purchase(self, user: User, quantity: int) -> dict:
-        """Create pending cash payment record for credit purchase.
-
-        The payment will remain pending until approved by an admin.
-        """
+        """Create pending cash payment record for credit purchase."""
         settings = SettingsService.get()
         amount_cents = quantity * settings.additional_shoot_cost
 
@@ -154,16 +147,14 @@ class PaymentService:
             description=f"{quantity} shooting credits (Cash)",
             status="pending",
         )
-        db.session.add(payment)
-        db.session.commit()
+        PaymentRepository.add(payment)
+        PaymentRepository.save()
 
-        # Send confirmation email
+        # Emit event — handler sends confirmation email
         try:
-            from app.services.mail_service import send_cash_payment_pending_email
-
-            send_cash_payment_pending_email(user.id, payment.id)
+            cash_payment_submitted.send(user_id=user.id, payment_id=payment.id)
         except Exception as e:
-            current_app.logger.error(f"Failed to send cash payment pending email: {e}")
+            current_app.logger.error(f"Failed to emit cash_payment_submitted event: {e}")
 
         return {
             "success": True,

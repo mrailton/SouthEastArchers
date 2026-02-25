@@ -1,5 +1,5 @@
-from app import db
 from app.models import News
+from app.repositories import NewsRepository
 from app.utils.datetime_utils import utc_now
 
 
@@ -23,11 +23,10 @@ class NewsService:
             article.published_at = utc_now()
 
         try:
-            db.session.add(article)
-            db.session.commit()
+            NewsRepository.add(article)
+            NewsRepository.save()
             return article, None
         except Exception as e:
-            db.session.rollback()
             return None, f"Error creating article: {str(e)}"
 
     @staticmethod
@@ -48,23 +47,22 @@ class NewsService:
             article.published_at = utc_now()
 
         try:
-            db.session.commit()
+            NewsRepository.save()
             return True, None
         except Exception as e:
-            db.session.rollback()
             return False, f"Error updating article: {str(e)}"
 
     @staticmethod
     def get_all_articles() -> list[News]:
         """Get all news articles ordered by creation date descending."""
-        return News.query.order_by(News.created_at.desc()).all()
+        return NewsRepository.get_all()
 
     @staticmethod
     def get_published_articles() -> list[News]:
         """Get all published articles ordered by publish date descending."""
-        return News.query.filter_by(published=True).order_by(News.published_at.desc()).all()
+        return NewsRepository.get_published()
 
     @staticmethod
     def get_article_by_id(news_id: int) -> News | None:
         """Get a news article by ID."""
-        return db.session.get(News, news_id)
+        return NewsRepository.get_by_id(news_id)

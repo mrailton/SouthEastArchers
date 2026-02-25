@@ -2,7 +2,8 @@ from flask import Blueprint, flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
 from app.forms import ChangePasswordForm, ProfileForm
-from app.models import Credit, Shoot, User
+from app.models import Shoot, User
+from app.repositories import CreditRepository
 from app.services import UserService
 
 bp = Blueprint("member", __name__, url_prefix="/member")
@@ -40,7 +41,7 @@ def shoots():
 @login_required
 def credits():
     user = current_user
-    credits = Credit.query.filter_by(user_id=user.id).all()
+    credits = CreditRepository.get_by_user(user.id)
 
     return render_template("member/credits.html", credits=credits, user=user)
 

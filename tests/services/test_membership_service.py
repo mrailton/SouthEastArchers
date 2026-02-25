@@ -334,13 +334,10 @@ def test_get_expired_memberships_excludes_already_inactive(app):
 def test_activate_membership_exception(app, user_with_pending_membership):
     from unittest.mock import patch
 
-    with patch("app.db.session.commit", side_effect=Exception("DB Error")):
-        # We need to make sure we're patching the right session.commit
-        # Since MembershipService.activate_membership uses db.session.commit
-        with patch("app.services.membership_service.db.session.commit", side_effect=Exception("DB Error")):
-            success, message = MembershipService.activate_membership(user_with_pending_membership)
-            assert not success
-            assert "Error activating membership" in message
+    with patch("app.repositories.base.BaseRepository.save", side_effect=Exception("DB Error")):
+        success, message = MembershipService.activate_membership(user_with_pending_membership)
+        assert not success
+        assert "Error activating membership" in message
 
 
 def test_renew_membership_exception(app, test_user):
@@ -363,8 +360,7 @@ def test_renew_membership_exception(app, test_user):
 def test_deactivate_membership_exception(app, test_user):
     from unittest.mock import patch
 
-    # Patch session.commit directly
-    with patch("app.services.membership_service.db.session.commit", side_effect=Exception("DB Error")):
+    with patch("app.repositories.base.BaseRepository.save", side_effect=Exception("DB Error")):
         success, message = MembershipService.deactivate_membership(test_user)
         assert not success
         assert "Error deactivating membership" in message

@@ -2,7 +2,6 @@
 
 from flask import flash, redirect, render_template, url_for
 
-from app import db
 from app.forms.admin_forms import SettingsForm
 from app.services.settings_service import SettingsService
 from app.utils.decorators import permission_required
@@ -51,7 +50,6 @@ def settings_post():
             flash("Settings updated successfully!", "success")
             return redirect(url_for("admin.settings"))
         except Exception as e:
-            db.session.rollback()
             flash(f"Error updating settings: {str(e)}", "error")
 
     # If validation fails, show errors

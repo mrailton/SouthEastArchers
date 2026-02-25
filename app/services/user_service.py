@@ -2,8 +2,8 @@ from datetime import date
 
 from flask import current_app, session
 
-from app import db
-from app.models import Membership, Payment, Role, User
+from app.models import Membership, User
+from app.repositories import MembershipRepository, PaymentRepository, RBACRepository, UserRepository
 from app.services.settings_service import SettingsService
 
 
@@ -11,12 +11,12 @@ class UserService:
     @staticmethod
     def get_user_by_id(user_id: int) -> User | None:
         """Get a user by ID."""
-        return db.session.get(User, user_id)
+        return UserRepository.get_by_id(user_id)
 
     @staticmethod
     def get_all_users() -> list[User]:
         """Get all users ordered by name."""
-        return User.query.order_by(User.name).all()
+        return UserRepository.get_all()
 
     @staticmethod
     def update_profile(user: User, name: str = None, phone: str = None) -> tuple[bool, str]:
@@ -27,10 +27,9 @@ class UserService:
             user.phone = phone
 
         try:
-            db.session.commit()
+            UserRepository.save()
             return True, "Profile updated successfully!"
         except Exception as e:
-            db.session.rollback()
             current_app.logger.error(f"Error updating profile: {str(e)}")
             return False, "An error occurred while updating profile."
 
@@ -45,10 +44,9 @@ class UserService:
 
         user.set_password(new_password)
         try:
-            db.session.commit()
+            UserRepository.save()
             return True, "Password changed successfully!"
         except Exception as e:
-            db.session.rollback()
             current_app.logger.error(f"Error changing password: {str(e)}")
             return False, "An error occurred while changing password."
 
@@ -63,7 +61,7 @@ class UserService:
         qualification: str = "none",
     ) -> tuple[User | None, str | None]:
         """Create a new member (admin function)."""
-        if User.query.filter_by(email=email).first():
+        if UserRepository.get_by_email(email):
             return None, "Email already registered."
 
         user = User(
@@ -71,17 +69,17 @@ class UserService:
             email=email,
             phone=phone,
             qualification=qualification,
-            is_active=False,  # Start as inactive, admin must activate
+            is_active=False,
         )
         user.set_password(password)
 
         try:
-            db.session.add(user)
-            db.session.flush()
+            UserRepository.add(user)
+            UserRepository.flush()
 
             if role_ids:
-                roles = Role.query.filter(Role.id.in_(role_ids)).all()
-                user.roles = roles
+                roles = RBACRepository.get_roles_by_ids(role_ids)
+                user.roles = roles  # type: ignore[assignment]
 
             if create_membership:
                 start_date = date.today()
@@ -93,12 +91,11 @@ class UserService:
                     purchased_credits=0,
                     status="active",
                 )
-                db.session.add(membership)
+                MembershipRepository.add(membership)
 
-            db.session.commit()
+            UserRepository.save()
             return user, None
         except Exception as e:
-            db.session.rollback()
             current_app.logger.error(f"Error creating member: {str(e)}")
             return None, "An error occurred while creating member."
 
@@ -124,11 +121,10 @@ class UserService:
         user.phone = phone
         if qualification:
             user.qualification = qualification
-        # Clear the detail when qualification is none, regardless of submitted value
         user.qualification_detail = None if qualification == "none" else (qualification_detail or None)
         if role_ids is not None:
-            roles = Role.query.filter(Role.id.in_(role_ids)).all()
-            user.roles = roles
+            roles = RBACRepository.get_roles_by_ids(role_ids)
+            user.roles = roles  # type: ignore[assignment]
         user.is_active = is_active
 
         if password:
@@ -145,10 +141,9 @@ class UserService:
                 user.membership.purchased_credits = membership_purchased_credits
 
         try:
-            db.session.commit()
+            UserRepository.save()
             return True, f"Member {user.name} updated successfully!"
         except Exception as e:
-            db.session.rollback()
             current_app.logger.error(f"Error updating member: {str(e)}")
             return False, "An error occurred while updating member."
 
@@ -161,10 +156,8 @@ class UserService:
         qualification: str = "None",
         qualification_detail: str = None,
     ) -> tuple[User | None, str | None]:
-        if User.query.filter_by(email=email).first():
+        if UserRepository.get_by_email(email):
             return None, "Email already registered."
-
-        from flask import current_app
 
         user = User(
             name=name,
@@ -177,17 +170,16 @@ class UserService:
         user.set_password(password)
 
         try:
-            db.session.add(user)
-            db.session.commit()
+            UserRepository.add(user)
+            UserRepository.save()
             return user, None
         except Exception as e:
-            db.session.rollback()
             current_app.logger.error(f"Error creating user: {str(e)}")
             return None, "An error occurred during registration."
 
     @staticmethod
     def authenticate(email: str, password: str) -> User | None:
-        user = User.query.filter_by(email=email).first()
+        user = UserRepository.get_by_email(email)
         if user and user.check_password(password):
             return user
         return None
@@ -204,7 +196,7 @@ class UserService:
             return False, "Invalid or expired reset link."
 
         user.set_password(new_password)
-        db.session.commit()
+        UserRepository.save()
 
         return True, "Password reset successfully."
 
@@ -212,7 +204,7 @@ class UserService:
     def initiate_online_payment(user: User, user_name: str) -> dict:
         from app.services import PaymentService
 
-        payment = Payment.query.filter_by(user_id=user.id, payment_type="membership").first()
+        payment = PaymentRepository.get_by_user_and_type(user.id, "membership")
         if not payment:
             return {"success": False, "error": "Payment record not found"}
 

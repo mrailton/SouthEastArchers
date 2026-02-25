@@ -6,11 +6,13 @@ from app import mail
 
 def send_password_reset(user_id: int, token: str) -> None:
     """Send a password reset email."""
-    from app import db
-    from app.models import User
+    from app.repositories import UserRepository
 
     try:
-        user = db.session.get(User, user_id)
+        user = UserRepository.get_by_id(user_id)
+        if not user:
+            current_app.logger.error(f"Cannot send password reset: user {user_id} not found")
+            return
 
         reset_url = url_for("auth.reset_password", token=token, _external=True)
 
@@ -27,12 +29,14 @@ def send_password_reset(user_id: int, token: str) -> None:
 
 def send_payment_receipt(user_id: int, payment_id: int) -> None:
     """Send a payment receipt email."""
-    from app import db
-    from app.models import Payment, User
+    from app.repositories import PaymentRepository, UserRepository
 
     try:
-        user = db.session.get(User, user_id)
-        payment = db.session.get(Payment, payment_id)
+        user = UserRepository.get_by_id(user_id)
+        payment = PaymentRepository.get_by_id(payment_id)
+        if not user or not payment:
+            current_app.logger.error(f"Cannot send receipt: user {user_id} or payment {payment_id} not found")
+            return
 
         membership = user.membership
         receipt_number = f"SEA-{payment.id:06d}"
@@ -74,12 +78,14 @@ def send_payment_receipt(user_id: int, payment_id: int) -> None:
 
 def send_credit_purchase_receipt(user_id: int, payment_id: int, credits_purchased: int) -> None:
     """Send a credit purchase receipt email."""
-    from app import db
-    from app.models import Payment, User
+    from app.repositories import PaymentRepository, UserRepository
 
     try:
-        user = db.session.get(User, user_id)
-        payment = db.session.get(Payment, payment_id)
+        user = UserRepository.get_by_id(user_id)
+        payment = PaymentRepository.get_by_id(payment_id)
+        if not user or not payment:
+            current_app.logger.error(f"Cannot send credit receipt: user {user_id} or payment {payment_id} not found")
+            return
 
         credits_remaining = user.membership.credits_remaining()
         receipt_number = f"SEA-{payment.id:06d}"
@@ -120,11 +126,13 @@ def send_credit_purchase_receipt(user_id: int, payment_id: int, credits_purchase
 
 def send_welcome_email(user_id: int) -> None:
     """Send a welcome email to a new user."""
-    from app import db
-    from app.models import User
+    from app.repositories import UserRepository
 
     try:
-        user = db.session.get(User, user_id)
+        user = UserRepository.get_by_id(user_id)
+        if not user:
+            current_app.logger.error(f"Cannot send welcome email: user {user_id} not found")
+            return
 
         try:
             login_url = url_for("auth.login", _external=True)
@@ -160,15 +168,16 @@ def send_welcome_email(user_id: int) -> None:
 
 def send_new_member_notification(new_user_id: int) -> None:
     """Send a notification email to all admins with members.manage_membership permission."""
-    from app import db
-    from app.models import Permission, User
+    from app.repositories import UserRepository
 
     try:
-        new_user = db.session.get(User, new_user_id)
+        new_user = UserRepository.get_by_id(new_user_id)
+        if not new_user:
+            current_app.logger.error(f"Cannot send notification: user {new_user_id} not found")
+            return
 
-        permission = Permission.query.filter_by(name="members.manage_membership").first()
-
-        admin_emails: list[str] = [user.email for user in User.query.all() if any(any(p.id == permission.id for p in role.permissions) for role in user.roles)]
+        admin_users = UserRepository.get_all_with_permission("members.manage_membership")
+        admin_emails: list[str] = [user.email for user in admin_users]
 
         try:
             admin_url = url_for("admin.members", _external=True)
@@ -203,13 +212,15 @@ def send_new_member_notification(new_user_id: int) -> None:
 
 def send_cash_payment_pending_email(user_id: int, payment_id: int) -> None:
     """Send a confirmation email when a cash payment request is submitted."""
-    from app import db
-    from app.models import Payment, User
+    from app.repositories import PaymentRepository, UserRepository
     from app.services.settings_service import SettingsService
 
     try:
-        user = db.session.get(User, user_id)
-        payment = db.session.get(Payment, payment_id)
+        user = UserRepository.get_by_id(user_id)
+        payment = PaymentRepository.get_by_id(payment_id)
+        if not user or not payment:
+            current_app.logger.error(f"Cannot send cash payment email: user {user_id} or payment {payment_id} not found")
+            return
 
         settings = SettingsService.get()
 

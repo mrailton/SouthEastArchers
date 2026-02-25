@@ -131,6 +131,11 @@ def create_app(config_name=None):
     _register_error_handlers(app)
     _register_context_processor(app)
 
+    # Connect domain event handlers
+    from app.events.handlers import connect_handlers
+
+    connect_handlers()
+
     with app.app_context():
         from app.models import Credit, Event, Membership, News, Payment, Shoot, User
 

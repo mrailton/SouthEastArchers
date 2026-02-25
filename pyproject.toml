@@ -38,6 +38,7 @@ dev = [
     "mypy>=1.19.1",
     "pytest-mock>=3.15.1",
     "ruff>=0.14.14",
+    "import-linter>=2.10",
 ]
 
 [tool.coverage.run]
@@ -71,3 +72,49 @@ ignore = [
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+# ---------------------------------------------------------------------------
+# import-linter – enforces module boundaries
+# ---------------------------------------------------------------------------
+
+[tool.importlinter]
+root_packages = ["app"]
+include_external_packages = false
+
+[[tool.importlinter.contracts]]
+name = "Routes must not import db directly"
+type = "forbidden"
+source_modules = [
+    "app.routes.auth",
+    "app.routes.member",
+    "app.routes.payment",
+    "app.routes.public",
+    "app.routes.admin.dashboard",
+    "app.routes.admin.events",
+    "app.routes.admin.members",
+    "app.routes.admin.news",
+    "app.routes.admin.payments",
+    "app.routes.admin.roles",
+    "app.routes.admin.settings",
+    "app.routes.admin.shoots",
+]
+forbidden_modules = ["app.db"]
+
+[[tool.importlinter.contracts]]
+name = "Services must not import db directly"
+type = "forbidden"
+source_modules = [
+    "app.services.admin_service",
+    "app.services.event_service",
+    "app.services.membership_service",
+    "app.services.news_service",
+    "app.services.payment_processing_service",
+    "app.services.payment_service",
+    "app.services.rbac_service",
+    "app.services.settings_service",
+    "app.services.shoot_service",
+    "app.services.user_service",
+]
+forbidden_modules = ["app.db"]
+
+

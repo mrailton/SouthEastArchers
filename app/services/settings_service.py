@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
-from app import db
 from app.models.application_settings import ApplicationSettings
+from app.repositories import SettingsRepository
 
 
 class SettingsService:
@@ -9,29 +9,18 @@ class SettingsService:
 
     @staticmethod
     def get() -> ApplicationSettings:
-        """Get the application settings (creates with defaults if doesn't exist).
-
-        Returns:
-            The ApplicationSettings instance
-        """
-        settings = ApplicationSettings.query.first()
+        """Get the application settings (creates with defaults if doesn't exist)."""
+        settings = SettingsRepository.get()
         if not settings:
             settings = ApplicationSettings()
-            db.session.add(settings)
-            db.session.commit()
+            SettingsRepository.add(settings)
+            SettingsRepository.save()
         return settings
 
     @staticmethod
     def save(settings: ApplicationSettings) -> ApplicationSettings:
-        """Save application settings.
-
-        Args:
-            settings: The ApplicationSettings instance to save
-
-        Returns:
-            The saved ApplicationSettings instance
-        """
-        db.session.commit()
+        """Save application settings."""
+        SettingsRepository.save()
         return settings
 
     @staticmethod

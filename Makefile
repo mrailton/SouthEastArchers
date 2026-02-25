@@ -14,13 +14,13 @@ help: ## Show this help
 # ---------------------------------------------------------------------------
 
 up: ## Start all services
-	$(DOCKER_COMPOSE) up -d
+	$(DOCKER_COMPOSE) up -d --remove-orphans
 
 up-build: ## Build and start all services
-	$(DOCKER_COMPOSE) up -d --build
+	$(DOCKER_COMPOSE) up -d --build --remove-orphans
 
 down: ## Stop all services
-	$(DOCKER_COMPOSE) down
+	$(DOCKER_COMPOSE) down --remove-orphans
 
 down-volumes: ## Stop all services and remove volumes
 	$(DOCKER_COMPOSE) down -v

@@ -150,10 +150,10 @@
             {% if current_user.has_permission('shoots.read') %}
             <li><a href="{{ url_for('admin.shoots') }}" class="text-blue-600 hover:underline">Manage Shoots</a></li>
             {% endif %}
-            {% if current_user.has_permission('news.read') %}
+            {% if current_user.has_permission('news.read') and news_enabled %}
             <li><a href="{{ url_for('admin.news') }}" class="text-blue-600 hover:underline">Manage News</a></li>
             {% endif %}
-            {% if current_user.has_permission('events.read') %}
+            {% if current_user.has_permission('events.read') and events_enabled %}
             <li><a href="{{ url_for('admin.events') }}" class="text-blue-600 hover:underline">Manage Events</a></li>
             {% endif %}
             {% if current_user.has_permission('settings.read') %}

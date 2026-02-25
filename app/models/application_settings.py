@@ -18,6 +18,10 @@ class ApplicationSettings(db.Model):
     membership_shoots_included = db.Column(db.Integer, nullable=False, default=20)
     additional_shoot_cost = db.Column(db.Integer, nullable=False, default=500)  # €5.00
 
+    # Feature toggles
+    news_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    events_enabled = db.Column(db.Boolean, nullable=False, default=False)
+
     # Cash payment settings
     cash_payment_instructions = db.Column(
         db.Text,

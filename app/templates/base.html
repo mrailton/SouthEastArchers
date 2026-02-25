@@ -48,8 +48,12 @@
                 <div class="hidden md:flex items-center space-x-6">
                     <a href="{{ url_for('public.index') }}" class="nav-link text-gray-700 font-medium">Home</a>
                     <a href="{{ url_for('public.about') }}" class="nav-link text-gray-700 font-medium">About</a>
+                    {% if news_enabled %}
                     <a href="{{ url_for('public.news_list') }}" class="nav-link text-gray-700 font-medium">News</a>
+                    {% endif %}
+                    {% if events_enabled %}
                     <a href="{{ url_for('public.events') }}" class="nav-link text-gray-700 font-medium">Events</a>
+                    {% endif %}
 
                     {% if current_user.is_authenticated %}
                         <a href="{{ url_for('member.dashboard') }}" class="nav-link text-gray-700 font-medium">Dashboard</a>
@@ -69,8 +73,12 @@
             <div x-show="open" class="md:hidden pb-4 space-y-2">
                 <a href="{{ url_for('public.index') }}" class="block py-2 text-gray-700 hover:text-primary">Home</a>
                 <a href="{{ url_for('public.about') }}" class="block py-2 text-gray-700 hover:text-primary">About</a>
+                {% if news_enabled %}
                 <a href="{{ url_for('public.news_list') }}" class="block py-2 text-gray-700 hover:text-primary">News</a>
+                {% endif %}
+                {% if events_enabled %}
                 <a href="{{ url_for('public.events') }}" class="block py-2 text-gray-700 hover:text-primary">Events</a>
+                {% endif %}
 
                 {% if current_user.is_authenticated %}
                     <a href="{{ url_for('member.dashboard') }}" class="block py-2 text-gray-700 hover:text-primary">Dashboard</a>
@@ -125,8 +133,12 @@
                     <ul class="space-y-4">
                         <li><a href="{{ url_for('public.index') }}" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
                         <li><a href="{{ url_for('public.about') }}" class="text-gray-400 hover:text-white transition-colors">About Us</a></li>
+                        {% if news_enabled %}
                         <li><a href="{{ url_for('public.news_list') }}" class="text-gray-400 hover:text-white transition-colors">Latest News</a></li>
+                        {% endif %}
+                        {% if events_enabled %}
                         <li><a href="{{ url_for('public.events') }}" class="text-gray-400 hover:text-white transition-colors">Upcoming Events</a></li>
+                        {% endif %}
                     </ul>
                 </div>
                 <div>

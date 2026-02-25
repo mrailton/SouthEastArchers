@@ -107,6 +107,19 @@ def _register_context_processor(app: Flask) -> None:
     def inject_now():
         return {"now": datetime.now(UTC)}
 
+    @app.context_processor
+    def inject_feature_flags():
+        from app.services.settings_service import SettingsService
+
+        try:
+            settings = SettingsService.get()
+            return {
+                "news_enabled": settings.news_enabled,
+                "events_enabled": settings.events_enabled,
+            }
+        except Exception:
+            return {"news_enabled": False, "events_enabled": False}
+
 
 def create_app(config_name=None):
     from app.config import config

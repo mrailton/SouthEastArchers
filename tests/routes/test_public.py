@@ -3,6 +3,21 @@
 from datetime import date, timedelta
 
 from app.models import Event, News
+from app.models.application_settings import ApplicationSettings
+
+
+def _enable_features(app):
+    """Enable news and events features in application settings."""
+    from app import db
+
+    settings = ApplicationSettings.query.first()
+    if not settings:
+        settings = ApplicationSettings(news_enabled=True, events_enabled=True)
+        db.session.add(settings)
+    else:
+        settings.news_enabled = True
+        settings.events_enabled = True
+    db.session.commit()
 
 
 def test_index_page(client):
@@ -17,6 +32,8 @@ def test_about_page(client):
 
 def test_news_page(client, app):
     from app import db
+
+    _enable_features(app)
 
     news = News(
         title="Test News",
@@ -35,6 +52,8 @@ def test_news_page(client, app):
 def test_events_page(client, app):
     from app import db
 
+    _enable_features(app)
+
     event = Event(
         title="Test Event",
         description="Test description",
@@ -49,8 +68,9 @@ def test_events_page(client, app):
     assert b"Test Event" in response.data
 
 
-def test_events_page_no_events(client):
+def test_events_page_no_events(client, app):
     """Test events page when no events exist"""
+    _enable_features(app)
     response = client.get("/events")
     assert response.status_code == 200
 
@@ -58,6 +78,8 @@ def test_events_page_no_events(client):
 def test_events_only_shows_published(client, app):
     """Test that only published events are shown"""
     from app import db
+
+    _enable_features(app)
 
     event1 = Event(
         title="Published Event",
@@ -84,6 +106,8 @@ def test_news_only_shows_published(client, app):
     """Test that only published news are shown"""
     from app import db
 
+    _enable_features(app)
+
     news1 = News(
         title="Published News",
         content="Published content",
@@ -104,6 +128,8 @@ def test_news_detail_valid(client, app):
     """Test viewing a valid news article"""
     from app import db
 
+    _enable_features(app)
+
     news = News(
         title="Detailed News",
         content="This is detailed news content",
@@ -119,8 +145,9 @@ def test_news_detail_valid(client, app):
     assert b"detailed news content" in response.data
 
 
-def test_news_detail_not_found(client):
+def test_news_detail_not_found(client, app):
     """Test viewing non-existent news article"""
+    _enable_features(app)
     response = client.get("/news/99999")
     assert response.status_code == 404
 
@@ -128,6 +155,8 @@ def test_news_detail_not_found(client):
 def test_news_detail_unpublished(client, app):
     """Test viewing unpublished news article returns 404"""
     from app import db
+
+    _enable_features(app)
 
     news = News(
         title="Unpublished News",
@@ -147,7 +176,37 @@ def test_membership_info_page(client):
     assert response.status_code == 200
 
 
-def test_news_page_empty(client):
+def test_news_page_empty(client, app):
     """Test news page when no news exists"""
+    _enable_features(app)
     response = client.get("/news")
     assert response.status_code == 200
+
+
+def test_news_page_disabled(client, app):
+    """Test news page returns 404 when feature is disabled"""
+    response = client.get("/news")
+    assert response.status_code == 404
+
+
+def test_events_page_disabled(client, app):
+    """Test events page returns 404 when feature is disabled"""
+    response = client.get("/events")
+    assert response.status_code == 404
+
+
+def test_news_detail_disabled(client, app):
+    """Test news detail returns 404 when feature is disabled"""
+    from app import db
+
+    news = News(
+        title="Some News",
+        content="Content here",
+        published=True,
+        published_at=date.today(),
+    )
+    db.session.add(news)
+    db.session.commit()
+
+    response = client.get(f"/news/{news.id}")
+    assert response.status_code == 404

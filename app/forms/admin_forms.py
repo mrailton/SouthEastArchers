@@ -87,6 +87,10 @@ class SettingsForm(FlaskForm):
         description="Instructions shown to users when they select cash payment",
     )
 
+    # Feature toggles
+    news_enabled = BooleanField("Enable News", default=False)
+    events_enabled = BooleanField("Enable Events", default=False)
+
 
 class RoleForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(min=2, max=64)])

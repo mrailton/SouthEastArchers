@@ -1,0 +1,75 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - /app/__pycache__
+      - /app/.venv
+    environment:
+      FLASK_APP: web.py
+      FLASK_ENV: development
+      FLASK_DEBUG: "1"
+      DATABASE_URL: mysql+pymysql://sea_user:sea_password@mysql:3306/sea_db
+      MAIL_SERVER: mailpit
+      MAIL_PORT: "1025"
+      MAIL_USE_TLS: "False"
+      MAIL_USE_SSL: "False"
+      MAIL_DEFAULT_SENDER: noreply@southeastarchers.ie
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev-secret-key-do-not-use-in-production
+      SERVER_NAME: localhost:5000
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      mailpit:
+        condition: service_started
+
+  vite:
+    image: node:lts-slim
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+
+  mysql:
+    image: mysql:latest
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: sea_db
+      MYSQL_USER: sea_user
+      MYSQL_PASSWORD: sea_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  mysql_data:
+  redis_data:

@@ -248,3 +248,47 @@ def test_amount_property_rounding(app, admin_user):
 
     assert txn.amount_cents == 1999
     assert txn.amount == 19.99
+
+
+def test_generate_statement_pdf(app, admin_user):
+    """Test generating a PDF from a financial statement."""
+    FinanceService.create_transaction(
+        txn_type="income",
+        txn_date=date(2026, 1, 10),
+        amount=200.00,
+        category="membership_fees",
+        description="Membership fee",
+        created_by_id=admin_user.id,
+    )
+    FinanceService.create_transaction(
+        txn_type="expense",
+        txn_date=date(2026, 1, 15),
+        amount=75.00,
+        category="venue_hire",
+        description="Hall hire January",
+        created_by_id=admin_user.id,
+    )
+
+    statement = FinanceService.generate_statement(
+        start_date=date(2026, 1, 1),
+        end_date=date(2026, 1, 31),
+    )
+
+    pdf_bytes = FinanceService.generate_statement_pdf(statement)
+
+    assert isinstance(pdf_bytes, (bytes, bytearray))
+    assert len(pdf_bytes) > 0
+    assert pdf_bytes[:5] == b"%PDF-"
+
+
+def test_generate_statement_pdf_empty(app, admin_user):
+    """Test generating a PDF with no transactions."""
+    statement = FinanceService.generate_statement(
+        start_date=date(2026, 6, 1),
+        end_date=date(2026, 6, 30),
+    )
+
+    pdf_bytes = FinanceService.generate_statement_pdf(statement)
+
+    assert isinstance(pdf_bytes, (bytes, bytearray))
+    assert pdf_bytes[:5] == b"%PDF-"

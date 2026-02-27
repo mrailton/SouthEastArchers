@@ -1,6 +1,6 @@
 """Admin routes for financial transaction management."""
 
-from flask import abort, flash, redirect, render_template, url_for
+from flask import Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.forms.admin_forms import ExpenseForm, FinancialStatementForm, IncomeForm
@@ -210,3 +210,38 @@ def financial_statement_post():
             flash(error, "error")
 
     return render_template("admin/financial_statement.html", form=form, statement=None)
+
+
+@bp.get("/finance/statement/pdf")
+@permission_required("finance.report")
+def financial_statement_pdf():
+    """Download a financial statement as a PDF."""
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+
+    if not start_date_str or not end_date_str:
+        flash("Please provide start and end dates.", "error")
+        return redirect(url_for("admin.financial_statement"))
+
+    from datetime import date
+
+    try:
+        start_date = date.fromisoformat(start_date_str)
+        end_date = date.fromisoformat(end_date_str)
+    except ValueError:
+        flash("Invalid date format.", "error")
+        return redirect(url_for("admin.financial_statement"))
+
+    if end_date < start_date:
+        flash("End date must be after start date.", "error")
+        return redirect(url_for("admin.financial_statement"))
+
+    statement = FinanceService.generate_statement(start_date=start_date, end_date=end_date)
+    pdf_bytes = bytes(FinanceService.generate_statement_pdf(statement))
+
+    filename = f"financial_statement_{start_date_str}_to_{end_date_str}.pdf"
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

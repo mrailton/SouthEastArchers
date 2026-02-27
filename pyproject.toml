@@ -26,6 +26,7 @@ dependencies = [
     "whitenoise==6.11.0",
     "sumup==0.0.13",
     "ruff>=0.14.14",
+    "fpdf2>=2.8.6",
 ]
 
 [dependency-groups]

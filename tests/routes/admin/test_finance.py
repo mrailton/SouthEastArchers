@@ -255,3 +255,71 @@ def test_financial_statement_requires_permission(client, test_user):
 
     response = client.get("/admin/finance/statement")
     assert response.status_code in [302, 403]
+
+
+def test_financial_statement_pdf_download(client, admin_user, app):
+    """Test downloading a financial statement as PDF."""
+    _login_admin(client, admin_user)
+    _create_expense(admin_user)
+    _create_income(admin_user)
+
+    response = client.get("/admin/finance/statement/pdf?start_date=2026-01-01&end_date=2026-01-31")
+
+    assert response.status_code == 200
+    assert response.content_type == "application/pdf"
+    assert b"attachment" in response.headers.get("Content-Disposition", "").encode()
+    assert b"financial_statement_2026-01-01_to_2026-01-31.pdf" in response.headers.get("Content-Disposition", "").encode()
+    # PDF files start with %PDF
+    assert response.data[:5] == b"%PDF-"
+
+
+def test_financial_statement_pdf_empty(client, admin_user, app):
+    """Test downloading a PDF with no transactions in range."""
+    _login_admin(client, admin_user)
+
+    response = client.get("/admin/finance/statement/pdf?start_date=2026-06-01&end_date=2026-06-30")
+
+    assert response.status_code == 200
+    assert response.content_type == "application/pdf"
+    assert response.data[:5] == b"%PDF-"
+
+
+def test_financial_statement_pdf_missing_dates(client, admin_user):
+    """Test PDF download with missing date parameters."""
+    _login_admin(client, admin_user)
+
+    response = client.get("/admin/finance/statement/pdf", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"Please provide start and end dates" in response.data
+
+
+def test_financial_statement_pdf_invalid_dates(client, admin_user):
+    """Test PDF download with invalid date format."""
+    _login_admin(client, admin_user)
+
+    response = client.get("/admin/finance/statement/pdf?start_date=bad&end_date=worse", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"Invalid date format" in response.data
+
+
+def test_financial_statement_pdf_end_before_start(client, admin_user):
+    """Test PDF download with end date before start date."""
+    _login_admin(client, admin_user)
+
+    response = client.get(
+        "/admin/finance/statement/pdf?start_date=2026-02-01&end_date=2026-01-01",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"End date must be after start date" in response.data
+
+
+def test_financial_statement_pdf_requires_permission(client, test_user):
+    """Test that PDF download requires permission."""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    response = client.get("/admin/finance/statement/pdf?start_date=2026-01-01&end_date=2026-01-31")
+    assert response.status_code in [302, 403]

@@ -92,6 +92,46 @@
         </tbody>
     </table>
 </div>
+
+<nav class="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
+    <p class="text-sm text-gray-600">
+        Showing {{ pagination.first }} – {{ pagination.last }} of {{ pagination.total }} transactions
+    </p>
+    <div class="flex items-center gap-2">
+        <label for="per_page" class="text-sm text-gray-600">Show</label>
+        <select id="per_page" onchange="window.location.href='{{ url_for('admin.finance') }}?per_page=' + this.value" class="text-sm border border-gray-300 rounded px-2 py-1.5 bg-white text-gray-700">
+            {% for opt in [10, 20, 50, 100] %}
+            <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="flex items-center gap-1">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('admin.finance', page=pagination.prev_num, per_page=per_page) }}" class="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50">Previous</a>
+        {% else %}
+        <span class="px-3 py-1.5 text-sm rounded border border-gray-200 text-gray-300 cursor-not-allowed">Previous</span>
+        {% endif %}
+
+        {% for p in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
+            {% if p %}
+                {% if p == pagination.page %}
+                <span class="px-3 py-1.5 text-sm rounded bg-blue-600 text-white font-medium">{{ p }}</span>
+                {% else %}
+                <a href="{{ url_for('admin.finance', page=p, per_page=per_page) }}" class="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50">{{ p }}</a>
+                {% endif %}
+            {% else %}
+                <span class="px-2 py-1.5 text-sm text-gray-400">…</span>
+            {% endif %}
+        {% endfor %}
+
+        {% if pagination.has_next %}
+        <a href="{{ url_for('admin.finance', page=pagination.next_num, per_page=per_page) }}" class="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50">Next</a>
+        {% else %}
+        <span class="px-3 py-1.5 text-sm rounded border border-gray-200 text-gray-300 cursor-not-allowed">Next</span>
+        {% endif %}
+    </div>
+</nav>
+
 {% else %}
 <div class="bg-white p-6 rounded shadow text-center text-gray-500">
     No financial transactions yet.

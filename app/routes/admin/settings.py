@@ -23,6 +23,7 @@ def settings():
     form.membership_shoots_included.data = settings_obj.membership_shoots_included
     form.additional_shoot_cost.data = settings_obj.additional_shoot_cost // 100  # Convert cents to euros
     form.cash_payment_instructions.data = settings_obj.cash_payment_instructions
+    form.sumup_fee_percentage.data = settings_obj.sumup_fee_percentage
     form.news_enabled.data = settings_obj.news_enabled
     form.events_enabled.data = settings_obj.events_enabled
 
@@ -46,6 +47,7 @@ def settings_post():
             settings_obj.membership_shoots_included = form.membership_shoots_included.data
             settings_obj.additional_shoot_cost = form.additional_shoot_cost.data * 100  # Convert to cents
             settings_obj.cash_payment_instructions = form.cash_payment_instructions.data
+            settings_obj.sumup_fee_percentage = form.sumup_fee_percentage.data
             settings_obj.news_enabled = form.news_enabled.data
             settings_obj.events_enabled = form.events_enabled.data
 

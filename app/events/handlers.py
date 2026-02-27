@@ -58,6 +58,8 @@ def _on_payment_completed(sender: Any, **kwargs: Any) -> None:
     except Exception as e:
         current_app.logger.error(f"Event handler _on_payment_completed failed: {e}")
 
+    _record_payment_financial_transactions(payment_id, kwargs.get("payment_type", "membership"))
+
 
 def _on_credit_purchased(sender: Any, **kwargs: Any) -> None:
     """Send a credit purchase receipt."""
@@ -70,6 +72,8 @@ def _on_credit_purchased(sender: Any, **kwargs: Any) -> None:
         send_credit_purchase_receipt(user_id, payment_id, quantity)
     except Exception as e:
         current_app.logger.error(f"Event handler _on_credit_purchased failed: {e}")
+
+    _record_payment_financial_transactions(payment_id, "credits")
 
 
 def _on_cash_payment_submitted(sender: Any, **kwargs: Any) -> None:
@@ -107,6 +111,44 @@ def _on_membership_activated(sender: Any, **kwargs: Any) -> None:
             send_payment_receipt(user_id, payment_id)
         except Exception as e:
             current_app.logger.error(f"Event handler _on_membership_activated failed: {e}")
+
+
+def _record_payment_financial_transactions(payment_id: int, payment_type: str) -> None:
+    """Record financial transactions for completed payments.
+
+    For SumUp payments: creates income + processing fee expense.
+    For cash payments: creates income only.
+    """
+    from app.repositories import PaymentRepository
+    from app.services.finance_service import FinanceService
+
+    try:
+        payment = PaymentRepository.get_by_id(payment_id)
+        if not payment:
+            return
+
+        if payment.payment_processor == "sumup":
+            success, err = FinanceService.record_sumup_payment_transactions(
+                payment_amount_cents=payment.amount_cents,
+                payment_type=payment_type,
+                description=payment.description or f"SumUp {payment_type} payment",
+                created_by_id=payment.user_id,
+                receipt_reference=payment.external_transaction_id,
+            )
+        elif payment.payment_processor == "cash":
+            success, err = FinanceService.record_cash_payment_transaction(
+                payment_amount_cents=payment.amount_cents,
+                payment_type=payment_type,
+                description=payment.description or f"Cash {payment_type} payment",
+                created_by_id=payment.user_id,
+            )
+        else:
+            return
+
+        if not success:
+            current_app.logger.warning(f"Auto-record financial transactions skipped for payment {payment_id}: {err}")
+    except Exception as e:
+        current_app.logger.error(f"Failed to record financial transactions for payment {payment_id}: {e}")
 
 
 # ---------------------------------------------------------------------------

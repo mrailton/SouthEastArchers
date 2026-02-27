@@ -47,6 +47,51 @@
         </div>
     </div>
 
+    <!-- Category Breakdown -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded shadow overflow-hidden">
+            <div class="px-4 py-3 bg-green-50 border-b border-green-100">
+                <h3 class="text-sm font-bold text-green-800 uppercase">Income by Category</h3>
+            </div>
+            {% if statement.income_by_category %}
+            <div class="divide-y divide-gray-100">
+                {% for cat in statement.income_by_category %}
+                <div class="flex justify-between items-center px-4 py-2.5">
+                    <div>
+                        <span class="text-sm text-gray-900">{{ cat.label }}</span>
+                        <span class="text-xs text-gray-400 ml-1">({{ cat.count }})</span>
+                    </div>
+                    <span class="text-sm font-medium text-green-600">€{{ "%.2f" | format(cat.total) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="px-4 py-4 text-sm text-gray-500 text-center">No income for this period.</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white rounded shadow overflow-hidden">
+            <div class="px-4 py-3 bg-red-50 border-b border-red-100">
+                <h3 class="text-sm font-bold text-red-800 uppercase">Expenses by Category</h3>
+            </div>
+            {% if statement.expense_by_category %}
+            <div class="divide-y divide-gray-100">
+                {% for cat in statement.expense_by_category %}
+                <div class="flex justify-between items-center px-4 py-2.5">
+                    <div>
+                        <span class="text-sm text-gray-900">{{ cat.label }}</span>
+                        <span class="text-xs text-gray-400 ml-1">({{ cat.count }})</span>
+                    </div>
+                    <span class="text-sm font-medium text-red-600">€{{ "%.2f" | format(cat.total) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="px-4 py-4 text-sm text-gray-500 text-center">No expenses for this period.</p>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <!-- Income Section -->
         <div>

@@ -1,12 +1,9 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 {% block title %}Financial Statement - Admin{% endblock %}
-{% block content %}
+{% block admin_content %}
 <div class="max-w-5xl mx-auto">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-4xl font-bold">Financial Statement</h1>
-        <a href="{{ url_for('admin.finance') }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
-            ← Back to Finance
-        </a>
     </div>
 
     <!-- Date Range Filter -->
@@ -150,5 +147,5 @@
     </div>
     {% endif %}
 </div>
-{% endblock %}
+{% endblock admin_content %}
 

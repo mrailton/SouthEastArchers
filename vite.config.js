@@ -14,8 +14,8 @@ export default defineConfig({
     manifest: true,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'resources/assets/js/main.js'),
-        style: resolve(__dirname, 'resources/assets/css/style.css'),
+        site: resolve(__dirname, 'resources/assets/js/site.js'),
+        admin: resolve(__dirname, 'resources/assets/js/admin.js'),
         logo: resolve(__dirname, 'resources/assets/images/logo.jpeg'),
       },
       output: {

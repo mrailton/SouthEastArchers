@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 {% block title %}Roles - Admin{% endblock %}
-{% block content %}
+{% block admin_content %}
 <div x-data="rolesActions()">
 <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold">Roles</h1>
@@ -99,4 +99,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
+{% endblock admin_content %}

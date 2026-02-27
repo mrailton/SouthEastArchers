@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 {% block title %}Admin Dashboard - South East Archers{% endblock %}
-{% block content %}
+{% block admin_content %}
 <div x-data="dashboardActions()">
 <h1 class="text-4xl font-bold mb-6">Admin Dashboard</h1>
 
@@ -134,53 +134,22 @@
     </div>
 {% endif %}
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="bg-white p-6 rounded shadow border-l-4 border-blue-600">
-        <h3 class="text-xl font-bold mb-4">Management</h3>
-        <ul class="space-y-2">
-            {% if current_user.has_permission('members.read') %}
-            <li><a href="{{ url_for('admin.members') }}" class="text-blue-600 hover:underline">Manage Members</a></li>
-            {% endif %}
-            {% if current_user.has_permission('payments.approve') %}
-            <li><a href="{{ url_for('admin.pending_payments') }}" class="text-blue-600 hover:underline">Pending Cash Payments</a></li>
-            {% endif %}
-            {% if current_user.has_permission('shoots.read') %}
-            <li><a href="{{ url_for('admin.shoots') }}" class="text-blue-600 hover:underline">Manage Shoots</a></li>
-            {% endif %}
-            {% if current_user.has_permission('news.read') and news_enabled %}
-            <li><a href="{{ url_for('admin.news') }}" class="text-blue-600 hover:underline">Manage News</a></li>
-            {% endif %}
-            {% if current_user.has_permission('events.read') and events_enabled %}
-            <li><a href="{{ url_for('admin.events') }}" class="text-blue-600 hover:underline">Manage Events</a></li>
-            {% endif %}
-            {% if current_user.has_permission('settings.read') %}
-            <li><a href="{{ url_for('admin.settings') }}" class="text-blue-600 hover:underline">Application Settings</a></li>
-            {% endif %}
-            {% if current_user.has_permission('roles.manage') %}
-            <li><a href="{{ url_for('admin.roles_index') }}" class="text-blue-600 hover:underline">Manage Roles &amp; Permissions</a></li>
-            {% endif %}
-            {% if current_user.has_permission('finance.read') %}
-            <li><a href="{{ url_for('admin.finance') }}" class="text-blue-600 hover:underline">Finance &amp; Accounts</a></li>
-            {% endif %}
-        </ul>
-    </div>
-    
-    <div class="bg-white p-6 rounded shadow border-l-4 border-blue-600">
-        <h3 class="text-xl font-bold mb-4">Recent Members</h3>
-        {% if recent_members %}
-        <ul class="space-y-2">
-            {% for member in recent_members %}
-            <li class="text-gray-700">
-                <a href="{{ url_for('admin.member_detail', user_id=member.id) }}" class="text-blue-600 hover:underline">{{ member.name }}</a>
-                <span class="text-sm text-gray-300">- {{ 'Active' if member.is_active else 'Pending' }}</span>
-                <span class="text-sm text-gray-500">- {{ member.created_at.strftime('%d/%m/%Y') }}</span>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-gray-500">No recent members</p>
-        {% endif %}
-    </div>
+<div class="bg-white p-6 rounded shadow border-l-4 border-blue-600">
+    <h3 class="text-xl font-bold mb-4">Recent Members</h3>
+    {% if recent_members %}
+    <ul class="space-y-2">
+        {% for member in recent_members %}
+        <li class="text-gray-700">
+            <a href="{{ url_for('admin.member_detail', user_id=member.id) }}" class="text-blue-600 hover:underline">{{ member.name }}</a>
+            <span class="text-sm text-gray-300">- {{ 'Active' if member.is_active else 'Pending' }}</span>
+            <span class="text-sm text-gray-500">- {{ member.created_at.strftime('%d/%m/%Y') }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-gray-500">No recent members</p>
+    {% endif %}
 </div>
+
 </div>
-{% endblock %}
+{% endblock admin_content %}

@@ -1,40 +1,11 @@
 import Alpine from '@alpinejs/csp'
-import '../css/style.css'
+import '../css/admin.css'
 
-// Register Alpine.js components for CSP compliance
-// Navigation mobile menu
-Alpine.data('mobileNav', () => ({
+// === Admin-only Alpine components ===
+
+// Admin sidebar mobile toggle
+Alpine.data('adminSidebar', () => ({
     open: false,
-    toggle() {
-        this.open = !this.open
-    }
-}))
-
-// Payment form with double-click prevention
-Alpine.data('paymentForm', () => ({
-    isSubmitting: false,
-    handleSubmit(event) {
-        if (this.isSubmitting) {
-            event.preventDefault()
-            return false
-        }
-        this.isSubmitting = true
-        return true
-    }
-}))
-
-// Credit payment form with quantity selection
-Alpine.data('creditPaymentForm', () => ({
-    quantity: '1',
-    isSubmitting: false,
-    handleSubmit(event) {
-        if (this.isSubmitting) {
-            event.preventDefault()
-            return false
-        }
-        this.isSubmitting = true
-        return true
-    }
 }))
 
 // Payment actions for pending payments page
@@ -45,7 +16,7 @@ Alpine.data('paymentActions', () => ({
     modalMessage: '',
     confirmText: '',
     formAction: '',
-    
+
     showApproveModal(paymentId, memberName, paymentType) {
         this.modalType = 'success'
         this.modalTitle = 'Approve Payment'
@@ -54,7 +25,7 @@ Alpine.data('paymentActions', () => ({
         this.formAction = `/admin/payments/${paymentId}/approve`
         this.showModal = true
     },
-    
+
     showRejectModal(paymentId, memberName) {
         this.modalType = 'danger'
         this.modalTitle = 'Reject Payment'
@@ -71,7 +42,7 @@ Alpine.data('dashboardActions', () => ({
     modalTitle: '',
     modalMessage: '',
     formAction: '',
-    
+
     showApproveModal(paymentId, memberName, paymentType) {
         this.modalTitle = 'Approve Payment'
         this.modalMessage = `Approve ${paymentType} payment for ${memberName}? This will activate their membership or add credits to their account.`
@@ -121,7 +92,7 @@ Alpine.data('memberDetailActions', () => ({
         this.formAction = actionUrl
         this.showConfirmModal = true
     },
-    
+
     showPaymentModal(action, paymentId, paymentType) {
         if (action === 'approve') {
             this.modalType = 'success'
@@ -145,7 +116,7 @@ Alpine.data('rolesActions', () => ({
     showModal: false,
     roleName: '',
     formAction: '',
-    
+
     showDeleteModal(roleId, roleName) {
         this.roleName = roleName
         this.formAction = `/admin/roles/${roleId}/delete`
@@ -157,14 +128,3 @@ Alpine.data('rolesActions', () => ({
 window.Alpine = Alpine
 Alpine.start()
 
-// Card number formatting (for checkout page)
-document.addEventListener('DOMContentLoaded', () => {
-    const cardInput = document.querySelector('input[name="card_number"]')
-    if (cardInput) {
-        cardInput.addEventListener('input', (e) => {
-            let value = e.target.value.replace(/\s/g, '')
-            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value
-            e.target.value = formattedValue
-        })
-    }
-})

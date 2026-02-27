@@ -159,6 +159,9 @@
             {% if current_user.has_permission('roles.manage') %}
             <li><a href="{{ url_for('admin.roles_index') }}" class="text-blue-600 hover:underline">Manage Roles &amp; Permissions</a></li>
             {% endif %}
+            {% if current_user.has_permission('finance.read') %}
+            <li><a href="{{ url_for('admin.finance') }}" class="text-blue-600 hover:underline">Finance &amp; Accounts</a></li>
+            {% endif %}
         </ul>
     </div>
     

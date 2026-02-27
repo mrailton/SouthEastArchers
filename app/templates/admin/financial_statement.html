@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Financial Statement - Admin{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-4xl font-bold">Financial Statement</h1>
+        <a href="{{ url_for('admin.finance') }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
+            ← Back to Finance
+        </a>
+    </div>
+
+    <!-- Date Range Filter -->
+    <form method="POST" class="bg-white p-6 rounded shadow mb-8">
+        {{ form.hidden_tag() }}
+        <div class="flex flex-wrap items-end gap-4">
+            <div>
+                <label for="start_date" class="block text-gray-700 font-bold mb-2">Start Date</label>
+                <input class="border border-gray-300 rounded px-3 py-2"
+                       type="date" id="start_date" name="start_date"
+                       value="{{ form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else '' }}" required>
+            </div>
+            <div>
+                <label for="end_date" class="block text-gray-700 font-bold mb-2">End Date</label>
+                <input class="border border-gray-300 rounded px-3 py-2"
+                       type="date" id="end_date" name="end_date"
+                       value="{{ form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else '' }}" required>
+            </div>
+            <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">
+                Generate Statement
+            </button>
+        </div>
+    </form>
+
+    {% if statement %}
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded shadow border-l-4 border-green-500">
+            <h3 class="text-gray-600 text-sm font-bold uppercase">Total Income</h3>
+            <p class="text-3xl font-bold text-green-600">€{{ "%.2f" | format(statement.total_income) }}</p>
+        </div>
+        <div class="bg-white p-6 rounded shadow border-l-4 border-red-500">
+            <h3 class="text-gray-600 text-sm font-bold uppercase">Total Expenses</h3>
+            <p class="text-3xl font-bold text-red-600">€{{ "%.2f" | format(statement.total_expenses) }}</p>
+        </div>
+        <div class="bg-white p-6 rounded shadow border-l-4 {% if statement.net >= 0 %}border-green-500{% else %}border-red-500{% endif %}">
+            <h3 class="text-gray-600 text-sm font-bold uppercase">Net Balance</h3>
+            <p class="text-3xl font-bold {% if statement.net >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                {% if statement.net < 0 %}-{% endif %}€{{ "%.2f" | format(statement.net | abs) }}
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Income Section -->
+        <div>
+            <h2 class="text-2xl font-bold mb-4 text-green-700">Income</h2>
+            {% if statement.income_items %}
+            <div class="bg-white rounded shadow overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-green-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for item in statement.income_items %}
+                        <tr>
+                            <td class="px-4 py-2 text-sm text-gray-900">{{ item.date.strftime('%Y-%m-%d') }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-900">
+                                {{ item.description | truncate(40) }}
+                                <span class="text-xs text-gray-500">({{ item.category | replace('_', ' ') | title }})</span>
+                            </td>
+                            <td class="px-4 py-2 text-sm text-right font-medium text-green-600">€{{ "%.2f" | format(item.amount) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-green-50">
+                        <tr>
+                            <td colspan="2" class="px-4 py-3 text-sm font-bold text-gray-700">Total</td>
+                            <td class="px-4 py-3 text-sm text-right font-bold text-green-700">€{{ "%.2f" | format(statement.total_income) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="bg-white p-6 rounded shadow text-center text-gray-500">
+                No income recorded for this period.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Expenses Section -->
+        <div>
+            <h2 class="text-2xl font-bold mb-4 text-red-700">Expenses</h2>
+            {% if statement.expense_items %}
+            <div class="bg-white rounded shadow overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-red-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for item in statement.expense_items %}
+                        <tr>
+                            <td class="px-4 py-2 text-sm text-gray-900">{{ item.date.strftime('%Y-%m-%d') }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-900">
+                                {{ item.description | truncate(40) }}
+                                <span class="text-xs text-gray-500">({{ item.category | replace('_', ' ') | title }})</span>
+                            </td>
+                            <td class="px-4 py-2 text-sm text-right font-medium text-red-600">€{{ "%.2f" | format(item.amount) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-red-50">
+                        <tr>
+                            <td colspan="2" class="px-4 py-3 text-sm font-bold text-gray-700">Total</td>
+                            <td class="px-4 py-3 text-sm text-right font-bold text-red-700">€{{ "%.2f" | format(statement.total_expenses) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="bg-white p-6 rounded shadow text-center text-gray-500">
+                No expenses recorded for this period.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Period Info -->
+    <div class="mt-8 text-center text-sm text-gray-500">
+        Statement period: {{ statement.start_date.strftime('%d %B %Y') }} – {{ statement.end_date.strftime('%d %B %Y') }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Add Income - Admin{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-4xl font-bold mb-6">Add Income</h1>
+
+    <form method="POST" class="bg-white p-8 rounded shadow space-y-6">
+        {{ form.hidden_tag() }}
+        <div>
+            <label for="date" class="block text-gray-700 font-bold mb-2">Date</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2"
+                   type="date" id="date" name="date" value="{{ form.date.data or '' }}" required>
+        </div>
+
+        <div>
+            <label for="amount" class="block text-gray-700 font-bold mb-2">Amount (€)</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2"
+                   type="number" step="0.01" min="0.01" id="amount" name="amount" value="{{ form.amount.data or '' }}" required>
+        </div>
+
+        <div>
+            <label for="category" class="block text-gray-700 font-bold mb-2">Category</label>
+            <select class="w-full border border-gray-300 rounded px-3 py-2" id="category" name="category" required>
+                {% for value, label in form.category.choices %}
+                <option value="{{ value }}" {% if form.category.data == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="description" class="block text-gray-700 font-bold mb-2">Description</label>
+            <textarea class="w-full border border-gray-300 rounded px-3 py-2"
+                      id="description" name="description" rows="4" required>{{ form.description.data or '' }}</textarea>
+        </div>
+
+        <div>
+            <label for="source" class="block text-gray-700 font-bold mb-2">Source</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2"
+                   type="text" id="source" name="source" value="{{ form.source.data or '' }}"
+                   placeholder="Optional - who paid, funding body, etc.">
+        </div>
+
+        <div class="flex space-x-4">
+            <button type="submit" class="bg-green-600 text-white font-bold py-2 px-6 rounded hover:bg-green-700">
+                Record Income
+            </button>
+            <a href="{{ url_for('admin.finance') }}" class="bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded hover:bg-gray-300">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

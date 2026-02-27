@@ -1,6 +1,7 @@
 from .application_settings import ApplicationSettings
 from .credit import Credit
 from .event import Event
+from .financial_transaction import FinancialTransaction
 from .membership import Membership
 from .news import News
 from .payment import Payment
@@ -20,4 +21,5 @@ __all__ = [
     "ApplicationSettings",
     "Role",
     "Permission",
+    "FinancialTransaction",
 ]

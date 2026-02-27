@@ -1,4 +1,4 @@
-from app.forms.admin_forms import CreateMemberForm, EditMemberForm, EventForm, NewsForm, ShootForm
+from app.forms.admin_forms import CreateMemberForm, EditMemberForm, EventForm, ExpenseForm, FinancialStatementForm, IncomeForm, NewsForm, ShootForm
 from app.forms.auth_forms import ForgotPasswordForm, LoginForm, ResetPasswordForm, SignupForm
 from app.forms.member_forms import ChangePasswordForm, ProfileForm
 
@@ -14,4 +14,7 @@ __all__ = [
     "EventForm",
     "CreateMemberForm",
     "EditMemberForm",
+    "ExpenseForm",
+    "IncomeForm",
+    "FinancialStatementForm",
 ]

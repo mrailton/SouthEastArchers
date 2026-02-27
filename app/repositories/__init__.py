@@ -1,6 +1,7 @@
 from .base import BaseRepository
 from .credit_repository import CreditRepository
 from .event_repository import EventRepository
+from .financial_transaction_repository import FinancialTransactionRepository
 from .membership_repository import MembershipRepository
 from .news_repository import NewsRepository
 from .payment_repository import PaymentRepository
@@ -20,4 +21,5 @@ __all__ = [
     "NewsRepository",
     "RBACRepository",
     "SettingsRepository",
+    "FinancialTransactionRepository",
 ]

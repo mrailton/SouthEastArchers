@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 {% block title %}{{ 'Create' if mode == 'create' else 'Edit' }} Role{% endblock %}
-{% block content %}
+{% block admin_content %}
 <div class="max-w-2xl mx-auto">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">{{ 'Create' if mode == 'create' else 'Edit' }} Role</h1>
@@ -46,4 +46,4 @@
         </div>
     </form>
 </div>
-{% endblock %}
+{% endblock admin_content %}

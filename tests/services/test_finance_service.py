@@ -292,3 +292,122 @@ def test_generate_statement_pdf_empty(app, admin_user):
 
     assert isinstance(pdf_bytes, (bytes, bytearray))
     assert pdf_bytes[:5] == b"%PDF-"
+
+
+def test_record_sumup_payment_transactions_creates_income_and_expense(app, admin_user):
+    """Test that record_sumup_payment_transactions creates both income and fee expense."""
+    from decimal import Decimal
+
+    from app.services.settings_service import SettingsService
+
+    settings = SettingsService.get()
+    settings.sumup_fee_percentage = Decimal("2.50")
+    SettingsService.save(settings)
+
+    success, error = FinanceService.record_sumup_payment_transactions(
+        payment_amount_cents=10000,
+        payment_type="membership",
+        description="Annual membership - Test User",
+        created_by_id=admin_user.id,
+        receipt_reference="txn_abc123",
+    )
+
+    assert success is True
+    assert error is None
+
+    transactions = FinanceService.get_all_transactions()
+    assert len(transactions) == 2
+
+    income = [t for t in transactions if t.type == "income"][0]
+    assert income.amount == 100.00
+    assert income.category == "membership_fees"
+    assert income.source == "SumUp"
+    assert income.receipt_reference == "txn_abc123"
+
+    expense = [t for t in transactions if t.type == "expense"][0]
+    assert expense.amount == 2.50
+    assert expense.category == "payment_processing_fees"
+    assert "SumUp fee (2.5%)" in expense.description
+    assert expense.receipt_reference == "txn_abc123"
+
+
+def test_record_sumup_payment_transactions_credit_purchase(app, admin_user):
+    """Test that credit purchases use shoot_fees category."""
+    from decimal import Decimal
+
+    from app.services.settings_service import SettingsService
+
+    settings = SettingsService.get()
+    settings.sumup_fee_percentage = Decimal("2.50")
+    SettingsService.save(settings)
+
+    success, error = FinanceService.record_sumup_payment_transactions(
+        payment_amount_cents=500,
+        payment_type="credits",
+        description="1 shooting credit",
+        created_by_id=admin_user.id,
+    )
+
+    assert success is True
+    income = [t for t in FinanceService.get_all_transactions() if t.type == "income"][0]
+    assert income.category == "shoot_fees"
+    assert income.amount == 5.00
+
+
+def test_record_sumup_payment_transactions_skips_when_no_fee_configured(app, admin_user):
+    """Test that it gracefully skips when sumup_fee_percentage is not set."""
+    from app.services.settings_service import SettingsService
+
+    settings = SettingsService.get()
+    settings.sumup_fee_percentage = None
+    SettingsService.save(settings)
+
+    success, error = FinanceService.record_sumup_payment_transactions(
+        payment_amount_cents=10000,
+        payment_type="membership",
+        description="Test",
+        created_by_id=admin_user.id,
+    )
+
+    assert success is False
+    assert "not configured" in error
+    assert len(FinanceService.get_all_transactions()) == 0
+
+
+def test_record_cash_payment_transaction_creates_income(app, admin_user):
+    """Test that record_cash_payment_transaction creates an income transaction."""
+    success, error = FinanceService.record_cash_payment_transaction(
+        payment_amount_cents=10000,
+        payment_type="membership",
+        description="Annual membership (Cash)",
+        created_by_id=admin_user.id,
+    )
+
+    assert success is True
+    assert error is None
+
+    transactions = FinanceService.get_all_transactions()
+    assert len(transactions) == 1
+
+    income = transactions[0]
+    assert income.type == "income"
+    assert income.amount == 100.00
+    assert income.category == "membership_fees"
+    assert income.source == "Cash"
+    assert income.description == "Annual membership (Cash)"
+
+
+def test_record_cash_payment_transaction_credit_purchase(app, admin_user):
+    """Test that cash credit purchases use shoot_fees category."""
+    success, error = FinanceService.record_cash_payment_transaction(
+        payment_amount_cents=500,
+        payment_type="credits",
+        description="1 shooting credit (Cash)",
+        created_by_id=admin_user.id,
+    )
+
+    assert success is True
+    income = FinanceService.get_all_transactions()[0]
+    assert income.category == "shoot_fees"
+    assert income.amount == 5.00
+    assert income.source == "Cash"

@@ -12,6 +12,7 @@ EXPENSE_CATEGORIES = [
     ("travel", "Travel"),
     ("affiliation_fees", "Affiliation Fees"),
     ("coaching", "Coaching"),
+    ("payment_processing_fees", "Payment Processing Fees"),
     ("other", "Other"),
 ]
 

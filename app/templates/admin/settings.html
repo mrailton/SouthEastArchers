@@ -127,6 +127,31 @@
                 </div>
             </div>
 
+            <!-- Payment Processing -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">
+                    Payment Processing
+                </h2>
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                    <p class="text-sm text-blue-700">
+                        <strong>Note:</strong> When a SumUp fee percentage is set, completed online payments will automatically create an income transaction for the full amount and an expense transaction for the SumUp processing fee.
+                    </p>
+                </div>
+
+                <div>
+                    <label for="sumup_fee_percentage" class="block text-gray-700 font-bold mb-2">
+                        SumUp Fee Percentage (%)
+                    </label>
+                    {{ form.sumup_fee_percentage(class="w-full border border-gray-300 rounded px-3 py-2", min="0", max="100", step="0.01", placeholder="e.g. 2.50") }}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.sumup_fee_percentage.description }}</p>
+                    {% if form.sumup_fee_percentage.errors %}
+                        {% for error in form.sumup_fee_percentage.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Feature Toggles -->
             <div class="mb-8">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">

@@ -16,11 +16,18 @@ class FinancialTransactionRepository(BaseRepository):
 
     @staticmethod
     def get_all() -> list[FinancialTransaction]:
-        return FinancialTransaction.query.order_by(FinancialTransaction.date.desc()).all()
+        return FinancialTransaction.query.order_by(FinancialTransaction.date.desc(), FinancialTransaction.created_at.desc()).all()
+
+    @staticmethod
+    def get_all_paginated(page: int = 1, per_page: int = 20):
+        """Return a paginated query ordered by date descending, then created_at descending."""
+        return FinancialTransaction.query.order_by(FinancialTransaction.date.desc(), FinancialTransaction.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
 
     @staticmethod
     def get_by_type(txn_type: str) -> list[FinancialTransaction]:
-        return FinancialTransaction.query.filter_by(type=txn_type).order_by(FinancialTransaction.date.desc()).all()
+        return FinancialTransaction.query.filter_by(type=txn_type).order_by(FinancialTransaction.date.desc(), FinancialTransaction.created_at.desc()).all()
 
     @staticmethod
     def get_by_date_range(
@@ -34,7 +41,7 @@ class FinancialTransactionRepository(BaseRepository):
         )
         if txn_type:
             query = query.filter_by(type=txn_type)
-        return query.order_by(FinancialTransaction.date.desc()).all()
+        return query.order_by(FinancialTransaction.date.desc(), FinancialTransaction.created_at.desc()).all()
 
     @staticmethod
     def add(transaction: FinancialTransaction) -> None:

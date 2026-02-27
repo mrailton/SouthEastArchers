@@ -98,6 +98,14 @@ class SettingsForm(FlaskForm):
         description="Instructions shown to users when they select cash payment",
     )
 
+    # Payment processing
+    sumup_fee_percentage = DecimalField(
+        "SumUp Fee Percentage",
+        places=2,
+        validators=[Optional(), NumberRange(min=0, max=100)],
+        description="SumUp transaction fee percentage (e.g., 2.50 for 2.5%). Leave blank to disable automatic transaction recording.",
+    )
+
     # Feature toggles
     news_enabled = BooleanField("Enable News", default=False)
     events_enabled = BooleanField("Enable Events", default=False)
@@ -123,6 +131,7 @@ class ExpenseForm(FlaskForm):
             ("travel", "Travel"),
             ("affiliation_fees", "Affiliation Fees"),
             ("coaching", "Coaching"),
+            ("payment_processing_fees", "Payment Processing Fees"),
             ("other", "Other"),
         ],
         validators=[DataRequired()],

@@ -47,10 +47,63 @@
             </div>
             <p class="mt-1 text-sm text-gray-500">Credits will be adjusted automatically</p>
         </div>
+
+        <!-- Visitors Section -->
+        <div>
+            <label class="block text-gray-700 font-bold mb-2">Visitors</label>
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-3">
+                <p class="text-sm text-yellow-700">
+                    <strong>Note:</strong> Visitors are non-SEA members from other clubs (AI/IFAF). Each <em>new</em> visitor will be charged <strong>€{{ "%.2f" | format(visitor_fee) }}</strong> and an income transaction will be created automatically. Removing a visitor will not reverse the transaction.
+                </p>
+            </div>
+            <div id="visitors-container" class="space-y-3"></div>
+            <button type="button" onclick="addVisitorRow()" class="mt-2 bg-green-600 text-white text-sm font-bold py-1.5 px-4 rounded hover:bg-green-700">
+                + Add Visitor
+            </button>
+        </div>
         
         <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">
             Update Shoot
         </button>
     </form>
 </div>
+
+<script>
+function addVisitorRow(data) {
+    const container = document.getElementById('visitors-container');
+    const row = document.createElement('div');
+    row.className = 'flex flex-wrap gap-2 items-start p-3 bg-gray-50 rounded border border-gray-200';
+    row.innerHTML = `
+        <div class="flex-1 min-w-[140px]">
+            <input type="text" name="visitor_name" placeholder="Name" required value="${data?.name || ''}"
+                   class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+        </div>
+        <div class="flex-1 min-w-[140px]">
+            <input type="text" name="visitor_club" placeholder="Club" required value="${data?.club || ''}"
+                   class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+        </div>
+        <div class="w-28">
+            <select name="visitor_affiliation" required class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+                <option value="AI" ${data?.affiliation === 'AI' ? 'selected' : ''}>AI</option>
+                <option value="IFAF" ${data?.affiliation === 'IFAF' ? 'selected' : ''}>IFAF</option>
+            </select>
+        </div>
+        <div class="w-28">
+            <select name="visitor_payment_method" required class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+                <option value="sumup" ${data?.payment_method === 'sumup' ? 'selected' : ''}>SumUp</option>
+                <option value="cash" ${data?.payment_method === 'cash' ? 'selected' : ''}>Cash</option>
+            </select>
+        </div>
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-600 hover:text-red-800 text-sm font-bold px-2 py-1.5">✕</button>
+    `;
+    container.appendChild(row);
+}
+
+// Pre-populate existing visitors
+document.addEventListener('DOMContentLoaded', function() {
+    {% for v in shoot.visitors %}
+    addVisitorRow({name: {{ v.name | tojson }}, club: {{ v.club | tojson }}, affiliation: {{ v.affiliation | tojson }}, payment_method: {{ v.payment_method | tojson }}});
+    {% endfor %}
+});
+</script>
 {% endblock admin_content %}

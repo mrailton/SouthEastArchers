@@ -31,6 +31,11 @@
                                 ({{ shoot.users|map(attribute='name')|join(', ') }})
                             </span>
                             {% endif %}
+                            {% if shoot.visitors %}
+                            <span class="ml-2">| {{ shoot.visitors|length }} visitor{{ 's' if shoot.visitors|length != 1 else '' }}
+                                ({{ shoot.visitors|map(attribute='name')|join(', ') }})
+                            </span>
+                            {% endif %}
                         </p>
                     </div>
                     <div>

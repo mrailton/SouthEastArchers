@@ -98,6 +98,19 @@
                             {% endfor %}
                         {% endif %}
                     </div>
+
+                    <div>
+                        <label for="visitor_shoot_fee" class="block text-gray-700 font-bold mb-2">
+                            Visitor Shoot Fee (€)
+                        </label>
+                        {{ form.visitor_shoot_fee(class="w-full border border-gray-300 rounded px-3 py-2", min="0") }}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.visitor_shoot_fee.description }}</p>
+                        {% if form.visitor_shoot_fee.errors %}
+                            {% for error in form.visitor_shoot_fee.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 

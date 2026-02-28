@@ -319,3 +319,266 @@ def test_edit_shoot_add_attendee_no_credits(app):
     # Check for warning about negative balance
     assert len(warnings) == 1
     assert "negative balance" in warnings[0].lower()
+
+
+# --- Visitor Tests ---
+
+
+def test_create_shoot_with_visitors(app, admin_user):
+    """Test creating a shoot with visitors creates income transactions"""
+    from app.models import FinancialTransaction
+    from app.services import ShootService
+
+    shoot, warnings = ShootService.create_shoot(
+        shoot_date=date.today(),
+        location="HALL",
+        description="Shoot with visitors",
+        visitors=[
+            {"name": "John Doe", "club": "Dublin Archers", "affiliation": "AI", "payment_method": "cash"},
+        ],
+        created_by_id=admin_user.id,
+    )
+
+    assert shoot is not None
+    assert len(shoot.visitors) == 1
+    assert shoot.visitors[0].name == "John Doe"
+    assert shoot.visitors[0].club == "Dublin Archers"
+    assert shoot.visitors[0].affiliation == "AI"
+    assert shoot.visitors[0].payment_method == "cash"
+
+    # Check income transaction was created
+    txns = FinancialTransaction.query.filter_by(category="shoot_fees").all()
+    assert len(txns) == 1
+    assert txns[0].type == "income"
+    assert txns[0].amount_cents == 1000  # €10.00 default visitor fee
+    assert txns[0].source == "Cash"
+    assert "John Doe" in txns[0].description
+
+    # Cash visitors should NOT have a fee expense
+    expenses = FinancialTransaction.query.filter_by(category="payment_processing_fees").all()
+    assert len(expenses) == 0
+
+
+def test_create_shoot_with_visitor_sumup(app, admin_user):
+    """Test visitor with SumUp payment method creates income with SumUp source and fee expense"""
+    from app.models import FinancialTransaction
+    from app.services import ShootService
+    from app.services.settings_service import SettingsService
+
+    # Configure SumUp fee
+    settings = SettingsService.get()
+    settings.sumup_fee_percentage = 1.90
+    SettingsService.save(settings)
+
+    shoot, _ = ShootService.create_shoot(
+        shoot_date=date.today(),
+        location="MEADOW",
+        description="Shoot with SumUp visitor",
+        visitors=[
+            {"name": "Jane Smith", "club": "Cork Archery", "affiliation": "IFAF", "payment_method": "sumup"},
+        ],
+        created_by_id=admin_user.id,
+    )
+
+    assert shoot.visitors[0].payment_method == "sumup"
+
+    income = FinancialTransaction.query.filter_by(category="shoot_fees").first()
+    assert income.source == "SumUp"
+    assert income.amount_cents == 1000
+
+    # Should also have a SumUp fee expense
+    expense = FinancialTransaction.query.filter_by(category="payment_processing_fees").first()
+    assert expense is not None
+    assert expense.type == "expense"
+    # 1000 cents * 1.90 / 10000 = 0.19
+    assert expense.amount_cents == 19
+    assert "1.9%" in expense.description
+
+
+def test_create_shoot_with_multiple_visitors(app, admin_user):
+    """Test creating shoot with multiple visitors creates an income per visitor"""
+    from app.models import FinancialTransaction
+    from app.services import ShootService
+
+    visitors = [
+        {"name": "Visitor A", "club": "Club A", "affiliation": "AI", "payment_method": "cash"},
+        {"name": "Visitor B", "club": "Club B", "affiliation": "IFAF", "payment_method": "sumup"},
+    ]
+    shoot, _ = ShootService.create_shoot(
+        shoot_date=date.today(),
+        location="WOODS",
+        description="Multi visitor shoot",
+        visitors=visitors,
+        created_by_id=admin_user.id,
+    )
+
+    assert len(shoot.visitors) == 2
+    txns = FinancialTransaction.query.filter_by(category="shoot_fees").all()
+    assert len(txns) == 2
+
+
+def test_edit_shoot_add_visitor(app, admin_user):
+    """Test adding visitors to an existing shoot creates income transactions"""
+    from app.models import FinancialTransaction
+    from app.services import ShootService
+
+    shoot, _ = ShootService.create_shoot(
+        shoot_date=date.today(),
+        location="HALL",
+        description="Original shoot",
+        created_by_id=admin_user.id,
+    )
+
+    assert len(shoot.visitors) == 0
+
+    success, _ = ShootService.update_shoot(
+        shoot=shoot,
+        shoot_date=date.today(),
+        location="HALL",
+        description="Updated shoot",
+        visitors=[
+            {"name": "New Visitor", "club": "Galway Archers", "affiliation": "AI", "payment_method": "cash"},
+        ],
+        created_by_id=admin_user.id,
+    )
+
+    assert success is True
+    assert len(shoot.visitors) == 1
+    txns = FinancialTransaction.query.filter_by(category="shoot_fees").all()
+    assert len(txns) == 1
+
+
+def test_edit_shoot_replace_visitors(app, admin_user):
+    """Test updating shoot replaces removed visitors and only charges new ones"""
+    from app.models import FinancialTransaction
+    from app.services import ShootService
+
+    shoot, _ = ShootService.create_shoot(
+        shoot_date=date.today(),
+        location="HALL",
+        description="Shoot",
+        visitors=[
+            {"name": "Original Visitor", "club": "Club X", "affiliation": "AI", "payment_method": "cash"},
+        ],
+        created_by_id=admin_user.id,
+    )
+
+    assert len(shoot.visitors) == 1
+
+    success, _ = ShootService.update_shoot(
+        shoot=shoot,
+        shoot_date=date.today(),
+        location="HALL",
+        description="Updated",
+        visitors=[
+            {"name": "Replacement Visitor", "club": "Club Y", "affiliation": "IFAF", "payment_method": "sumup"},
+        ],
+        created_by_id=admin_user.id,
+    )
+
+    assert success is True
+    assert len(shoot.visitors) == 1
+    assert shoot.visitors[0].name == "Replacement Visitor"
+    # Original + replacement = 2 income transactions
+    txns = FinancialTransaction.query.filter_by(category="shoot_fees").all()
+    assert len(txns) == 2
+
+
+def test_edit_shoot_keeps_existing_visitors_no_duplicate_txns(app, admin_user):
+    """Test that re-submitting the same visitors doesn't create duplicate transactions"""
+    from app.models import FinancialTransaction
+    from app.services import ShootService
+
+    visitor_data = [
+        {"name": "John Doe", "club": "Dublin Archers", "affiliation": "AI", "payment_method": "cash"},
+    ]
+    shoot, _ = ShootService.create_shoot(
+        shoot_date=date.today(),
+        location="HALL",
+        description="Shoot",
+        visitors=visitor_data,
+        created_by_id=admin_user.id,
+    )
+
+    assert len(FinancialTransaction.query.filter_by(category="shoot_fees").all()) == 1
+
+    # Edit with the same visitor — should NOT create a new transaction
+    success, _ = ShootService.update_shoot(
+        shoot=shoot,
+        shoot_date=date.today(),
+        location="HALL",
+        description="Updated",
+        visitors=visitor_data,
+        created_by_id=admin_user.id,
+    )
+
+    assert success is True
+    assert len(shoot.visitors) == 1
+    txns = FinancialTransaction.query.filter_by(category="shoot_fees").all()
+    assert len(txns) == 1  # No duplicate
+
+
+def test_visitor_fee_uses_settings(app, admin_user):
+    """Test that visitor fee comes from application settings"""
+    from app.models import FinancialTransaction
+    from app.services import ShootService
+    from app.services.settings_service import SettingsService
+
+    settings = SettingsService.get()
+    settings.visitor_shoot_fee = 1500  # €15.00
+    SettingsService.save(settings)
+
+    shoot, _ = ShootService.create_shoot(
+        shoot_date=date.today(),
+        location="HALL",
+        description="Custom fee shoot",
+        visitors=[
+            {"name": "Custom Fee Visitor", "club": "Club Z", "affiliation": "AI", "payment_method": "cash"},
+        ],
+        created_by_id=admin_user.id,
+    )
+
+    txn = FinancialTransaction.query.filter_by(category="shoot_fees").first()
+    assert txn.amount_cents == 1500
+
+
+def test_create_shoot_with_visitors_route(client, admin_user, app):
+    """Test creating shoot with visitors via HTTP route"""
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    response = client.post(
+        "/admin/shoots/create",
+        data={
+            "date": date.today().isoformat(),
+            "location": "HALL",
+            "description": "Route visitor test",
+            "csrf_token": "test",
+            "visitor_name": ["Test Visitor"],
+            "visitor_club": ["Test Club"],
+            "visitor_affiliation": ["AI"],
+            "visitor_payment_method": ["cash"],
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"visitor" in response.data.lower()
+
+
+def test_shoots_list_shows_visitors(client, admin_user, app):
+    """Test shoots list shows visitor count and names"""
+    from app.models.shoot import ShootVisitor
+
+    shoot = Shoot(date=date.today(), location=ShootLocation.HALL, description="Visitor test")
+    db.session.add(shoot)
+    db.session.flush()
+    visitor = ShootVisitor(shoot_id=shoot.id, name="List Visitor", club="Test Club", affiliation="AI", payment_method="cash")
+    db.session.add(visitor)
+    db.session.commit()
+
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+
+    response = client.get("/admin/shoots")
+    assert response.status_code == 200
+    assert b"1 visitor" in response.data
+    assert b"List Visitor" in response.data

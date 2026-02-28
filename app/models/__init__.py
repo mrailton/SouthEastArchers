@@ -6,7 +6,7 @@ from .membership import Membership
 from .news import News
 from .payment import Payment
 from .rbac import Permission, Role
-from .shoot import Shoot, ShootLocation
+from .shoot import Shoot, ShootLocation, ShootVisitor
 from .user import User
 
 __all__ = [
@@ -14,6 +14,7 @@ __all__ = [
     "Membership",
     "Shoot",
     "ShootLocation",
+    "ShootVisitor",
     "Credit",
     "News",
     "Event",

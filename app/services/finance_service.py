@@ -211,7 +211,7 @@ class FinanceService:
         net_cents = total_income_cents - total_expenses_cents
 
         def _group_by_category(items):
-            groups = {}
+            groups: dict[str, dict] = {}
             for item in items:
                 label = item.category.replace("_", " ").title()
                 entry = groups.setdefault(item.category, {"label": label, "total_cents": 0, "count": 0})
@@ -359,4 +359,4 @@ class FinanceService:
         generated = date.today().strftime("%d %B %Y")
         pdf.cell(0, 6, f"Generated on {generated} | South East Archers", align="C")
 
-        return pdf.output()
+        return bytes(pdf.output() or b"")

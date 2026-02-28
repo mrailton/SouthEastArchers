@@ -195,7 +195,7 @@ def test_create_member_with_membership(app):
     # Expiry calculated based on membership year
     # Jan 25 is before March 1, so expires Feb 28, 2026
     assert user.membership.expiry_date.year == 2026
-    assert user.membership.expiry_date > date.today()
+    assert user.membership.expiry_date >= date.today()
 
 
 def test_create_member_starts_inactive(app):

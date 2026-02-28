@@ -90,6 +90,9 @@ class SettingsForm(FlaskForm):
     additional_shoot_cost = IntegerField(
         "Additional Shoot Cost (€)", validators=[DataRequired(), NumberRange(min=0)], description="Cost per additional shoot in euros"
     )
+    visitor_shoot_fee = IntegerField(
+        "Visitor Shoot Fee (€)", validators=[DataRequired(), NumberRange(min=0)], description="Fee per shoot for visiting non-member archers"
+    )
 
     # Cash payment settings
     cash_payment_instructions = TextAreaField(

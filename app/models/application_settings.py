@@ -29,6 +29,9 @@ class ApplicationSettings(db.Model):
         default="Please pay cash to a committee member at the next shoot night. Your membership/credits will be activated once payment is confirmed.",
     )
 
+    # Visitor pricing (stored in cents)
+    visitor_shoot_fee = db.Column(db.Integer, nullable=False, default=1000)  # €10.00
+
     # Payment processing
     sumup_fee_percentage = db.Column(db.Numeric(5, 2), nullable=True)
 

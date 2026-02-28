@@ -27,5 +27,19 @@ class Shoot(db.Model):
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
+    visitors = db.relationship("ShootVisitor", backref="shoot", lazy="joined", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Shoot {self.date} at {self.location.value}>"
+
+
+class ShootVisitor(db.Model):
+    __tablename__ = "shoot_visitors"
+
+    id = db.Column(db.Integer, primary_key=True)
+    shoot_id = db.Column(db.Integer, db.ForeignKey("shoots.id"), nullable=False, index=True)
+    name = db.Column(db.String(255), nullable=False)
+    club = db.Column(db.String(255), nullable=False)
+    affiliation = db.Column(db.String(10), nullable=False)  # "AI" or "IFAF"
+    payment_method = db.Column(db.String(10), nullable=False)  # "sumup" or "cash"
+    created_at = db.Column(db.DateTime, default=utc_now)

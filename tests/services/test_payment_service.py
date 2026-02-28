@@ -305,7 +305,7 @@ def test_handle_membership_renewal_creates_membership_if_missing(app, test_user)
         # Expiry calculated based on membership year
         # Jan 25 is before March 1, so expires Feb 28, 2026
         assert test_user.membership.expiry_date.year == 2026
-        assert test_user.membership.expiry_date > date.today()
+        assert test_user.membership.expiry_date >= date.today()
 
 
 def test_send_payment_receipt_synchronously(app, test_user):

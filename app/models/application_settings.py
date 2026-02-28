@@ -29,6 +29,9 @@ class ApplicationSettings(db.Model):
         default="Please pay cash to a committee member at the next shoot night. Your membership/credits will be activated once payment is confirmed.",
     )
 
+    # Payment processing
+    sumup_fee_percentage = db.Column(db.Numeric(5, 2), nullable=True)
+
     created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 

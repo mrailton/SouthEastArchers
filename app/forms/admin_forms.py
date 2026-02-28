@@ -1,5 +1,16 @@
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, DateField, DateTimeLocalField, IntegerField, PasswordField, SelectField, SelectMultipleField, StringField, TextAreaField
+from wtforms import (
+    BooleanField,
+    DateField,
+    DateTimeLocalField,
+    DecimalField,
+    IntegerField,
+    PasswordField,
+    SelectField,
+    SelectMultipleField,
+    StringField,
+    TextAreaField,
+)
 from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional
 
 
@@ -87,6 +98,14 @@ class SettingsForm(FlaskForm):
         description="Instructions shown to users when they select cash payment",
     )
 
+    # Payment processing
+    sumup_fee_percentage = DecimalField(
+        "SumUp Fee Percentage",
+        places=2,
+        validators=[Optional(), NumberRange(min=0, max=100)],
+        description="SumUp transaction fee percentage (e.g., 2.50 for 2.5%). Leave blank to disable automatic transaction recording.",
+    )
+
     # Feature toggles
     news_enabled = BooleanField("Enable News", default=False)
     events_enabled = BooleanField("Enable Events", default=False)
@@ -96,3 +115,52 @@ class RoleForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(min=2, max=64)])
     description = TextAreaField("Description", validators=[Optional(), Length(max=255)])
     permissions = SelectMultipleField("Permissions", coerce=int, validators=[Optional()])
+
+
+class ExpenseForm(FlaskForm):
+    date = DateField("Date", validators=[DataRequired()])
+    amount = DecimalField("Amount (€)", places=2, validators=[DataRequired(), NumberRange(min=0.01)])
+    category = SelectField(
+        "Category",
+        choices=[
+            ("equipment", "Equipment"),
+            ("venue_hire", "Venue Hire"),
+            ("insurance", "Insurance"),
+            ("supplies", "Supplies"),
+            ("maintenance", "Maintenance"),
+            ("travel", "Travel"),
+            ("affiliation_fees", "Affiliation Fees"),
+            ("coaching", "Coaching"),
+            ("payment_processing_fees", "Payment Processing Fees"),
+            ("other", "Other"),
+        ],
+        validators=[DataRequired()],
+    )
+    description = TextAreaField("Description", validators=[DataRequired(), Length(min=3)])
+    receipt_reference = StringField("Receipt Reference", validators=[Optional(), Length(max=255)])
+
+
+class IncomeForm(FlaskForm):
+    date = DateField("Date", validators=[DataRequired()])
+    amount = DecimalField("Amount (€)", places=2, validators=[DataRequired(), NumberRange(min=0.01)])
+    category = SelectField(
+        "Category",
+        choices=[
+            ("membership_fees", "Membership Fees"),
+            ("shoot_fees", "Shoot Fees"),
+            ("equipment_sales", "Equipment Sales"),
+            ("donations", "Donations"),
+            ("sponsorship", "Sponsorship"),
+            ("grants", "Grants"),
+            ("fundraising", "Fundraising"),
+            ("other", "Other"),
+        ],
+        validators=[DataRequired()],
+    )
+    description = TextAreaField("Description", validators=[DataRequired(), Length(min=3)])
+    source = StringField("Source", validators=[Optional(), Length(max=255)])
+
+
+class FinancialStatementForm(FlaskForm):
+    start_date = DateField("Start Date", validators=[DataRequired()])
+    end_date = DateField("End Date", validators=[DataRequired()])

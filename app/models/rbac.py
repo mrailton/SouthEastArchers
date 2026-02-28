@@ -72,6 +72,11 @@ PERMISSIONS: dict[str, str] = {
     "members.activate_account": "Activate user accounts",
     "payments.approve": "Approve or reject cash payments",
     "roles.manage": "Manage roles and permissions",
+    "finance.read": "View financial transactions",
+    "finance.create": "Create financial transactions",
+    "finance.update": "Edit financial transactions",
+    "finance.delete": "Delete financial transactions",
+    "finance.report": "View financial statements and reports",
 }
 
 ROLE_DEFINITIONS: dict[str, dict[str, list[str] | str]] = {
@@ -109,6 +114,17 @@ ROLE_DEFINITIONS: dict[str, dict[str, list[str] | str]] = {
     "Settings Manager": {
         "description": "Manage application settings",
         "permissions": ["admin.dashboard.view", "settings.read", "settings.write"],
+    },
+    "Finance Manager": {
+        "description": "Manage club finances and generate reports",
+        "permissions": [
+            "admin.dashboard.view",
+            "finance.read",
+            "finance.create",
+            "finance.update",
+            "finance.delete",
+            "finance.report",
+        ],
     },
 }
 

@@ -81,3 +81,121 @@ def test_handler_exception_is_logged(app):
     with patch("app.services.mail_service.send_new_member_notification", side_effect=Exception("boom")):
         # The handler catches the exception and logs it — verify no propagation
         user_registered.send(user_id=1)
+
+
+def test_payment_completed_records_sumup_financial_transactions(app):
+    """payment_completed signal creates income + fee expense for SumUp payments."""
+    with patch("app.services.mail_service.send_payment_receipt"):
+        with patch("app.repositories.PaymentRepository") as mock_repo:
+            with patch("app.services.finance_service.FinanceService.record_sumup_payment_transactions") as mock_record:
+                mock_payment = type(
+                    "Payment",
+                    (),
+                    {
+                        "payment_processor": "sumup",
+                        "amount_cents": 10000,
+                        "description": "Annual membership",
+                        "user_id": 1,
+                        "external_transaction_id": "txn_123",
+                    },
+                )()
+                mock_repo.get_by_id.return_value = mock_payment
+                mock_record.return_value = (True, None)
+
+                payment_completed.send(user_id=1, payment_id=99, payment_type="membership")
+
+                mock_record.assert_called_once_with(
+                    payment_amount_cents=10000,
+                    payment_type="membership",
+                    description="Annual membership",
+                    created_by_id=1,
+                    receipt_reference="txn_123",
+                )
+
+
+def test_payment_completed_records_cash_financial_transactions(app):
+    """payment_completed signal creates income transaction for approved cash payments."""
+    with patch("app.services.mail_service.send_payment_receipt"):
+        with patch("app.repositories.PaymentRepository") as mock_repo:
+            with patch("app.services.finance_service.FinanceService.record_cash_payment_transaction") as mock_record:
+                mock_payment = type(
+                    "Payment",
+                    (),
+                    {
+                        "payment_processor": "cash",
+                        "amount_cents": 10000,
+                        "description": "Annual membership (Cash)",
+                        "user_id": 2,
+                        "external_transaction_id": None,
+                    },
+                )()
+                mock_repo.get_by_id.return_value = mock_payment
+                mock_record.return_value = (True, None)
+
+                payment_completed.send(user_id=2, payment_id=50, payment_type="membership")
+
+                mock_record.assert_called_once_with(
+                    payment_amount_cents=10000,
+                    payment_type="membership",
+                    description="Annual membership (Cash)",
+                    created_by_id=2,
+                )
+
+
+def test_credit_purchased_records_sumup_financial_transactions(app):
+    """credit_purchased signal creates income + fee expense for SumUp payments."""
+    with patch("app.services.mail_service.send_credit_purchase_receipt"):
+        with patch("app.repositories.PaymentRepository") as mock_repo:
+            with patch("app.services.finance_service.FinanceService.record_sumup_payment_transactions") as mock_record:
+                mock_payment = type(
+                    "Payment",
+                    (),
+                    {
+                        "payment_processor": "sumup",
+                        "amount_cents": 500,
+                        "description": "1 shooting credit",
+                        "user_id": 3,
+                        "external_transaction_id": "txn_456",
+                    },
+                )()
+                mock_repo.get_by_id.return_value = mock_payment
+                mock_record.return_value = (True, None)
+
+                credit_purchased.send(user_id=3, payment_id=55, quantity=1)
+
+                mock_record.assert_called_once_with(
+                    payment_amount_cents=500,
+                    payment_type="credits",
+                    description="1 shooting credit",
+                    created_by_id=3,
+                    receipt_reference="txn_456",
+                )
+
+
+def test_credit_purchased_records_cash_financial_transactions(app):
+    """credit_purchased signal creates income transaction for approved cash credit purchases."""
+    with patch("app.services.mail_service.send_credit_purchase_receipt"):
+        with patch("app.repositories.PaymentRepository") as mock_repo:
+            with patch("app.services.finance_service.FinanceService.record_cash_payment_transaction") as mock_record:
+                mock_payment = type(
+                    "Payment",
+                    (),
+                    {
+                        "payment_processor": "cash",
+                        "amount_cents": 500,
+                        "description": "1 shooting credit (Cash)",
+                        "user_id": 4,
+                        "external_transaction_id": None,
+                    },
+                )()
+                mock_repo.get_by_id.return_value = mock_payment
+                mock_record.return_value = (True, None)
+
+                credit_purchased.send(user_id=4, payment_id=60, quantity=1)
+
+                mock_record.assert_called_once_with(
+                    payment_amount_cents=500,
+                    payment_type="credits",
+                    description="1 shooting credit (Cash)",
+                    created_by_id=4,
+                )

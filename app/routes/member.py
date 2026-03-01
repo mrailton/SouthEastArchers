@@ -1,9 +1,9 @@
-from flask import Blueprint, flash, redirect, render_template, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.forms import ChangePasswordForm, ProfileForm
 from app.models import Shoot, User
-from app.repositories import CreditRepository
+from app.repositories import CreditRepository, PaymentRepository
 from app.services import UserService
 
 bp = Blueprint("member", __name__, url_prefix="/member")
@@ -19,11 +19,15 @@ def dashboard():
     # or let SQL handle it if not.
     shoots_attended = len(user.shoots)
 
+    page = request.args.get("page", 1, type=int)
+    payments = PaymentRepository.get_by_user_paginated(user.id, page=page, per_page=5)
+
     return render_template(
         "member/dashboard.html",
         user=user,
         membership=membership,
         shoots_attended=shoots_attended,
+        payments=payments,
     )
 
 

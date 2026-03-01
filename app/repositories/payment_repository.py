@@ -17,6 +17,10 @@ class PaymentRepository(BaseRepository):
         return Payment.query.filter_by(user_id=user_id).order_by(Payment.created_at.desc()).all()
 
     @staticmethod
+    def get_by_user_paginated(user_id: int, page: int = 1, per_page: int = 5) -> object:
+        return Payment.query.filter_by(user_id=user_id).order_by(Payment.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+
+    @staticmethod
     def get_pending_cash() -> list[Payment]:
         return Payment.query.filter_by(payment_method="cash", status="pending").order_by(Payment.created_at.desc()).all()
 

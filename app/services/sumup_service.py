@@ -76,7 +76,7 @@ class SumUpService:
 
     def get_checkout(self, checkout_id: str) -> Any | None:
         try:
-            checkout = self.client.checkouts.get(checkout_id=checkout_id)
+            checkout = self.client.checkouts.get(id=checkout_id)
             return checkout
         except APIError as e:
             current_app.logger.error(f"SumUp API error getting checkout: {str(e)}")

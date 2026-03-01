@@ -141,7 +141,7 @@ class SumUpService:
 
             # Process the checkout
             response = self.client.checkouts.process(id=checkout_id, body=process_body)
-
+            current_app.logger.info(f"SumUp payment response: {response}")
             current_app.logger.info(f"SumUp payment processed for checkout: {checkout_id}")
 
             # Check the response status

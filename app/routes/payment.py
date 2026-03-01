@@ -56,7 +56,6 @@ def process_checkout(checkout_id):
         )
 
         if not result.get("success"):
-            print(result)
             return PaymentProcessingService.handle_payment_failure(
                 checkout_id,
                 {

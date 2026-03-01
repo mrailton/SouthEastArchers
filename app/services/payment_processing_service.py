@@ -57,11 +57,6 @@ class PaymentProcessingService:
         send_payment_receipt(user_id, payment_id)
 
     @staticmethod
-    def validate_card_details(card_number: str, card_name: str, expiry_month: str, expiry_year: str, cvv: str) -> bool:
-        """Simple validation for card details presence."""
-        return all([card_number, card_name, expiry_month, expiry_year, cvv])
-
-    @staticmethod
     def handle_signup_payment(user_id: int, checkout_id: str, result: dict) -> Response | None:
         """Handle successful payment during signup."""
         payment_id: int | None = session.get("signup_payment_id")

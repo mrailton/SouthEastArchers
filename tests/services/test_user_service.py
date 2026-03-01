@@ -4,6 +4,7 @@ from datetime import date
 
 from app import db
 from app.models import Payment, Role, User
+from app.services.settings_service import SettingsService
 from app.services.user_service import UserService
 
 # TestGetUserById
@@ -192,9 +193,8 @@ def test_create_member_with_membership(app):
     assert user.membership.status == "active"
     assert user.membership.initial_credits == 20
     assert user.membership.start_date == date.today()
-    # Expiry calculated based on membership year
-    # Jan 25 is before March 1, so expires Feb 28, 2026
-    assert user.membership.expiry_date.year == 2026
+    expected_expiry = SettingsService.calculate_membership_expiry(date.today()).date()
+    assert user.membership.expiry_date == expected_expiry
     assert user.membership.expiry_date >= date.today()
 
 

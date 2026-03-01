@@ -12,6 +12,7 @@ from flask_login import current_user, login_required
 
 from app.repositories import PaymentRepository
 from app.services import PaymentProcessingService, PaymentService
+from app.services.sumup_service import SumUpService
 from app.utils.session import get_user_id_from_session
 
 bp = Blueprint("payment", __name__, url_prefix="/payment")
@@ -31,39 +32,38 @@ def show_checkout(checkout_id):
     )
 
 
-@bp.post("/checkout/<checkout_id>/process")
+@bp.post("/checkout/<checkout_id>/complete")
 @login_required
-def process_checkout(checkout_id):
+def complete_checkout(checkout_id):
+    """Verify payment completion after SumUp Card Widget processes the payment."""
     try:
-        card_number = request.form.get("card_number", "").replace(" ", "")
-        card_name = request.form.get("card_name", "")
-        expiry_month = request.form.get("expiry_month", "")
-        expiry_year = request.form.get("expiry_year", "")
-        cvv = request.form.get("cvv", "")
+        sumup = SumUpService()
+        checkout = sumup.get_checkout(checkout_id)
 
-        if not PaymentProcessingService.validate_card_details(card_number, card_name, expiry_month, expiry_year, cvv):
-            flash("Please fill in all card details", "error")
+        if not checkout:
+            flash("Could not verify payment status. Please contact us.", "error")
             return redirect(url_for("payment.show_checkout", checkout_id=checkout_id))
 
-        payment_service = PaymentService()
-        result = payment_service.process_payment(
-            checkout_id=checkout_id,
-            card_number=card_number,
-            card_name=card_name,
-            expiry_month=expiry_month,
-            expiry_year=expiry_year,
-            cvv=cvv,
-        )
+        status = getattr(checkout, "status", None)
+        transaction_code = getattr(checkout, "transaction_code", None)
+        transaction_id = getattr(checkout, "transaction_id", None)
 
-        if not result.get("success"):
+        if status != "PAID":
             return PaymentProcessingService.handle_payment_failure(
                 checkout_id,
                 {
                     "success": False,
-                    "status": result.get("status", "FAILED"),
-                    "error": result.get("error", "Payment was not approved"),
+                    "status": status or "FAILED",
+                    "error": "Payment was not approved",
                 },
             )
+
+        result = {
+            "success": True,
+            "status": "PAID",
+            "transaction_code": transaction_code,
+            "transaction_id": transaction_id,
+        }
 
         user_id = get_user_id_from_session(current_user)
 
@@ -84,7 +84,7 @@ def process_checkout(checkout_id):
         return redirect(url_for("member.dashboard") if current_user.is_authenticated else url_for("auth.login"))
 
     except Exception as e:
-        current_app.logger.error(f"Error processing checkout: {str(e)}")
+        current_app.logger.error(f"Error completing checkout: {str(e)}")
         flash("An error occurred processing your payment. Please try again.", "error")
         return redirect(url_for("payment.show_checkout", checkout_id=checkout_id))
 

@@ -20,24 +20,6 @@ class PaymentService:
             description=description,
         )
 
-    def process_payment(
-        self,
-        checkout_id: str,
-        card_number: str,
-        card_name: str,
-        expiry_month: str,
-        expiry_year: str,
-        cvv: str,
-    ) -> dict[str, Any]:
-        return self.processor.process_checkout_payment(
-            checkout_id=checkout_id,
-            card_number=card_number,
-            card_name=card_name,
-            expiry_month=expiry_month,
-            expiry_year=expiry_year,
-            cvv=cvv,
-        )
-
     def initiate_membership_payment(self, user: User) -> dict:
         """Create payment record and checkout for membership renewal."""
         amount_cents = current_app.config["ANNUAL_MEMBERSHIP_COST"]

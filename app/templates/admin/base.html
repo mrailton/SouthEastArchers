@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Admin - South East Archers{% endblock %}</title>
     {{ vite_hmr_client()|safe }}
+    {{ vite_asset('js/admin.js')|safe }}
     <style>[x-cloak] { display: none !important; }</style>
 </head>
 <body class="bg-gray-100" x-data="adminSidebar()">
@@ -208,7 +209,6 @@
         </div>
     </div>
 
-    {{ vite_asset('js/admin.js')|safe }}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

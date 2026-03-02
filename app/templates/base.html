@@ -8,6 +8,9 @@
     <!-- Vite HMR Client (dev only) -->
     {{ vite_hmr_client()|safe }}
 
+    <!-- Vite-managed CSS + JS (module scripts are deferred by default) -->
+    {{ vite_asset('js/site.js')|safe }}
+
     {% block extra_css %}{% endblock %}
     
     <style>
@@ -169,9 +172,6 @@
             <p class="text-center text-gray-500 text-sm font-medium">&copy; {{ now.year }} South East Archers Archery Club. All rights reserved.</p>
         </div>
     </footer>
-
-    <!-- Compiled Alpine.js and application JavaScript (includes CSS in dev mode) -->
-    {{ vite_asset('js/site.js')|safe }}
 
     {% block extra_js %}{% endblock %}
 </body>

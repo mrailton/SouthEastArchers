@@ -1,4 +1,5 @@
-from flask import Blueprint, abort, render_template
+from flask import Blueprint, abort, flash, redirect, render_template, url_for
+from flask_login import current_user
 
 from app.services import EventService, NewsService
 from app.services.settings_service import SettingsService
@@ -47,4 +48,8 @@ def events():
 
 @bp.get("/membership")
 def membership():
+    if current_user.is_authenticated and current_user.has_active_membership:
+        flash("You already have an active membership", "error")
+        return redirect(url_for("member.dashboard"))
+
     return render_template("public/membership.html")

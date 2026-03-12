@@ -16,8 +16,8 @@ def finance():
     """List all financial transactions."""
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)
-    if per_page not in (10, 20, 50, 100):
-        per_page = 20
+    if per_page not in (5, 10, 20, 50, 100):
+        per_page = 10
     pagination = FinanceService.get_all_transactions_paginated(page=page, per_page=per_page)
     return render_template("admin/finance.html", transactions=pagination.items, pagination=pagination, per_page=per_page)
 

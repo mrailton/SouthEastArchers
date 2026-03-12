@@ -37,26 +37,26 @@
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-semibold mb-4">Membership</h2>
             {% if membership %}
-            <div class="space-y-2">
-                <p><span class="font-medium">Status:</span> 
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                        {% if membership.status == 'active' and membership.is_active() %}bg-green-100 text-green-800
-                        {% elif membership.status == 'pending' %}bg-yellow-100 text-yellow-800
-                        {% else %}bg-red-100 text-red-800{% endif %}">
-                        {% if membership.status == 'active' and membership.is_active() %}
-                            Active
-                        {% elif membership.status == 'pending' %}
-                            Pending Payment
-                        {% else %}
-                            {{ membership.status|title }}
-                        {% endif %}
-                    </span>
-                </p>
-                <p><span class="font-medium">Expires:</span> {{ membership.expiry_date.strftime('%d %b %Y') }}</p>
-                <p><span class="font-medium">Credits Remaining:</span> 
-                    <span class="text-2xl font-bold text-blue-600">{{ membership.credits_remaining() }}</span>
-                </p>
-            </div>
+                <div class="space-y-2">
+                    <p><span class="font-medium">Status:</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if membership.status == 'active' and membership.is_active() %}bg-green-100 text-green-800
+                            {% elif membership.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if membership.status == 'active' and membership.is_active() %}
+                                Active
+                            {% elif membership.status == 'pending' %}
+                                Pending Payment
+                            {% else %}
+                                {{ membership.status|title }}
+                            {% endif %}
+                        </span>
+                    </p>
+                    <p><span class="font-medium">Expires:</span> {{ membership.expiry_date.strftime('%d %b %Y') }}</p>
+                    <p><span class="font-medium">Credits Remaining:</span>
+                        <span class="text-2xl font-bold text-blue-600">{{ membership.credits_remaining() }}</span>
+                    </p>
+                </div>
             {% else %}
             <p class="text-gray-600">No active membership</p>
             <a href="{{ url_for('payment.membership_payment') }}" class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
@@ -87,10 +87,17 @@
                 <div class="text-2xl mb-2">👤</div>
                 <div>Edit Profile</div>
             </a>
-            <a href="{{ url_for('payment.credits') }}" class="text-center p-4 border border-gray-300 rounded hover:bg-gray-50">
-                <div class="text-2xl mb-2">💳</div>
-                <div>Purchase Credits</div>
-            </a>
+            {% if membership %}
+                <a href="{{ url_for('payment.credits') }}" class="text-center p-4 border border-gray-300 rounded hover:bg-gray-50">
+                    <div class="text-2xl mb-2">💳</div>
+                    <div>Purchase Credits</div>
+                </a>
+            {% else %}
+                <a href="{{ url_for('payment.membership_payment') }}" class="text-center p-4 border border-gray-300 rounded hover:bg-gray-50">
+                    <div class="text-2xl mb-2">💳</div>
+                    <div>Purchase Membership</div>
+                </a>
+            {% endif %}
             <a href="{{ url_for('member.shoots') }}" class="text-center p-4 border border-gray-300 rounded hover:bg-gray-50">
                 <div class="text-2xl mb-2">🎯</div>
                 <div>Shoot History</div>

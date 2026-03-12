@@ -114,7 +114,10 @@ def membership_payment_post():
 @bp.get("/credits")
 @login_required
 def credits():
-    """Display credits purchase page"""
+    if not current_user.membership:
+        flash("You must have an active membership to purchase credits.", "error")
+        return redirect(url_for("payment.membership_payment"))
+
     return render_template("payment/credits.html")
 
 

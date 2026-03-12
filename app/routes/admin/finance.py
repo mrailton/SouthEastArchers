@@ -188,7 +188,24 @@ def delete_transaction(transaction_id):
 @permission_required("finance.report")
 def financial_statement():
     """Display the financial statement form."""
+    from datetime import date
+
+    today = date.today()
+    current_year = today.year
+
+    # Determine start date: March 1st of current year if today >= March 1st, otherwise March 1st of previous year
+    if today.month >= 3:
+        start_date = date(current_year, 3, 1)
+    else:
+        start_date = date(current_year - 1, 3, 1)
+
+    # End date is always today
+    end_date = today
+
     form = FinancialStatementForm()
+    form.start_date.data = start_date
+    form.end_date.data = end_date
+
     return render_template("admin/financial_statement.html", form=form, statement=None)
 
 

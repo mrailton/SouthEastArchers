@@ -24,6 +24,19 @@ class UserRepository(BaseRepository):
         return query.all()
 
     @staticmethod
+    def get_all_paginated(page: int = 1, per_page: int = 20, search: str = "", membership_filter: str = "all"):
+
+        query = User.query
+        if search:
+            term = f"%{search}%"
+            query = query.filter(db.or_(User.name.ilike(term), User.email.ilike(term), User.phone.ilike(term)))
+        if membership_filter == "with":
+            query = query.filter(User.membership.has())
+        elif membership_filter == "without":
+            query = query.filter(~User.membership.has())
+        return query.order_by(User.name).paginate(page=page, per_page=per_page, error_out=False)
+
+    @staticmethod
     def get_recent(limit: int = 5) -> list[User]:
         return User.query.order_by(User.created_at.desc()).limit(limit).all()
 

@@ -151,6 +151,11 @@ class ShootService:
         return ShootRepository.get_all()
 
     @staticmethod
+    def get_all_shoots_paginated(page: int = 1, per_page: int = 10):
+        """Get all shoots ordered by date descending with pagination."""
+        return ShootRepository.get_all_paginated(page=page, per_page=per_page)
+
+    @staticmethod
     def get_shoot_by_id(shoot_id: int) -> Shoot | None:
         """Get a shoot by ID."""
         return ShootRepository.get_by_id(shoot_id)

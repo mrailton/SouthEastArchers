@@ -37,26 +37,26 @@
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-semibold mb-4">Membership</h2>
             {% if membership %}
-            <div class="space-y-2">
-                <p><span class="font-medium">Status:</span> 
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                        {% if membership.status == 'active' and membership.is_active() %}bg-green-100 text-green-800
-                        {% elif membership.status == 'pending' %}bg-yellow-100 text-yellow-800
-                        {% else %}bg-red-100 text-red-800{% endif %}">
-                        {% if membership.status == 'active' and membership.is_active() %}
-                            Active
-                        {% elif membership.status == 'pending' %}
-                            Pending Payment
-                        {% else %}
-                            {{ membership.status|title }}
-                        {% endif %}
-                    </span>
-                </p>
-                <p><span class="font-medium">Expires:</span> {{ membership.expiry_date.strftime('%d %b %Y') }}</p>
-                <p><span class="font-medium">Credits Remaining:</span> 
-                    <span class="text-2xl font-bold text-blue-600">{{ membership.credits_remaining() }}</span>
-                </p>
-            </div>
+                <div class="space-y-2">
+                    <p><span class="font-medium">Status:</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if membership.status == 'active' and membership.is_active() %}bg-green-100 text-green-800
+                            {% elif membership.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if membership.status == 'active' and membership.is_active() %}
+                                Active
+                            {% elif membership.status == 'pending' %}
+                                Pending Payment
+                            {% else %}
+                                {{ membership.status|title }}
+                            {% endif %}
+                        </span>
+                    </p>
+                    <p><span class="font-medium">Expires:</span> {{ membership.expiry_date.strftime('%d %b %Y') }}</p>
+                    <p><span class="font-medium">Credits Remaining:</span>
+                        <span class="text-2xl font-bold text-blue-600">{{ membership.credits_remaining() }}</span>
+                    </p>
+                </div>
             {% else %}
             <p class="text-gray-600">No active membership</p>
             <a href="{{ url_for('payment.membership_payment') }}" class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
@@ -87,15 +87,75 @@
                 <div class="text-2xl mb-2">👤</div>
                 <div>Edit Profile</div>
             </a>
-            <a href="{{ url_for('payment.credits') }}" class="text-center p-4 border border-gray-300 rounded hover:bg-gray-50">
-                <div class="text-2xl mb-2">💳</div>
-                <div>Purchase Credits</div>
-            </a>
+            {% if membership %}
+                <a href="{{ url_for('payment.credits') }}" class="text-center p-4 border border-gray-300 rounded hover:bg-gray-50">
+                    <div class="text-2xl mb-2">💳</div>
+                    <div>Purchase Credits</div>
+                </a>
+            {% else %}
+                <a href="{{ url_for('payment.membership_payment') }}" class="text-center p-4 border border-gray-300 rounded hover:bg-gray-50">
+                    <div class="text-2xl mb-2">💳</div>
+                    <div>Purchase Membership</div>
+                </a>
+            {% endif %}
             <a href="{{ url_for('member.shoots') }}" class="text-center p-4 border border-gray-300 rounded hover:bg-gray-50">
                 <div class="text-2xl mb-2">🎯</div>
                 <div>Shoot History</div>
             </a>
         </div>
+    </div>
+
+    <!-- Payment History -->
+    <div class="bg-white rounded-lg shadow p-6 mt-6">
+        <h2 class="text-xl font-semibold mb-4">Payment History</h2>
+        {% if payments.items %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="py-2 pr-4 font-medium text-gray-600">Date</th>
+                        <th class="py-2 pr-4 font-medium text-gray-600">Description</th>
+                        <th class="py-2 pr-4 font-medium text-gray-600">Amount</th>
+                        <th class="py-2 font-medium text-gray-600">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments.items %}
+                    <tr class="border-b border-gray-100">
+                        <td class="py-3 pr-4 text-sm text-gray-700">{{ payment.created_at.strftime('%d %b %Y') }}</td>
+                        <td class="py-3 pr-4 text-sm text-gray-700">{{ payment.description or payment.payment_type|title }}</td>
+                        <td class="py-3 pr-4 text-sm text-gray-700">€{{ "%.2f"|format(payment.amount_cents / 100) }}</td>
+                        <td class="py-3 text-sm">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                {% if payment.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif payment.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% elif payment.status == 'failed' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ payment.status|title }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if payments.pages > 1 %}
+        <div class="flex justify-center items-center space-x-2 mt-4">
+            {% if payments.has_prev %}
+            <a href="{{ url_for('member.dashboard', page=payments.prev_num) }}" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">← Previous</a>
+            {% endif %}
+            <span class="text-sm text-gray-600">Page {{ payments.page }} of {{ payments.pages }}</span>
+            {% if payments.has_next %}
+            <a href="{{ url_for('member.dashboard', page=payments.next_num) }}" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">Next →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <p class="text-gray-500 text-sm">No payment history yet.</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

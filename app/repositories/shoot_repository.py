@@ -17,5 +17,9 @@ class ShootRepository(BaseRepository):
         return Shoot.query.order_by(Shoot.date.desc()).all()
 
     @staticmethod
+    def get_all_paginated(page: int = 1, per_page: int = 10):
+        return Shoot.query.order_by(Shoot.date.desc()).paginate(page=page, per_page=per_page, error_out=False)
+
+    @staticmethod
     def add(shoot: Shoot) -> None:
         db.session.add(shoot)

@@ -37,8 +37,12 @@ def _parse_visitors_from_form() -> list[dict]:
 @bp.get("/shoots")
 @permission_required("shoots.read")
 def shoots():
-    shoots = ShootService.get_all_shoots()
-    return render_template("admin/shoots.html", shoots=shoots)
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+    if per_page not in (5, 10, 20, 50, 100):
+        per_page = 10
+    pagination = ShootService.get_all_shoots_paginated(page=page, per_page=per_page)
+    return render_template("admin/shoots.html", shoots=pagination.items, pagination=pagination, per_page=per_page)
 
 
 @bp.get("/shoots/create")

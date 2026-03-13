@@ -8,6 +8,7 @@ from flask import session
 from app import db
 from app.models import Credit, Payment
 from app.services import PaymentProcessingService, PaymentService
+from app.services.settings_service import SettingsService
 from tests.helpers import create_payment_for_user
 
 # TestPaymentService module-level functions
@@ -35,18 +36,6 @@ def test_create_checkout_failure(app, test_user):
         result = service.create_checkout(10000, "Test payment")
 
         assert result is None
-
-
-def test_process_payment_success(app):
-    """Test processing payment successfully"""
-    with patch("app.services.sumup_service.SumUpService.process_checkout_payment") as mock_process:
-        mock_process.return_value = {"status": "PAID", "transaction_id": "txn_123"}
-
-        service = PaymentService()
-        result = service.process_payment("checkout_123", "4111111111111111", "John Doe", "12", "2025", "123")
-
-        assert result is not None
-        assert result["status"] == "PAID"
 
 
 def test_initiate_membership_payment_success(app, test_user):
@@ -139,18 +128,6 @@ def test_initiate_credit_purchase_different_quantities(app, test_user):
 
 
 # TestPaymentProcessingService module-level functions
-
-
-def test_validate_card_details_all_present():
-    """Test validation with all details present"""
-    assert PaymentProcessingService.validate_card_details("1234567890123456", "John Doe", "12", "2025", "123")
-
-
-def test_validate_card_details_missing_fields():
-    """Test validation with missing fields"""
-    assert not PaymentProcessingService.validate_card_details("", "John Doe", "12", "2025", "123")
-    assert not PaymentProcessingService.validate_card_details("1234567890123456", "", "12", "2025", "123")
-    assert not PaymentProcessingService.validate_card_details("1234567890123456", "John Doe", "", "2025", "123")
 
 
 def test_handle_signup_payment_no_payment_found(app):
@@ -302,9 +279,8 @@ def test_handle_membership_renewal_creates_membership_if_missing(app, test_user)
         db.session.refresh(test_user)
         assert test_user.membership is not None
         assert test_user.membership.status == "active"
-        # Expiry calculated based on membership year
-        # Jan 25 is before March 1, so expires Feb 28, 2026
-        assert test_user.membership.expiry_date.year == 2026
+        expected_expiry = SettingsService.calculate_membership_expiry(date.today()).date()
+        assert test_user.membership.expiry_date == expected_expiry
         assert test_user.membership.expiry_date >= date.today()
 
 

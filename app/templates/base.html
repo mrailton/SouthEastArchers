@@ -5,8 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}South East Archers{% endblock %}</title>
 
+    <!-- Prevent flash of wrong theme -->
+    <script>
+        (function(){
+            var t = localStorage.getItem('theme');
+            if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
     <!-- Vite HMR Client (dev only) -->
     {{ vite_hmr_client()|safe }}
+
+    <!-- Vite-managed CSS + JS (module scripts are deferred by default) -->
+    {{ vite_asset('js/site.js')|safe }}
 
     {% block extra_css %}{% endblock %}
     
@@ -66,6 +79,20 @@
                         <a href="{{ url_for('auth.login') }}" class="nav-link text-gray-700 font-medium">Login</a>
                         <a href="{{ url_for('auth.signup') }}" class="btn-secondary px-6 py-2">Sign Up</a>
                     {% endif %}
+
+                    <!-- Dark mode toggle -->
+                    <div x-data="darkMode">
+                        <button @click="toggle" class="dark-toggle" title="Toggle dark mode">
+                            <!-- Sun icon (shown in dark mode) -->
+                            <svg x-show="dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/>
+                            </svg>
+                            <!-- Moon icon (shown in light mode) -->
+                            <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -91,6 +118,19 @@
                     <a href="{{ url_for('auth.login') }}" class="block py-2 text-gray-700 hover:text-primary">Login</a>
                     <a href="{{ url_for('auth.signup') }}" class="block py-2 text-red font-semibold">Sign Up</a>
                 {% endif %}
+
+                <!-- Mobile dark mode toggle -->
+                <div x-data="darkMode" class="pt-2 border-t border-gray-200">
+                    <button @click="toggle" class="flex items-center gap-2 py-2 text-gray-700 dark-toggle">
+                        <svg x-show="dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/>
+                        </svg>
+                        <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+                        </svg>
+                        <span x-text="dark ? 'Light Mode' : 'Dark Mode'" class="text-sm font-medium"></span>
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
@@ -169,9 +209,6 @@
             <p class="text-center text-gray-500 text-sm font-medium">&copy; {{ now.year }} South East Archers Archery Club. All rights reserved.</p>
         </div>
     </footer>
-
-    <!-- Compiled Alpine.js and application JavaScript (includes CSS in dev mode) -->
-    {{ vite_asset('js/site.js')|safe }}
 
     {% block extra_js %}{% endblock %}
 </body>

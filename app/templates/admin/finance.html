@@ -100,7 +100,7 @@
     <div class="flex items-center gap-2">
         <label for="per_page" class="text-sm text-gray-600">Show</label>
         <select id="per_page" onchange="window.location.href='{{ url_for('admin.finance') }}?per_page=' + this.value" class="text-sm border border-gray-300 rounded px-2 py-1.5 bg-white text-gray-700">
-            {% for opt in [10, 20, 50, 100] %}
+            {% for opt in [5, 10, 20, 50, 100] %}
             <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
             {% endfor %}
         </select>

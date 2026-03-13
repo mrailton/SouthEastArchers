@@ -28,6 +28,10 @@ class User(UserMixin, db.Model):
     payments = db.relationship("Payment", backref="user", cascade="all, delete-orphan")
     roles = db.relationship("Role", secondary="user_roles", back_populates="users")
 
+    @property
+    def has_active_membership(self):
+        return self.membership and self.membership.is_active
+
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
 

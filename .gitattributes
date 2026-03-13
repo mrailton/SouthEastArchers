@@ -1,0 +1,14 @@
+# Enforce LF line endings in the repository
+* text=auto eol=lf
+
+# Ensure shell scripts always use LF (critical for Docker)
+*.sh text eol=lf
+
+# Binary files
+*.jpeg binary
+*.jpg binary
+*.png binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary

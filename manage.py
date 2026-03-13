@@ -597,6 +597,13 @@ def dev():
     import subprocess
     import signal
     
+    # Ensure static/images symlink exists for WhiteNoise in dev
+    static_dir = os.path.join("resources", "static")
+    images_link = os.path.join(static_dir, "images")
+    os.makedirs(static_dir, exist_ok=True)
+    if not os.path.exists(images_link):
+        os.symlink(os.path.join("..", "assets", "images"), images_link)
+    
     click.echo("Starting development servers...")
     click.echo("  - Vite dev server (asset hot reloading)")
     click.echo("  - Flask dev server")

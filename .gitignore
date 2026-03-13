@@ -59,10 +59,6 @@ htmlcov/
 # Asset pipeline
 resources/static
 
-# Docker
-.docker/
-docker-compose.override.yml
-
 # Node modules
 node_modules/
 

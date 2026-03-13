@@ -1,5 +1,9 @@
 import Alpine from '@alpinejs/csp'
+import { registerDarkMode } from './dark-mode.js'
 import '../css/site.css'
+
+// === Dark mode ===
+registerDarkMode(Alpine)
 
 // === Public site & member area Alpine components ===
 

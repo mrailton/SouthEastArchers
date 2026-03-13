@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./_dark-overrides.css";
+@custom-variant dark (&:where(.dark, .dark *));
 @source "../../../app/templates/base.html";
 @source "../../../app/templates/auth/**/*.html";
 @source "../../../app/templates/email/**/*.html";
@@ -315,3 +317,50 @@
   background-color: var(--sea-cream);
 }
 
+/* ============================================
+   SITE DARK MODE OVERRIDES
+   ============================================ */
+
+/* Site navigation */
+html.dark nav.bg-white {
+    background-color: #1e293b !important;
+    border-color: var(--sea-primary) !important;
+}
+
+html.dark nav .text-gray-700 {
+    color: #cbd5e1 !important;
+}
+
+html.dark nav .text-gray-600 {
+    color: #94a3b8 !important;
+}
+
+/* Footer already dark; soften background */
+html.dark footer.bg-gray-900 {
+    background-color: #0b0f19 !important;
+}
+
+/* Cream background in dark mode */
+html.dark .bg-cream {
+    background-color: #111827 !important;
+}
+
+/* Dark mode toggle button */
+.dark-toggle {
+    @apply p-2 rounded-lg transition-colors duration-200;
+    color: #6b7280;
+}
+
+.dark-toggle:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #374151;
+}
+
+html.dark .dark-toggle {
+    color: #94a3b8;
+}
+
+html.dark .dark-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+}

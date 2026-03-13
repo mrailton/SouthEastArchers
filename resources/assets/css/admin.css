@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./_dark-overrides.css";
+@custom-variant dark (&:where(.dark, .dark *));
 @source "../../../app/templates/admin/**/*.html";
 
 /* ============================================
@@ -103,3 +105,66 @@
   --tw-ring-color: var(--sea-primary) !important;
 }
 
+/* ============================================
+   ADMIN DARK MODE OVERRIDES
+   ============================================ */
+
+/* Admin sidebar is already dark — deepen in dark mode */
+html.dark aside.bg-gray-900 {
+    background-color: #0b0f19 !important;
+}
+
+html.dark aside .border-gray-800 {
+    border-color: #1e293b !important;
+}
+
+/* Admin top header bar */
+html.dark header.bg-white {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+html.dark header .text-gray-800 {
+    color: #e2e8f0 !important;
+}
+
+html.dark header .text-gray-500 {
+    color: #94a3b8 !important;
+}
+
+html.dark header .text-gray-700 {
+    color: #cbd5e1 !important;
+}
+
+html.dark header .hover\:bg-gray-100:hover {
+    background-color: #334155 !important;
+}
+
+html.dark header .hover\:text-gray-900:hover {
+    color: #f1f5f9 !important;
+}
+
+/* Admin backdrop */
+html.dark .bg-gray-900\/60 {
+    background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Dark toggle in admin header */
+.dark-toggle {
+    @apply p-2 rounded-lg transition-colors duration-200;
+    color: #6b7280;
+}
+
+.dark-toggle:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #374151;
+}
+
+html.dark .dark-toggle {
+    color: #94a3b8;
+}
+
+html.dark .dark-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+}

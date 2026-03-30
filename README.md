@@ -62,24 +62,24 @@ A web application for South East Archers club management, including membership m
    ```
 
 3. **Install dependencies:**
-   Using the management script (installs both Python and Node.js dependencies):
+   Using the Flask CLI (installs both Python and Node.js dependencies):
    ```bash
-   python manage.py install
+   flask install
    ```
 
 4. **Initialize the database:**
    ```bash
-   python manage.py db upgrade
+   flask db upgrade
    ```
 
 5. **Seed roles and permissions:**
    ```bash
-   python manage.py rbac seed
+   flask rbac seed
    ```
 
 6. **Create an admin user:**
    ```bash
-   python manage.py user create --admin
+   flask user create --admin
    ```
 
 ## 🏃 Running the Application
@@ -87,19 +87,19 @@ A web application for South East Archers club management, including membership m
 ### Development Mode
 Runs both the Flask development server and Vite asset watcher:
 ```bash
-python manage.py dev
+flask dev
 ```
 - Flask: http://localhost:5000
 - Vite: http://localhost:5173 (Asset hot-reloading)
 
 ### Individual Servers
-- **Flask only:** `python manage.py runserver`
+- **Flask only:** `flask run --debug`
 - **Vite only:** `npm run dev`
 
 ### Scheduled Tasks
 Run scheduled tasks (membership expiry, low credits reminders):
 ```bash
-python manage.py schedule run
+flask schedule run
 ```
 For production, set up a cron job to run this command every minute.
 
@@ -117,8 +117,7 @@ For production, set up a cron job to run this command every minute.
 ├── resources/              # Frontend assets (CSS, JS, images)
 ├── tests/                  # Test suite (95% coverage)
 ├── migrations/             # Database migration files
-├── web.py                  # Application entry point
-├── manage.py               # CLI management tool
+├── web.py                  # WSGI entry point
 └── pyproject.toml          # Python dependencies and configuration
 ```
 
@@ -147,24 +146,24 @@ The application uses a fine-grained RBAC system for security.
 - **Decorators:** Use `@permission_required("perm.name")` in routes to enforce access
 - **Service:** `RBACService` for managing roles and permissions
 
-## ⌨️ CLI Commands (`manage.py`)
+## ⌨️ CLI Commands (Flask CLI)
 
 | Command | Description |
 |---------|-------------|
-| `python manage.py dev` | Run development servers (Flask + Vite) |
-| `python manage.py install` | Install Python and Node.js dependencies |
-| `python manage.py db upgrade` | Apply database migrations |
-| `python manage.py user create` | Create a new user (add `--admin` for admin) |
-| `python manage.py test run` | Run the test suite |
-| `python manage.py test coverage` | Run tests with coverage report |
-| `python manage.py lint all` | Run linting and formatting (Ruff) |
-| `python manage.py assets build` | Build production assets |
-| `python manage.py schedule run` | Run due scheduled tasks |
-| `python manage.py stats` | Show application statistics |
-| `python manage.py rbac seed` | Seed default roles and permissions |
-| `python manage.py clean` | Remove cache and temporary files |
+| `flask dev` | Run development servers (Flask + Vite) |
+| `flask install` | Install Python and Node.js dependencies |
+| `flask db upgrade` | Apply database migrations |
+| `flask user create` | Create a new user (add `--admin` for admin) |
+| `flask test run` | Run the test suite |
+| `flask test coverage` | Run tests with coverage report |
+| `flask lint all` | Run linting and formatting (Ruff) |
+| `flask assets build` | Build production assets |
+| `flask schedule run` | Run due scheduled tasks |
+| `flask stats` | Show application statistics |
+| `flask rbac seed` | Seed default roles and permissions |
+| `flask clean` | Remove cache and temporary files |
 
-Run `python manage.py --help` for a full list of commands.
+Run `flask --help` for a full list of commands.
 
 ## ⚙️ Environment Variables
 
@@ -187,16 +186,16 @@ The project maintains 95% test coverage with 539 tests.
 
 ```bash
 # Run tests
-python manage.py test run
+flask test run
 
 # Run with coverage report
-python manage.py test coverage
+flask test coverage
 
 # Linting
-python manage.py lint check
+flask lint check
 
 # Type checking
-python manage.py lint typecheck
+flask lint typecheck
 ```
 
 ## 🐳 Docker & Production
@@ -221,7 +220,7 @@ docker run -p 5000:5000 --env-file .env southeastarchers
 - [ ] Set up MySQL database
 - [ ] Configure SMTP for email notifications
 - [ ] Set up SumUp API credentials
-- [ ] Configure cron job for `python manage.py schedule run`
+- [ ] Configure cron job for `flask schedule run`
 
 ## 📝 License
 

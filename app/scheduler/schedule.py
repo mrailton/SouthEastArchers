@@ -24,7 +24,7 @@ class Schedule:
         def run_command():
             import os
 
-            os.system(f"python manage.py {command}")
+            os.system(f"flask {command}")
 
         event = Event(run_command, description or f"Command: {command}")
         self._events.append(event)

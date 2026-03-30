@@ -149,6 +149,27 @@ def create_app(config_name=None):
 
     connect_handlers()
 
+    # Register CLI commands
+    from app.cli import register_commands
+
+    register_commands(app)
+
+    # Shell context for `flask shell`
+    @app.shell_context_processor
+    def make_shell_context():
+        from app.models import Credit, Event, Membership, News, Payment, Shoot, User
+
+        return {
+            "db": db,
+            "User": User,
+            "Membership": Membership,
+            "Shoot": Shoot,
+            "News": News,
+            "Event": Event,
+            "Payment": Payment,
+            "Credit": Credit,
+        }
+
     with app.app_context():
         from app.models import Credit, Event, Membership, News, Payment, Shoot, User
 

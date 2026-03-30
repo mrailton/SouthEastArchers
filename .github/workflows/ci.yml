@@ -46,16 +46,16 @@ jobs:
           sudo apt-get install -y gcc default-libmysqlclient-dev pkg-config make
 
       - name: Install dependencies
-        run: uv run python manage.py install
+        run: uv run flask install
 
       - name: Check code quality and formatting
-        run: uv run python manage.py lint check
+        run: uv run flask lint check
 
       - name: Build assets
-        run: uv run python manage.py assets build
+        run: uv run flask assets build
 
       - name: Run tests with coverage
-        run: uv run python manage.py test coverage
+        run: uv run flask test coverage
 
   build-and-push:
     needs: test

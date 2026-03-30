@@ -2,35 +2,35 @@
 
 ## Build, Test & Lint
 
-All commands go through `manage.py` (Click CLI). Use `uv run` to ensure the correct virtualenv:
+All commands go through Flask's built-in CLI. Use `uv run` to ensure the correct virtualenv:
 
 ```bash
 # Install all dependencies (Python + Node)
-python manage.py install
+flask install
 
 # Run full test suite
-python manage.py test run
+flask test run
 
 # Run a single test file
-python manage.py test file tests/services/test_membership_service.py
+flask test file tests/services/test_membership_service.py
 
 # Run tests matching a keyword
-python manage.py test run -k "test_activate_membership"
+flask test run -k "test_activate_membership"
 
 # Lint (ruff check + ruff format --check + import-linter)
-python manage.py lint all
+flask lint all
 
 # Auto-fix lint/format issues
-python manage.py lint all --fix
+flask lint all --fix
 
 # Type checking (mypy)
-python manage.py lint typecheck
+flask lint typecheck
 
 # Build frontend assets
-python manage.py assets build
+flask assets build
 
 # Dev servers (Flask + Vite hot-reload)
-python manage.py dev
+flask dev
 ```
 
 CI runs: `lint check` → `assets build` → `test coverage` (see `.github/workflows/ci.yml`).

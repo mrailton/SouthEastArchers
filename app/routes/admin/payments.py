@@ -57,7 +57,8 @@ def approve_payment(payment_id):
                 if user.membership.status != "active":
                     user.membership.activate()
                 else:
-                    user.membership.renew()
+                    expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
+                    user.membership.renew(expiry_date=expiry_date)
             else:
                 # Create new membership for user (e.g., new signup with cash payment)
                 settings = SettingsService.get()

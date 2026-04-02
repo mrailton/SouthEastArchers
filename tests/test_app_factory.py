@@ -1,8 +1,8 @@
 """Tests for app factory and initialization"""
 
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
 from flask import abort
 
 from app import create_app, db, login_manager

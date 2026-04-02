@@ -57,7 +57,8 @@ class MembershipService:
 
         settings = SettingsService.get()
         initial_credits = settings.membership_shoots_included
-        user.membership.renew(initial_credits=initial_credits)
+        expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
+        user.membership.renew(expiry_date=expiry_date, initial_credits=initial_credits)
         try:
             MembershipRepository.save()
             return ServiceResult.ok(message="Membership renewed successfully.")

@@ -1,6 +1,6 @@
 """Tests for membership model"""
 
-from datetime import date
+from datetime import date, timedelta
 
 
 def test_is_active(test_user):
@@ -109,9 +109,11 @@ def test_renew(test_user):
     """Test membership renewal - resets initial credits, keeps purchased"""
     test_user.membership.initial_credits = 5
     test_user.membership.purchased_credits = 10
-    test_user.membership.renew()
+    expiry = date.today() + timedelta(days=365)
+    test_user.membership.renew(expiry_date=expiry)
 
     assert test_user.membership.start_date == date.today()
+    assert test_user.membership.expiry_date == expiry
     assert test_user.membership.initial_credits == 20
     assert test_user.membership.purchased_credits == 10  # Purchased credits retained
     assert test_user.membership.status == "active"
@@ -120,7 +122,8 @@ def test_renew(test_user):
 def test_renew_with_custom_credits(test_user):
     """Test membership renewal with custom initial credits amount"""
     test_user.membership.purchased_credits = 10
-    test_user.membership.renew(initial_credits=25)
+    expiry = date.today() + timedelta(days=365)
+    test_user.membership.renew(expiry_date=expiry, initial_credits=25)
 
     assert test_user.membership.initial_credits == 25
     assert test_user.membership.purchased_credits == 10

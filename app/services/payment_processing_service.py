@@ -1,106 +1,56 @@
 from datetime import date
 
-from flask import current_app, flash, redirect, session, url_for
-from werkzeug.wrappers import Response
+from flask import current_app
 
 from app.events import credit_purchased, payment_completed
-from app.models import Credit, Membership, Payment, User
+from app.models import Credit, Membership
 from app.repositories import CreditRepository, MembershipRepository, PaymentRepository, UserRepository
+from app.services.result import ServiceResult
 from app.services.settings_service import SettingsService
-from app.utils.session import clear_session_keys
 
 
 class PaymentProcessingService:
     @staticmethod
-    def _finalize_and_redirect(
-        user: User,
-        payment: Payment,
-        clear_keys: list[str],
-        flash_message: str,
-        flash_category: str,
-        redirect_endpoint: str,
-        redirect_kwargs: dict = None,
-        send_receipt: bool = True,
-    ) -> Response:
-        """Helper to send/queue receipt, clear session keys, flash a message and return a redirect response.
+    def handle_signup_payment(user_id: int, payment_id: int, transaction_id: str) -> ServiceResult[None]:
+        """Process a successful signup payment.
 
-        - clear_keys: iterable of session key names to clear
-        - flash_message: message string to flash
-        - flash_category: category for flash (e.g., 'success')
-        - redirect_endpoint: endpoint name for url_for
-        - redirect_kwargs: optional dict of kwargs passed to url_for
+        Marks the payment as completed and activates the user's membership.
         """
-        if send_receipt:
-            try:
-                payment_completed.send(user_id=user.id, payment_id=payment.id, payment_type=payment.payment_type)
-            except Exception as e:
-                current_app.logger.error(f"Failed to emit payment_completed event: {str(e)}")
-
-        # Clear session keys
-        if clear_keys:
-            clear_session_keys(*clear_keys)
-
-        # Flash and redirect
-        if flash_message:
-            flash(flash_message, flash_category)
-
-        if redirect_kwargs is None:
-            redirect_kwargs = {}
-
-        return redirect(url_for(redirect_endpoint, **redirect_kwargs))
-
-    @staticmethod
-    def send_payment_receipt(user_id: int, payment_id: int) -> None:
-        """Send payment receipt email synchronously."""
-        from app.services.mail_service import send_payment_receipt
-
-        send_payment_receipt(user_id, payment_id)
-
-    @staticmethod
-    def handle_signup_payment(user_id: int, checkout_id: str, result: dict) -> Response | None:
-        """Handle successful payment during signup."""
-        payment_id: int | None = session.get("signup_payment_id")
-        if payment_id is None:
-            return None
         payment = PaymentRepository.get_by_id(payment_id)
         user = UserRepository.get_by_id(user_id)
 
         if not payment or not user:
-            return None
+            return ServiceResult.fail("Payment or user not found.")
 
-        transaction_id = result.get("transaction_code") or result.get("transaction_id") or checkout_id
         payment.mark_completed(transaction_id, processor="sumup")
         if user.membership:
             user.membership.activate()
         UserRepository.save()
 
-        return PaymentProcessingService._finalize_and_redirect(
-            user,
-            payment,
-            clear_keys=["signup_user_id", "signup_payment_id", "checkout_amount", "checkout_description"],
-            flash_message="Payment successful! Your membership is now active. A receipt has been sent to your email.",
-            flash_category="success",
-            redirect_endpoint="auth.login",
-        )
+        try:
+            payment_completed.send(user_id=user.id, payment_id=payment.id, payment_type=payment.payment_type)
+        except Exception as e:
+            current_app.logger.error(f"Failed to emit payment_completed event: {str(e)}")
+
+        return ServiceResult.ok(message="Payment successful! Your membership is now active. A receipt has been sent to your email.")
 
     @staticmethod
-    def handle_membership_renewal(user_id: int, checkout_id: str, result: dict) -> Response | None:
-        """Handle successful membership renewal payment."""
-        payment_id: int | None = session.get("membership_renewal_payment_id")
-        if payment_id is None:
-            return None
+    def handle_membership_renewal(user_id: int, payment_id: int, transaction_id: str) -> ServiceResult[None]:
+        """Process a successful membership renewal payment.
+
+        Marks the payment as completed and renews (or creates) the membership.
+        """
         payment = PaymentRepository.get_by_id(payment_id)
         user = UserRepository.get_by_id(user_id)
 
         if not payment or not user:
-            return None
+            return ServiceResult.fail("Payment or user not found.")
 
-        transaction_id = result.get("transaction_code") or result.get("transaction_id") or checkout_id
         payment.mark_completed(transaction_id, processor="sumup")
 
-        # Renew or create membership
         if user.membership:
-            user.membership.renew()
+            expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
+            user.membership.renew(expiry_date=expiry_date)
         else:
             start_date = date.today()
             membership = Membership(
@@ -113,70 +63,38 @@ class PaymentProcessingService:
 
         UserRepository.save()
 
-        return PaymentProcessingService._finalize_and_redirect(
-            user,
-            payment,
-            clear_keys=["membership_renewal_user_id", "membership_renewal_payment_id", "checkout_amount", "checkout_description"],
-            flash_message="Membership renewed successfully! A receipt has been sent to your email.",
-            flash_category="success",
-            redirect_endpoint="member.dashboard",
-        )
+        try:
+            payment_completed.send(user_id=user.id, payment_id=payment.id, payment_type=payment.payment_type)
+        except Exception as e:
+            current_app.logger.error(f"Failed to emit payment_completed event: {str(e)}")
+
+        return ServiceResult.ok(message="Membership renewed successfully! A receipt has been sent to your email.")
 
     @staticmethod
-    def handle_credit_purchase(user_id: int, checkout_id: str, result: dict) -> Response | None:
-        """Handle successful credit purchase payment."""
-        payment_id: int | None = session.get("credit_purchase_payment_id")
-        if payment_id is None:
-            return None
-        quantity = session.get("credit_purchase_quantity", 1)
+    def handle_credit_purchase(user_id: int, payment_id: int, quantity: int, transaction_id: str) -> ServiceResult[None]:
+        """Process a successful credit purchase payment.
+
+        Marks the payment as completed, adds credits to the membership,
+        and records the credit purchase.
+        """
         payment = PaymentRepository.get_by_id(payment_id)
         user = UserRepository.get_by_id(user_id)
 
         if not payment or not user:
-            return None
+            return ServiceResult.fail("Payment or user not found.")
 
-        transaction_id = result.get("transaction_code") or result.get("transaction_id") or checkout_id
         payment.mark_completed(transaction_id, processor="sumup")
 
-        # Add credits to membership
         if user.membership:
             user.membership.add_credits(quantity)
 
-        # Record the credit purchase
         credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
         CreditRepository.add(credit)
         CreditRepository.save()
 
-        # Emit credit purchase event — handler sends receipt
         try:
             credit_purchased.send(user_id=user_id, payment_id=payment.id, quantity=quantity)
         except Exception as e:
             current_app.logger.error(f"Failed to emit credit_purchased event: {str(e)}")
 
-        return PaymentProcessingService._finalize_and_redirect(
-            user,
-            payment,
-            clear_keys=["credit_purchase_user_id", "credit_purchase_payment_id", "credit_purchase_quantity", "checkout_amount", "checkout_description"],
-            flash_message=f"Successfully purchased {quantity} credits! A receipt has been sent to your email.",
-            flash_category="success",
-            redirect_endpoint="member.dashboard",
-            send_receipt=False,  # We're sending a custom credit receipt above
-        )
-
-    @staticmethod
-    def handle_payment_failure(checkout_id: str, result: dict) -> Response:
-        """Handle payment failure by flashing message and redirecting back to checkout."""
-        status = result.get("status", "UNKNOWN")
-        error_msg = result.get("error", "Payment was not approved")
-
-        if status == "FAILED":
-            flash(f"Payment declined: {error_msg}", "error")
-        elif status == "PENDING":
-            flash(
-                "Payment is pending. Please contact us if the issue persists.",
-                "warning",
-            )
-        else:
-            flash(f"Payment failed: {error_msg}", "error")
-
-        return redirect(url_for("payment.show_checkout", checkout_id=checkout_id))
+        return ServiceResult.ok(message=f"Successfully purchased {quantity} credits! A receipt has been sent to your email.")

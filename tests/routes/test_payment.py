@@ -79,6 +79,8 @@ def test_complete_checkout_signup_payment_success(mock_email, mock_sumup_class, 
 @patch("app.services.mail_service.send_payment_receipt")
 def test_complete_checkout_signup_payment_email_failure(mock_email, mock_sumup_class, mock_handle, client, app, test_user):
     """Test successful payment but email sending fails"""
+    from app.services.result import ServiceResult
+
     with app.app_context():
         payment = Payment(
             user_id=test_user.id,
@@ -100,15 +102,13 @@ def test_complete_checkout_signup_payment_email_failure(mock_email, mock_sumup_c
     mock_sumup_class.return_value = mock_sumup
     mock_email.side_effect = Exception("Email service down")
 
-    # Mock handle_signup_payment to actually complete the payment
-    def side_effect(user_id, checkout_id, result):
-        from flask import redirect, url_for
-
+    # Mock handle_signup_payment to complete the payment and return ServiceResult
+    def side_effect(user_id, payment_id_arg, transaction_id):
         with app.app_context():
             p = db.session.get(Payment, payment_id)
             p.status = "completed"
             db.session.commit()
-        return redirect(url_for("auth.login"))
+        return ServiceResult.ok(message="Payment successful!")
 
     mock_handle.side_effect = side_effect
 
@@ -288,6 +288,8 @@ def test_complete_checkout_membership_renewal_no_existing_membership(mock_email,
 @patch("app.services.mail_service.send_payment_receipt")
 def test_complete_checkout_membership_renewal_email_failure(mock_email, mock_sumup_class, mock_handle, client, app, test_user):
     """Test membership renewal handles email failure gracefully"""
+    from app.services.result import ServiceResult
+
     with app.app_context():
         payment = Payment(
             user_id=test_user.id,
@@ -309,15 +311,13 @@ def test_complete_checkout_membership_renewal_email_failure(mock_email, mock_sum
     mock_sumup_class.return_value = mock_sumup
     mock_email.side_effect = Exception("Email service down")
 
-    # Mock handle_membership_renewal to actually complete the payment
-    def side_effect(user_id, checkout_id, result):
-        from flask import redirect, url_for
-
+    # Mock handle_membership_renewal to complete the payment and return ServiceResult
+    def side_effect(user_id, payment_id_arg, transaction_id):
         with app.app_context():
             p = db.session.get(Payment, payment_id)
             p.status = "completed"
             db.session.commit()
-        return redirect(url_for("member.dashboard"))
+        return ServiceResult.ok(message="Membership renewed successfully!")
 
     mock_handle.side_effect = side_effect
 

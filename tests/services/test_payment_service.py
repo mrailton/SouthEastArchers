@@ -127,227 +127,154 @@ def test_initiate_credit_purchase_different_quantities(app, test_user):
                 assert payment.amount_cents == expected_amount
 
 
-# TestPaymentProcessingService module-level functions
+# TestPaymentProcessingService — pure business logic (no Flask session/request context needed)
 
 
-def test_handle_signup_payment_no_payment_found(app):
+def test_handle_signup_payment_not_found(app):
     """Test handle_signup_payment when payment not found"""
-    with app.test_request_context():
-        session["signup_payment_id"] = 99999
-        result = {"transaction_id": "test_123", "success": True}
-        response = PaymentProcessingService.handle_signup_payment(user_id=1, checkout_id="checkout_123", result=result)
-        assert response is None
+    result = PaymentProcessingService.handle_signup_payment(user_id=1, payment_id=99999, transaction_id="txn_123")
+    assert result.success is False
+    assert "not found" in result.message.lower()
 
 
-def test_handle_signup_payment_no_user_found(app, test_user):
+def test_handle_signup_payment_user_not_found(app, test_user):
     """Test handle_signup_payment when user not found"""
-    with app.test_request_context():
-        payment = create_payment_for_user(db, test_user, status="pending")
-
-        session["signup_payment_id"] = payment.id
-        result = {"transaction_id": "test_123", "success": True}
-        response = PaymentProcessingService.handle_signup_payment(user_id=99999, checkout_id="checkout_123", result=result)
-        assert response is None
+    payment = create_payment_for_user(db, test_user, status="pending")
+    result = PaymentProcessingService.handle_signup_payment(user_id=99999, payment_id=payment.id, transaction_id="txn_123")
+    assert result.success is False
+    assert "not found" in result.message.lower()
 
 
-def test_handle_membership_renewal_no_payment_found(app):
+def test_handle_signup_payment_activates_membership(app, test_user):
+    """Test signup payment activation with membership"""
+    test_user.membership.status = "pending"
+    db.session.commit()
+
+    payment = create_payment_for_user(db, test_user, status="pending")
+    result = PaymentProcessingService.handle_signup_payment(test_user.id, payment.id, "txn_signup_123")
+
+    assert result.success is True
+    db.session.refresh(test_user)
+    assert test_user.membership.status == "active"
+    db.session.refresh(payment)
+    assert payment.status == "completed"
+    assert payment.external_transaction_id == "txn_signup_123"
+
+
+def test_handle_membership_renewal_not_found(app):
     """Test handle_membership_renewal when payment not found"""
-    with app.test_request_context():
-        session["membership_renewal_payment_id"] = 99999
-        result = {"transaction_id": "test_123", "success": True}
-        response = PaymentProcessingService.handle_membership_renewal(user_id=1, checkout_id="checkout_123", result=result)
-        assert response is None
+    result = PaymentProcessingService.handle_membership_renewal(user_id=1, payment_id=99999, transaction_id="txn_123")
+    assert result.success is False
+    assert "not found" in result.message.lower()
 
 
-def test_handle_membership_renewal_no_user_found(app, test_user):
+def test_handle_membership_renewal_user_not_found(app, test_user):
     """Test handle_membership_renewal when user not found"""
-    with app.test_request_context():
-        payment = create_payment_for_user(db, test_user, status="pending")
-
-        session["membership_renewal_payment_id"] = payment.id
-        result = {"transaction_id": "test_123", "success": True}
-        response = PaymentProcessingService.handle_membership_renewal(user_id=99999, checkout_id="checkout_123", result=result)
-        assert response is None
+    payment = create_payment_for_user(db, test_user, status="pending")
+    result = PaymentProcessingService.handle_membership_renewal(user_id=99999, payment_id=payment.id, transaction_id="txn_123")
+    assert result.success is False
+    assert "not found" in result.message.lower()
 
 
-def test_handle_credit_purchase_no_payment_found(app):
-    """Test handle_credit_purchase when payment not found"""
-    with app.test_request_context():
-        session["credit_purchase_payment_id"] = 99999
-        result = {"transaction_id": "test_123", "success": True}
-        response = PaymentProcessingService.handle_credit_purchase(user_id=1, checkout_id="checkout_123", result=result)
-        assert response is None
+def test_handle_membership_renewal_renews_existing(app, test_user):
+    """Test membership renewal renews existing membership"""
+    payment = create_payment_for_user(db, test_user, status="pending")
+    result = PaymentProcessingService.handle_membership_renewal(test_user.id, payment.id, "txn_renew_123")
 
-
-def test_handle_credit_purchase_no_user_found(app, test_user):
-    """Test handle_credit_purchase when user not found"""
-    with app.test_request_context():
-        payment = create_payment_for_user(db, test_user, amount_cents=5000, payment_type="credits", status="pending")
-
-        session["credit_purchase_payment_id"] = payment.id
-        result = {"transaction_id": "test_123", "success": True}
-        response = PaymentProcessingService.handle_credit_purchase(user_id=99999, checkout_id="checkout_123", result=result)
-        assert response is None
-
-
-def test_handle_payment_failure_failed_status(app):
-    """Test handling failed payment"""
-    with app.test_request_context():
-        result = {"status": "FAILED", "error": "Card declined"}
-        response = PaymentProcessingService.handle_payment_failure("checkout_123", result)
-
-        # Should redirect to checkout page
-        assert response.status_code == 302
-        assert "/payment/checkout/checkout_123" in response.location
-
-
-def test_handle_payment_failure_pending_status(app):
-    """Test handling pending payment"""
-    with app.test_request_context():
-        result = {"status": "PENDING", "error": "Payment processing"}
-        response = PaymentProcessingService.handle_payment_failure("checkout_456", result)
-
-        assert response.status_code == 302
-        assert "/payment/checkout/checkout_456" in response.location
-
-
-def test_handle_payment_failure_unknown_status(app):
-    """Test handling unknown payment status"""
-    with app.test_request_context():
-        result = {"status": "UNKNOWN", "error": "Something went wrong"}
-        response = PaymentProcessingService.handle_payment_failure("checkout_789", result)
-
-        assert response.status_code == 302
+    assert result.success is True
+    db.session.refresh(test_user)
+    assert test_user.membership.status == "active"
+    db.session.refresh(payment)
+    assert payment.status == "completed"
 
 
 def test_handle_membership_renewal_creates_membership_if_missing(app, test_user):
     """Test membership renewal creates membership if user doesn't have one"""
-    # Remove existing membership
     if test_user.membership:
         db.session.delete(test_user.membership)
         db.session.commit()
 
-    with app.test_request_context():
-        payment = create_payment_for_user(db, test_user, description="Renewal", status="pending")
+    payment = create_payment_for_user(db, test_user, description="Renewal", status="pending")
+    result = PaymentProcessingService.handle_membership_renewal(test_user.id, payment.id, "txn_new_123")
 
-        session["membership_renewal_payment_id"] = payment.id
-        result = {"transaction_code": "txn_new_123"}
-
-        with patch("app.services.payment_processing_service.PaymentProcessingService.send_payment_receipt"):
-            PaymentProcessingService.handle_membership_renewal(test_user.id, "checkout_new", result)
-
-        # Verify membership was created
-        db.session.refresh(test_user)
-        assert test_user.membership is not None
-        assert test_user.membership.status == "active"
-        expected_expiry = SettingsService.calculate_membership_expiry(date.today()).date()
-        assert test_user.membership.expiry_date == expected_expiry
-        assert test_user.membership.expiry_date >= date.today()
+    assert result.success is True
+    db.session.refresh(test_user)
+    assert test_user.membership is not None
+    assert test_user.membership.status == "active"
+    expected_expiry = SettingsService.calculate_membership_expiry(date.today()).date()
+    assert test_user.membership.expiry_date == expected_expiry
 
 
-def test_send_payment_receipt_synchronously(app, test_user):
-    """Test sending receipt email synchronously"""
-    payment = create_payment_for_user(db, test_user)
-
-    with app.test_request_context():
-        with patch("app.services.mail_service.mail") as mock_mail:
-            PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
-            assert mock_mail.send.called
+def test_handle_credit_purchase_not_found(app):
+    """Test handle_credit_purchase when payment not found"""
+    result = PaymentProcessingService.handle_credit_purchase(user_id=1, payment_id=99999, quantity=5, transaction_id="txn_123")
+    assert result.success is False
+    assert "not found" in result.message.lower()
 
 
-def test_send_payment_receipt_with_exception(app, test_user):
-    """Test receipt sending when email raises exception"""
-    payment = create_payment_for_user(db, test_user)
-
-    with app.test_request_context():
-        with patch("app.services.mail_service.mail") as mock_mail:
-            mock_mail.send.side_effect = Exception("Email error")
-            # Should not raise, just log error
-            PaymentProcessingService.send_payment_receipt(test_user.id, payment.id)
-
-
-def test_handle_signup_payment_with_membership(app, test_user):
-    """Test signup payment activation with membership"""
-    # Give test_user a pending membership
-    test_user.membership.status = "pending"
-    db.session.commit()
-
-    with app.test_request_context():
-        payment = create_payment_for_user(db, test_user, status="pending")
-
-        session["signup_payment_id"] = payment.id
-        result = {"transaction_code": "txn_signup_123"}
-
-        with patch("app.services.payment_processing_service.PaymentProcessingService.send_payment_receipt"):
-            PaymentProcessingService.handle_signup_payment(test_user.id, "checkout_signup", result)
-
-            # Verify membership was activated
-            db.session.refresh(test_user)
-            assert test_user.membership.status == "active"
+def test_handle_credit_purchase_user_not_found(app, test_user):
+    """Test handle_credit_purchase when user not found"""
+    payment = create_payment_for_user(db, test_user, amount_cents=5000, payment_type="credits", status="pending")
+    result = PaymentProcessingService.handle_credit_purchase(user_id=99999, payment_id=payment.id, quantity=5, transaction_id="txn_123")
+    assert result.success is False
+    assert "not found" in result.message.lower()
 
 
 @patch("app.services.mail_service.send_credit_purchase_receipt")
 def test_handle_credit_purchase_with_quantity(mock_send_email, app, test_user):
-    """Test credit purchase creates correct amount of credits and sends email"""
-    with app.test_request_context():
-        payment = create_payment_for_user(db, test_user, amount_cents=5000, payment_type="credits", status="pending")
+    """Test credit purchase creates correct amount of credits and sends email via event"""
+    payment = create_payment_for_user(db, test_user, amount_cents=5000, payment_type="credits", status="pending")
 
-        # User starts with 20 initial credits (from test_user fixture with membership)
-        initial_total = test_user.membership.credits_remaining()
-        quantity = 10
-        session["credit_purchase_payment_id"] = payment.id
-        session["credit_purchase_quantity"] = quantity
-        result = {"transaction_id": "txn_credits_123"}
+    initial_total = test_user.membership.credits_remaining()
+    quantity = 10
 
-        PaymentProcessingService.handle_credit_purchase(test_user.id, "checkout_credits", result)
+    result = PaymentProcessingService.handle_credit_purchase(test_user.id, payment.id, quantity, "txn_credits_123")
 
-        # Verify credit record was created with correct quantity
-        credit = Credit.query.filter_by(user_id=test_user.id, payment_id=payment.id).first()
-        assert credit is not None
-        assert credit.amount == quantity
+    assert result.success is True
+    assert "10 credits" in result.message
 
-        # Verify credits were added to membership (as purchased credits)
-        db.session.refresh(test_user)
-        assert test_user.membership.credits_remaining() == initial_total + quantity
+    # Verify credit record was created with correct quantity
+    credit = Credit.query.filter_by(user_id=test_user.id, payment_id=payment.id).first()
+    assert credit is not None
+    assert credit.amount == quantity
 
-        # Verify email was sent with correct parameters
-        mock_send_email.assert_called_once_with(test_user.id, payment.id, quantity)
+    # Verify credits were added to membership (as purchased credits)
+    db.session.refresh(test_user)
+    assert test_user.membership.credits_remaining() == initial_total + quantity
+
+    # Verify email was sent via domain event
+    mock_send_email.assert_called_once_with(test_user.id, payment.id, quantity)
 
 
 @patch("app.services.mail_service.send_credit_purchase_receipt")
 def test_handle_credit_purchase_email_failure(mock_send_email, app, test_user):
     """Test credit purchase succeeds even if email fails"""
-    # Make email sending fail
     mock_send_email.side_effect = Exception("Mail server down")
 
-    with app.test_request_context():
-        payment = create_payment_for_user(db, test_user, amount_cents=3000, payment_type="credits", status="pending")
+    payment = create_payment_for_user(db, test_user, amount_cents=3000, payment_type="credits", status="pending")
+    initial_total = test_user.membership.credits_remaining()
+    quantity = 5
 
-        initial_total = test_user.membership.credits_remaining()
-        quantity = 5
-        session["credit_purchase_payment_id"] = payment.id
-        session["credit_purchase_quantity"] = quantity
-        result = {"transaction_id": "txn_456"}
+    result = PaymentProcessingService.handle_credit_purchase(test_user.id, payment.id, quantity, "txn_456")
 
-        # Should not raise exception even though email fails
-        response = PaymentProcessingService.handle_credit_purchase(test_user.id, "checkout_456", result)
+    # Service should still succeed
+    assert result.success is True
 
-        # Verify payment still completed successfully
-        assert response is not None
-        db.session.refresh(payment)
-        assert payment.status == "completed"
+    # Verify payment completed
+    db.session.refresh(payment)
+    assert payment.status == "completed"
 
-        # Verify credits were still added
-        db.session.refresh(test_user)
-        assert test_user.membership.credits_remaining() == initial_total + quantity
+    # Verify credits were still added
+    db.session.refresh(test_user)
+    assert test_user.membership.credits_remaining() == initial_total + quantity
 
-        # Verify credit record was still created
-        credit = Credit.query.filter_by(user_id=test_user.id, payment_id=payment.id).first()
-        assert credit is not None
-        assert credit.amount == quantity
+    # Verify credit record was still created
+    credit = Credit.query.filter_by(user_id=test_user.id, payment_id=payment.id).first()
+    assert credit is not None
+    assert credit.amount == quantity
 
-        # Verify email was attempted
-        mock_send_email.assert_called_once()
+    # Verify email was attempted via event
+    mock_send_email.assert_called_once()
 
 
 # Cash Payment Service Tests

@@ -80,17 +80,15 @@ class Membership(db.Model):
         if remaining > 0:
             self.purchased_credits = purchased - remaining
 
-    def renew(self, initial_credits: int = 20):
+    def renew(self, expiry_date: date, initial_credits: int = 20):
         """Renew the membership.
 
         Args:
+            expiry_date: The new expiry date for the renewed membership.
             initial_credits: Number of initial credits to grant (default 20)
         """
-        from app.services.settings_service import SettingsService
-
         self.start_date = date.today()
-        # Calculate expiry date based on membership year settings
-        self.expiry_date = SettingsService.calculate_membership_expiry(self.start_date).date()
+        self.expiry_date = expiry_date
         self.initial_credits = initial_credits
         # Keep purchased_credits as is - they don't expire
         self.status = "active"

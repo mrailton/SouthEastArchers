@@ -12,7 +12,6 @@ from app import db
 from app.models import Membership, User
 from app.services import ShootService
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -151,10 +150,7 @@ class TestCreateShootNegativeCredits:
 
     def test_all_attendees_zero_credits(self, app):
         """Multiple attendees all with zero credits — each gets a warning."""
-        users = [
-            _create_member(name=f"User {i}", email=f"user{i}@test.com", initial_credits=0)
-            for i in range(3)
-        ]
+        users = [_create_member(name=f"User {i}", email=f"user{i}@test.com", initial_credits=0) for i in range(3)]
 
         result = ShootService.create_shoot(
             shoot_date=date.today(),
@@ -409,4 +405,3 @@ class TestNegativeCreditWarnings:
         assert "Inactive Ian" in result.warnings[0]
         assert "cannot be added" in result.warnings[0].lower()
         assert "inactive membership" in result.warnings[0].lower()
-

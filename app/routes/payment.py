@@ -13,7 +13,7 @@ from flask_login import current_user, login_required
 from app.repositories import PaymentRepository
 from app.services import PaymentProcessingService, PaymentService
 from app.services.sumup_service import SumUpService
-from app.utils.session import get_user_id_from_session
+from app.utils.session import clear_session_keys, get_user_id_from_session
 
 bp = Blueprint("payment", __name__, url_prefix="/payment")
 
@@ -49,36 +49,46 @@ def complete_checkout(checkout_id):
         transaction_id = getattr(checkout, "transaction_id", None)
 
         if status != "PAID":
-            return PaymentProcessingService.handle_payment_failure(
-                checkout_id,
-                {
-                    "success": False,
-                    "status": status or "FAILED",
-                    "error": "Payment was not approved",
-                },
-            )
+            # Handle payment failure inline
+            if status == "FAILED":
+                flash("Payment declined: Payment was not approved", "error")
+            elif status == "PENDING":
+                flash("Payment is pending. Please contact us if the issue persists.", "warning")
+            else:
+                flash("Payment failed: Payment was not approved", "error")
+            return redirect(url_for("payment.show_checkout", checkout_id=checkout_id))
 
-        result = {
-            "success": True,
-            "status": "PAID",
-            "transaction_code": transaction_code,
-            "transaction_id": transaction_id,
-        }
-
+        txn_id = transaction_code or transaction_id or checkout_id
         user_id = get_user_id_from_session(current_user)
 
         if user_id is None:
             flash("User session not found. Please try again.", "error")
             return redirect(url_for("auth.login"))
 
-        if session.get("signup_user_id"):
-            return PaymentProcessingService.handle_signup_payment(user_id, checkout_id, result)
+        # --- Signup payment flow ---
+        signup_payment_id = session.get("signup_payment_id")
+        if session.get("signup_user_id") and signup_payment_id:
+            result = PaymentProcessingService.handle_signup_payment(user_id, signup_payment_id, txn_id)
+            clear_session_keys("signup_user_id", "signup_payment_id", "checkout_amount", "checkout_description")
+            flash(result.message, "success" if result.success else "error")
+            return redirect(url_for("auth.login"))
 
-        if session.get("membership_renewal_user_id"):
-            return PaymentProcessingService.handle_membership_renewal(user_id, checkout_id, result)
+        # --- Membership renewal flow ---
+        renewal_payment_id = session.get("membership_renewal_payment_id")
+        if session.get("membership_renewal_user_id") and renewal_payment_id:
+            result = PaymentProcessingService.handle_membership_renewal(user_id, renewal_payment_id, txn_id)
+            clear_session_keys("membership_renewal_user_id", "membership_renewal_payment_id", "checkout_amount", "checkout_description")
+            flash(result.message, "success" if result.success else "error")
+            return redirect(url_for("member.dashboard"))
 
-        if session.get("credit_purchase_user_id"):
-            return PaymentProcessingService.handle_credit_purchase(user_id, checkout_id, result)
+        # --- Credit purchase flow ---
+        credit_payment_id = session.get("credit_purchase_payment_id")
+        if session.get("credit_purchase_user_id") and credit_payment_id:
+            quantity = session.get("credit_purchase_quantity", 1)
+            result = PaymentProcessingService.handle_credit_purchase(user_id, credit_payment_id, quantity, txn_id)
+            clear_session_keys("credit_purchase_user_id", "credit_purchase_payment_id", "credit_purchase_quantity", "checkout_amount", "checkout_description")
+            flash(result.message, "success" if result.success else "error")
+            return redirect(url_for("member.dashboard"))
 
         flash("Payment processed successfully!", "success")
         return redirect(url_for("member.dashboard") if current_user.is_authenticated else url_for("auth.login"))

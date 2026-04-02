@@ -128,7 +128,7 @@ def _record_payment_financial_transactions(payment_id: int, payment_type: str) -
             return
 
         if payment.payment_processor == "sumup":
-            success, err = FinanceService.record_sumup_payment_transactions(
+            result = FinanceService.record_sumup_payment_transactions(
                 payment_amount_cents=payment.amount_cents,
                 payment_type=payment_type,
                 description=payment.description or f"SumUp {payment_type} payment",
@@ -136,7 +136,7 @@ def _record_payment_financial_transactions(payment_id: int, payment_type: str) -
                 receipt_reference=payment.external_transaction_id,
             )
         elif payment.payment_processor == "cash":
-            success, err = FinanceService.record_cash_payment_transaction(
+            result = FinanceService.record_cash_payment_transaction(
                 payment_amount_cents=payment.amount_cents,
                 payment_type=payment_type,
                 description=payment.description or f"Cash {payment_type} payment",
@@ -145,8 +145,8 @@ def _record_payment_financial_transactions(payment_id: int, payment_type: str) -
         else:
             return
 
-        if not success:
-            current_app.logger.warning(f"Auto-record financial transactions skipped for payment {payment_id}: {err}")
+        if not result.success:
+            current_app.logger.warning(f"Auto-record financial transactions skipped for payment {payment_id}: {result.message}")
     except Exception as e:
         current_app.logger.error(f"Failed to record financial transactions for payment {payment_id}: {e}")
 

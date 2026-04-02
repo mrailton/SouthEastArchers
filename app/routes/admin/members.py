@@ -52,8 +52,8 @@ def renew_membership(user_id):
     if not member:
         abort(404)
 
-    success, message = MembershipService.renew_membership(member)
-    flash(message, "success" if success else "error")
+    result = MembershipService.renew_membership(member)
+    flash(result.message, "success" if result.success else "error")
 
     return redirect(url_for("admin.member_detail", user_id=user_id))
 
@@ -66,8 +66,8 @@ def create_membership(user_id):
     if not member:
         abort(404)
 
-    success, message = MembershipService.create_membership(member)
-    flash(message, "success" if success else "error")
+    result = MembershipService.create_membership(member)
+    flash(result.message, "success" if result.success else "error")
     return redirect(url_for("admin.member_detail", user_id=user_id))
 
 
@@ -78,10 +78,10 @@ def activate_membership(user_id):
     if not member:
         abort(404)
 
-    success, message = MembershipService.activate_membership(member)
+    result = MembershipService.activate_membership(member)
 
-    if not success:
-        flash(message, "error")
+    if not result.success:
+        flash(result.message, "error")
         return redirect(url_for("admin.member_detail", user_id=user_id))
 
     payment = PaymentRepository.get_completed_for_user(user_id, "membership")
@@ -134,7 +134,7 @@ def create_member_post():
     form.roles.choices = [(r.id, r.name) for r in RBACRepository.list_roles()]
 
     if form.validate_on_submit():
-        user, error = UserService.create_member(
+        result = UserService.create_member(
             name=form.name.data,
             email=form.email.data,
             phone=form.phone.data,
@@ -144,8 +144,8 @@ def create_member_post():
             qualification=form.qualification.data if hasattr(form, "qualification") else "none",
         )
 
-        if error:
-            flash(error, "error")
+        if not result.success:
+            flash(result.message, "error")
             return render_template("admin/create_member.html", form=form)
 
     for field, errors in form.errors.items():
@@ -187,7 +187,7 @@ def edit_member_post(user_id):
     form.roles.choices = [(r.id, r.name) for r in RBACRepository.list_roles()]
 
     if form.validate_on_submit():
-        success, message = UserService.update_member(
+        result = UserService.update_member(
             user=member,
             name=form.name.data,
             email=form.email.data,
@@ -203,8 +203,8 @@ def edit_member_post(user_id):
             membership_purchased_credits=form.membership_purchased_credits.data,
         )
 
-        flash(message, "success" if success else "error")
-        if success:
+        flash(result.message, "success" if result.success else "error")
+        if result.success:
             return redirect(url_for("admin.member_detail", user_id=user_id))
 
     for field, errors in form.errors.items():

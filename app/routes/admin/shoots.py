@@ -66,7 +66,7 @@ def create_shoot_post():
 
     if form.validate_on_submit():
         visitors = _parse_visitors_from_form()
-        shoot, messages = ShootService.create_shoot(
+        result = ShootService.create_shoot(
             shoot_date=form.date.data,
             location=form.location.data,
             description=form.description.data,
@@ -75,15 +75,14 @@ def create_shoot_post():
             created_by_id=current_user.id,
         )
 
-        if not shoot:
-            for error in messages:
-                flash(error, "error")
+        if not result.success:
+            flash(result.message, "error")
             active_members = ShootService.get_active_members_with_credits()
             settings = SettingsService.get()
             visitor_fee = settings.visitor_shoot_fee / 100.0
             return render_template("admin/create_shoot.html", active_members=active_members, form=form, visitor_fee=visitor_fee)
 
-        for message in messages:
+        for message in result.warnings:
             flash(f"Warning: {message}", "warning")
 
         visitor_count = len(visitors)
@@ -140,7 +139,7 @@ def edit_shoot_post(shoot_id):
 
     if form.validate_on_submit():
         visitors = _parse_visitors_from_form()
-        success, messages = ShootService.update_shoot(
+        result = ShootService.update_shoot(
             shoot=shoot,
             shoot_date=form.date.data,
             location=form.location.data,
@@ -150,9 +149,8 @@ def edit_shoot_post(shoot_id):
             created_by_id=current_user.id,
         )
 
-        if not success:
-            for error in messages:
-                flash(error, "error")
+        if not result.success:
+            flash(result.message, "error")
             active_members = ShootService.get_active_members_with_credits()
             settings = SettingsService.get()
             visitor_fee = settings.visitor_shoot_fee / 100.0
@@ -164,7 +162,7 @@ def edit_shoot_post(shoot_id):
                 visitor_fee=visitor_fee,
             )
 
-        for message in messages:
+        for message in result.warnings:
             flash(f"Warning: {message}", "warning")
 
         flash("Shoot updated successfully!", "success")

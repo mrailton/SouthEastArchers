@@ -36,7 +36,7 @@ def create_expense_post():
     form = ExpenseForm()
 
     if form.validate_on_submit():
-        transaction, error = FinanceService.create_transaction(
+        result = FinanceService.create_transaction(
             txn_type="expense",
             txn_date=form.date.data,
             amount_cents=int(round(float(form.amount.data) * 100)),
@@ -46,8 +46,8 @@ def create_expense_post():
             receipt_reference=form.receipt_reference.data or None,
         )
 
-        if error:
-            flash(error, "error")
+        if not result.success:
+            flash(result.message, "error")
             return render_template("admin/create_expense.html", form=form)
 
         flash("Expense recorded successfully!", "success")
@@ -74,7 +74,7 @@ def create_income_post():
     form = IncomeForm()
 
     if form.validate_on_submit():
-        transaction, error = FinanceService.create_transaction(
+        result = FinanceService.create_transaction(
             txn_type="income",
             txn_date=form.date.data,
             amount_cents=int(round(float(form.amount.data) * 100)),
@@ -84,8 +84,8 @@ def create_income_post():
             source=form.source.data or None,
         )
 
-        if error:
-            flash(error, "error")
+        if not result.success:
+            flash(result.message, "error")
             return render_template("admin/create_income.html", form=form)
 
         flash("Income recorded successfully!", "success")
@@ -146,10 +146,10 @@ def edit_transaction_post(transaction_id):
         else:
             kwargs["source"] = form.source.data or None
 
-        success, error = FinanceService.update_transaction(**kwargs)
+        result = FinanceService.update_transaction(**kwargs)
 
-        if not success:
-            flash(error or "An error occurred while updating the transaction.", "error")
+        if not result.success:
+            flash(result.message or "An error occurred while updating the transaction.", "error")
             return render_template(
                 "admin/edit_transaction.html",
                 transaction=transaction,
@@ -174,10 +174,10 @@ def edit_transaction_post(transaction_id):
 @permission_required("finance.delete")
 def delete_transaction(transaction_id):
     """Delete a financial transaction."""
-    success, error = FinanceService.delete_transaction(transaction_id)
+    result = FinanceService.delete_transaction(transaction_id)
 
-    if not success:
-        flash(error or "An error occurred while deleting the transaction.", "error")
+    if not result.success:
+        flash(result.message or "An error occurred while deleting the transaction.", "error")
     else:
         flash("Transaction deleted successfully!", "success")
 

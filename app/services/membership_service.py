@@ -2,15 +2,16 @@ from datetime import date
 
 from app.models import Membership, User
 from app.repositories import MembershipRepository, PaymentRepository
+from app.services.result import ServiceResult
 from app.services.settings_service import SettingsService
 
 
 class MembershipService:
     @staticmethod
-    def create_membership(user: User) -> tuple[bool, str]:
+    def create_membership(user: User) -> ServiceResult[None]:
         """Create a new membership for a user who doesn't have one."""
         if user.membership:
-            return False, "User already has a membership."
+            return ServiceResult.fail("User already has a membership.")
 
         settings = SettingsService.get()
         start_date = date.today()
@@ -25,17 +26,17 @@ class MembershipService:
         try:
             MembershipRepository.add(membership)
             MembershipRepository.save()
-            return True, f"Membership created for {user.name}."
+            return ServiceResult.ok(message=f"Membership created for {user.name}.")
         except Exception as e:
-            return False, f"Error creating membership: {str(e)}"
+            return ServiceResult.fail(f"Error creating membership: {str(e)}")
 
     @staticmethod
-    def activate_membership(user: User) -> tuple[bool, str]:
+    def activate_membership(user: User) -> ServiceResult[None]:
         if not user.membership:
-            return False, "No membership found."
+            return ServiceResult.fail("No membership found.")
 
         if user.membership.status == "active":
-            return False, "Membership is already active."
+            return ServiceResult.fail("Membership is already active.")
 
         pending_payment = PaymentRepository.get_pending_cash_for_user(user.id, "membership")
 
@@ -45,35 +46,35 @@ class MembershipService:
         user.membership.activate()
         try:
             MembershipRepository.save()
-            return True, "Membership activated successfully."
+            return ServiceResult.ok(message="Membership activated successfully.")
         except Exception as e:
-            return False, f"Error activating membership: {str(e)}"
+            return ServiceResult.fail(f"Error activating membership: {str(e)}")
 
     @staticmethod
-    def renew_membership(user: User) -> tuple[bool, str]:
+    def renew_membership(user: User) -> ServiceResult[None]:
         if not user.membership:
-            return False, "No membership to renew."
+            return ServiceResult.fail("No membership to renew.")
 
         settings = SettingsService.get()
         initial_credits = settings.membership_shoots_included
         user.membership.renew(initial_credits=initial_credits)
         try:
             MembershipRepository.save()
-            return True, "Membership renewed successfully."
+            return ServiceResult.ok(message="Membership renewed successfully.")
         except Exception as e:
-            return False, f"Error renewing membership: {str(e)}"
+            return ServiceResult.fail(f"Error renewing membership: {str(e)}")
 
     @staticmethod
-    def deactivate_membership(user: User) -> tuple[bool, str]:
+    def deactivate_membership(user: User) -> ServiceResult[None]:
         if not user.membership:
-            return False, "No membership found."
+            return ServiceResult.fail("No membership found.")
 
         user.membership.status = "inactive"
         try:
             MembershipRepository.save()
-            return True, "Membership deactivated successfully."
+            return ServiceResult.ok(message="Membership deactivated successfully.")
         except Exception as e:
-            return False, f"Error deactivating membership: {str(e)}"
+            return ServiceResult.fail(f"Error deactivating membership: {str(e)}")
 
     @staticmethod
     def get_expiring_memberships(days: int = 30) -> list[Membership]:

@@ -61,7 +61,7 @@ Vite builds assets from `resources/assets/` into `resources/static/`. Templates 
 ## Key Conventions
 
 - **Monetary values** are stored in cents (integer) to avoid floating-point issues. Fields are named `amount_cents`, `cost_cents`, etc.
-- **Service methods** are `@staticmethod` and return `tuple[bool, str]` — `(success, message)`.
+- **Service methods** are `@staticmethod` and return `ServiceResult[T]` (from `app.services.result`). `ServiceResult` is a frozen dataclass with fields `success: bool`, `data: T | None`, `message: str | None`, and `warnings: list[str]`. Use the convenience constructors `ServiceResult.ok(data=..., message=..., warnings=...)` and `ServiceResult.fail(message=..., warnings=...)` instead of building instances directly.
 - **Repository methods** are `@staticmethod`. Use `BaseRepository.save()` to commit (handles rollback on failure).
 - **RBAC**: Protect routes with `@permission_required("resource.action")` or `@any_permission_required([...])` from `app.utils.decorators`.
 - **Testing**: Tests use a real SQLite database (no mocks for DB). Fixtures like `test_user`, `admin_user`, `fake_mailer`, and `fake_queue` are in `tests/conftest.py`. Shared helpers (e.g., `create_user_with_membership`, `assert_email_sent`) are in `tests/helpers.py`.

@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from app import db
 from app.models import Payment
+from app.services.result import ServiceResult
 
 
 def test_activate_membership_not_found(client, admin_user):
@@ -15,7 +16,7 @@ def test_activate_membership_service_failure(client, admin_user, test_user):
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
     # Patch MembershipService.activate_membership to return failure
-    with patch("app.routes.admin.members.MembershipService.activate_membership", return_value=(False, "Error reason")):
+    with patch("app.routes.admin.members.MembershipService.activate_membership", return_value=ServiceResult.fail("Error reason")):
         response = client.post(f"/admin/members/{test_user.id}/membership/activate", follow_redirects=True)
         assert response.status_code == 200
         assert b"Error reason" in response.data
@@ -36,7 +37,7 @@ def test_activate_membership_with_payment_sends_receipt(client, admin_user, test
     db.session.add(payment)
     db.session.commit()
 
-    with patch("app.routes.admin.members.MembershipService.activate_membership", return_value=(True, "Activated")):
+    with patch("app.routes.admin.members.MembershipService.activate_membership", return_value=ServiceResult.ok(message="Activated")):
         with patch("app.services.mail_service.mail") as mock_mail:
             response = client.post(f"/admin/members/{test_user.id}/membership/activate", follow_redirects=True)
             assert response.status_code == 200
@@ -58,7 +59,7 @@ def test_activate_membership_with_payment_send_failure(client, admin_user, test_
     db.session.add(payment)
     db.session.commit()
 
-    with patch("app.routes.admin.members.MembershipService.activate_membership", return_value=(True, "Activated")):
+    with patch("app.routes.admin.members.MembershipService.activate_membership", return_value=ServiceResult.ok(message="Activated")):
         with patch("app.services.mail_service.mail") as mock_mail:
             mock_mail.send.side_effect = Exception("Email fail")
             response = client.post(f"/admin/members/{test_user.id}/membership/activate", follow_redirects=True)
@@ -71,7 +72,7 @@ def test_activate_membership_with_payment_send_failure(client, admin_user, test_
 def test_create_member_service_error_shows_message(client, admin_user):
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
-    with patch("app.routes.admin.members.UserService.create_member", return_value=(None, "already registered")):
+    with patch("app.routes.admin.members.UserService.create_member", return_value=ServiceResult.fail("already registered")):
         response = client.post(
             "/admin/members/create",
             data={

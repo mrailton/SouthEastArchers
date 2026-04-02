@@ -193,12 +193,13 @@ def test_create_shoot_attendee_no_credits(app):
     user_id = user.id
 
     # Use the service directly to create shoot with attendee
-    shoot, warnings = ShootService.create_shoot(
+    result = ShootService.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         description="Test shoot",
         attendee_ids=[user_id],
     )
+    shoot = result.data
 
     # Verify user was added and credits went negative
     user = db.session.get(User, user_id)
@@ -206,8 +207,8 @@ def test_create_shoot_attendee_no_credits(app):
     assert len(shoot.users) == 1
     assert shoot.users[0].id == user_id
     # Should have warning about negative balance
-    assert len(warnings) == 1
-    assert "negative balance" in warnings[0].lower()
+    assert len(result.warnings) == 1
+    assert "negative balance" in result.warnings[0].lower()
 
 
 def test_edit_shoot_get_prepopulates_data(client, admin_user, test_user, app):
@@ -295,14 +296,15 @@ def test_edit_shoot_add_attendee_no_credits(app):
     user_id = user.id
 
     # Create a shoot without attendees
-    shoot, _ = ShootService.create_shoot(
+    result = ShootService.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         description="Test shoot",
     )
+    shoot = result.data
 
     # Add the no-credit user to the shoot
-    success, warnings = ShootService.update_shoot(
+    result = ShootService.update_shoot(
         shoot=shoot,
         shoot_date=date.today(),
         location="HALL",
@@ -312,13 +314,13 @@ def test_edit_shoot_add_attendee_no_credits(app):
 
     # Verify user was added and credits went negative
     user = db.session.get(User, user_id)
-    assert success is True
+    assert result.success is True
     assert user.membership.credits_remaining() == -1
     assert len(shoot.users) == 1
     assert shoot.users[0].id == user_id
     # Check for warning about negative balance
-    assert len(warnings) == 1
-    assert "negative balance" in warnings[0].lower()
+    assert len(result.warnings) == 1
+    assert "negative balance" in result.warnings[0].lower()
 
 
 # --- Visitor Tests ---
@@ -329,7 +331,7 @@ def test_create_shoot_with_visitors(app, admin_user):
     from app.models import FinancialTransaction
     from app.services import ShootService
 
-    shoot, warnings = ShootService.create_shoot(
+    result = ShootService.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         description="Shoot with visitors",
@@ -338,6 +340,7 @@ def test_create_shoot_with_visitors(app, admin_user):
         ],
         created_by_id=admin_user.id,
     )
+    shoot = result.data
 
     assert shoot is not None
     assert len(shoot.visitors) == 1
@@ -370,7 +373,7 @@ def test_create_shoot_with_visitor_sumup(app, admin_user):
     settings.sumup_fee_percentage = 1.90
     SettingsService.save(settings)
 
-    shoot, _ = ShootService.create_shoot(
+    result = ShootService.create_shoot(
         shoot_date=date.today(),
         location="MEADOW",
         description="Shoot with SumUp visitor",
@@ -379,6 +382,7 @@ def test_create_shoot_with_visitor_sumup(app, admin_user):
         ],
         created_by_id=admin_user.id,
     )
+    shoot = result.data
 
     assert shoot.visitors[0].payment_method == "sumup"
 
@@ -404,13 +408,14 @@ def test_create_shoot_with_multiple_visitors(app, admin_user):
         {"name": "Visitor A", "club": "Club A", "affiliation": "AI", "payment_method": "cash"},
         {"name": "Visitor B", "club": "Club B", "affiliation": "IFAF", "payment_method": "sumup"},
     ]
-    shoot, _ = ShootService.create_shoot(
+    result = ShootService.create_shoot(
         shoot_date=date.today(),
         location="WOODS",
         description="Multi visitor shoot",
         visitors=visitors,
         created_by_id=admin_user.id,
     )
+    shoot = result.data
 
     assert len(shoot.visitors) == 2
     txns = FinancialTransaction.query.filter_by(category="shoot_fees").all()
@@ -422,16 +427,17 @@ def test_edit_shoot_add_visitor(app, admin_user):
     from app.models import FinancialTransaction
     from app.services import ShootService
 
-    shoot, _ = ShootService.create_shoot(
+    result = ShootService.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         description="Original shoot",
         created_by_id=admin_user.id,
     )
+    shoot = result.data
 
     assert len(shoot.visitors) == 0
 
-    success, _ = ShootService.update_shoot(
+    result = ShootService.update_shoot(
         shoot=shoot,
         shoot_date=date.today(),
         location="HALL",
@@ -442,7 +448,7 @@ def test_edit_shoot_add_visitor(app, admin_user):
         created_by_id=admin_user.id,
     )
 
-    assert success is True
+    assert result.success is True
     assert len(shoot.visitors) == 1
     txns = FinancialTransaction.query.filter_by(category="shoot_fees").all()
     assert len(txns) == 1
@@ -453,7 +459,7 @@ def test_edit_shoot_replace_visitors(app, admin_user):
     from app.models import FinancialTransaction
     from app.services import ShootService
 
-    shoot, _ = ShootService.create_shoot(
+    result = ShootService.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         description="Shoot",
@@ -462,10 +468,11 @@ def test_edit_shoot_replace_visitors(app, admin_user):
         ],
         created_by_id=admin_user.id,
     )
+    shoot = result.data
 
     assert len(shoot.visitors) == 1
 
-    success, _ = ShootService.update_shoot(
+    result = ShootService.update_shoot(
         shoot=shoot,
         shoot_date=date.today(),
         location="HALL",
@@ -476,7 +483,7 @@ def test_edit_shoot_replace_visitors(app, admin_user):
         created_by_id=admin_user.id,
     )
 
-    assert success is True
+    assert result.success is True
     assert len(shoot.visitors) == 1
     assert shoot.visitors[0].name == "Replacement Visitor"
     # Original + replacement = 2 income transactions
@@ -492,18 +499,19 @@ def test_edit_shoot_keeps_existing_visitors_no_duplicate_txns(app, admin_user):
     visitor_data = [
         {"name": "John Doe", "club": "Dublin Archers", "affiliation": "AI", "payment_method": "cash"},
     ]
-    shoot, _ = ShootService.create_shoot(
+    result = ShootService.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         description="Shoot",
         visitors=visitor_data,
         created_by_id=admin_user.id,
     )
+    shoot = result.data
 
     assert len(FinancialTransaction.query.filter_by(category="shoot_fees").all()) == 1
 
     # Edit with the same visitor — should NOT create a new transaction
-    success, _ = ShootService.update_shoot(
+    result = ShootService.update_shoot(
         shoot=shoot,
         shoot_date=date.today(),
         location="HALL",
@@ -512,7 +520,7 @@ def test_edit_shoot_keeps_existing_visitors_no_duplicate_txns(app, admin_user):
         created_by_id=admin_user.id,
     )
 
-    assert success is True
+    assert result.success is True
     assert len(shoot.visitors) == 1
     txns = FinancialTransaction.query.filter_by(category="shoot_fees").all()
     assert len(txns) == 1  # No duplicate
@@ -528,7 +536,7 @@ def test_visitor_fee_uses_settings(app, admin_user):
     settings.visitor_shoot_fee = 1500  # €15.00
     SettingsService.save(settings)
 
-    shoot, _ = ShootService.create_shoot(
+    ShootService.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         description="Custom fee shoot",

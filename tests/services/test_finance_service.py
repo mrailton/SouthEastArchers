@@ -7,7 +7,7 @@ from app.services import FinanceService
 
 def test_create_expense(app, admin_user):
     """Test creating an expense transaction."""
-    txn, error = FinanceService.create_transaction(
+    result = FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
         amount_cents=5000,
@@ -17,18 +17,18 @@ def test_create_expense(app, admin_user):
         receipt_reference="INV-001",
     )
 
-    assert error is None
-    assert txn is not None
-    assert txn.type == "expense"
-    assert txn.amount == 50.00
-    assert txn.amount_cents == 5000
-    assert txn.category == "equipment"
-    assert txn.receipt_reference == "INV-001"
+    assert result.success is True
+    assert result.data is not None
+    assert result.data.type == "expense"
+    assert result.data.amount == 50.00
+    assert result.data.amount_cents == 5000
+    assert result.data.category == "equipment"
+    assert result.data.receipt_reference == "INV-001"
 
 
 def test_create_income(app, admin_user):
     """Test creating an income transaction."""
-    txn, error = FinanceService.create_transaction(
+    result = FinanceService.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 20),
         amount_cents=10000,
@@ -38,17 +38,17 @@ def test_create_income(app, admin_user):
         source="John Doe",
     )
 
-    assert error is None
-    assert txn is not None
-    assert txn.type == "income"
-    assert txn.amount == 100.00
-    assert txn.amount_cents == 10000
-    assert txn.source == "John Doe"
+    assert result.success is True
+    assert result.data is not None
+    assert result.data.type == "income"
+    assert result.data.amount == 100.00
+    assert result.data.amount_cents == 10000
+    assert result.data.source == "John Doe"
 
 
 def test_update_transaction(app, admin_user):
     """Test updating a transaction."""
-    txn, _ = FinanceService.create_transaction(
+    result = FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
         amount_cents=5000,
@@ -56,8 +56,9 @@ def test_update_transaction(app, admin_user):
         description="New target faces",
         created_by_id=admin_user.id,
     )
+    txn = result.data
 
-    success, error = FinanceService.update_transaction(
+    result = FinanceService.update_transaction(
         transaction=txn,
         txn_date=date(2026, 1, 16),
         amount_cents=7550,
@@ -66,8 +67,7 @@ def test_update_transaction(app, admin_user):
         receipt_reference="REC-002",
     )
 
-    assert success is True
-    assert error is None
+    assert result.success is True
     assert txn.amount == 75.50
     assert txn.category == "supplies"
     assert txn.date == date(2026, 1, 16)
@@ -75,7 +75,7 @@ def test_update_transaction(app, admin_user):
 
 def test_delete_transaction(app, admin_user):
     """Test deleting a transaction."""
-    txn, _ = FinanceService.create_transaction(
+    result = FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
         amount_cents=5000,
@@ -83,21 +83,20 @@ def test_delete_transaction(app, admin_user):
         description="To delete",
         created_by_id=admin_user.id,
     )
-    txn_id = txn.id
+    txn_id = result.data.id
 
-    success, error = FinanceService.delete_transaction(txn_id)
+    result = FinanceService.delete_transaction(txn_id)
 
-    assert success is True
-    assert error is None
+    assert result.success is True
     assert FinanceService.get_transaction_by_id(txn_id) is None
 
 
 def test_delete_transaction_not_found(app):
     """Test deleting a non-existent transaction."""
-    success, error = FinanceService.delete_transaction(99999)
+    result = FinanceService.delete_transaction(99999)
 
-    assert success is False
-    assert error == "Transaction not found"
+    assert result.success is False
+    assert result.message == "Transaction not found"
 
 
 def test_get_all_transactions(app, admin_user):
@@ -237,7 +236,7 @@ def test_generate_statement_empty_range(app, admin_user):
 
 def test_amount_property_rounding(app, admin_user):
     """Test that amount cents conversion handles rounding properly."""
-    txn, _ = FinanceService.create_transaction(
+    result = FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
         amount_cents=1999,
@@ -246,8 +245,8 @@ def test_amount_property_rounding(app, admin_user):
         created_by_id=admin_user.id,
     )
 
-    assert txn.amount_cents == 1999
-    assert txn.amount == 19.99
+    assert result.data.amount_cents == 1999
+    assert result.data.amount == 19.99
 
 
 def test_generate_statement_pdf(app, admin_user):
@@ -304,7 +303,7 @@ def test_record_sumup_payment_transactions_creates_income_and_expense(app, admin
     settings.sumup_fee_percentage = Decimal("2.50")
     SettingsService.save(settings)
 
-    success, error = FinanceService.record_sumup_payment_transactions(
+    result = FinanceService.record_sumup_payment_transactions(
         payment_amount_cents=10000,
         payment_type="membership",
         description="Annual membership - Test User",
@@ -312,8 +311,7 @@ def test_record_sumup_payment_transactions_creates_income_and_expense(app, admin
         receipt_reference="txn_abc123",
     )
 
-    assert success is True
-    assert error is None
+    assert result.success is True
 
     transactions = FinanceService.get_all_transactions()
     assert len(transactions) == 2
@@ -341,14 +339,14 @@ def test_record_sumup_payment_transactions_credit_purchase(app, admin_user):
     settings.sumup_fee_percentage = Decimal("2.50")
     SettingsService.save(settings)
 
-    success, error = FinanceService.record_sumup_payment_transactions(
+    result = FinanceService.record_sumup_payment_transactions(
         payment_amount_cents=500,
         payment_type="credits",
         description="1 shooting credit",
         created_by_id=admin_user.id,
     )
 
-    assert success is True
+    assert result.success is True
     income = [t for t in FinanceService.get_all_transactions() if t.type == "income"][0]
     assert income.category == "shoot_fees"
     assert income.amount == 5.00
@@ -362,29 +360,28 @@ def test_record_sumup_payment_transactions_skips_when_no_fee_configured(app, adm
     settings.sumup_fee_percentage = None
     SettingsService.save(settings)
 
-    success, error = FinanceService.record_sumup_payment_transactions(
+    result = FinanceService.record_sumup_payment_transactions(
         payment_amount_cents=10000,
         payment_type="membership",
         description="Test",
         created_by_id=admin_user.id,
     )
 
-    assert success is False
-    assert "not configured" in error
+    assert result.success is False
+    assert "not configured" in result.message
     assert len(FinanceService.get_all_transactions()) == 0
 
 
 def test_record_cash_payment_transaction_creates_income(app, admin_user):
     """Test that record_cash_payment_transaction creates an income transaction."""
-    success, error = FinanceService.record_cash_payment_transaction(
+    result = FinanceService.record_cash_payment_transaction(
         payment_amount_cents=10000,
         payment_type="membership",
         description="Annual membership (Cash)",
         created_by_id=admin_user.id,
     )
 
-    assert success is True
-    assert error is None
+    assert result.success is True
 
     transactions = FinanceService.get_all_transactions()
     assert len(transactions) == 1
@@ -399,14 +396,14 @@ def test_record_cash_payment_transaction_creates_income(app, admin_user):
 
 def test_record_cash_payment_transaction_credit_purchase(app, admin_user):
     """Test that cash credit purchases use shoot_fees category."""
-    success, error = FinanceService.record_cash_payment_transaction(
+    result = FinanceService.record_cash_payment_transaction(
         payment_amount_cents=500,
         payment_type="credits",
         description="1 shooting credit (Cash)",
         created_by_id=admin_user.id,
     )
 
-    assert success is True
+    assert result.success is True
     income = FinanceService.get_all_transactions()[0]
     assert income.category == "shoot_fees"
     assert income.amount == 5.00

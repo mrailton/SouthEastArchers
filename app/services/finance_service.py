@@ -6,6 +6,7 @@ from datetime import date
 
 from app.models import FinancialTransaction
 from app.repositories import FinancialTransactionRepository
+from app.services.result import ServiceResult
 
 
 class FinanceService:
@@ -19,7 +20,7 @@ class FinanceService:
         created_by_id: int,
         source: str | None = None,
         receipt_reference: str | None = None,
-    ) -> tuple[FinancialTransaction | None, str | None]:
+    ) -> ServiceResult[FinancialTransaction]:
         """Create a new financial transaction (income or expense)."""
         transaction = FinancialTransaction(
             type=txn_type,
@@ -35,9 +36,9 @@ class FinanceService:
         try:
             FinancialTransactionRepository.add(transaction)
             FinancialTransactionRepository.save()
-            return transaction, None
+            return ServiceResult.ok(data=transaction)
         except Exception as e:
-            return None, f"Error creating transaction: {str(e)}"
+            return ServiceResult.fail(f"Error creating transaction: {str(e)}")
 
     @staticmethod
     def record_sumup_payment_transactions(
@@ -46,14 +47,12 @@ class FinanceService:
         description: str,
         created_by_id: int,
         receipt_reference: str | None = None,
-    ) -> tuple[bool, str | None]:
+    ) -> ServiceResult[None]:
         """Record income and SumUp fee expense for a completed online payment.
 
         Creates two financial transactions:
         1. Income for the full payment amount
         2. Expense for the SumUp processing fee (based on sumup_fee_percentage setting)
-
-        Returns (success, error_message).
         """
         from flask import current_app
 
@@ -63,7 +62,7 @@ class FinanceService:
         fee_pct = settings.sumup_fee_percentage
         if fee_pct is None:
             current_app.logger.warning("SumUp fee percentage not configured in settings — skipping automatic financial transaction recording")
-            return False, "SumUp fee percentage not configured"
+            return ServiceResult.fail("SumUp fee percentage not configured")
 
         fee_pct = float(fee_pct)
         today = date.today()
@@ -73,7 +72,7 @@ class FinanceService:
         category = "membership_fees" if payment_type == "membership" else "shoot_fees"
 
         # 1. Record the income
-        income, err = FinanceService.create_transaction(
+        result = FinanceService.create_transaction(
             txn_type="income",
             txn_date=today,
             amount_cents=payment_amount_cents,
@@ -83,11 +82,11 @@ class FinanceService:
             source="SumUp",
             receipt_reference=receipt_reference,
         )
-        if err:
-            return False, f"Error recording income: {err}"
+        if not result.success:
+            return ServiceResult.fail(f"Error recording income: {result.message}")
 
         # 2. Record the SumUp fee as an expense
-        _, err = FinanceService.create_transaction(
+        result = FinanceService.create_transaction(
             txn_type="expense",
             txn_date=today,
             amount_cents=fee_amount_cents,
@@ -96,10 +95,10 @@ class FinanceService:
             created_by_id=created_by_id,
             receipt_reference=receipt_reference,
         )
-        if err:
-            return False, f"Error recording SumUp fee: {err}"
+        if not result.success:
+            return ServiceResult.fail(f"Error recording SumUp fee: {result.message}")
 
-        return True, None
+        return ServiceResult.ok()
 
     @staticmethod
     def record_cash_payment_transaction(
@@ -107,15 +106,12 @@ class FinanceService:
         payment_type: str,
         description: str,
         created_by_id: int,
-    ) -> tuple[bool, str | None]:
-        """Record an income transaction for a completed cash payment.
-
-        Returns (success, error_message).
-        """
+    ) -> ServiceResult[None]:
+        """Record an income transaction for a completed cash payment."""
         today = date.today()
         category = "membership_fees" if payment_type == "membership" else "shoot_fees"
 
-        _, err = FinanceService.create_transaction(
+        result = FinanceService.create_transaction(
             txn_type="income",
             txn_date=today,
             amount_cents=payment_amount_cents,
@@ -124,10 +120,10 @@ class FinanceService:
             created_by_id=created_by_id,
             source="Cash",
         )
-        if err:
-            return False, f"Error recording income: {err}"
+        if not result.success:
+            return ServiceResult.fail(f"Error recording income: {result.message}")
 
-        return True, None
+        return ServiceResult.ok()
 
     @staticmethod
     def update_transaction(
@@ -138,7 +134,7 @@ class FinanceService:
         description: str,
         source: str | None = None,
         receipt_reference: str | None = None,
-    ) -> tuple[bool, str | None]:
+    ) -> ServiceResult[None]:
         """Update an existing financial transaction."""
         transaction.date = txn_date
         transaction.category = category
@@ -149,23 +145,23 @@ class FinanceService:
 
         try:
             FinancialTransactionRepository.save()
-            return True, None
+            return ServiceResult.ok()
         except Exception as e:
-            return False, f"Error updating transaction: {str(e)}"
+            return ServiceResult.fail(f"Error updating transaction: {str(e)}")
 
     @staticmethod
-    def delete_transaction(transaction_id: int) -> tuple[bool, str | None]:
+    def delete_transaction(transaction_id: int) -> ServiceResult[None]:
         """Delete a financial transaction by ID."""
         transaction = FinancialTransactionRepository.get_by_id(transaction_id)
         if not transaction:
-            return False, "Transaction not found"
+            return ServiceResult.fail("Transaction not found")
 
         try:
             FinancialTransactionRepository.delete(transaction)
             FinancialTransactionRepository.save()
-            return True, None
+            return ServiceResult.ok()
         except Exception as e:
-            return False, f"Error deleting transaction: {str(e)}"
+            return ServiceResult.fail(f"Error deleting transaction: {str(e)}")
 
     @staticmethod
     def get_transaction_by_id(transaction_id: int) -> FinancialTransaction | None:

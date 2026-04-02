@@ -4,6 +4,7 @@ from app.models import Shoot
 from app.models.shoot import ShootVisitor
 from app.repositories import ShootRepository, UserRepository
 from app.services.finance_service import FinanceService
+from app.services.result import ServiceResult
 from app.services.settings_service import SettingsService
 
 
@@ -16,7 +17,7 @@ class ShootService:
         attendee_ids: list[int] = None,
         visitors: list[dict] = None,
         created_by_id: int | None = None,
-    ) -> tuple[Shoot | None, list[str]]:
+    ) -> ServiceResult[Shoot]:
         warnings = []
         shoot = Shoot(date=shoot_date, location=location, description=description)
         ShootRepository.add(shoot)
@@ -40,9 +41,9 @@ class ShootService:
                 ShootService._add_visitors(shoot, visitors, created_by_id)
 
             ShootRepository.save()
-            return shoot, warnings
+            return ServiceResult.ok(data=shoot, warnings=warnings)
         except Exception as e:
-            return None, [f"Error creating shoot: {str(e)}"]
+            return ServiceResult.fail(f"Error creating shoot: {str(e)}")
 
     @staticmethod
     def update_shoot(
@@ -53,7 +54,7 @@ class ShootService:
         attendee_ids: list[int] = None,
         visitors: list[dict] = None,
         created_by_id: int | None = None,
-    ) -> tuple[bool, list[str]]:
+    ) -> ServiceResult[None]:
         warnings = []
         new_attendee_ids = set(attendee_ids or [])
         old_attendee_ids = {u.id for u in shoot.users}
@@ -98,9 +99,9 @@ class ShootService:
 
         try:
             ShootRepository.save()
-            return True, warnings
+            return ServiceResult.ok(warnings=warnings)
         except Exception as e:
-            return False, [f"Error updating shoot: {str(e)}"]
+            return ServiceResult.fail(f"Error updating shoot: {str(e)}")
 
     @staticmethod
     def _add_visitors(shoot: Shoot, visitors: list[dict], created_by_id: int | None) -> None:

@@ -37,17 +37,17 @@ def test_create_role_duplicate(app):
     with app.app_context():
         Role.query.filter_by(name="duplicate").delete()
         RBACService.create_role("duplicate", "desc", [])
-        role, error = RBACService.create_role("duplicate", "desc", [])
-        assert role is None
-        assert "already exists" in error
+        result = RBACService.create_role("duplicate", "desc", [])
+        assert result.data is None
+        assert "already exists" in result.message
 
 
 def test_create_role_exception(app):
     with app.app_context():
         with patch("app.db.session.add", side_effect=Exception("DB Error")):
-            role, error = RBACService.create_role("exception_role", "desc", [])
-            assert role is None
-            assert "Error creating role" in error
+            result = RBACService.create_role("exception_role", "desc", [])
+            assert result.data is None
+            assert "Error creating role" in result.message
 
 
 def test_update_role_duplicate(app):
@@ -57,9 +57,9 @@ def test_update_role_duplicate(app):
         db.session.add_all([r1, r2])
         db.session.commit()
 
-        success, message = RBACService.update_role(r1, "r2", "desc", [])
-        assert not success
-        assert "already exists" in message
+        result = RBACService.update_role(r1, "r2", "desc", [])
+        assert not result.success
+        assert "already exists" in result.message
 
 
 def test_update_role_exception(app):
@@ -69,9 +69,9 @@ def test_update_role_exception(app):
         db.session.commit()
 
         with patch("app.db.session.commit", side_effect=Exception("DB Error")):
-            success, message = RBACService.update_role(role, "new_name", "desc", [])
-            assert not success
-            assert "Error updating role" in message
+            result = RBACService.update_role(role, "new_name", "desc", [])
+            assert not result.success
+            assert "Error updating role" in result.message
 
 
 def test_delete_role_exception(app):
@@ -81,6 +81,6 @@ def test_delete_role_exception(app):
         db.session.commit()
 
         with patch("app.db.session.commit", side_effect=Exception("DB Error")):
-            success, message = RBACService.delete_role(role)
-            assert not success
-            assert "Error deleting role" in message
+            result = RBACService.delete_role(role)
+            assert not result.success
+            assert "Error deleting role" in result.message

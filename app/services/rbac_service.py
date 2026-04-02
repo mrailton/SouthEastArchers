@@ -4,6 +4,7 @@ from collections.abc import Iterable
 
 from app.models import Permission, Role
 from app.repositories import RBACRepository
+from app.services.result import ServiceResult
 
 
 class RBACService:
@@ -20,9 +21,9 @@ class RBACService:
         return RBACRepository.get_role(role_id)
 
     @staticmethod
-    def create_role(name: str, description: str | None, permission_ids: Iterable[int]) -> tuple[Role | None, str | None]:
+    def create_role(name: str, description: str | None, permission_ids: Iterable[int]) -> ServiceResult[Role]:
         if RBACRepository.role_name_exists(name):
-            return None, "Role name already exists."
+            return ServiceResult.fail("Role name already exists.")
 
         role = Role(name=name, description=description or "")
         perms = RBACRepository.get_permissions_by_ids(permission_ids or [])
@@ -30,14 +31,14 @@ class RBACService:
         try:
             RBACRepository.add_role(role)
             RBACRepository.save()
-            return role, None
+            return ServiceResult.ok(data=role)
         except Exception as exc:
-            return None, f"Error creating role: {exc}"
+            return ServiceResult.fail(f"Error creating role: {exc}")
 
     @staticmethod
-    def update_role(role: Role, name: str, description: str | None, permission_ids: Iterable[int]) -> tuple[bool, str]:
+    def update_role(role: Role, name: str, description: str | None, permission_ids: Iterable[int]) -> ServiceResult[None]:
         if RBACRepository.role_name_exists(name, exclude_id=role.id):
-            return False, "Role name already exists."
+            return ServiceResult.fail("Role name already exists.")
 
         role.name = name
         role.description = description or ""
@@ -45,15 +46,15 @@ class RBACService:
         role.permissions = perms  # type: ignore[assignment]
         try:
             RBACRepository.save()
-            return True, "Role updated successfully."
+            return ServiceResult.ok(message="Role updated successfully.")
         except Exception as exc:
-            return False, f"Error updating role: {exc}"
+            return ServiceResult.fail(f"Error updating role: {exc}")
 
     @staticmethod
-    def delete_role(role: Role) -> tuple[bool, str]:
+    def delete_role(role: Role) -> ServiceResult[None]:
         try:
             RBACRepository.delete_role(role)
             RBACRepository.save()
-            return True, "Role deleted."
+            return ServiceResult.ok(message="Role deleted.")
         except Exception as exc:
-            return False, f"Error deleting role: {exc}"
+            return ServiceResult.fail(f"Error deleting role: {exc}")

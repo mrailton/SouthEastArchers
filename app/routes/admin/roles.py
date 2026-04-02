@@ -32,13 +32,13 @@ def create_role_post():
     form = RoleForm()
     form.permissions.choices = [(p.id, p.name) for p in RBACService.list_permissions()]
     if form.validate_on_submit():
-        role, error = RBACService.create_role(
+        result = RBACService.create_role(
             name=form.name.data.strip(),
             description=form.description.data,
             permission_ids=form.permissions.data or [],
         )
-        if error:
-            flash(error, "error")
+        if not result.success:
+            flash(result.message, "error")
             return render_template("admin/role_form.html", form=form, mode="create")
         flash("Role created successfully.", "success")
         return redirect(url_for("admin.roles_index"))
@@ -74,14 +74,14 @@ def edit_role_post(role_id: int):
     form = RoleForm()
     form.permissions.choices = [(p.id, p.name) for p in RBACService.list_permissions()]
     if form.validate_on_submit():
-        success, message = RBACService.update_role(
+        result = RBACService.update_role(
             role=role,
             name=form.name.data.strip(),
             description=form.description.data,
             permission_ids=form.permissions.data or [],
         )
-        flash(message, "success" if success else "error")
-        if success:
+        flash(result.message, "success" if result.success else "error")
+        if result.success:
             return redirect(url_for("admin.roles_index"))
 
     else:
@@ -100,6 +100,6 @@ def delete_role(role_id: int):
         flash("Role not found.", "error")
         return redirect(url_for("admin.roles_index"))
 
-    success, message = RBACService.delete_role(role)
-    flash(message, "success" if success else "error")
+    result = RBACService.delete_role(role)
+    flash(result.message, "success" if result.success else "error")
     return redirect(url_for("admin.roles_index"))

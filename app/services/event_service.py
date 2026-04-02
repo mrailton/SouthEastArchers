@@ -2,6 +2,7 @@ from datetime import datetime
 
 from app.models import Event
 from app.repositories import EventRepository
+from app.services.result import ServiceResult
 
 
 class EventService:
@@ -12,7 +13,7 @@ class EventService:
         description: str = None,
         location: str = None,
         published: bool = False,
-    ) -> tuple[Event | None, str | None]:
+    ) -> ServiceResult[Event]:
         """Create a new event."""
         event = Event(
             title=title,
@@ -25,9 +26,9 @@ class EventService:
         try:
             EventRepository.add(event)
             EventRepository.save()
-            return event, None
+            return ServiceResult.ok(data=event)
         except Exception as e:
-            return None, f"Error creating event: {str(e)}"
+            return ServiceResult.fail(f"Error creating event: {str(e)}")
 
     @staticmethod
     def update_event(
@@ -37,7 +38,7 @@ class EventService:
         description: str = None,
         location: str = None,
         published: bool = False,
-    ) -> tuple[bool, str | None]:
+    ) -> ServiceResult[None]:
         """Update an existing event."""
         event.title = title
         event.description = description
@@ -47,9 +48,9 @@ class EventService:
 
         try:
             EventRepository.save()
-            return True, None
+            return ServiceResult.ok()
         except Exception as e:
-            return False, f"Error updating event: {str(e)}"
+            return ServiceResult.fail(f"Error updating event: {str(e)}")
 
     @staticmethod
     def get_all_events() -> list[Event]:

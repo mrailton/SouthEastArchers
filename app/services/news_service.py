@@ -1,5 +1,6 @@
 from app.models import News
 from app.repositories import NewsRepository
+from app.services.result import ServiceResult
 from app.utils.datetime_utils import utc_now
 
 
@@ -10,7 +11,7 @@ class NewsService:
         summary: str = None,
         content: str = None,
         published: bool = False,
-    ) -> tuple[News | None, str | None]:
+    ) -> ServiceResult[News]:
         """Create a new news article."""
         article = News(
             title=title,
@@ -25,9 +26,9 @@ class NewsService:
         try:
             NewsRepository.add(article)
             NewsRepository.save()
-            return article, None
+            return ServiceResult.ok(data=article)
         except Exception as e:
-            return None, f"Error creating article: {str(e)}"
+            return ServiceResult.fail(f"Error creating article: {str(e)}")
 
     @staticmethod
     def update_article(
@@ -36,7 +37,7 @@ class NewsService:
         summary: str = None,
         content: str = None,
         published: bool = False,
-    ) -> tuple[bool, str | None]:
+    ) -> ServiceResult[None]:
         """Update an existing news article."""
         article.title = title
         article.summary = summary
@@ -48,9 +49,9 @@ class NewsService:
 
         try:
             NewsRepository.save()
-            return True, None
+            return ServiceResult.ok()
         except Exception as e:
-            return False, f"Error updating article: {str(e)}"
+            return ServiceResult.fail(f"Error updating article: {str(e)}")
 
     @staticmethod
     def get_all_articles() -> list[News]:

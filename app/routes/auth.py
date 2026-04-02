@@ -74,7 +74,9 @@ def signup_post():
             flash(result.message, "error")
             return render_template("auth/signup.html", form=form)
 
-        user_registered.send(user_id=result.data.id)
+        user = result.data
+        assert user is not None
+        user_registered.send(user_id=user.id)
 
         flash("Thank you for signing up. A coach will review your information shortly and get back to you to discuss membership.", "success")
         return redirect(url_for("auth.login"))

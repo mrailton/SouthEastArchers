@@ -16,14 +16,15 @@ class ServiceResult[T]:
         data: The entity produced by the operation (e.g. a created model
             instance), or ``None`` for mutation-only operations.
         message: Human-readable feedback — a success description **or** an
-            error description, depending on *success*.
+            error description, depending on *success*.  Always a ``str``
+            (empty when no message is relevant).
         warnings: Non-fatal messages (e.g. negative-credit-balance alerts
             from shoot creation).
     """
 
     success: bool
     data: T | None = None
-    message: str | None = None
+    message: str = ""
     warnings: list[str] = field(default_factory=list)
 
     # ------------------------------------------------------------------
@@ -31,11 +32,11 @@ class ServiceResult[T]:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def ok(data=None, message: str | None = None, warnings: list[str] | None = None) -> ServiceResult:
+    def ok(data: T | None = None, message: str = "", warnings: list[str] | None = None) -> ServiceResult:
         """Create a successful result."""
         return ServiceResult(success=True, data=data, message=message, warnings=warnings or [])
 
     @staticmethod
-    def fail(message: str | None = None, warnings: list[str] | None = None) -> ServiceResult:
+    def fail(message: str = "", warnings: list[str] | None = None) -> ServiceResult:
         """Create a failed result."""
         return ServiceResult(success=False, message=message, warnings=warnings or [])

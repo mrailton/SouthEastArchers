@@ -100,5 +100,8 @@ class Membership(db.Model):
     def activate(self):
         self.status = "active"
 
+    def deactivate(self):
+        self.status = "inactive"
+
     def __repr__(self):
         return f"<Membership user_id={self.user_id} initial={self.initial_credits} purchased={self.purchased_credits}>"

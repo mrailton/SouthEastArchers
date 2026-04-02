@@ -27,4 +27,3 @@ class NewsRepository(BaseRepository):
     @staticmethod
     def count() -> int:
         return News.query.count()
-

@@ -1,5 +1,7 @@
 from datetime import date
 
+from flask_sqlalchemy.pagination import Pagination
+
 from app.models import Shoot
 from app.models.shoot import ShootVisitor
 from app.repositories import ShootRepository, UserRepository
@@ -83,7 +85,7 @@ class ShootService:
         shoot.description = description
 
         # Handle visitors: diff old vs new to avoid duplicate transactions
-        old_visitors = {(v.name, v.club, v.affiliation, v.payment_method) for v in shoot.visitors}
+        old_visitors = {(v.name, v.club, v.affiliation, v.payment_method) for v in shoot.visitors}  # type: ignore[attr-defined]
         new_visitors = {(v["name"], v["club"], v["affiliation"], v["payment_method"]) for v in (visitors or [])}
 
         # Remove visitors no longer in the list
@@ -151,7 +153,7 @@ class ShootService:
         return ShootRepository.get_all()
 
     @staticmethod
-    def get_all_shoots_paginated(page: int = 1, per_page: int = 10):
+    def get_all_shoots_paginated(page: int = 1, per_page: int = 10) -> Pagination:
         """Get all shoots ordered by date descending with pagination."""
         return ShootRepository.get_all_paginated(page=page, per_page=per_page)
 

@@ -1,6 +1,7 @@
 from datetime import date
 
 from flask import current_app, session
+from flask_sqlalchemy.pagination import Pagination
 
 from app.models import Membership, User
 from app.repositories import MembershipRepository, PaymentRepository, RBACRepository, UserRepository
@@ -20,7 +21,7 @@ class UserService:
         return UserRepository.get_all()
 
     @staticmethod
-    def get_all_users_paginated(page: int = 1, per_page: int = 20, search: str = "", membership_filter: str = "all"):
+    def get_all_users_paginated(page: int = 1, per_page: int = 20, search: str = "", membership_filter: str = "all") -> Pagination:
         """Get all users ordered by name with pagination, search, and membership filter."""
         return UserRepository.get_all_paginated(page=page, per_page=per_page, search=search, membership_filter=membership_filter)
 
@@ -138,13 +139,13 @@ class UserService:
 
         if user.membership:
             if membership_start_date:
-                user.membership.start_date = membership_start_date
+                user.membership.start_date = membership_start_date  # type: ignore[attr-defined]
             if membership_expiry_date:
-                user.membership.expiry_date = membership_expiry_date
+                user.membership.expiry_date = membership_expiry_date  # type: ignore[attr-defined]
             if membership_initial_credits is not None:
-                user.membership.initial_credits = membership_initial_credits
+                user.membership.initial_credits = membership_initial_credits  # type: ignore[attr-defined]
             if membership_purchased_credits is not None:
-                user.membership.purchased_credits = membership_purchased_credits
+                user.membership.purchased_credits = membership_purchased_credits  # type: ignore[attr-defined]
 
         try:
             UserRepository.save()
@@ -192,7 +193,7 @@ class UserService:
 
     @staticmethod
     def create_password_reset_token(user: User) -> str:
-        return user.generate_reset_token()
+        return user.generate_reset_token()  # type: ignore[no-any-return]
 
     @staticmethod
     def reset_password(token: str, new_password: str) -> ServiceResult[None]:

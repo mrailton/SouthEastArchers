@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from flask_sqlalchemy.pagination import Pagination
+
 from app import db
 from app.models import User
 from app.repositories.base import BaseRepository
@@ -24,7 +26,7 @@ class UserRepository(BaseRepository):
         return query.all()
 
     @staticmethod
-    def get_all_paginated(page: int = 1, per_page: int = 20, search: str = "", membership_filter: str = "all"):
+    def get_all_paginated(page: int = 1, per_page: int = 20, search: str = "", membership_filter: str = "all") -> Pagination:
 
         query = User.query
         if search:

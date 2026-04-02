@@ -36,4 +36,3 @@ class BaseRepository:
     def create_all() -> None:
         """Create all tables from model metadata."""
         db.create_all()
-

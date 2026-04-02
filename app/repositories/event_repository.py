@@ -28,4 +28,3 @@ class EventRepository(BaseRepository):
     @staticmethod
     def count_upcoming() -> int:
         return Event.query.filter(Event.start_date > utc_now()).count()
-

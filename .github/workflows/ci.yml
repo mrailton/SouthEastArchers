@@ -55,7 +55,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Install system dependencies
         run: |
@@ -67,6 +67,9 @@ jobs:
 
       - name: Check code quality and formatting
         run: uv run flask lint check
+
+      - name: Run mypy type checking
+        run: uv run flask lint typecheck
 
       - name: Build assets
         run: uv run flask assets build

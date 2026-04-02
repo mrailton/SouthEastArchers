@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from app.models.application_settings import ApplicationSettings
 from app.repositories import SettingsRepository
@@ -24,7 +24,7 @@ class SettingsService:
         return settings
 
     @staticmethod
-    def calculate_membership_expiry(start_date, settings: ApplicationSettings | None = None) -> datetime:
+    def calculate_membership_expiry(start_date: date | datetime, settings: ApplicationSettings | None = None) -> datetime:
         """Calculate membership expiry date based on start date and settings.
 
         The expiry is 23:59:59 on the day before the next membership year starts.

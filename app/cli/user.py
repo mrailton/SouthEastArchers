@@ -62,7 +62,7 @@ def user_list():
     click.echo("-" * 90)
 
     for user in users:
-        admin_status = "Yes" if any(r.name == "Admin" for r in user.roles) else "No"
+        admin_status = "Yes" if user.has_role("Admin") else "No"
         membership = user.membership
         membership_status = membership.status if membership else "None"
         click.echo(f"{user.id:<5} {user.email:<30} {user.name[:24]:<25} {admin_status:<10} {membership_status:<12}")

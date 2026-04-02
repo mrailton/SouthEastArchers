@@ -115,6 +115,7 @@ def membership_payment_post():
 
     if result.success:
         data = result.data
+        assert data is not None
         session["membership_renewal_user_id"] = data["user_id"]
         session["membership_renewal_payment_id"] = data["payment_id"]
         session["checkout_amount"] = data["amount"]
@@ -161,6 +162,7 @@ def credits_post():
 
     if result.success:
         data = result.data
+        assert data is not None
         session["credit_purchase_user_id"] = data["user_id"]
         session["credit_purchase_payment_id"] = data["payment_id"]
         session["credit_purchase_quantity"] = data["quantity"]
@@ -191,6 +193,7 @@ def membership_cash_payment():
 
     if result.success:
         data = result.data
+        assert data is not None
         return render_template(
             "payment/cash_pending.html",
             payment_type="membership",
@@ -221,6 +224,7 @@ def credits_cash_payment():
 
     if result.success:
         data = result.data
+        assert data is not None
         return render_template(
             "payment/cash_pending.html",
             payment_type="credits",

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import date
 
+from flask_sqlalchemy.pagination import Pagination
+
 from app.models import FinancialTransaction
 from app.repositories import FinancialTransactionRepository
 from app.services.result import ServiceResult
@@ -174,7 +176,7 @@ class FinanceService:
         return FinancialTransactionRepository.get_all()
 
     @staticmethod
-    def get_all_transactions_paginated(page: int = 1, per_page: int = 20):
+    def get_all_transactions_paginated(page: int = 1, per_page: int = 20) -> Pagination:
         """Get paginated financial transactions ordered by date descending."""
         return FinancialTransactionRepository.get_all_paginated(page=page, per_page=per_page)
 
@@ -204,7 +206,7 @@ class FinanceService:
         total_expenses_cents = sum(item.amount_cents for item in expense_items)
         net_cents = total_income_cents - total_expenses_cents
 
-        def _group_by_category(items):
+        def _group_by_category(items: list[FinancialTransaction]) -> list[dict[str, object]]:
             groups: dict[str, dict] = {}
             for item in items:
                 label = item.category.replace("_", " ").title()

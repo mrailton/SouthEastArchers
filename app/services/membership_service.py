@@ -70,7 +70,7 @@ class MembershipService:
         if not user.membership:
             return ServiceResult.fail("No membership found.")
 
-        user.membership.status = "inactive"
+        user.membership.deactivate()
         try:
             MembershipRepository.save()
             return ServiceResult.ok(message="Membership deactivated successfully.")

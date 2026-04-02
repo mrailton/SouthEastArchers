@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import date
 
+from flask_sqlalchemy.pagination import Pagination
+
 from app import db
 from app.models import FinancialTransaction
 from app.repositories.base import BaseRepository
@@ -19,7 +21,7 @@ class FinancialTransactionRepository(BaseRepository):
         return FinancialTransaction.query.order_by(FinancialTransaction.date.desc(), FinancialTransaction.created_at.desc()).all()
 
     @staticmethod
-    def get_all_paginated(page: int = 1, per_page: int = 20):
+    def get_all_paginated(page: int = 1, per_page: int = 20) -> Pagination:
         """Return a paginated query ordered by date descending, then created_at descending."""
         return FinancialTransaction.query.order_by(FinancialTransaction.date.desc(), FinancialTransaction.created_at.desc()).paginate(
             page=page, per_page=per_page, error_out=False

@@ -62,9 +62,8 @@ A web application for South East Archers club management, including membership m
    ```
 
 3. **Install dependencies:**
-   Using the Flask CLI (installs both Python and Node.js dependencies):
    ```bash
-   flask install
+   make install
    ```
 
 4. **Initialize the database:**
@@ -87,7 +86,7 @@ A web application for South East Archers club management, including membership m
 ### Development Mode
 Runs both the Flask development server and Vite asset watcher:
 ```bash
-flask dev
+make dev
 ```
 - Flask: http://localhost:5000
 - Vite: http://localhost:5173 (Asset hot-reloading)
@@ -133,12 +132,12 @@ The application uses a fine-grained RBAC system for security.
 
 ### Default Roles
 
-| Role | Description |
-|------|-------------|
-| Admin | Full access to all features |
+| Role               | Description                                       |
+|--------------------|---------------------------------------------------|
+| Admin              | Full access to all features                       |
 | Membership Manager | Manage members, memberships, and approve payments |
-| Content Manager | Manage news, events, and shoots |
-| Member | Standard member access |
+| Content Manager    | Manage news, events, and shoots                   |
+| Member             | Standard member access                            |
 
 ### Implementation
 
@@ -146,22 +145,41 @@ The application uses a fine-grained RBAC system for security.
 - **Decorators:** Use `@permission_required("perm.name")` in routes to enforce access
 - **Service:** `RBACService` for managing roles and permissions
 
-## ⌨️ CLI Commands (Flask CLI)
+## ⌨️ Commands
 
-| Command | Description |
-|---------|-------------|
-| `flask dev` | Run development servers (Flask + Vite) |
-| `flask install` | Install Python and Node.js dependencies |
-| `flask db upgrade` | Apply database migrations |
-| `flask user create` | Create a new user (add `--admin` for admin) |
-| `flask test run` | Run the test suite |
-| `flask test coverage` | Run tests with coverage report |
-| `flask lint all` | Run linting and formatting (Ruff) |
-| `flask assets build` | Build production assets |
-| `flask schedule run` | Run due scheduled tasks |
-| `flask stats` | Show application statistics |
-| `flask rbac seed` | Seed default roles and permissions |
-| `flask clean` | Remove cache and temporary files |
+### Makefile (dev/test tooling)
+
+| Command                    | Description                                                |
+|----------------------------|------------------------------------------------------------|
+| `make install`             | Install Python and Node.js dependencies                    |
+| `make dev`                 | Run development servers (Flask + Vite)                     |
+| `make clean`               | Remove cache and temporary files                           |
+| `make test`                | Run the test suite                                         |
+| `make test-file FILE=path` | Run a single test file                                     |
+| `make test-k K="keyword"`  | Run tests matching a keyword                               |
+| `make test-coverage`       | Run tests with coverage report                             |
+| `make lint`                | Run all quality checks (Ruff + format + import boundaries) |
+| `make lint-fix`            | Auto-fix lint and formatting issues                        |
+| `make typecheck`           | Run mypy type checking                                     |
+| `make assets`              | Build production assets                                    |
+| `make assets-watch`        | Watch and rebuild assets on change                         |
+
+Run `make help` for a full list of targets.
+
+### Flask CLI (app-level commands)
+
+| Command               | Description                                 |
+|-----------------------|---------------------------------------------|
+| `flask db upgrade`    | Apply database migrations                   |
+| `flask user create`   | Create a new user (add `--admin` for admin) |
+| `flask user list`     | List all users                              |
+| `flask shoot create`  | Create a shoot                              |
+| `flask shoot list`    | List shoots                                 |
+| `flask schedule run`  | Run due scheduled tasks                     |
+| `flask schedule list` | List all scheduled tasks                    |
+| `flask rbac seed`     | Seed default roles and permissions          |
+| `flask stats`         | Show application statistics                 |
+| `flask db-reset`      | Reset the database (destructive)            |
 
 Run `flask --help` for a full list of commands.
 
@@ -169,15 +187,15 @@ Run `flask --help` for a full list of commands.
 
 Key environment variables in `.env`:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `FLASK_ENV` | Application environment | `development` |
-| `SECRET_KEY` | Flask secret key | (required) |
-| `DATABASE_URL` | MySQL connection string | (required) |
-| `MAIL_SERVER` | SMTP server for emails | `localhost` |
-| `MAIL_PORT` | SMTP port | `587` |
-| `MAIL_USERNAME` | SMTP username | (optional) |
-| `MAIL_PASSWORD` | SMTP password | (optional) |
+| Variable        | Description                | Default                 |
+|-----------------|----------------------------|-------------------------|
+| `FLASK_ENV`     | Application environment    | `development`           |
+| `SECRET_KEY`    | Flask secret key           | (required)              |
+| `DATABASE_URL`  | MySQL connection string    | (required)              |
+| `MAIL_SERVER`   | SMTP server for emails     | `localhost`             |
+| `MAIL_PORT`     | SMTP port                  | `587`                   |
+| `MAIL_USERNAME` | SMTP username              | (optional)              |
+| `MAIL_PASSWORD` | SMTP password              | (optional)              |
 | `SUMUP_API_KEY` | SumUp API key for payments | (required for payments) |
 
 ## 🧪 Testing & Quality
@@ -186,16 +204,16 @@ The project maintains 95% test coverage with 539 tests.
 
 ```bash
 # Run tests
-flask test run
+make test
 
 # Run with coverage report
-flask test coverage
+make test-coverage
 
 # Linting
-flask lint check
+make lint
 
 # Type checking
-flask lint typecheck
+make typecheck
 ```
 
 ## 🐳 Docker & Production

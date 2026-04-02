@@ -1,0 +1,773 @@
+from unittest.mock import Mock, patch
+
+from app import db
+from app.models import Credit, Payment, User
+from app.services.result import ServiceResult
+
+
+def test_show_checkout_displays_form(client, app, test_user):
+    """Test checkout page displays payment widget"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    with client.session_transaction() as sess:
+        sess["checkout_amount"] = 100.00
+        sess["checkout_description"] = "Test Payment"
+
+    response = client.get("/payment/checkout/test_checkout_123")
+    assert response.status_code == 200
+    assert b"test_checkout_123" in response.data
+
+
+def test_show_checkout_with_default_values(client, test_user):
+    """Test checkout page with default values when no session"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.get("/payment/checkout/test_checkout_123")
+    assert response.status_code == 200
+
+
+@patch("app.routes.payment.SumUpService")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
+def test_complete_checkout_signup_payment_success(mock_email, mock_sumup_class, client, app, test_user):
+    """Test successful signup payment completion via widget"""
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+    payment_id = payment.id
+
+    mock_checkout = Mock()
+    mock_checkout.status = "PAID"
+    mock_checkout.transaction_code = "TXN123"
+    mock_checkout.transaction_id = "txn_123"
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = mock_checkout
+    mock_sumup_class.return_value = mock_sumup
+
+    with client.session_transaction() as sess:
+        sess["signup_user_id"] = test_user.id
+        sess["signup_payment_id"] = payment_id
+        sess["checkout_amount"] = 100.00
+        sess["checkout_description"] = "Membership"
+
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Payment successful" in response.data
+    assert b"Your membership is now active" in response.data
+
+    db.session.expire_all()
+    payment = db.session.get(Payment, payment_id)
+    assert payment.status == "completed"
+
+
+@patch("app.routes.payment.PaymentProcessingService.handle_signup_payment")
+@patch("app.routes.payment.SumUpService")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
+def test_complete_checkout_signup_payment_email_failure(mock_email, mock_sumup_class, mock_handle, client, app, test_user):
+    """Test successful payment but email sending fails"""
+    from app.services.result import ServiceResult
+
+    with app.app_context():
+        payment = Payment(
+            user_id=test_user.id,
+            amount_cents=10000,
+            currency="EUR",
+            payment_type="membership",
+            status="pending",
+        )
+        db.session.add(payment)
+        db.session.commit()
+        payment_id = payment.id
+
+    mock_checkout = Mock()
+    mock_checkout.status = "PAID"
+    mock_checkout.transaction_code = "TXN"
+    mock_checkout.transaction_id = "txn_123"
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = mock_checkout
+    mock_sumup_class.return_value = mock_sumup
+    mock_email.side_effect = Exception("Email service down")
+
+    # Mock handle_signup_payment to complete the payment and return ServiceResult
+    def side_effect(user_id, payment_id_arg, transaction_id):
+        with app.app_context():
+            p = db.session.get(Payment, payment_id)
+            p.status = "completed"
+            db.session.commit()
+        return ServiceResult.ok(message="Payment successful!")
+
+    mock_handle.side_effect = side_effect
+
+    with client.session_transaction() as sess:
+        sess["signup_user_id"] = test_user.id
+        sess["signup_payment_id"] = payment_id
+
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    with app.app_context():
+        payment = db.session.get(Payment, payment_id)
+        assert payment.status == "completed"
+
+
+@patch("app.routes.payment.SumUpService")
+def test_complete_checkout_signup_payment_failed(mock_sumup_class, client, app, test_user):
+    """Test failed signup payment completion"""
+    with app.app_context():
+        payment = Payment(
+            user_id=test_user.id,
+            amount_cents=10000,
+            currency="EUR",
+            payment_type="membership",
+            status="pending",
+        )
+        db.session.add(payment)
+        db.session.commit()
+        payment_id = payment.id
+
+    mock_checkout = Mock()
+    mock_checkout.status = "FAILED"
+    mock_checkout.transaction_code = None
+    mock_checkout.transaction_id = None
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = mock_checkout
+    mock_sumup_class.return_value = mock_sumup
+
+    with client.session_transaction() as sess:
+        sess["signup_user_id"] = test_user.id
+        sess["signup_payment_id"] = payment_id
+
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Payment declined" in response.data
+
+
+@patch("app.routes.payment.SumUpService")
+def test_complete_checkout_pending_status(mock_sumup_class, client, test_user):
+    """Test payment with pending status"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    mock_checkout = Mock()
+    mock_checkout.status = "PENDING"
+    mock_checkout.transaction_code = None
+    mock_checkout.transaction_id = None
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = mock_checkout
+    mock_sumup_class.return_value = mock_sumup
+
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"pending" in response.data.lower()
+
+
+@patch("app.routes.payment.SumUpService")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
+def test_complete_checkout_membership_renewal(mock_email, mock_sumup_class, client, app, test_user):
+    """Test membership renewal payment"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+    payment_id = payment.id
+
+    mock_checkout = Mock()
+    mock_checkout.status = "PAID"
+    mock_checkout.transaction_code = "TXN"
+    mock_checkout.transaction_id = "txn_456"
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = mock_checkout
+    mock_sumup_class.return_value = mock_sumup
+
+    with client.session_transaction() as sess:
+        sess["membership_renewal_user_id"] = test_user.id
+        sess["membership_renewal_payment_id"] = payment_id
+
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Payment successful" in response.data or b"successfully" in response.data.lower()
+    db.session.expire_all()
+    payment = db.session.get(Payment, payment_id)
+    assert payment.status == "completed"
+
+
+@patch("app.routes.payment.SumUpService")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
+def test_complete_checkout_membership_renewal_no_existing_membership(mock_email, mock_sumup_class, client, app):
+    """Test membership renewal creates new membership if none exists"""
+    with app.app_context():
+        user = User(
+            name="No Membership User",
+            email="nomembership@example.com",
+            phone="1234567890",
+            is_active=True,
+        )
+        user.set_password("password123")
+        db.session.add(user)
+        db.session.flush()
+
+        payment = Payment(
+            user_id=user.id,
+            amount_cents=10000,
+            currency="EUR",
+            payment_type="membership",
+            status="pending",
+        )
+        db.session.add(payment)
+        db.session.commit()
+
+        user_id = user.id
+        payment_id = payment.id
+
+    mock_checkout = Mock()
+    mock_checkout.status = "PAID"
+    mock_checkout.transaction_code = "TXN"
+    mock_checkout.transaction_id = "txn_456"
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = mock_checkout
+    mock_sumup_class.return_value = mock_sumup
+
+    client.post("/auth/login", data={"email": "nomembership@example.com", "password": "password123"})
+
+    with client.session_transaction() as sess:
+        sess["membership_renewal_user_id"] = user_id
+        sess["membership_renewal_payment_id"] = payment_id
+
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+
+    with app.app_context():
+        db.session.expire_all()
+        user = db.session.get(User, user_id)
+        assert user.membership is not None
+        assert user.membership.status == "active"
+
+
+@patch("app.routes.payment.PaymentProcessingService.handle_membership_renewal")
+@patch("app.routes.payment.SumUpService")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
+def test_complete_checkout_membership_renewal_email_failure(mock_email, mock_sumup_class, mock_handle, client, app, test_user):
+    """Test membership renewal handles email failure gracefully"""
+    from app.services.result import ServiceResult
+
+    with app.app_context():
+        payment = Payment(
+            user_id=test_user.id,
+            amount_cents=10000,
+            currency="EUR",
+            payment_type="membership",
+            status="pending",
+        )
+        db.session.add(payment)
+        db.session.commit()
+        payment_id = payment.id
+
+    mock_checkout = Mock()
+    mock_checkout.status = "PAID"
+    mock_checkout.transaction_code = "TXN"
+    mock_checkout.transaction_id = "txn_456"
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = mock_checkout
+    mock_sumup_class.return_value = mock_sumup
+    mock_email.side_effect = Exception("Email service down")
+
+    # Mock handle_membership_renewal to complete the payment and return ServiceResult
+    def side_effect(user_id, payment_id_arg, transaction_id):
+        with app.app_context():
+            p = db.session.get(Payment, payment_id)
+            p.status = "completed"
+            db.session.commit()
+        return ServiceResult.ok(message="Membership renewed successfully!")
+
+    mock_handle.side_effect = side_effect
+
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    with client.session_transaction() as sess:
+        sess["membership_renewal_user_id"] = test_user.id
+        sess["membership_renewal_payment_id"] = payment_id
+
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    with app.app_context():
+        payment = db.session.get(Payment, payment_id)
+        assert payment.status == "completed"
+
+
+@patch("app.routes.payment.SumUpService")
+@patch("app.services.mail_service.MailService.send_credit_purchase_receipt")
+def test_complete_checkout_credit_purchase(mock_credit_receipt, mock_sumup_class, client, app, test_user):
+    """Test credit purchase payment sends receipt email"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    # Ensure test_user has an active membership
+    from app.models import Membership
+
+    m = Membership.query.filter_by(user_id=test_user.id).first()
+    if not m:
+        from datetime import date
+
+        m = Membership(user_id=test_user.id, start_date=date.today(), expiry_date=date.today(), status="active")
+        db.session.add(m)
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=5000,
+        currency="EUR",
+        payment_type="credits",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+    payment_id = payment.id
+
+    mock_checkout = Mock()
+    mock_checkout.status = "PAID"
+    mock_checkout.transaction_code = "TXN"
+    mock_checkout.transaction_id = "txn_789"
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = mock_checkout
+    mock_sumup_class.return_value = mock_sumup
+
+    with client.session_transaction() as sess:
+        sess["credit_purchase_user_id"] = test_user.id
+        sess["credit_purchase_payment_id"] = payment_id
+        sess["credit_purchase_quantity"] = 5
+
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Successfully purchased" in response.data
+    assert b"credits" in response.data
+    assert b"A receipt has been sent to your email" in response.data
+
+    db.session.expire_all()
+    credit = Credit.query.filter_by(payment_id=payment_id).first()
+    assert credit is not None
+    assert credit.amount == 5
+
+    # Verify receipt email was sent
+    mock_credit_receipt.assert_called_once_with(test_user.id, payment_id, 5)
+
+
+@patch("app.routes.payment.SumUpService")
+def test_complete_checkout_exception_handling(mock_sumup_class, client, test_user):
+    """Test exception handling during checkout completion"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.side_effect = Exception("Unexpected error")
+    mock_sumup_class.return_value = mock_sumup
+
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"error" in response.data.lower() or b"failed" in response.data.lower() or b"declined" in response.data.lower()
+
+
+@patch("app.routes.payment.SumUpService")
+def test_complete_checkout_unknown_status(mock_sumup_class, client, test_user):
+    """Test payment with unknown status"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    mock_checkout = Mock()
+    mock_checkout.status = "UNKNOWN"
+    mock_checkout.transaction_code = None
+    mock_checkout.transaction_id = None
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = mock_checkout
+    mock_sumup_class.return_value = mock_sumup
+
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Payment failed" in response.data or b"Payment declined" in response.data
+
+
+@patch("app.routes.payment.SumUpService")
+def test_complete_checkout_generic_success_no_session_data(mock_sumup_class, client, test_user):
+    """Test successful payment without specific session data (generic case)"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    mock_checkout = Mock()
+    mock_checkout.status = "PAID"
+    mock_checkout.transaction_code = "TXN"
+    mock_checkout.transaction_id = "txn_999"
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = mock_checkout
+    mock_sumup_class.return_value = mock_sumup
+
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Payment processed successfully" in response.data or b"Payment successful" in response.data
+
+
+@patch("app.routes.payment.SumUpService")
+def test_complete_checkout_null_checkout(mock_sumup_class, client, test_user):
+    """Test completion when checkout cannot be retrieved"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = None
+    mock_sumup_class.return_value = mock_sumup
+
+    response = client.post(
+        "/payment/checkout/test_123/complete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Could not verify payment status" in response.data
+
+
+def test_membership_payment_requires_login(client):
+    """Test membership payment requires authentication"""
+    response = client.get("/payment/membership", follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Login" in response.data
+
+
+def test_membership_payment_page_get(client, test_user):
+    """Test GET request to membership payment page"""
+    with client:
+        client.post(
+            "/auth/login",
+            data={"email": test_user.email, "password": "password123"},
+        )
+
+        response = client.get("/payment/membership")
+        assert response.status_code == 200
+
+
+@patch("app.routes.payment.PaymentService")
+def test_membership_payment_post_success(mock_service_class, client, app, test_user):
+    """Test successful membership payment creation"""
+    mock_service = Mock()
+    mock_service.initiate_membership_payment.return_value = ServiceResult.ok(
+        data={
+            "checkout_id": "checkout_abc",
+            "payment_id": 1,
+            "user_id": test_user.id,
+            "amount": 100.0,
+            "description": "Annual Membership",
+        }
+    )
+    mock_service_class.return_value = mock_service
+
+    with client:
+        client.post(
+            "/auth/login",
+            data={"email": test_user.email, "password": "password123"},
+        )
+
+        response = client.post("/payment/membership", follow_redirects=True)
+
+        assert response.status_code == 200
+
+
+@patch("app.routes.payment.PaymentService")
+def test_membership_payment_checkout_failure(mock_service_class, client, app, test_user):
+    """Test membership payment when checkout creation fails"""
+    mock_service = Mock()
+    mock_service.initiate_membership_payment.return_value = ServiceResult.fail("Error creating payment. Please try again.")
+    mock_service_class.return_value = mock_service
+
+    with client:
+        client.post(
+            "/auth/login",
+            data={"email": test_user.email, "password": "password123"},
+        )
+
+        response = client.post("/payment/membership", follow_redirects=True)
+
+        assert response.status_code == 200
+        assert b"Error creating payment" in response.data
+
+
+def test_credits_page_requires_login(client):
+    response = client.get("/payment/credits", follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Login" in response.data
+
+
+def test_credits_page_logged_in(client, test_user):
+    with client:
+        client.post(
+            "/auth/login",
+            data={"email": test_user.email, "password": "password123"},
+        )
+
+        response = client.get("/payment/credits")
+        assert response.status_code == 200
+
+
+@patch("app.routes.payment.PaymentService")
+def test_credits_purchase_post_success(mock_service_class, client, app, test_user):
+    """Test successful credit purchase"""
+    mock_service = Mock()
+    mock_service.initiate_credit_purchase.return_value = ServiceResult.ok(
+        data={
+            "checkout_id": "checkout_credits",
+            "payment_id": 1,
+            "user_id": test_user.id,
+            "quantity": 3,
+            "amount": 15.0,
+            "description": "3 credits",
+        }
+    )
+    mock_service_class.return_value = mock_service
+
+    with client:
+        client.post(
+            "/auth/login",
+            data={"email": test_user.email, "password": "password123"},
+        )
+
+        response = client.post("/payment/credits", data={"quantity": "3"}, follow_redirects=True)
+
+        assert response.status_code == 200
+
+
+@patch("app.routes.payment.PaymentService")
+def test_credits_purchase_checkout_failure(mock_service_class, client, app, test_user):
+    """Test credit purchase when checkout creation fails"""
+    mock_service = Mock()
+    mock_service.initiate_credit_purchase.return_value = ServiceResult.fail("Error creating payment. Please try again.")
+    mock_service_class.return_value = mock_service
+
+    with client:
+        client.post(
+            "/auth/login",
+            data={"email": test_user.email, "password": "password123"},
+        )
+
+        response = client.post("/payment/credits", data={"quantity": "5"}, follow_redirects=True)
+
+        assert response.status_code == 200
+        assert b"Error creating payment" in response.data
+
+
+def test_credits_purchase_rejects_zero_quantity(client, test_user):
+    """Test credit purchase rejects quantity of 0"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits", data={"quantity": "0"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Quantity must be between 1 and 50" in response.data
+
+
+def test_credits_purchase_rejects_negative_quantity(client, test_user):
+    """Test credit purchase rejects negative quantity"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits", data={"quantity": "-5"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Quantity must be between 1 and 50" in response.data
+
+
+def test_credits_purchase_rejects_over_max_quantity(client, test_user):
+    """Test credit purchase rejects quantity over 50"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits", data={"quantity": "51"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Quantity must be between 1 and 50" in response.data
+
+
+def test_credits_purchase_rejects_non_numeric_quantity(client, test_user):
+    """Test credit purchase rejects non-numeric quantity"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits", data={"quantity": "abc"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Invalid quantity" in response.data
+
+
+def test_credits_cash_rejects_zero_quantity(client, test_user):
+    """Test cash credit purchase rejects quantity of 0"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits/cash", data={"quantity": "0"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Quantity must be between 1 and 50" in response.data
+
+
+def test_credits_cash_rejects_negative_quantity(client, test_user):
+    """Test cash credit purchase rejects negative quantity"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits/cash", data={"quantity": "-3"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Quantity must be between 1 and 50" in response.data
+
+
+def test_credits_cash_rejects_non_numeric_quantity(client, test_user):
+    """Test cash credit purchase rejects non-numeric quantity"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits/cash", data={"quantity": "abc"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Invalid quantity" in response.data
+
+
+def test_payment_history_requires_login(client):
+    """Test payment history requires authentication"""
+    response = client.get("/payment/history", follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Login" in response.data
+
+
+def test_payment_history_displays_user_payments(client, app, test_user):
+    """Test payment history displays user's payments"""
+    with app.app_context():
+        # Create some test payments
+        payment1 = Payment(
+            user_id=test_user.id,
+            amount_cents=10000,
+            currency="EUR",
+            payment_type="membership",
+            status="completed",
+        )
+        payment2 = Payment(
+            user_id=test_user.id,
+            amount_cents=5000,
+            currency="EUR",
+            payment_type="credits",
+            status="completed",
+        )
+        db.session.add_all([payment1, payment2])
+        db.session.commit()
+
+    with client:
+        client.post(
+            "/auth/login",
+            data={"email": test_user.email, "password": "password123"},
+        )
+
+        response = client.get("/payment/history")
+        assert response.status_code == 200
+
+
+@patch("app.services.mail_service.MailService.send_cash_payment_pending_email")
+def test_membership_cash_payment_success(mock_send_email, client, test_user):
+    """Test successful cash membership payment submission"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    response = client.post("/payment/membership/cash", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"Cash Payment Pending" in response.data
+    assert b"Annual Membership" in response.data
+    assert b"Awaiting Payment" in response.data
+
+    # Verify payment was created
+    payment = Payment.query.filter_by(
+        user_id=test_user.id,
+        payment_method="cash",
+        payment_type="membership",
+        status="pending",
+    ).first()
+    assert payment is not None
+
+    # Verify email was sent
+    mock_send_email.assert_called_once()
+
+
+@patch("app.services.mail_service.MailService.send_cash_payment_pending_email")
+def test_credits_cash_payment_success(mock_send_email, client, test_user):
+    """Test successful cash credits payment submission"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    response = client.post("/payment/credits/cash", data={"quantity": "5"}, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"Cash Payment Pending" in response.data
+    assert b"5 Shooting Credit" in response.data
+    assert b"Awaiting Payment" in response.data
+
+    # Verify payment was created
+    payment = Payment.query.filter_by(
+        user_id=test_user.id,
+        payment_method="cash",
+        payment_type="credits",
+        status="pending",
+    ).first()
+    assert payment is not None
+    assert "5 shooting credits" in payment.description
+
+    # Verify email was sent
+    mock_send_email.assert_called_once()
+
+
+def test_membership_cash_payment_requires_login(client):
+    """Test cash membership payment requires authentication"""
+    response = client.post("/payment/membership/cash", follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Login" in response.data
+
+
+def test_credits_cash_payment_requires_login(client):
+    """Test cash credits payment requires authentication"""
+    response = client.post("/payment/credits/cash", data={"quantity": "1"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Login" in response.data
+
+
+def test_membership_page_shows_cash_option(client, test_user):
+    """Test membership payment page shows cash payment option"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    response = client.get("/payment/membership")
+    assert response.status_code == 200
+    assert b"Pay with Cash" in response.data
+    assert b"Pay Online with Card" in response.data
+
+
+def test_credits_page_shows_cash_option(client, test_user):
+    """Test credits payment page shows cash payment option"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+
+    response = client.get("/payment/credits")
+    assert response.status_code == 200
+    assert b"Pay with Cash" in response.data
+    assert b"Pay Online with Card" in response.data

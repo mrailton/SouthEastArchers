@@ -87,6 +87,18 @@ def app(app_instance):
         connection.close()
 
 
+def pytest_collection_modifyitems(items):
+    """Auto-apply unit/integration/e2e markers based on test file location."""
+    for item in items:
+        path = str(item.fspath)
+        if "/unit/" in path:
+            item.add_marker(pytest.mark.unit)
+        elif "/integration/" in path:
+            item.add_marker(pytest.mark.integration)
+        elif "/e2e/" in path:
+            item.add_marker(pytest.mark.e2e)
+
+
 def pytest_sessionfinish(session, exitstatus):
     """Clean up artifacts after test session finishes"""
     # Remove coverage artifacts

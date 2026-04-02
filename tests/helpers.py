@@ -1,5 +1,3 @@
-"""Test helpers and lightweight fakes used across tests."""
-
 from collections.abc import Callable
 from typing import Any
 

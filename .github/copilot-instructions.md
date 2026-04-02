@@ -2,38 +2,44 @@
 
 ## Build, Test & Lint
 
-All commands go through Flask's built-in CLI. Use `uv run` to ensure the correct virtualenv:
+Dev/test tooling uses a `Makefile`. App-level commands (user management, scheduling, RBAC) remain as Flask CLI commands.
 
 ```bash
 # Install all dependencies (Python + Node)
-flask install
+make install
 
 # Run full test suite
-flask test run
+make test
 
 # Run a single test file
-flask test file tests/services/test_membership_service.py
+make test-file FILE=tests/integration/services/test_membership_service.py
 
 # Run tests matching a keyword
-flask test run -k "test_activate_membership"
+make test-k K="test_activate_membership"
+
+# Run tests with coverage report
+make test-coverage
 
 # Lint (ruff check + ruff format --check + import-linter)
-flask lint all
+make lint
 
 # Auto-fix lint/format issues
-flask lint all --fix
+make lint-fix
 
 # Type checking (mypy)
-flask lint typecheck
+make typecheck
 
 # Build frontend assets
-flask assets build
+make assets
 
 # Dev servers (Flask + Vite hot-reload)
-flask dev
+make dev
+
+# Clean cache and temporary files
+make clean
 ```
 
-CI runs: `lint check` → `assets build` → `test coverage` (see `.github/workflows/ci.yml`).
+CI runs: `make lint` → `make typecheck` → `make assets` → `make test-coverage` (see `.github/workflows/ci.yml`).
 
 ## Architecture
 

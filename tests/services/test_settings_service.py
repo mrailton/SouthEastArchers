@@ -65,13 +65,15 @@ def test_get_all_includes_stored_values(app):
 
 def test_save_many(app):
     """Test bulk-saving multiple settings"""
-    SettingsService.save_many({
-        "membership_year_start_month": 9,
-        "membership_year_start_day": 15,
-        "annual_membership_cost": 20000,
-        "membership_shoots_included": 30,
-        "additional_shoot_cost": 1000,
-    })
+    SettingsService.save_many(
+        {
+            "membership_year_start_month": 9,
+            "membership_year_start_day": 15,
+            "annual_membership_cost": 20000,
+            "membership_shoots_included": 30,
+            "additional_shoot_cost": 1000,
+        }
+    )
 
     assert SettingsService.get("membership_year_start_month") == 9
     assert SettingsService.get("membership_year_start_day") == 15
@@ -185,5 +187,3 @@ def test_membership_expiry_edge_cases(app):
     start = date(2026, 12, 31)
     expiry = SettingsService.calculate_membership_expiry(start)
     assert expiry.date() == date(2027, 2, 28)
-
-

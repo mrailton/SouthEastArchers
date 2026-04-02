@@ -23,10 +23,7 @@ SETTING_DEFINITIONS: dict[str, dict[str, Any]] = {
     "events_enabled": {"type": "bool", "default": False},
     "cash_payment_instructions": {
         "type": "str",
-        "default": (
-            "Please pay cash to a committee member at the next shoot night. "
-            "Your membership/credits will be activated once payment is confirmed."
-        ),
+        "default": ("Please pay cash to a committee member at the next shoot night. Your membership/credits will be activated once payment is confirmed."),
     },
     "sumup_fee_percentage": {"type": "decimal", "default": None},
 }

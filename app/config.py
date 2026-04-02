@@ -53,7 +53,6 @@ class Config:
     SUMUP_API_URL = "https://api.sumup.com"
 
 
-
 class DevelopmentConfig(Config):
     """Development configuration"""
 

@@ -1,5 +1,6 @@
 """Tests for app factory and initialization"""
 
+import pytest
 from unittest.mock import MagicMock, patch
 
 from flask import abort
@@ -24,6 +25,20 @@ def test_create_app_development_config(monkeypatch):
     app = create_app("development")
     assert app is not None
     assert app.config["TESTING"] is False
+
+
+def test_production_config_raises_without_secret_key(monkeypatch):
+    """Test that ProductionConfig raises RuntimeError when SECRET_KEY is not set"""
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    with pytest.raises(RuntimeError, match="SECRET_KEY environment variable must be set in production"):
+        create_app("production")
+
+
+def test_production_config_accepts_custom_secret_key(monkeypatch):
+    """Test that ProductionConfig works when SECRET_KEY is set via environment"""
+    monkeypatch.setenv("SECRET_KEY", "real-production-secret")
+    app = create_app("production")
+    assert app is not None
 
 
 def test_app_has_correct_folders():

@@ -1,5 +1,11 @@
+from __future__ import annotations
+
 import os
 from datetime import timedelta
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from flask import Flask
 
 
 def _get_bool_env(name: str, default: bool) -> bool:
@@ -79,7 +85,10 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
 
-    pass
+    @staticmethod
+    def init_app(app: Flask) -> None:
+        if not os.environ.get("SECRET_KEY"):
+            raise RuntimeError("SECRET_KEY environment variable must be set in production")
 
 
 config = {

@@ -135,7 +135,10 @@ def create_app(config_name=None):
     )
 
     # Load config
-    app.config.from_object(config[config_name])
+    config_class = config[config_name]
+    app.config.from_object(config_class)
+    if hasattr(config_class, "init_app"):
+        config_class.init_app(app)
 
     # Configure logging and initialize extensions/blueprints
     _configure_logging(app)

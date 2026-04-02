@@ -6,12 +6,11 @@ from app.models import Permission, Role
 
 @pytest.fixture()
 def permissions(app):
-    with app.app_context():
-        p1 = Permission(name="p1", description="perm 1")
-        p2 = Permission(name="p2", description="perm 2")
-        db.session.add_all([p1, p2])
-        db.session.commit()
-        return [p1.id, p2.id]
+    p1 = Permission(name="p1", description="perm 1")
+    p2 = Permission(name="p2", description="perm 2")
+    db.session.add_all([p1, p2])
+    db.session.commit()
+    return [p1.id, p2.id]
 
 
 @pytest.fixture()
@@ -72,11 +71,10 @@ def test_create_role_invalid_form(role_admin):
 
 
 def test_edit_role_get(role_admin, app):
-    with app.app_context():
-        role = Role(name="edit_get", description="")
-        db.session.add(role)
-        db.session.commit()
-        rid = role.id
+    role = Role(name="edit_get", description="")
+    db.session.add(role)
+    db.session.commit()
+    rid = role.id
 
     response = role_admin.get(f"/admin/roles/{rid}/edit")
     assert response.status_code == 200
@@ -91,11 +89,10 @@ def test_edit_role_not_found(role_admin):
 
 
 def test_edit_role(role_admin, app, permissions):
-    with app.app_context():
-        role = Role(name="edit_me", description="")
-        db.session.add(role)
-        db.session.commit()
-        rid = role.id
+    role = Role(name="edit_me", description="")
+    db.session.add(role)
+    db.session.commit()
+    rid = role.id
 
     response = role_admin.post(
         f"/admin/roles/{rid}/edit",
@@ -108,18 +105,18 @@ def test_edit_role(role_admin, app, permissions):
     )
     assert response.status_code == 200
     assert b"Role updated successfully" in response.data
+    db.session.expire_all()
     role = Role.query.get(rid)
     assert role.name == "edited"
     assert len(role.permissions) == 1
 
 
 def test_edit_role_duplicate_name(role_admin, app):
-    with app.app_context():
-        r1 = Role(name="r1", description="")
-        r2 = Role(name="r2", description="")
-        db.session.add_all([r1, r2])
-        db.session.commit()
-        r2_id = r2.id
+    r1 = Role(name="r1", description="")
+    r2 = Role(name="r2", description="")
+    db.session.add_all([r1, r2])
+    db.session.commit()
+    r2_id = r2.id
 
     response = role_admin.post(
         f"/admin/roles/{r2_id}/edit",
@@ -130,11 +127,10 @@ def test_edit_role_duplicate_name(role_admin, app):
 
 
 def test_edit_role_invalid_form(role_admin, app):
-    with app.app_context():
-        role = Role(name="edit_inv", description="")
-        db.session.add(role)
-        db.session.commit()
-        rid = role.id
+    role = Role(name="edit_inv", description="")
+    db.session.add(role)
+    db.session.commit()
+    rid = role.id
 
     response = role_admin.post(
         f"/admin/roles/{rid}/edit",
@@ -145,14 +141,14 @@ def test_edit_role_invalid_form(role_admin, app):
 
 
 def test_delete_role(role_admin, app):
-    with app.app_context():
-        role = Role(name="delete_me", description="")
-        db.session.add(role)
-        db.session.commit()
-        rid = role.id
+    role = Role(name="delete_me", description="")
+    db.session.add(role)
+    db.session.commit()
+    rid = role.id
 
     response = role_admin.post(f"/admin/roles/{rid}/delete", data={}, follow_redirects=True)
     assert response.status_code == 200
+    db.session.expire_all()
     assert Role.query.get(rid) is None
 
 

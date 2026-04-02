@@ -362,14 +362,16 @@ def test_member_detail_shows_approve_button_for_pending_cash_payment(client, adm
 
 
 def test_approve_membership_payment_user_not_found(client, admin_user, test_user):
-    """Test approving payment when user_id references nonexistent user"""
+    """Test approving payment when user lookup returns None (defensive branch)"""
+    from unittest.mock import patch
+
     from app.models import Payment
 
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 
-    # Create a payment with invalid user_id directly
+    # Create a valid payment for an existing user
     payment = Payment(
-        user_id=99999,  # Non-existent user
+        user_id=test_user.id,
         amount_cents=10000,
         currency="EUR",
         payment_type="membership",
@@ -379,7 +381,9 @@ def test_approve_membership_payment_user_not_found(client, admin_user, test_user
     db.session.add(payment)
     db.session.commit()
 
-    response = client.post(f"/admin/payments/{payment.id}/approve", follow_redirects=True)
+    # Mock UserRepository.get_by_id to simulate user not found
+    with patch("app.routes.admin.payments.UserRepository.get_by_id", return_value=None):
+        response = client.post(f"/admin/payments/{payment.id}/approve", follow_redirects=True)
 
     assert response.status_code == 200
     assert b"User not found" in response.data

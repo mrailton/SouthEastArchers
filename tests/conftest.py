@@ -9,37 +9,82 @@ from app.models import Membership, Role, User
 from app.models.rbac import seed_rbac
 from tests.helpers import FakeMailer, FakeQueue
 
+# ---------------------------------------------------------------------------
+# Password-hash cache – avoid repeated bcrypt work for the same plaintext.
+# The first call for each unique password goes through bcrypt; subsequent
+# calls reuse the cached hash.  This is safe because check_password extracts
+# the salt from the stored hash, so a shared hash still validates correctly.
+# ---------------------------------------------------------------------------
+_password_cache: dict[str, str] = {}
+_original_set_password = User.set_password
 
+
+def _fast_set_password(self, password):
+    """Cache-aware set_password: computes bcrypt hash once per unique password."""
+    if password not in _password_cache:
+        _original_set_password(self, password)
+        _password_cache[password] = self.password_hash
+    else:
+        self.password_hash = _password_cache[password]
+
+
+# ---------------------------------------------------------------------------
+# Session-scoped app + schema + RBAC seed (created once for entire test run)
+# ---------------------------------------------------------------------------
 @pytest.fixture(scope="session")
-def app_instance(tmp_path_factory):
-    """Create application instance for testing"""
-    app = create_app("testing")
+def app_instance():
+    """Create application instance and seed RBAC data once."""
+    User.set_password = _fast_set_password
 
-    # Use a temporary database file for testing
-    db_path = tmp_path_factory.mktemp("data") / "test.db"
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+    app = create_app("testing")
 
     with app.app_context():
         db.create_all()
         seed_rbac(db.session)
+
+        # Pre-warm the cache with commonly used test passwords
+        from app import bcrypt
+
+        for pw in ("password123", "adminpass"):
+            _password_cache[pw] = bcrypt.generate_password_hash(pw).decode("utf-8")
+
         yield app
-        # Clean up after all tests
+
         db.session.remove()
         db.drop_all()
         db.engine.dispose()
 
+    User.set_password = _original_set_password
 
+
+# ---------------------------------------------------------------------------
+# Per-test fixture – transaction rollback isolation
+# ---------------------------------------------------------------------------
 @pytest.fixture(scope="function")
 def app(app_instance):
-    """Provide application context for each test"""
+    """Provide application context with transaction rollback isolation.
+
+    Each test runs inside a database transaction that is rolled back after
+    the test finishes, avoiding the cost of DELETE-all + re-seed RBAC.
+    """
     with app_instance.app_context():
-        seed_rbac(db.session)
+        connection = db.engine.connect()
+        transaction = connection.begin()
+
+        # Route every session through our transacted connection so that
+        # commits become savepoint releases rather than real commits.
+        SessionClass = db.session.session_factory.class_
+        original_get_bind = SessionClass.get_bind
+        SessionClass.get_bind = lambda self, *args, **kw: connection
+
+        db.session.remove()  # clear stale session state
+
         yield app_instance
-        # Clean up data after each test
-        db.session.rollback()  # Rollback any failed transactions
-        for table in reversed(db.metadata.sorted_tables):
-            db.session.execute(table.delete())
-        db.session.commit()
+
+        db.session.remove()
+        SessionClass.get_bind = original_get_bind
+        transaction.rollback()
+        connection.close()
 
 
 def pytest_sessionfinish(session, exitstatus):

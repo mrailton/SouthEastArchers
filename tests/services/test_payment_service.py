@@ -139,23 +139,10 @@ def test_handle_signup_payment_no_payment_found(app):
         assert response is None
 
 
-def test_handle_signup_payment_no_user_found(app):
+def test_handle_signup_payment_no_user_found(app, test_user):
     """Test handle_signup_payment when user not found"""
-    from app import db
-    from app.models import Payment
-
     with app.test_request_context():
-        payment = Payment(
-            user_id=99999,
-            amount=100.0,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            description="Test",
-            status="pending",
-        )
-        db.session.add(payment)
-        db.session.commit()
+        payment = create_payment_for_user(db, test_user, status="pending")
 
         session["signup_payment_id"] = payment.id
         result = {"transaction_id": "test_123", "success": True}
@@ -172,23 +159,10 @@ def test_handle_membership_renewal_no_payment_found(app):
         assert response is None
 
 
-def test_handle_membership_renewal_no_user_found(app):
+def test_handle_membership_renewal_no_user_found(app, test_user):
     """Test handle_membership_renewal when user not found"""
-    from app import db
-    from app.models import Payment
-
     with app.test_request_context():
-        payment = Payment(
-            user_id=99999,
-            amount=100.0,
-            currency="EUR",
-            payment_type="membership",
-            payment_method="online",
-            description="Test",
-            status="pending",
-        )
-        db.session.add(payment)
-        db.session.commit()
+        payment = create_payment_for_user(db, test_user, status="pending")
 
         session["membership_renewal_payment_id"] = payment.id
         result = {"transaction_id": "test_123", "success": True}
@@ -205,23 +179,10 @@ def test_handle_credit_purchase_no_payment_found(app):
         assert response is None
 
 
-def test_handle_credit_purchase_no_user_found(app):
+def test_handle_credit_purchase_no_user_found(app, test_user):
     """Test handle_credit_purchase when user not found"""
-    from app import db
-    from app.models import Payment
-
     with app.test_request_context():
-        payment = Payment(
-            user_id=99999,
-            amount=50.0,
-            currency="EUR",
-            payment_type="credits",
-            payment_method="online",
-            description="Test",
-            status="pending",
-        )
-        db.session.add(payment)
-        db.session.commit()
+        payment = create_payment_for_user(db, test_user, amount_cents=5000, payment_type="credits", status="pending")
 
         session["credit_purchase_payment_id"] = payment.id
         result = {"transaction_id": "test_123", "success": True}

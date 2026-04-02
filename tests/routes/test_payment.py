@@ -34,17 +34,16 @@ def test_show_checkout_with_default_values(client, test_user):
 @patch("app.services.mail_service.send_payment_receipt")
 def test_complete_checkout_signup_payment_success(mock_email, mock_sumup_class, client, app, test_user):
     """Test successful signup payment completion via widget"""
-    with app.app_context():
-        payment = Payment(
-            user_id=test_user.id,
-            amount_cents=10000,
-            currency="EUR",
-            payment_type="membership",
-            status="pending",
-        )
-        db.session.add(payment)
-        db.session.commit()
-        payment_id = payment.id
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+    payment_id = payment.id
 
     mock_checkout = Mock()
     mock_checkout.status = "PAID"
@@ -70,9 +69,9 @@ def test_complete_checkout_signup_payment_success(mock_email, mock_sumup_class, 
     assert b"Payment successful" in response.data
     assert b"Your membership is now active" in response.data
 
-    with app.app_context():
-        payment = db.session.get(Payment, payment_id)
-        assert payment.status == "completed"
+    db.session.expire_all()
+    payment = db.session.get(Payment, payment_id)
+    assert payment.status == "completed"
 
 
 @patch("app.routes.payment.PaymentProcessingService.handle_signup_payment")
@@ -193,17 +192,16 @@ def test_complete_checkout_pending_status(mock_sumup_class, client, test_user):
 def test_complete_checkout_membership_renewal(mock_email, mock_sumup_class, client, app, test_user):
     """Test membership renewal payment"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
-    with app.app_context():
-        payment = Payment(
-            user_id=test_user.id,
-            amount_cents=10000,
-            currency="EUR",
-            payment_type="membership",
-            status="pending",
-        )
-        db.session.add(payment)
-        db.session.commit()
-        payment_id = payment.id
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+    payment_id = payment.id
 
     mock_checkout = Mock()
     mock_checkout.status = "PAID"
@@ -224,9 +222,9 @@ def test_complete_checkout_membership_renewal(mock_email, mock_sumup_class, clie
 
     assert response.status_code == 200
     assert b"Payment successful" in response.data or b"successfully" in response.data.lower()
-    with app.app_context():
-        payment = db.session.get(Payment, payment_id)
-        assert payment.status == "completed"
+    db.session.expire_all()
+    payment = db.session.get(Payment, payment_id)
+    assert payment.status == "completed"
 
 
 @patch("app.routes.payment.SumUpService")
@@ -344,26 +342,25 @@ def test_complete_checkout_membership_renewal_email_failure(mock_email, mock_sum
 def test_complete_checkout_credit_purchase(mock_credit_receipt, mock_sumup_class, client, app, test_user):
     """Test credit purchase payment sends receipt email"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
-    with app.app_context():
-        # Ensure test_user has an active membership
-        from app.models import Membership
+    # Ensure test_user has an active membership
+    from app.models import Membership
 
-        m = Membership.query.filter_by(user_id=test_user.id).first()
-        if not m:
-            from datetime import date
+    m = Membership.query.filter_by(user_id=test_user.id).first()
+    if not m:
+        from datetime import date
 
-            m = Membership(user_id=test_user.id, start_date=date.today(), expiry_date=date.today(), status="active")
-            db.session.add(m)
-        payment = Payment(
-            user_id=test_user.id,
-            amount_cents=5000,
-            currency="EUR",
-            payment_type="credits",
-            status="pending",
-        )
-        db.session.add(payment)
-        db.session.commit()
-        payment_id = payment.id
+        m = Membership(user_id=test_user.id, start_date=date.today(), expiry_date=date.today(), status="active")
+        db.session.add(m)
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=5000,
+        currency="EUR",
+        payment_type="credits",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+    payment_id = payment.id
 
     mock_checkout = Mock()
     mock_checkout.status = "PAID"
@@ -388,10 +385,10 @@ def test_complete_checkout_credit_purchase(mock_credit_receipt, mock_sumup_class
     assert b"credits" in response.data
     assert b"A receipt has been sent to your email" in response.data
 
-    with app.app_context():
-        credit = Credit.query.filter_by(payment_id=payment_id).first()
-        assert credit is not None
-        assert credit.amount == 5
+    db.session.expire_all()
+    credit = Credit.query.filter_by(payment_id=payment_id).first()
+    assert credit is not None
+    assert credit.amount == 5
 
     # Verify receipt email was sent
     mock_credit_receipt.assert_called_once_with(test_user.id, payment_id, 5)

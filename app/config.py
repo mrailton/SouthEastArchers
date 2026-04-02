@@ -69,7 +69,7 @@ class TestingConfig(Config):
     """Testing configuration"""
 
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_DATABASE_URI = os.environ.get("TEST_DATABASE_URL", "mysql+pymysql://root@localhost:3306/southeastarchers_test")
     WTF_CSRF_ENABLED = False
     SESSION_COOKIE_SECURE = False
     PREFERRED_URL_SCHEME = "http"

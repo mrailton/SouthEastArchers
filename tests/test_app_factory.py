@@ -14,7 +14,7 @@ def test_create_app_testing_config():
     app = create_app("testing")
     assert app is not None
     assert app.config["TESTING"] is True
-    assert "sqlite" in app.config["SQLALCHEMY_DATABASE_URI"]
+    assert "mysql" in app.config["SQLALCHEMY_DATABASE_URI"]
 
 
 def test_create_app_development_config(monkeypatch):

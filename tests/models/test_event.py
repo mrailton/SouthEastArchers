@@ -29,7 +29,7 @@ def test_create_event_with_end_date(app):
     """Test creating an event with end date"""
     from app import db
 
-    start = datetime.now() + timedelta(days=7)
+    start = datetime.now().replace(microsecond=0) + timedelta(days=7)
     end = start + timedelta(hours=3)
 
     event = Event(

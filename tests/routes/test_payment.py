@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 from app import db
 from app.models import Credit, Payment, User
+from app.services.result import ServiceResult
 
 # Show checkout tests
 
@@ -499,7 +500,15 @@ def test_membership_payment_page_get(client, test_user):
 def test_membership_payment_post_success(mock_service_class, client, app, test_user):
     """Test successful membership payment creation"""
     mock_service = Mock()
-    mock_service.initiate_membership_payment.return_value = {"success": True, "checkout_id": "checkout_abc"}
+    mock_service.initiate_membership_payment.return_value = ServiceResult.ok(
+        data={
+            "checkout_id": "checkout_abc",
+            "payment_id": 1,
+            "user_id": test_user.id,
+            "amount": 100.0,
+            "description": "Annual Membership",
+        }
+    )
     mock_service_class.return_value = mock_service
 
     with client:
@@ -517,7 +526,7 @@ def test_membership_payment_post_success(mock_service_class, client, app, test_u
 def test_membership_payment_checkout_failure(mock_service_class, client, app, test_user):
     """Test membership payment when checkout creation fails"""
     mock_service = Mock()
-    mock_service.initiate_membership_payment.return_value = {"success": False, "error": "Error creating payment. Please try again."}
+    mock_service.initiate_membership_payment.return_value = ServiceResult.fail("Error creating payment. Please try again.")
     mock_service_class.return_value = mock_service
 
     with client:
@@ -556,7 +565,16 @@ def test_credits_page_logged_in(client, test_user):
 def test_credits_purchase_post_success(mock_service_class, client, app, test_user):
     """Test successful credit purchase"""
     mock_service = Mock()
-    mock_service.initiate_credit_purchase.return_value = {"success": True, "checkout_id": "checkout_credits"}
+    mock_service.initiate_credit_purchase.return_value = ServiceResult.ok(
+        data={
+            "checkout_id": "checkout_credits",
+            "payment_id": 1,
+            "user_id": test_user.id,
+            "quantity": 3,
+            "amount": 15.0,
+            "description": "3 credits",
+        }
+    )
     mock_service_class.return_value = mock_service
 
     with client:
@@ -575,7 +593,7 @@ def test_credits_purchase_post_success(mock_service_class, client, app, test_use
 def test_credits_purchase_checkout_failure(mock_service_class, client, app, test_user):
     """Test credit purchase when checkout creation fails"""
     mock_service = Mock()
-    mock_service.initiate_credit_purchase.return_value = {"success": False, "error": "Error creating payment. Please try again."}
+    mock_service.initiate_credit_purchase.return_value = ServiceResult.fail("Error creating payment. Please try again.")
     mock_service_class.return_value = mock_service
 
     with client:
@@ -589,6 +607,65 @@ def test_credits_purchase_checkout_failure(mock_service_class, client, app, test
 
         assert response.status_code == 200
         assert b"Error creating payment" in response.data
+
+
+# Credit quantity validation tests
+
+
+def test_credits_purchase_rejects_zero_quantity(client, test_user):
+    """Test credit purchase rejects quantity of 0"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits", data={"quantity": "0"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Quantity must be between 1 and 50" in response.data
+
+
+def test_credits_purchase_rejects_negative_quantity(client, test_user):
+    """Test credit purchase rejects negative quantity"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits", data={"quantity": "-5"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Quantity must be between 1 and 50" in response.data
+
+
+def test_credits_purchase_rejects_over_max_quantity(client, test_user):
+    """Test credit purchase rejects quantity over 50"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits", data={"quantity": "51"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Quantity must be between 1 and 50" in response.data
+
+
+def test_credits_purchase_rejects_non_numeric_quantity(client, test_user):
+    """Test credit purchase rejects non-numeric quantity"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits", data={"quantity": "abc"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Invalid quantity" in response.data
+
+
+def test_credits_cash_rejects_zero_quantity(client, test_user):
+    """Test cash credit purchase rejects quantity of 0"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits/cash", data={"quantity": "0"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Quantity must be between 1 and 50" in response.data
+
+
+def test_credits_cash_rejects_negative_quantity(client, test_user):
+    """Test cash credit purchase rejects negative quantity"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits/cash", data={"quantity": "-3"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Quantity must be between 1 and 50" in response.data
+
+
+def test_credits_cash_rejects_non_numeric_quantity(client, test_user):
+    """Test cash credit purchase rejects non-numeric quantity"""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    response = client.post("/payment/credits/cash", data={"quantity": "abc"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Invalid quantity" in response.data
 
 
 # Payment history tests

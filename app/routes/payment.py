@@ -113,10 +113,15 @@ def membership_payment_post():
     payment_service = PaymentService()
     result = payment_service.initiate_membership_payment(current_user)
 
-    if result.get("success"):
-        return redirect(url_for("payment.show_checkout", checkout_id=result["checkout_id"]))
+    if result.success:
+        data = result.data
+        session["membership_renewal_user_id"] = data["user_id"]
+        session["membership_renewal_payment_id"] = data["payment_id"]
+        session["checkout_amount"] = data["amount"]
+        session["checkout_description"] = data["description"]
+        return redirect(url_for("payment.show_checkout", checkout_id=data["checkout_id"]))
     else:
-        flash(result.get("error", "Error creating payment."), "error")
+        flash(result.message, "error")
 
     return render_template("payment/membership.html")
 
@@ -131,18 +136,39 @@ def credits():
     return render_template("payment/credits.html")
 
 
+MAX_CREDIT_QUANTITY = 50
+
+
+# ...existing code...
+
+
 @bp.post("/credits")
 @login_required
 def credits_post():
     """Handle credits purchase initiation"""
-    quantity = int(request.form.get("quantity", 1))
+    try:
+        quantity = int(request.form.get("quantity", 1))
+    except ValueError, TypeError:
+        flash("Invalid quantity.", "error")
+        return render_template("payment/credits.html")
+
+    if quantity < 1 or quantity > MAX_CREDIT_QUANTITY:
+        flash(f"Quantity must be between 1 and {MAX_CREDIT_QUANTITY}.", "error")
+        return render_template("payment/credits.html")
+
     payment_service = PaymentService()
     result = payment_service.initiate_credit_purchase(current_user, quantity)
 
-    if result.get("success"):
-        return redirect(url_for("payment.show_checkout", checkout_id=result["checkout_id"]))
+    if result.success:
+        data = result.data
+        session["credit_purchase_user_id"] = data["user_id"]
+        session["credit_purchase_payment_id"] = data["payment_id"]
+        session["credit_purchase_quantity"] = data["quantity"]
+        session["checkout_amount"] = data["amount"]
+        session["checkout_description"] = data["description"]
+        return redirect(url_for("payment.show_checkout", checkout_id=data["checkout_id"]))
     else:
-        flash(result.get("error", "Error creating payment."), "error")
+        flash(result.message, "error")
 
     return render_template("payment/credits.html")
 
@@ -163,15 +189,16 @@ def membership_cash_payment():
     payment_service = PaymentService()
     result = payment_service.initiate_cash_membership_payment(current_user)
 
-    if result.get("success"):
+    if result.success:
+        data = result.data
         return render_template(
             "payment/cash_pending.html",
             payment_type="membership",
-            amount=result["amount"],
-            instructions=result["instructions"],
+            amount=data["amount"],
+            instructions=data["instructions"],
         )
     else:
-        flash(result.get("error", "Error creating payment."), "error")
+        flash(result.message, "error")
         return redirect(url_for("payment.membership_payment"))
 
 
@@ -179,18 +206,28 @@ def membership_cash_payment():
 @login_required
 def credits_cash_payment():
     """Handle cash credits purchase initiation"""
-    quantity = int(request.form.get("quantity", 1))
+    try:
+        quantity = int(request.form.get("quantity", 1))
+    except ValueError, TypeError:
+        flash("Invalid quantity.", "error")
+        return redirect(url_for("payment.credits"))
+
+    if quantity < 1 or quantity > MAX_CREDIT_QUANTITY:
+        flash(f"Quantity must be between 1 and {MAX_CREDIT_QUANTITY}.", "error")
+        return redirect(url_for("payment.credits"))
+
     payment_service = PaymentService()
     result = payment_service.initiate_cash_credit_purchase(current_user, quantity)
 
-    if result.get("success"):
+    if result.success:
+        data = result.data
         return render_template(
             "payment/cash_pending.html",
             payment_type="credits",
-            amount=result["amount"],
-            quantity=result["quantity"],
-            instructions=result["instructions"],
+            amount=data["amount"],
+            quantity=data["quantity"],
+            instructions=data["instructions"],
         )
     else:
-        flash(result.get("error", "Error creating payment."), "error")
+        flash(result.message, "error")
         return redirect(url_for("payment.credits"))

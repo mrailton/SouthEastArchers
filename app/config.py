@@ -85,10 +85,19 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
 
+    SESSION_COOKIE_SECURE = True
+
     @staticmethod
     def init_app(app: Flask) -> None:
+        missing = []
         if not os.environ.get("SECRET_KEY"):
-            raise RuntimeError("SECRET_KEY environment variable must be set in production")
+            missing.append("SECRET_KEY")
+        if not os.environ.get("MAIL_SERVER"):
+            missing.append("MAIL_SERVER")
+        if not os.environ.get("DATABASE_URL"):
+            missing.append("DATABASE_URL")
+        if missing:
+            raise RuntimeError(f"Required environment variable(s) not set for production: {', '.join(missing)}")
 
 
 config = {

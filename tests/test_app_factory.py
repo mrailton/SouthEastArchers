@@ -30,15 +30,47 @@ def test_create_app_development_config(monkeypatch):
 def test_production_config_raises_without_secret_key(monkeypatch):
     """Test that ProductionConfig raises RuntimeError when SECRET_KEY is not set"""
     monkeypatch.delenv("SECRET_KEY", raising=False)
-    with pytest.raises(RuntimeError, match="SECRET_KEY environment variable must be set in production"):
+    monkeypatch.delenv("MAIL_SERVER", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    with pytest.raises(RuntimeError, match="SECRET_KEY"):
+        create_app("production")
+
+
+def test_production_config_raises_without_mail_server(monkeypatch):
+    """Test that ProductionConfig raises RuntimeError when MAIL_SERVER is not set"""
+    monkeypatch.setenv("SECRET_KEY", "real-production-secret")
+    monkeypatch.setenv("DATABASE_URL", "mysql+pymysql://u:p@localhost/db")
+    monkeypatch.delenv("MAIL_SERVER", raising=False)
+    with pytest.raises(RuntimeError, match="MAIL_SERVER"):
+        create_app("production")
+
+
+def test_production_config_raises_without_database_url(monkeypatch):
+    """Test that ProductionConfig raises RuntimeError when DATABASE_URL is not set"""
+    monkeypatch.setenv("SECRET_KEY", "real-production-secret")
+    monkeypatch.setenv("MAIL_SERVER", "smtp.example.com")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    with pytest.raises(RuntimeError, match="DATABASE_URL"):
+        create_app("production")
+
+
+def test_production_config_lists_all_missing_vars(monkeypatch):
+    """Test that ProductionConfig lists all missing vars in the error message"""
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    monkeypatch.delenv("MAIL_SERVER", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    with pytest.raises(RuntimeError, match="SECRET_KEY.*MAIL_SERVER.*DATABASE_URL"):
         create_app("production")
 
 
 def test_production_config_accepts_custom_secret_key(monkeypatch):
-    """Test that ProductionConfig works when SECRET_KEY is set via environment"""
+    """Test that ProductionConfig works when all required env vars are set"""
     monkeypatch.setenv("SECRET_KEY", "real-production-secret")
+    monkeypatch.setenv("MAIL_SERVER", "smtp.example.com")
+    monkeypatch.setenv("DATABASE_URL", "mysql+pymysql://u:p@localhost/db")
     app = create_app("production")
     assert app is not None
+    assert app.config["SESSION_COOKIE_SECURE"] is True
 
 
 def test_app_has_correct_folders():

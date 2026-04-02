@@ -299,9 +299,7 @@ def test_record_sumup_payment_transactions_creates_income_and_expense(app, admin
 
     from app.services.settings_service import SettingsService
 
-    settings = SettingsService.get()
-    settings.sumup_fee_percentage = Decimal("2.50")
-    SettingsService.save(settings)
+    SettingsService.set("sumup_fee_percentage", Decimal("2.50"))
 
     result = FinanceService.record_sumup_payment_transactions(
         payment_amount_cents=10000,
@@ -335,9 +333,7 @@ def test_record_sumup_payment_transactions_credit_purchase(app, admin_user):
 
     from app.services.settings_service import SettingsService
 
-    settings = SettingsService.get()
-    settings.sumup_fee_percentage = Decimal("2.50")
-    SettingsService.save(settings)
+    SettingsService.set("sumup_fee_percentage", Decimal("2.50"))
 
     result = FinanceService.record_sumup_payment_transactions(
         payment_amount_cents=500,
@@ -354,11 +350,7 @@ def test_record_sumup_payment_transactions_credit_purchase(app, admin_user):
 
 def test_record_sumup_payment_transactions_skips_when_no_fee_configured(app, admin_user):
     """Test that it gracefully skips when sumup_fee_percentage is not set."""
-    from app.services.settings_service import SettingsService
-
-    settings = SettingsService.get()
-    settings.sumup_fee_percentage = None
-    SettingsService.save(settings)
+    # Default is None, so no need to set explicitly
 
     result = FinanceService.record_sumup_payment_transactions(
         payment_amount_cents=10000,

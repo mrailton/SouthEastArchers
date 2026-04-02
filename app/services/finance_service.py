@@ -60,8 +60,7 @@ class FinanceService:
 
         from app.services.settings_service import SettingsService
 
-        settings = SettingsService.get()
-        fee_pct = settings.sumup_fee_percentage
+        fee_pct = SettingsService.get("sumup_fee_percentage")
         if fee_pct is None:
             current_app.logger.warning("SumUp fee percentage not configured in settings — skipping automatic financial transaction recording")
             return ServiceResult.fail("SumUp fee percentage not configured")

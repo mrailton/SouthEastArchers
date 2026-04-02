@@ -583,7 +583,6 @@ def test_credits_purchase_post_success(mock_service_class, client, app, test_use
             data={"email": test_user.email, "password": "password123"},
         )
 
-        app.config["ADDITIONAL_NIGHT_COST"] = 10.00
         response = client.post("/payment/credits", data={"quantity": "3"}, follow_redirects=True)
 
         assert response.status_code == 200
@@ -602,7 +601,6 @@ def test_credits_purchase_checkout_failure(mock_service_class, client, app, test
             data={"email": test_user.email, "password": "password123"},
         )
 
-        app.config["ADDITIONAL_NIGHT_COST"] = 10.00
         response = client.post("/payment/credits", data={"quantity": "5"}, follow_redirects=True)
 
         assert response.status_code == 200

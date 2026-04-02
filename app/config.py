@@ -52,10 +52,6 @@ class Config:
     SUMUP_MERCHANT_CODE = os.environ.get("SUMUP_MERCHANT_CODE")
     SUMUP_API_URL = "https://api.sumup.com"
 
-    # Membership (prices in cents to avoid floating point issues)
-    ANNUAL_MEMBERSHIP_COST = 10000  # 100.00 EUR (stored as cents)
-    MEMBERSHIP_NIGHTS_INCLUDED = 20
-    ADDITIONAL_NIGHT_COST = 500  # 5.00 EUR per night (stored as cents)
 
 
 class DevelopmentConfig(Config):

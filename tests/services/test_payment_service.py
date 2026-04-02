@@ -47,9 +47,7 @@ def test_initiate_membership_payment_success(app, test_user):
         assert result.success is True
         assert result.data["checkout_id"] == "checkout_123"
         assert result.data["user_id"] == test_user.id
-        assert result.data["amount"] == app.config["ANNUAL_MEMBERSHIP_COST"] / 100.0
-
-        # Verify payment record was created
+        assert result.data["amount"] == SettingsService.get("annual_membership_cost") / 100.0
         payment = Payment.query.filter_by(user_id=test_user.id, payment_type="membership", status="pending").first()
         assert payment is not None
 
@@ -84,7 +82,7 @@ def test_initiate_credit_purchase_success(app, test_user):
         assert result.data["user_id"] == test_user.id
         assert result.data["quantity"] == quantity
 
-        expected_amount = quantity * app.config["ADDITIONAL_NIGHT_COST"] / 100.0
+        expected_amount = quantity * SettingsService.get("additional_shoot_cost") / 100.0
         assert result.data["amount"] == expected_amount
 
 
@@ -115,7 +113,7 @@ def test_initiate_credit_purchase_different_quantities(app, test_user):
             result = service.initiate_credit_purchase(test_user, quantity)
             assert result.success is True
 
-            expected_amount = quantity * app.config["ADDITIONAL_NIGHT_COST"]
+            expected_amount = quantity * SettingsService.get("additional_shoot_cost")
             payment = Payment.query.filter_by(user_id=test_user.id, payment_type="credits").order_by(Payment.id.desc()).first()
             assert payment.amount_cents == expected_amount
 
@@ -281,7 +279,7 @@ def test_initiate_cash_membership_payment_success(mock_send_email, app, test_use
 
     assert result.success is True
     assert "payment_id" in result.data
-    assert result.data["amount"] == app.config["ANNUAL_MEMBERSHIP_COST"] / 100.0
+    assert result.data["amount"] == SettingsService.get("annual_membership_cost") / 100.0
     assert "instructions" in result.data
 
     # Verify payment record was created with correct attributes
@@ -292,7 +290,7 @@ def test_initiate_cash_membership_payment_success(mock_send_email, app, test_use
         status="pending",
     ).first()
     assert payment is not None
-    assert payment.amount_cents == app.config["ANNUAL_MEMBERSHIP_COST"]
+    assert payment.amount_cents == SettingsService.get("annual_membership_cost")
 
     # Verify email was sent
     mock_send_email.assert_called_once_with(test_user.id, payment.id)
@@ -301,17 +299,15 @@ def test_initiate_cash_membership_payment_success(mock_send_email, app, test_use
 @patch("app.services.mail_service.MailService.send_cash_payment_pending_email")
 def test_initiate_cash_credit_purchase_success(mock_send_email, app, test_user):
     """Test initiating cash credit purchase creates pending payment"""
-    from app.services.settings_service import SettingsService
-
     service = PaymentService()
     quantity = 5
     result = service.initiate_cash_credit_purchase(test_user, quantity)
 
-    settings = SettingsService.get()
+    additional_shoot_cost = SettingsService.get("additional_shoot_cost")
     assert result.success is True
     assert "payment_id" in result.data
     assert result.data["quantity"] == quantity
-    expected_amount = quantity * settings.additional_shoot_cost / 100.0
+    expected_amount = quantity * additional_shoot_cost / 100.0
     assert result.data["amount"] == expected_amount
     assert "instructions" in result.data
 
@@ -323,7 +319,7 @@ def test_initiate_cash_credit_purchase_success(mock_send_email, app, test_user):
         status="pending",
     ).first()
     assert payment is not None
-    assert payment.amount_cents == quantity * settings.additional_shoot_cost
+    assert payment.amount_cents == quantity * additional_shoot_cost
     assert f"{quantity} shooting credits" in payment.description
 
     # Verify email was sent
@@ -333,17 +329,15 @@ def test_initiate_cash_credit_purchase_success(mock_send_email, app, test_user):
 @patch("app.services.mail_service.MailService.send_cash_payment_pending_email")
 def test_initiate_cash_credit_purchase_different_quantities(mock_send_email, app, test_user):
     """Test cash credit purchase with different quantities"""
-    from app.services.settings_service import SettingsService
-
     service = PaymentService()
-    settings = SettingsService.get()
+    additional_shoot_cost = SettingsService.get("additional_shoot_cost")
 
     for quantity in [1, 5, 10, 20]:
         result = service.initiate_cash_credit_purchase(test_user, quantity)
         assert result.success is True
         assert result.data["quantity"] == quantity
 
-        expected_amount = quantity * settings.additional_shoot_cost
+        expected_amount = quantity * additional_shoot_cost
         payment = (
             Payment.query.filter_by(
                 user_id=test_user.id,

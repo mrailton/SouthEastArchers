@@ -52,8 +52,7 @@ def create_shoot():
     form = ShootForm()
     form.attendees.choices = ShootService.get_active_members_with_credits()
     active_members = ShootService.get_active_members_with_credits()
-    settings = SettingsService.get()
-    visitor_fee = settings.visitor_shoot_fee / 100.0
+    visitor_fee = SettingsService.get("visitor_shoot_fee") / 100.0
     return render_template("admin/create_shoot.html", active_members=active_members, form=form, visitor_fee=visitor_fee)
 
 
@@ -78,8 +77,7 @@ def create_shoot_post():
         if not result.success:
             flash(result.message, "error")
             active_members = ShootService.get_active_members_with_credits()
-            settings = SettingsService.get()
-            visitor_fee = settings.visitor_shoot_fee / 100.0
+            visitor_fee = SettingsService.get("visitor_shoot_fee") / 100.0
             return render_template("admin/create_shoot.html", active_members=active_members, form=form, visitor_fee=visitor_fee)
 
         for message in result.warnings:
@@ -97,8 +95,7 @@ def create_shoot_post():
             flash(error, "error")
 
     active_members = ShootService.get_active_members_with_credits()
-    settings = SettingsService.get()
-    visitor_fee = settings.visitor_shoot_fee / 100.0
+    visitor_fee = SettingsService.get("visitor_shoot_fee") / 100.0
     return render_template("admin/create_shoot.html", active_members=active_members, form=form, visitor_fee=visitor_fee)
 
 
@@ -115,8 +112,7 @@ def edit_shoot(shoot_id):
     form.attendees.data = [u.id for u in shoot.users]
 
     active_members = ShootService.get_active_members_with_credits()
-    settings = SettingsService.get()
-    visitor_fee = settings.visitor_shoot_fee / 100.0
+    visitor_fee = SettingsService.get("visitor_shoot_fee") / 100.0
     return render_template(
         "admin/edit_shoot.html",
         shoot=shoot,
@@ -152,8 +148,7 @@ def edit_shoot_post(shoot_id):
         if not result.success:
             flash(result.message, "error")
             active_members = ShootService.get_active_members_with_credits()
-            settings = SettingsService.get()
-            visitor_fee = settings.visitor_shoot_fee / 100.0
+            visitor_fee = SettingsService.get("visitor_shoot_fee") / 100.0
             return render_template(
                 "admin/edit_shoot.html",
                 shoot=shoot,
@@ -173,8 +168,7 @@ def edit_shoot_post(shoot_id):
             flash(error, "error")
 
     active_members = ShootService.get_active_members_with_credits()
-    settings = SettingsService.get()
-    visitor_fee = settings.visitor_shoot_fee / 100.0
+    visitor_fee = SettingsService.get("visitor_shoot_fee") / 100.0
     return render_template(
         "admin/edit_shoot.html",
         shoot=shoot,

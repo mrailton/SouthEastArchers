@@ -129,6 +129,7 @@ class MailService:
     def send_welcome_email(user_id: int) -> None:
         """Send a welcome email to a new user."""
         from app.repositories import UserRepository
+        from app.services.settings_service import SettingsService
 
         try:
             user = UserRepository.get_by_id(user_id)
@@ -141,8 +142,8 @@ class MailService:
             except RuntimeError:
                 login_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/auth/login"
 
-            membership_cost = current_app.config.get("ANNUAL_MEMBERSHIP_COST", 10000)
-            credits_included = current_app.config.get("MEMBERSHIP_NIGHTS_INCLUDED", 20)
+            membership_cost = SettingsService.get("annual_membership_cost")
+            credits_included = SettingsService.get("membership_shoots_included")
 
             msg = Message(
                 subject="Welcome to South East Archers!",
@@ -224,8 +225,6 @@ class MailService:
                 current_app.logger.error(f"Cannot send cash payment email: user {user_id} or payment {payment_id} not found")
                 return
 
-            settings = SettingsService.get()
-
             try:
                 history_url = url_for("payment.history", _external=True)
             except RuntimeError:
@@ -241,7 +240,7 @@ class MailService:
                     submitted_date=payment.created_at.strftime("%d %B %Y"),
                     description=payment.description,
                     amount=payment.amount,
-                    instructions=settings.cash_payment_instructions,
+                    instructions=SettingsService.get("cash_payment_instructions"),
                     payment_type=payment.payment_type,
                     history_url=history_url,
                 ),

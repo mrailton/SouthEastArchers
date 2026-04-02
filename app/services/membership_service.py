@@ -13,13 +13,12 @@ class MembershipService:
         if user.membership:
             return ServiceResult.fail("User already has a membership.")
 
-        settings = SettingsService.get()
         start_date = date.today()
         membership = Membership(
             user_id=user.id,
             start_date=start_date,
             expiry_date=SettingsService.calculate_membership_expiry(start_date).date(),
-            initial_credits=settings.membership_shoots_included,
+            initial_credits=SettingsService.get("membership_shoots_included"),
             purchased_credits=0,
             status="active",
         )
@@ -55,8 +54,7 @@ class MembershipService:
         if not user.membership:
             return ServiceResult.fail("No membership to renew.")
 
-        settings = SettingsService.get()
-        initial_credits = settings.membership_shoots_included
+        initial_credits: int = SettingsService.get("membership_shoots_included")
         expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
         user.membership.renew(expiry_date=expiry_date, initial_credits=initial_credits)
         try:

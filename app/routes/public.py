@@ -19,8 +19,7 @@ def about():
 
 @bp.get("/news")
 def news_list():
-    settings = SettingsService.get()
-    if not settings.news_enabled:
+    if not SettingsService.get("news_enabled"):
         abort(404)
     news = NewsService.get_published_articles()
     return render_template("public/news.html", news=news)
@@ -28,8 +27,7 @@ def news_list():
 
 @bp.get("/news/<int:news_id>")
 def news_detail(news_id):
-    settings = SettingsService.get()
-    if not settings.news_enabled:
+    if not SettingsService.get("news_enabled"):
         abort(404)
     news = NewsService.get_article_by_id(news_id)
     if not news or not news.published:
@@ -39,8 +37,7 @@ def news_detail(news_id):
 
 @bp.get("/events")
 def events():
-    settings = SettingsService.get()
-    if not settings.events_enabled:
+    if not SettingsService.get("events_enabled"):
         abort(404)
     events = EventService.get_upcoming_published_events()
     return render_template("public/events.html", events=events)

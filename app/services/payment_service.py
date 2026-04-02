@@ -28,7 +28,7 @@ class PaymentService:
 
             {"checkout_id": str, "payment_id": int, "amount": float, "description": str}
         """
-        amount_cents = current_app.config["ANNUAL_MEMBERSHIP_COST"]
+        amount_cents: int = SettingsService.get("annual_membership_cost")
         description = f"Annual Membership - {user.name}"
 
         payment = Payment(
@@ -67,7 +67,7 @@ class PaymentService:
 
             {"checkout_id": str, "payment_id": int, "user_id": int, "quantity": int, "amount": float, "description": str}
         """
-        amount_cents = quantity * current_app.config["ADDITIONAL_NIGHT_COST"]
+        amount_cents: int = quantity * SettingsService.get("additional_shoot_cost")
         description = f"{quantity} credits - {user.name}"
 
         payment = Payment(
@@ -107,8 +107,7 @@ class PaymentService:
 
             {"payment_id": int, "amount": float, "instructions": str}
         """
-        settings = SettingsService.get()
-        amount_cents = settings.annual_membership_cost
+        amount_cents: int = SettingsService.get("annual_membership_cost")
 
         payment = Payment(
             user_id=user.id,
@@ -132,7 +131,7 @@ class PaymentService:
             data={
                 "payment_id": payment.id,
                 "amount": amount_cents / 100.0,
-                "instructions": settings.cash_payment_instructions,
+                "instructions": SettingsService.get("cash_payment_instructions"),
             }
         )
 
@@ -143,8 +142,7 @@ class PaymentService:
 
             {"payment_id": int, "quantity": int, "amount": float, "instructions": str}
         """
-        settings = SettingsService.get()
-        amount_cents = quantity * settings.additional_shoot_cost
+        amount_cents: int = quantity * SettingsService.get("additional_shoot_cost")
 
         payment = Payment(
             user_id=user.id,
@@ -169,6 +167,6 @@ class PaymentService:
                 "payment_id": payment.id,
                 "quantity": quantity,
                 "amount": amount_cents / 100.0,
-                "instructions": settings.cash_payment_instructions,
+                "instructions": SettingsService.get("cash_payment_instructions"),
             }
         )

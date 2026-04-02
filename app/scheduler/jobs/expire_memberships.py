@@ -16,9 +16,8 @@ def expire_memberships():
     today = date.today()
 
     # Get configured membership year start date
-    settings = SettingsService.get()
-    start_month = settings.membership_year_start_month
-    start_day = settings.membership_year_start_day
+    start_month = SettingsService.get("membership_year_start_month")
+    start_day = SettingsService.get("membership_year_start_day")
 
     # Check if today is the membership year start date
     if today.month == start_month and today.day == start_day:

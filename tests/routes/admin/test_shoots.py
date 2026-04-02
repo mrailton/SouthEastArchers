@@ -369,9 +369,7 @@ def test_create_shoot_with_visitor_sumup(app, admin_user):
     from app.services.settings_service import SettingsService
 
     # Configure SumUp fee
-    settings = SettingsService.get()
-    settings.sumup_fee_percentage = 1.90
-    SettingsService.save(settings)
+    SettingsService.set("sumup_fee_percentage", 1.90)
 
     result = ShootService.create_shoot(
         shoot_date=date.today(),
@@ -532,9 +530,7 @@ def test_visitor_fee_uses_settings(app, admin_user):
     from app.services import ShootService
     from app.services.settings_service import SettingsService
 
-    settings = SettingsService.get()
-    settings.visitor_shoot_fee = 1500  # €15.00
-    SettingsService.save(settings)
+    SettingsService.set("visitor_shoot_fee", 1500)  # €15.00
 
     ShootService.create_shoot(
         shoot_date=date.today(),

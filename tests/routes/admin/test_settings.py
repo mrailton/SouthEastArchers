@@ -57,13 +57,12 @@ def test_update_settings_success(client, admin_user, app):
 
     # Verify settings were saved
     with app.app_context():
-        settings = SettingsService.get()
-        assert settings.membership_year_start_month == 4
-        assert settings.membership_year_start_day == 15
-        assert settings.annual_membership_cost == 12000  # 120 euros = 12000 cents
-        assert settings.membership_shoots_included == 25
-        assert settings.additional_shoot_cost == 600  # 6 euros = 600 cents
-        assert settings.cash_payment_instructions == "Please pay at the next shoot night."
+        assert SettingsService.get("membership_year_start_month") == 4
+        assert SettingsService.get("membership_year_start_day") == 15
+        assert SettingsService.get("annual_membership_cost") == 12000  # 120 euros = 12000 cents
+        assert SettingsService.get("membership_shoots_included") == 25
+        assert SettingsService.get("additional_shoot_cost") == 600  # 6 euros = 600 cents
+        assert SettingsService.get("cash_payment_instructions") == "Please pay at the next shoot night."
 
 
 def test_update_settings_validates_month(client, admin_user):
@@ -147,19 +146,16 @@ def test_settings_euro_to_cents_conversion(client, admin_user, app):
 
     # Verify conversion happened correctly
     with app.app_context():
-        settings = SettingsService.get()
-        assert settings.annual_membership_cost == 15000  # 150 * 100
-        assert settings.additional_shoot_cost == 1000  # 10 * 100
+        assert SettingsService.get("annual_membership_cost") == 15000  # 150 * 100
+        assert SettingsService.get("additional_shoot_cost") == 1000  # 10 * 100
 
 
 def test_settings_displays_cents_as_euros(client, admin_user, app):
     """Test that cents are displayed as euros in the form"""
     # Set some values in cents
     with app.app_context():
-        settings = SettingsService.get()
-        settings.annual_membership_cost = 8500  # 85 euros
-        settings.additional_shoot_cost = 750  # 7.5 euros
-        SettingsService.save(settings)
+        SettingsService.set("annual_membership_cost", 8500)  # 85 euros
+        SettingsService.set("additional_shoot_cost", 750)  # 7.5 euros
 
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
 

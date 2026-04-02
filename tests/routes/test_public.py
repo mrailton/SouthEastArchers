@@ -3,21 +3,13 @@
 from datetime import date, timedelta
 
 from app.models import Event, News
-from app.models.application_settings import ApplicationSettings
+from app.services.settings_service import SettingsService
 
 
 def _enable_features(app):
     """Enable news and events features in application settings."""
-    from app import db
-
-    settings = ApplicationSettings.query.first()
-    if not settings:
-        settings = ApplicationSettings(news_enabled=True, events_enabled=True)
-        db.session.add(settings)
-    else:
-        settings.news_enabled = True
-        settings.events_enabled = True
-    db.session.commit()
+    SettingsService.set("news_enabled", True)
+    SettingsService.set("events_enabled", True)
 
 
 def test_index_page(client):

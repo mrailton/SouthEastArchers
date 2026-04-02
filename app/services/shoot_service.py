@@ -108,9 +108,8 @@ class ShootService:
     @staticmethod
     def _add_visitors(shoot: Shoot, visitors: list[dict], created_by_id: int | None) -> None:
         """Add visitors to a shoot and create income transactions for each."""
-        settings = SettingsService.get()
-        fee_cents = settings.visitor_shoot_fee
-        sumup_fee_pct = settings.sumup_fee_percentage
+        fee_cents: int = SettingsService.get("visitor_shoot_fee")
+        sumup_fee_pct = SettingsService.get("sumup_fee_percentage")
 
         for v in visitors:
             visitor = ShootVisitor(

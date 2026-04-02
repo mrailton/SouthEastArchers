@@ -1,4 +1,4 @@
-from .application_settings import ApplicationSettings
+from .application_settings import Setting
 from .credit import Credit
 from .event import Event
 from .financial_transaction import FinancialTransaction
@@ -19,7 +19,7 @@ __all__ = [
     "News",
     "Event",
     "Payment",
-    "ApplicationSettings",
+    "Setting",
     "Role",
     "Permission",
     "FinancialTransaction",

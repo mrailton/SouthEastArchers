@@ -112,10 +112,9 @@ def _register_context_processor(app: Flask) -> None:
         from app.services.settings_service import SettingsService
 
         try:
-            settings = SettingsService.get()
             return {
-                "news_enabled": settings.news_enabled,
-                "events_enabled": settings.events_enabled,
+                "news_enabled": SettingsService.get("news_enabled"),
+                "events_enabled": SettingsService.get("events_enabled"),
             }
         except Exception:
             return {"news_enabled": False, "events_enabled": False}

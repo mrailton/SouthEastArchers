@@ -61,13 +61,12 @@ def approve_payment(payment_id):
                     user.membership.renew(expiry_date=expiry_date)
             else:
                 # Create new membership for user (e.g., new signup with cash payment)
-                settings = SettingsService.get()
                 expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
                 membership = Membership(
                     user_id=user.id,
                     start_date=date.today(),
                     expiry_date=expiry_date,
-                    initial_credits=settings.membership_shoots_included,
+                    initial_credits=SettingsService.get("membership_shoots_included"),
                     purchased_credits=0,
                     status="active",
                 )

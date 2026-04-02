@@ -12,19 +12,14 @@ from app.scheduler.jobs import expire_memberships, send_low_credits_reminder
 
 def test_expire_memberships_on_start_date(app):
     """Test that memberships are expired on the year start date"""
-    from app.models import ApplicationSettings
     from app.services.membership_service import MembershipService
+    from app.services.settings_service import SettingsService
 
     with app.app_context():
         # Set today as start date
         today = date.today()
-        settings = ApplicationSettings.query.first()
-        if not settings:
-            settings = ApplicationSettings()
-            db.session.add(settings)
-        settings.membership_year_start_month = today.month
-        settings.membership_year_start_day = today.day
-        db.session.commit()
+        SettingsService.set("membership_year_start_month", today.month)
+        SettingsService.set("membership_year_start_day", today.day)
 
         with patch.object(MembershipService, "expire_memberships_for_year_end", return_value=5) as mock_expire:
             expire_memberships()
@@ -33,19 +28,14 @@ def test_expire_memberships_on_start_date(app):
 
 def test_expire_memberships_skipped_on_other_dates(app):
     """Test that memberships are not expired on other dates"""
-    from app.models import ApplicationSettings
     from app.services.membership_service import MembershipService
+    from app.services.settings_service import SettingsService
 
     with app.app_context():
         # Set start date to tomorrow
         tomorrow = date.today() + timedelta(days=1)
-        settings = ApplicationSettings.query.first()
-        if not settings:
-            settings = ApplicationSettings()
-            db.session.add(settings)
-        settings.membership_year_start_month = tomorrow.month
-        settings.membership_year_start_day = tomorrow.day
-        db.session.commit()
+        SettingsService.set("membership_year_start_month", tomorrow.month)
+        SettingsService.set("membership_year_start_day", tomorrow.day)
 
         with patch.object(MembershipService, "expire_memberships_for_year_end") as mock_expire:
             expire_memberships()

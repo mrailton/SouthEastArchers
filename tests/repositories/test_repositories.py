@@ -15,7 +15,6 @@ from app.models import (
     Shoot,
     User,
 )
-from app.models.application_settings import ApplicationSettings
 from app.repositories import (
     BaseRepository,
     CreditRepository,
@@ -355,17 +354,12 @@ def test_rbac_repository_get_permissions_by_ids(app):
 # =============================================================================
 
 
-def test_settings_repository_get(app):
-    settings = SettingsRepository.get()
-    # May be None if not seeded, but shouldn't error
-    # If it exists, should be an ApplicationSettings instance
-    if settings:
-        assert isinstance(settings, ApplicationSettings)
+def test_settings_repository_get_value(app):
+    result = SettingsRepository.get_value("nonexistent")
+    assert result is None
 
 
-def test_settings_repository_add_and_commit(app):
-    if SettingsRepository.get() is None:
-        settings = ApplicationSettings()
-        SettingsRepository.add(settings)
-        SettingsRepository.save()
-        assert SettingsRepository.get() is not None
+def test_settings_repository_set_and_get(app):
+    SettingsRepository.set_value("test_key", "test_value")
+    SettingsRepository.save()
+    assert SettingsRepository.get_value("test_key") == "test_value"

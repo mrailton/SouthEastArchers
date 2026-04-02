@@ -13,20 +13,20 @@ from . import bp
 @permission_required("settings.read")
 def settings():
     """Display application settings."""
-    settings_obj = SettingsService.get()
+    all_settings = SettingsService.get_all()
 
     form = SettingsForm()
     # Populate form with current values
-    form.membership_year_start_month.data = settings_obj.membership_year_start_month
-    form.membership_year_start_day.data = settings_obj.membership_year_start_day
-    form.annual_membership_cost.data = settings_obj.annual_membership_cost // 100  # Convert cents to euros
-    form.membership_shoots_included.data = settings_obj.membership_shoots_included
-    form.additional_shoot_cost.data = settings_obj.additional_shoot_cost // 100  # Convert cents to euros
-    form.visitor_shoot_fee.data = settings_obj.visitor_shoot_fee // 100  # Convert cents to euros
-    form.cash_payment_instructions.data = settings_obj.cash_payment_instructions
-    form.sumup_fee_percentage.data = settings_obj.sumup_fee_percentage
-    form.news_enabled.data = settings_obj.news_enabled
-    form.events_enabled.data = settings_obj.events_enabled
+    form.membership_year_start_month.data = all_settings["membership_year_start_month"]
+    form.membership_year_start_day.data = all_settings["membership_year_start_day"]
+    form.annual_membership_cost.data = all_settings["annual_membership_cost"] // 100  # Convert cents to euros
+    form.membership_shoots_included.data = all_settings["membership_shoots_included"]
+    form.additional_shoot_cost.data = all_settings["additional_shoot_cost"] // 100  # Convert cents to euros
+    form.visitor_shoot_fee.data = all_settings["visitor_shoot_fee"] // 100  # Convert cents to euros
+    form.cash_payment_instructions.data = all_settings["cash_payment_instructions"]
+    form.sumup_fee_percentage.data = all_settings["sumup_fee_percentage"]
+    form.news_enabled.data = all_settings["news_enabled"]
+    form.events_enabled.data = all_settings["events_enabled"]
 
     return render_template("admin/settings.html", form=form)
 
@@ -39,21 +39,18 @@ def settings_post():
 
     if form.validate_on_submit():
         try:
-            settings_obj = SettingsService.get()
-
-            # Update all settings (convert euros to cents for costs)
-            settings_obj.membership_year_start_month = form.membership_year_start_month.data
-            settings_obj.membership_year_start_day = form.membership_year_start_day.data
-            settings_obj.annual_membership_cost = form.annual_membership_cost.data * 100  # Convert to cents
-            settings_obj.membership_shoots_included = form.membership_shoots_included.data
-            settings_obj.additional_shoot_cost = form.additional_shoot_cost.data * 100  # Convert to cents
-            settings_obj.visitor_shoot_fee = form.visitor_shoot_fee.data * 100  # Convert to cents
-            settings_obj.cash_payment_instructions = form.cash_payment_instructions.data
-            settings_obj.sumup_fee_percentage = form.sumup_fee_percentage.data
-            settings_obj.news_enabled = form.news_enabled.data
-            settings_obj.events_enabled = form.events_enabled.data
-
-            SettingsService.save(settings_obj)
+            SettingsService.save_many({
+                "membership_year_start_month": form.membership_year_start_month.data,
+                "membership_year_start_day": form.membership_year_start_day.data,
+                "annual_membership_cost": form.annual_membership_cost.data * 100,  # Convert to cents
+                "membership_shoots_included": form.membership_shoots_included.data,
+                "additional_shoot_cost": form.additional_shoot_cost.data * 100,  # Convert to cents
+                "visitor_shoot_fee": form.visitor_shoot_fee.data * 100,  # Convert to cents
+                "cash_payment_instructions": form.cash_payment_instructions.data,
+                "sumup_fee_percentage": form.sumup_fee_percentage.data,
+                "news_enabled": form.news_enabled.data,
+                "events_enabled": form.events_enabled.data,
+            })
 
             flash("Settings updated successfully!", "success")
             return redirect(url_for("admin.settings"))

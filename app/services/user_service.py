@@ -16,11 +16,6 @@ class UserService:
         return UserRepository.get_by_id(user_id)
 
     @staticmethod
-    def get_all_users() -> list[User]:
-        """Get all users ordered by name."""
-        return UserRepository.get_all()
-
-    @staticmethod
     def get_all_users_paginated(page: int = 1, per_page: int = 20, search: str = "", membership_filter: str = "all") -> Pagination:
         """Get all users ordered by name with pagination, search, and membership filter."""
         return UserRepository.get_all_paginated(page=page, per_page=per_page, search=search, membership_filter=membership_filter)

@@ -66,11 +66,3 @@ class EventService:
     def get_event_by_id(event_id: int) -> Event | None:
         """Get an event by ID."""
         return EventRepository.get_by_id(event_id)
-
-    @staticmethod
-    def parse_date(date_str: str) -> datetime | None:
-        """Parse ISO format date string."""
-        try:
-            return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-        except ValueError, AttributeError:
-            return None

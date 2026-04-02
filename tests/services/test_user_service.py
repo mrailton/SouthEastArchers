@@ -24,30 +24,6 @@ def test_get_nonexistent_user(app):
     assert result is None
 
 
-# TestGetAllUsers
-
-
-def test_get_all_users_ordered_by_name(app):
-    """Test retrieving all users ordered by name"""
-    users_data = [
-        ("Zara User", "zara@example.com"),
-        ("Alice User", "alice@example.com"),
-        ("Bob User", "bob@example.com"),
-    ]
-
-    for name, email in users_data:
-        user = User(name=name, email=email)
-        user.set_password("password123")
-        db.session.add(user)
-    db.session.commit()
-
-    result = UserService.get_all_users()
-    assert len(result) == 3
-    assert result[0].name == "Alice User"
-    assert result[1].name == "Bob User"
-    assert result[2].name == "Zara User"
-
-
 # TestUpdateProfile
 
 

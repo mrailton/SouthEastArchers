@@ -1,5 +1,3 @@
-"""Standardised return type for service-layer methods."""
-
 from dataclasses import dataclass, field
 
 

@@ -170,24 +170,9 @@ class FinanceService:
         return FinancialTransactionRepository.get_by_id(transaction_id)
 
     @staticmethod
-    def get_all_transactions() -> list[FinancialTransaction]:
-        """Get all financial transactions ordered by date descending."""
-        return FinancialTransactionRepository.get_all()
-
-    @staticmethod
     def get_all_transactions_paginated(page: int = 1, per_page: int = 20) -> Pagination:
         """Get paginated financial transactions ordered by date descending."""
         return FinancialTransactionRepository.get_all_paginated(page=page, per_page=per_page)
-
-    @staticmethod
-    def get_expenses() -> list[FinancialTransaction]:
-        """Get all expense transactions."""
-        return FinancialTransactionRepository.get_by_type("expense")
-
-    @staticmethod
-    def get_income() -> list[FinancialTransaction]:
-        """Get all income transactions."""
-        return FinancialTransactionRepository.get_by_type("income")
 
     @staticmethod
     def generate_statement(

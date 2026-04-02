@@ -76,10 +76,6 @@ class MembershipService:
             return ServiceResult.fail(f"Error deactivating membership: {str(e)}")
 
     @staticmethod
-    def get_expiring_memberships(days: int = 30) -> list[Membership]:
-        return MembershipRepository.get_expiring_soon(days)
-
-    @staticmethod
     def get_expired_memberships() -> list[Membership]:
         return MembershipRepository.get_expired()
 

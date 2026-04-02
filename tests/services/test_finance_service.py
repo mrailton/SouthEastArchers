@@ -2,6 +2,7 @@
 
 from datetime import date
 
+from app.models import FinancialTransaction
 from app.services import FinanceService
 
 
@@ -97,77 +98,6 @@ def test_delete_transaction_not_found(app):
 
     assert result.success is False
     assert result.message == "Transaction not found"
-
-
-def test_get_all_transactions(app, admin_user):
-    """Test getting all transactions."""
-    FinanceService.create_transaction(
-        txn_type="expense",
-        txn_date=date(2026, 1, 15),
-        amount_cents=5000,
-        category="equipment",
-        description="Expense 1",
-        created_by_id=admin_user.id,
-    )
-    FinanceService.create_transaction(
-        txn_type="income",
-        txn_date=date(2026, 1, 20),
-        amount_cents=10000,
-        category="donations",
-        description="Income 1",
-        created_by_id=admin_user.id,
-    )
-
-    transactions = FinanceService.get_all_transactions()
-    assert len(transactions) == 2
-
-
-def test_get_expenses(app, admin_user):
-    """Test getting only expenses."""
-    FinanceService.create_transaction(
-        txn_type="expense",
-        txn_date=date(2026, 1, 15),
-        amount_cents=5000,
-        category="equipment",
-        description="Expense",
-        created_by_id=admin_user.id,
-    )
-    FinanceService.create_transaction(
-        txn_type="income",
-        txn_date=date(2026, 1, 20),
-        amount_cents=10000,
-        category="donations",
-        description="Income",
-        created_by_id=admin_user.id,
-    )
-
-    expenses = FinanceService.get_expenses()
-    assert len(expenses) == 1
-    assert expenses[0].type == "expense"
-
-
-def test_get_income(app, admin_user):
-    """Test getting only income."""
-    FinanceService.create_transaction(
-        txn_type="expense",
-        txn_date=date(2026, 1, 15),
-        amount_cents=5000,
-        category="equipment",
-        description="Expense",
-        created_by_id=admin_user.id,
-    )
-    FinanceService.create_transaction(
-        txn_type="income",
-        txn_date=date(2026, 1, 20),
-        amount_cents=10000,
-        category="donations",
-        description="Income",
-        created_by_id=admin_user.id,
-    )
-
-    income = FinanceService.get_income()
-    assert len(income) == 1
-    assert income[0].type == "income"
 
 
 def test_generate_statement(app, admin_user):
@@ -311,7 +241,7 @@ def test_record_sumup_payment_transactions_creates_income_and_expense(app, admin
 
     assert result.success is True
 
-    transactions = FinanceService.get_all_transactions()
+    transactions = FinancialTransaction.query.all()
     assert len(transactions) == 2
 
     income = [t for t in transactions if t.type == "income"][0]
@@ -343,7 +273,7 @@ def test_record_sumup_payment_transactions_credit_purchase(app, admin_user):
     )
 
     assert result.success is True
-    income = [t for t in FinanceService.get_all_transactions() if t.type == "income"][0]
+    income = [t for t in FinancialTransaction.query.all() if t.type == "income"][0]
     assert income.category == "shoot_fees"
     assert income.amount == 5.00
 
@@ -361,7 +291,7 @@ def test_record_sumup_payment_transactions_skips_when_no_fee_configured(app, adm
 
     assert result.success is False
     assert "not configured" in result.message
-    assert len(FinanceService.get_all_transactions()) == 0
+    assert len(FinancialTransaction.query.all()) == 0
 
 
 def test_record_cash_payment_transaction_creates_income(app, admin_user):
@@ -375,7 +305,7 @@ def test_record_cash_payment_transaction_creates_income(app, admin_user):
 
     assert result.success is True
 
-    transactions = FinanceService.get_all_transactions()
+    transactions = FinancialTransaction.query.all()
     assert len(transactions) == 1
 
     income = transactions[0]
@@ -396,7 +326,7 @@ def test_record_cash_payment_transaction_credit_purchase(app, admin_user):
     )
 
     assert result.success is True
-    income = FinanceService.get_all_transactions()[0]
+    income = FinancialTransaction.query.all()[0]
     assert income.category == "shoot_fees"
     assert income.amount == 5.00
     assert income.source == "Cash"

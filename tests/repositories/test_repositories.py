@@ -142,12 +142,6 @@ def test_membership_repository_count_active(app, test_user):
     assert count >= 1
 
 
-def test_membership_repository_count_expiring_soon(app, test_user):
-    # test_user has membership expiring in 335 days, so not expiring soon
-    count = MembershipRepository.count_expiring_soon(days=30)
-    assert count >= 0
-
-
 def test_membership_repository_get_expired(app):
     user = User(name="Expired", email="expired_repo@example.com", qualification="none")
     user.set_password("test123")

@@ -100,7 +100,8 @@ class PaymentService:
             PaymentRepository.save()
             return ServiceResult.fail("Error creating payment. Please try again.")
 
-    def initiate_cash_membership_payment(self, user: User) -> ServiceResult[dict]:
+    @staticmethod
+    def initiate_cash_membership_payment(user: User) -> ServiceResult[dict]:
         """Create pending cash payment record for membership.
 
         On success, ``result.data`` contains::
@@ -135,7 +136,8 @@ class PaymentService:
             }
         )
 
-    def initiate_cash_credit_purchase(self, user: User, quantity: int) -> ServiceResult[dict]:
+    @staticmethod
+    def initiate_cash_credit_purchase(user: User, quantity: int) -> ServiceResult[dict]:
         """Create pending cash payment record for credit purchase.
 
         On success, ``result.data`` contains::

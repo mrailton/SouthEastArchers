@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Any
 
 from flask_sqlalchemy.pagination import Pagination
 
@@ -20,7 +21,7 @@ class ShootService:
         visitors: list[dict] = None,
         created_by_id: int | None = None,
     ) -> ServiceResult[Shoot]:
-        warnings = []
+        warnings: list[str] = []
         shoot = Shoot(date=shoot_date, location=location, description=description)
         ShootRepository.add(shoot)
 
@@ -28,16 +29,7 @@ class ShootService:
             ShootRepository.flush()
 
             if attendee_ids:
-                for user_id in attendee_ids:
-                    user = UserRepository.get_by_id(user_id)
-                    if user and user.membership:
-                        if user.membership.use_credit(allow_negative=True):
-                            shoot.users.append(user)
-                            total_credits = user.membership.credits_remaining()
-                            if total_credits < 0:
-                                warnings.append(f"{user.name} now has {total_credits} credits (negative balance).")
-                        else:
-                            warnings.append(f"{user.name} cannot be added (inactive membership).")
+                ShootService._filter_shoot_attendees(attendee_ids, shoot, warnings)
 
             if visitors:
                 ShootService._add_visitors(shoot, visitors, created_by_id)
@@ -57,7 +49,7 @@ class ShootService:
         visitors: list[dict] = None,
         created_by_id: int | None = None,
     ) -> ServiceResult[None]:
-        warnings = []
+        warnings: list[str] = []
         new_attendee_ids = set(attendee_ids or [])
         old_attendee_ids = {u.id for u in shoot.users}
 
@@ -68,16 +60,7 @@ class ShootService:
                 user.membership.add_credits(1)
 
         added_ids = new_attendee_ids - old_attendee_ids
-        for user_id in added_ids:
-            user = UserRepository.get_by_id(user_id)
-            if user and user.membership:
-                if user.membership.use_credit(allow_negative=True):
-                    shoot.users.append(user)
-                    total_credits = user.membership.credits_remaining()
-                    if total_credits < 0:
-                        warnings.append(f"{user.name} now has {total_credits} credits (negative balance).")
-                else:
-                    warnings.append(f"{user.name} cannot be added (inactive membership).")
+        ShootService._filter_shoot_attendees(list(added_ids), shoot, warnings)
 
         shoot.users = [u for u in shoot.users if u.id in new_attendee_ids]
         shoot.date = shoot_date
@@ -147,11 +130,6 @@ class ShootService:
                 )
 
     @staticmethod
-    def get_all_shoots() -> list[Shoot]:
-        """Get all shoots ordered by date descending."""
-        return ShootRepository.get_all()
-
-    @staticmethod
     def get_all_shoots_paginated(page: int = 1, per_page: int = 10) -> Pagination:
         """Get all shoots ordered by date descending with pagination."""
         return ShootRepository.get_all_paginated(page=page, per_page=per_page)
@@ -166,3 +144,16 @@ class ShootService:
         """Get active members with their credit information for form choices."""
         active_members = UserRepository.get_active_with_membership()
         return [(u.id, f"{u.name} ({u.membership.credits_remaining()} credits)") for u in active_members if u.membership and u.membership.is_active()]
+
+    @staticmethod
+    def _filter_shoot_attendees(attendee_ids: list[int], shoot: Shoot, warnings: list[Any]) -> None:
+        for user_id in attendee_ids:
+            user = UserRepository.get_by_id(user_id)
+            if user and user.membership:
+                if user.membership.use_credit(allow_negative=True):
+                    shoot.users.append(user)
+                    total_credits = user.membership.credits_remaining()
+                    if total_credits < 0:
+                        warnings.append(f"{user.name} now has {total_credits} credits (negative balance).")
+                else:
+                    warnings.append(f"{user.name} cannot be added (inactive membership).")

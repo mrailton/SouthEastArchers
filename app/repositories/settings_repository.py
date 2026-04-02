@@ -28,10 +28,3 @@ class SettingsRepository(BaseRepository):
         """Return every stored setting as ``{key: raw_value}``."""
         rows = Setting.query.all()
         return {r.key: r.value for r in rows}
-
-    @staticmethod
-    def delete_by_key(key: str) -> None:
-        """Delete a single setting row by key (does **not** commit)."""
-        row = db.session.get(Setting, key)
-        if row:
-            db.session.delete(row)

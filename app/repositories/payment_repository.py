@@ -50,10 +50,6 @@ class PaymentRepository(BaseRepository):
         ).first()
 
     @staticmethod
-    def get_by_user_and_type(user_id: int, payment_type: str) -> Payment | None:
-        return Payment.query.filter_by(user_id=user_id, payment_type=payment_type).first()
-
-    @staticmethod
     def add(payment: Payment) -> None:
         db.session.add(payment)
 

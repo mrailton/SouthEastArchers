@@ -1,10 +1,10 @@
 from datetime import date
 
-from flask import current_app, session
+from flask import current_app
 from flask_sqlalchemy.pagination import Pagination
 
 from app.models import Membership, User
-from app.repositories import MembershipRepository, PaymentRepository, RBACRepository, UserRepository
+from app.repositories import MembershipRepository, RBACRepository, UserRepository
 from app.services.result import ServiceResult
 from app.services.settings_service import SettingsService
 
@@ -206,32 +206,3 @@ class UserService:
         UserRepository.save()
 
         return ServiceResult.ok(message="Password reset successfully.")
-
-    @staticmethod
-    def initiate_online_payment(user: User, user_name: str) -> dict:
-        from app.services import PaymentService
-
-        payment = PaymentRepository.get_by_user_and_type(user.id, "membership")
-        if not payment:
-            return {"success": False, "error": "Payment record not found"}
-
-        amount_cents = payment.amount_cents
-        payment_service = PaymentService()
-
-        checkout = payment_service.create_checkout(
-            amount_cents=amount_cents,
-            description=f"Annual Membership - {user_name}",
-        )
-
-        if checkout:
-            session["signup_user_id"] = user.id
-            session["signup_payment_id"] = payment.id
-            session["checkout_amount"] = float(amount_cents / 100.0)
-            session["checkout_description"] = f"Annual Membership - {user_name}"
-
-            return {"success": True, "checkout_id": checkout.get("id")}
-        else:
-            return {
-                "success": False,
-                "error": "Error creating payment. Please contact us to complete registration.",
-            }

@@ -3,7 +3,7 @@
 from datetime import date
 
 from app import db
-from app.models import Payment, Role, User
+from app.models import Role, User
 from app.services.settings_service import SettingsService
 from app.services.user_service import UserService
 
@@ -420,69 +420,6 @@ def test_reset_password_with_expired_token(app, test_user):
 
     # Token should be valid if just created
     assert result.success is True
-
-
-# TestInitiateOnlinePayment
-
-
-def test_initiate_payment_with_existing_payment_record(app, test_user):
-    """Test initiating online payment when payment record exists"""
-    # Create a payment record
-    payment = Payment(
-        user_id=test_user.id,
-        amount_cents=10000,
-        payment_type="membership",
-        payment_method="online",
-        status="pending",
-    )
-    db.session.add(payment)
-    db.session.commit()
-
-    # Mock the payment service's create_checkout to avoid external API call
-    from unittest.mock import patch
-
-    with patch("app.services.payment_service.PaymentService.create_checkout") as mock_checkout:
-        mock_checkout.return_value = {"id": "checkout_123"}
-
-        result = UserService.initiate_online_payment(test_user, test_user.name)
-
-        assert result["success"] is True
-        assert result["checkout_id"] == "checkout_123"
-
-
-def test_initiate_payment_without_payment_record(app, test_user):
-    """Test initiating payment when no payment record exists"""
-    # Ensure no payment exists
-    Payment.query.filter_by(user_id=test_user.id).delete()
-    db.session.commit()
-
-    result = UserService.initiate_online_payment(test_user, test_user.name)
-
-    assert result["success"] is False
-    assert "not found" in result["error"].lower()
-
-
-def test_initiate_payment_checkout_creation_fails(app, test_user):
-    """Test initiating payment when checkout creation fails"""
-    payment = Payment(
-        user_id=test_user.id,
-        amount_cents=10000,
-        payment_type="membership",
-        payment_method="online",
-        status="pending",
-    )
-    db.session.add(payment)
-    db.session.commit()
-
-    from unittest.mock import patch
-
-    with patch("app.services.payment_service.PaymentService.create_checkout") as mock_checkout:
-        mock_checkout.return_value = None
-
-        result = UserService.initiate_online_payment(test_user, test_user.name)
-
-        assert result["success"] is False
-        assert "error" in result["error"].lower()
 
 
 # TestUpdateProfileErrors

@@ -32,7 +32,7 @@ def test_show_checkout_with_default_values(client, test_user):
 
 
 @patch("app.routes.payment.SumUpService")
-@patch("app.services.mail_service.send_payment_receipt")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_complete_checkout_signup_payment_success(mock_email, mock_sumup_class, client, app, test_user):
     """Test successful signup payment completion via widget"""
     payment = Payment(
@@ -77,7 +77,7 @@ def test_complete_checkout_signup_payment_success(mock_email, mock_sumup_class, 
 
 @patch("app.routes.payment.PaymentProcessingService.handle_signup_payment")
 @patch("app.routes.payment.SumUpService")
-@patch("app.services.mail_service.send_payment_receipt")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_complete_checkout_signup_payment_email_failure(mock_email, mock_sumup_class, mock_handle, client, app, test_user):
     """Test successful payment but email sending fails"""
     from app.services.result import ServiceResult
@@ -189,7 +189,7 @@ def test_complete_checkout_pending_status(mock_sumup_class, client, test_user):
 
 
 @patch("app.routes.payment.SumUpService")
-@patch("app.services.mail_service.send_payment_receipt")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_complete_checkout_membership_renewal(mock_email, mock_sumup_class, client, app, test_user):
     """Test membership renewal payment"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
@@ -229,7 +229,7 @@ def test_complete_checkout_membership_renewal(mock_email, mock_sumup_class, clie
 
 
 @patch("app.routes.payment.SumUpService")
-@patch("app.services.mail_service.send_payment_receipt")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_complete_checkout_membership_renewal_no_existing_membership(mock_email, mock_sumup_class, client, app):
     """Test membership renewal creates new membership if none exists"""
     with app.app_context():
@@ -286,7 +286,7 @@ def test_complete_checkout_membership_renewal_no_existing_membership(mock_email,
 
 @patch("app.routes.payment.PaymentProcessingService.handle_membership_renewal")
 @patch("app.routes.payment.SumUpService")
-@patch("app.services.mail_service.send_payment_receipt")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_complete_checkout_membership_renewal_email_failure(mock_email, mock_sumup_class, mock_handle, client, app, test_user):
     """Test membership renewal handles email failure gracefully"""
     from app.services.result import ServiceResult
@@ -339,7 +339,7 @@ def test_complete_checkout_membership_renewal_email_failure(mock_email, mock_sum
 
 
 @patch("app.routes.payment.SumUpService")
-@patch("app.services.mail_service.send_credit_purchase_receipt")
+@patch("app.services.mail_service.MailService.send_credit_purchase_receipt")
 def test_complete_checkout_credit_purchase(mock_credit_receipt, mock_sumup_class, client, app, test_user):
     """Test credit purchase payment sends receipt email"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
@@ -712,7 +712,7 @@ def test_payment_history_displays_user_payments(client, app, test_user):
 # Cash payment route tests
 
 
-@patch("app.services.mail_service.send_cash_payment_pending_email")
+@patch("app.services.mail_service.MailService.send_cash_payment_pending_email")
 def test_membership_cash_payment_success(mock_send_email, client, test_user):
     """Test successful cash membership payment submission"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
@@ -737,7 +737,7 @@ def test_membership_cash_payment_success(mock_send_email, client, test_user):
     mock_send_email.assert_called_once()
 
 
-@patch("app.services.mail_service.send_cash_payment_pending_email")
+@patch("app.services.mail_service.MailService.send_cash_payment_pending_email")
 def test_credits_cash_payment_success(mock_send_email, client, test_user):
     """Test successful cash credits payment submission"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})

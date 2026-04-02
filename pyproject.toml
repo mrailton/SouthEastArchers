@@ -83,18 +83,16 @@ root_packages = ["app"]
 include_external_packages = false
 
 [[tool.importlinter.contracts]]
-name = "Routes must not import db directly"
+name = "Only models and repositories may import app.db"
 type = "forbidden"
 source_modules = [
+    "app.cli",
+    "app.events",
+    "app.forms",
     "app.routes",
-]
-forbidden_modules = ["app.db"]
-
-[[tool.importlinter.contracts]]
-name = "Services must not import db directly"
-type = "forbidden"
-source_modules = [
+    "app.scheduler",
     "app.services",
+    "app.utils",
 ]
 forbidden_modules = ["app.db"]
 

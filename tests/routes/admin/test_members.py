@@ -484,7 +484,7 @@ def test_activate_member(client, admin_user, test_user):
 
 def test_activate_user_success(client, admin_user, test_user, mocker):
     """Test activating inactive user sends welcome email"""
-    mock_send_email = mocker.patch("app.services.mail_service.send_welcome_email")
+    mock_send_email = mocker.patch("app.services.mail_service.MailService.send_welcome_email")
 
     # Make test user inactive
     test_user.is_active = False

@@ -213,7 +213,7 @@ def test_handle_credit_purchase_user_not_found(app, test_user):
     assert "not found" in result.message.lower()
 
 
-@patch("app.services.mail_service.send_credit_purchase_receipt")
+@patch("app.services.mail_service.MailService.send_credit_purchase_receipt")
 def test_handle_credit_purchase_with_quantity(mock_send_email, app, test_user):
     """Test credit purchase creates correct amount of credits and sends email via event"""
     payment = create_payment_for_user(db, test_user, amount_cents=5000, payment_type="credits", status="pending")
@@ -239,7 +239,7 @@ def test_handle_credit_purchase_with_quantity(mock_send_email, app, test_user):
     mock_send_email.assert_called_once_with(test_user.id, payment.id, quantity)
 
 
-@patch("app.services.mail_service.send_credit_purchase_receipt")
+@patch("app.services.mail_service.MailService.send_credit_purchase_receipt")
 def test_handle_credit_purchase_email_failure(mock_send_email, app, test_user):
     """Test credit purchase succeeds even if email fails"""
     mock_send_email.side_effect = Exception("Mail server down")
@@ -273,7 +273,7 @@ def test_handle_credit_purchase_email_failure(mock_send_email, app, test_user):
 # Cash Payment Service Tests
 
 
-@patch("app.services.mail_service.send_cash_payment_pending_email")
+@patch("app.services.mail_service.MailService.send_cash_payment_pending_email")
 def test_initiate_cash_membership_payment_success(mock_send_email, app, test_user):
     """Test initiating cash membership payment creates pending payment"""
     service = PaymentService()
@@ -298,7 +298,7 @@ def test_initiate_cash_membership_payment_success(mock_send_email, app, test_use
     mock_send_email.assert_called_once_with(test_user.id, payment.id)
 
 
-@patch("app.services.mail_service.send_cash_payment_pending_email")
+@patch("app.services.mail_service.MailService.send_cash_payment_pending_email")
 def test_initiate_cash_credit_purchase_success(mock_send_email, app, test_user):
     """Test initiating cash credit purchase creates pending payment"""
     from app.services.settings_service import SettingsService
@@ -330,7 +330,7 @@ def test_initiate_cash_credit_purchase_success(mock_send_email, app, test_user):
     mock_send_email.assert_called_once_with(test_user.id, payment.id)
 
 
-@patch("app.services.mail_service.send_cash_payment_pending_email")
+@patch("app.services.mail_service.MailService.send_cash_payment_pending_email")
 def test_initiate_cash_credit_purchase_different_quantities(mock_send_email, app, test_user):
     """Test cash credit purchase with different quantities"""
     from app.services.settings_service import SettingsService
@@ -356,7 +356,7 @@ def test_initiate_cash_credit_purchase_different_quantities(mock_send_email, app
         assert payment.amount_cents == expected_amount
 
 
-@patch("app.services.mail_service.send_cash_payment_pending_email")
+@patch("app.services.mail_service.MailService.send_cash_payment_pending_email")
 def test_initiate_cash_membership_email_failure_does_not_block(mock_send_email, app, test_user):
     """Test cash membership payment succeeds even if confirmation email fails"""
     mock_send_email.side_effect = Exception("Mail server down")

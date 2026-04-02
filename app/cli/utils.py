@@ -4,7 +4,6 @@ import os
 import shutil
 import subprocess
 import sys
-from datetime import datetime
 
 import click
 from flask.cli import with_appcontext
@@ -14,16 +13,15 @@ from flask.cli import with_appcontext
 @with_appcontext
 def stats():
     """Show application statistics"""
-    from app import db
-    from app.models import Event, Membership, News, Role, Shoot, User
+    from app.repositories import EventRepository, MembershipRepository, NewsRepository, ShootRepository, UserRepository
 
-    total_users = User.query.count()
-    total_admins = db.session.query(User).join(User.roles).filter(Role.name == "Admin").distinct().count()
+    total_users = UserRepository.count()
+    total_admins = UserRepository.count_admins()
     total_members = total_users - total_admins
-    active_memberships = Membership.query.filter_by(status="active").count()
-    upcoming_shoots = Shoot.query.filter(Shoot.date > datetime.now()).count()
-    total_news = News.query.count()
-    upcoming_events = Event.query.filter(Event.start_date > datetime.now()).count()
+    active_memberships = MembershipRepository.count_active()
+    upcoming_shoots = ShootRepository.count_upcoming()
+    total_news = NewsRepository.count()
+    upcoming_events = EventRepository.count_upcoming()
 
     click.echo("\n╔══════════════════════════════════════════╗")
     click.echo("║  South East Archers Statistics          ║")
@@ -126,10 +124,10 @@ def dev():
 def db_reset():
     """Reset database (WARNING: Deletes all data)"""
     if click.confirm("WARNING: This will delete all data. Continue?"):
-        from app import db
+        from app.repositories import BaseRepository
 
         click.echo("Dropping all tables...")
-        db.drop_all()
+        BaseRepository.drop_all()
         click.echo("Creating all tables...")
-        db.create_all()
+        BaseRepository.create_all()
         click.echo("Database reset complete!")

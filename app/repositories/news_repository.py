@@ -23,3 +23,8 @@ class NewsRepository(BaseRepository):
     @staticmethod
     def add(news: News) -> None:
         db.session.add(news)
+
+    @staticmethod
+    def count() -> int:
+        return News.query.count()
+

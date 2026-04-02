@@ -2,11 +2,7 @@ import pytest
 
 from app import db
 from app.models import Payment
-from app.services.mail_service import (
-    send_credit_purchase_receipt,
-    send_payment_receipt,
-    send_welcome_email,
-)
+from app.services.mail_service import MailService
 
 # ---------------------------------------------------------------------------
 # send_payment_receipt
@@ -47,7 +43,7 @@ def test_send_payment_receipt_online_payment(app, test_user, mocker):
         payment_processor="sumup",
     )
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -63,7 +59,7 @@ def test_send_payment_receipt_cash_payment(app, test_user, mocker):
 
     payment = _make_payment(test_user, payment_method="cash")
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -76,7 +72,7 @@ def test_send_payment_receipt_formats_receipt_number(app, test_user, mocker):
 
     payment = _make_payment(test_user, payment_method="online")
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     msg = mock_mail.send.call_args[0][0]
     expected = f"SEA-{payment.id:06d}"
@@ -94,7 +90,7 @@ def test_send_payment_receipt_includes_transaction_id_for_online(app, test_user,
         payment_processor="sumup",
     )
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     msg = mock_mail.send.call_args[0][0]
     assert "txn_xyz789" in (msg.html or "")
@@ -106,7 +102,7 @@ def test_send_payment_receipt_no_transaction_id_for_cash(app, test_user, mocker)
 
     payment = _make_payment(test_user, payment_method="cash")
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     assert mock_mail.send.called
 
@@ -117,7 +113,7 @@ def test_send_payment_receipt_formats_dates(app, test_user, mocker):
 
     payment = _make_payment(test_user, payment_method="online")
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     msg = mock_mail.send.call_args[0][0]
     assert msg.html is not None
@@ -129,7 +125,7 @@ def test_send_payment_receipt_includes_membership_details(app, test_user, mocker
 
     payment = _make_payment(test_user, payment_method="online")
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     msg = mock_mail.send.call_args[0][0]
     membership = test_user.membership
@@ -144,7 +140,7 @@ def test_send_payment_receipt_handles_missing_description(app, test_user, mocker
 
     payment = _make_payment(test_user, payment_method="online", description=None)
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     assert mock_mail.send.called
 
@@ -156,7 +152,7 @@ def test_send_payment_receipt_exception_handling(app, test_user, mocker, caplog)
 
     payment = _make_payment(test_user, payment_method="online")
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     assert "Failed to send receipt email" in caplog.text
 
@@ -167,7 +163,7 @@ def test_send_payment_receipt_uses_correct_payment_method_display(app, test_user
 
     payment = _make_payment(test_user, payment_method="online")
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     msg = mock_mail.send.call_args[0][0]
     assert "SumUp" in (msg.html or "")
@@ -182,7 +178,7 @@ def test_send_welcome_email_success(app, test_user, mocker):
     """Test sending welcome email"""
     mock_mail = mocker.patch("app.services.mail_service.mail")
 
-    send_welcome_email(test_user.id)
+    MailService.send_welcome_email(test_user.id)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -205,7 +201,7 @@ def test_send_welcome_email_content(app, test_user, mocker, check_type, expected
     """Test welcome email includes various required content"""
     mock_mail = mocker.patch("app.services.mail_service.mail")
 
-    send_welcome_email(test_user.id)
+    MailService.send_welcome_email(test_user.id)
 
     msg = mock_mail.send.call_args[0][0]
     html = msg.html or ""
@@ -221,7 +217,7 @@ def test_send_welcome_email_exception_handling(app, test_user, mocker, caplog):
     mock_mail = mocker.patch("app.services.mail_service.mail")
     mock_mail.send.side_effect = Exception("Email server error")
 
-    send_welcome_email(test_user.id)
+    MailService.send_welcome_email(test_user.id)
 
     assert "Failed to send welcome email" in caplog.text
 
@@ -253,7 +249,7 @@ def test_send_credit_purchase_receipt(app, test_user, mocker):
     db.session.add(payment)
     db.session.commit()
 
-    send_credit_purchase_receipt(test_user.id, payment.id, 10)
+    MailService.send_credit_purchase_receipt(test_user.id, payment.id, 10)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -286,7 +282,7 @@ def test_send_credit_purchase_receipt_cash(app, test_user, mocker):
     db.session.add(payment)
     db.session.commit()
 
-    send_credit_purchase_receipt(test_user.id, payment.id, 5)
+    MailService.send_credit_purchase_receipt(test_user.id, payment.id, 5)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -302,7 +298,7 @@ def test_send_payment_receipt_runtime_error_url_for(app, test_user, mocker):
 
     payment = _make_payment(test_user, payment_method="online")
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -329,7 +325,7 @@ def test_send_credit_purchase_receipt_runtime_error_url_for(app, test_user, mock
     db.session.add(payment)
     db.session.commit()
 
-    send_credit_purchase_receipt(test_user.id, payment.id, 10)
+    MailService.send_credit_purchase_receipt(test_user.id, payment.id, 10)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -341,7 +337,7 @@ def test_send_welcome_email_runtime_error_url_for(app, test_user, mocker):
     mock_mail = mocker.patch("app.services.mail_service.mail")
     mocker.patch("app.services.mail_service.url_for", side_effect=RuntimeError("No request context"))
 
-    send_welcome_email(test_user.id)
+    MailService.send_welcome_email(test_user.id)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]

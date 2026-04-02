@@ -3,8 +3,6 @@
 import click
 from flask.cli import AppGroup
 
-from app import db
-
 user_cli = AppGroup("user", help="User management commands")
 
 
@@ -23,7 +21,7 @@ user_cli = AppGroup("user", help="User management commands")
 def user_create(name, email, password, phone, admin):
     """Create a new user"""
     from app.models import User
-    from app.models.rbac import Role, seed_rbac
+    from app.repositories import RBACRepository, UserRepository
 
     user = User(
         name=name,
@@ -34,16 +32,16 @@ def user_create(name, email, password, phone, admin):
     user.set_password(password)
 
     if admin:
-        admin_role = Role.query.filter_by(name="Admin").first()
+        admin_role = RBACRepository.get_role_by_name("Admin")
         if not admin_role:
-            seed_rbac(db.session)
-            admin_role = Role.query.filter_by(name="Admin").first()
+            RBACRepository.seed()
+            admin_role = RBACRepository.get_role_by_name("Admin")
         if admin_role:
             user.roles.append(admin_role)
 
-    db.session.add(user)
-    db.session.flush()
-    db.session.commit()
+    UserRepository.add(user)
+    UserRepository.flush()
+    UserRepository.save()
 
     user_type = "admin" if admin else "member"
     click.echo(f"✓ Successfully created {user_type} user: {email}")
@@ -52,9 +50,9 @@ def user_create(name, email, password, phone, admin):
 @user_cli.command("list")
 def user_list():
     """List all users"""
-    from app.models import User
+    from app.repositories import UserRepository
 
-    users = User.query.all()
+    users = UserRepository.get_all()
 
     if not users:
         click.echo("No users found")
@@ -74,17 +72,17 @@ def user_list():
 @click.option("--id", "user_id", prompt="User ID", type=int, help="User ID to delete")
 def user_delete(user_id):
     """Delete a user"""
-    from app.models import User
+    from app.repositories import UserRepository
 
-    user = User.query.get(user_id)
+    user = UserRepository.get_by_id(user_id)
 
     if not user:
         click.echo(f"Error: User with ID {user_id} not found")
         return
 
     if click.confirm(f"Are you sure you want to delete {user.email}?"):
-        db.session.delete(user)
-        db.session.commit()
+        UserRepository.delete(user)
+        UserRepository.save()
         click.echo(f"✓ User {user.email} deleted successfully")
     else:
         click.echo("Cancelled")

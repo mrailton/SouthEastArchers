@@ -63,7 +63,7 @@ def test_pending_payments_does_not_show_online_payments(client, admin_user, test
     assert b"No pending payments" in response.data
 
 
-@patch("app.services.mail_service.send_payment_receipt")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_approve_membership_payment(mock_send_receipt, client, admin_user, test_user):
     """Test approving a cash membership payment activates membership"""
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
@@ -100,7 +100,7 @@ def test_approve_membership_payment(mock_send_receipt, client, admin_user, test_
     mock_send_receipt.assert_called_once()
 
 
-@patch("app.services.mail_service.send_credit_purchase_receipt")
+@patch("app.services.mail_service.MailService.send_credit_purchase_receipt")
 def test_approve_credits_payment(mock_send_receipt, client, admin_user, test_user):
     """Test approving a cash credits payment adds credits"""
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
@@ -290,7 +290,7 @@ def test_dashboard_shows_pending_payments_count(client, admin_user, test_user):
     assert b"Pending Cash Payments" in response.data
 
 
-@patch("app.services.mail_service.send_payment_receipt")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_approve_payment_with_redirect(mock_send_receipt, client, admin_user, test_user):
     """Test approving payment with redirect_to parameter"""
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
@@ -389,7 +389,7 @@ def test_approve_membership_payment_user_not_found(client, admin_user, test_user
     assert b"User not found" in response.data
 
 
-@patch("app.services.mail_service.send_payment_receipt")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_approve_membership_creates_membership_for_new_user(mock_send_receipt, client, admin_user, app):
     """Test approving membership payment creates membership for user without one.
 
@@ -432,7 +432,7 @@ def test_approve_membership_creates_membership_for_new_user(mock_send_receipt, c
     mock_send_receipt.assert_called_once()
 
 
-@patch("app.services.mail_service.send_payment_receipt")
+@patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_approve_membership_renews_active_membership(mock_send_receipt, client, admin_user, test_user):
     """Test approving payment for already active membership calls renew"""
     client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
@@ -459,7 +459,7 @@ def test_approve_membership_renews_active_membership(mock_send_receipt, client, 
     assert payment.status == "completed"
 
 
-@patch("app.services.mail_service.send_credit_purchase_receipt")
+@patch("app.services.mail_service.MailService.send_credit_purchase_receipt")
 def test_approve_credits_without_membership_still_creates_credit(mock_send_receipt, client, admin_user, app):
     """Test approving credits payment for user without membership still creates Credit record"""
     from app.models import User

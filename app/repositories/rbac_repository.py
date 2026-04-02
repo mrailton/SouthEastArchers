@@ -10,6 +10,13 @@ from app.repositories.base import BaseRepository
 
 
 class RBACRepository(BaseRepository):
+    @staticmethod
+    def seed() -> None:
+        """Idempotently seed default roles and permissions."""
+        from app.models.rbac import seed_rbac
+
+        seed_rbac(db.session)
+
     # --- Role ---
     @staticmethod
     def get_role(role_id: int) -> Role | None:

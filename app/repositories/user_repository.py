@@ -45,6 +45,12 @@ class UserRepository(BaseRepository):
         return User.query.count()
 
     @staticmethod
+    def count_admins() -> int:
+        from app.models import Role
+
+        return db.session.query(User).join(User.roles).filter(Role.name == "Admin").distinct().count()
+
+    @staticmethod
     def count_pending_users() -> int:
         return User.query.filter_by(is_active=False).count()
 

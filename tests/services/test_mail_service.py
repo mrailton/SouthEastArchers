@@ -1,10 +1,4 @@
-from app.services.mail_service import (
-    send_credit_purchase_receipt,
-    send_new_member_notification,
-    send_password_reset,
-    send_payment_receipt,
-    send_welcome_email,
-)
+from app.services.mail_service import MailService
 
 
 def test_send_payment_receipt_success(app, test_user, mocker):
@@ -24,7 +18,7 @@ def test_send_payment_receipt_success(app, test_user, mocker):
     db.session.add(payment)
     db.session.commit()
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -50,7 +44,7 @@ def test_send_payment_receipt_exception_handling(app, test_user, mocker, caplog)
     db.session.add(payment)
     db.session.commit()
 
-    send_payment_receipt(test_user.id, payment.id)
+    MailService.send_payment_receipt(test_user.id, payment.id)
 
     assert "Failed to send receipt email" in caplog.text
 
@@ -60,7 +54,7 @@ def test_send_password_reset_success(app, test_user, mocker):
     mocker.patch("app.services.mail_service.render_template", return_value="<html>Reset</html>")
     mocker.patch("app.services.mail_service.url_for", return_value="http://test.com/reset")
 
-    send_password_reset(test_user.id, "test_token_123")
+    MailService.send_password_reset(test_user.id, "test_token_123")
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -74,7 +68,7 @@ def test_send_password_reset_exception_handling(app, test_user, mocker, caplog):
     mocker.patch("app.services.mail_service.render_template", return_value="<html>Reset</html>")
     mocker.patch("app.services.mail_service.url_for", return_value="http://test.com/reset")
 
-    send_password_reset(test_user.id, "test_token")
+    MailService.send_password_reset(test_user.id, "test_token")
 
     assert "Failed to send password reset email" in caplog.text
 
@@ -96,7 +90,7 @@ def test_send_credit_purchase_receipt_success(app, test_user, mocker):
     db.session.add(payment)
     db.session.commit()
 
-    send_credit_purchase_receipt(test_user.id, payment.id, 10)
+    MailService.send_credit_purchase_receipt(test_user.id, payment.id, 10)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -122,7 +116,7 @@ def test_send_credit_purchase_receipt_exception_handling(app, test_user, mocker,
     db.session.add(payment)
     db.session.commit()
 
-    send_credit_purchase_receipt(test_user.id, payment.id, 10)
+    MailService.send_credit_purchase_receipt(test_user.id, payment.id, 10)
 
     assert "Failed to send credit receipt email" in caplog.text
 
@@ -130,7 +124,7 @@ def test_send_credit_purchase_receipt_exception_handling(app, test_user, mocker,
 def test_send_welcome_email_success(app, test_user, mocker):
     mock_mail = mocker.patch("app.services.mail_service.mail")
 
-    send_welcome_email(test_user.id)
+    MailService.send_welcome_email(test_user.id)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -142,7 +136,7 @@ def test_send_welcome_email_exception_handling(app, test_user, mocker, caplog):
     mock_mail = mocker.patch("app.services.mail_service.mail")
     mock_mail.send.side_effect = Exception("Email server error")
 
-    send_welcome_email(test_user.id)
+    MailService.send_welcome_email(test_user.id)
 
     assert "Failed to send welcome email" in caplog.text
 
@@ -150,7 +144,6 @@ def test_send_welcome_email_exception_handling(app, test_user, mocker, caplog):
 def test_send_cash_payment_pending_email_success(app, test_user, mocker):
     from app import db
     from app.models import Payment
-    from app.services.mail_service import send_cash_payment_pending_email
 
     mock_mail = mocker.patch("app.services.mail_service.mail")
 
@@ -166,7 +159,7 @@ def test_send_cash_payment_pending_email_success(app, test_user, mocker):
     db.session.add(payment)
     db.session.commit()
 
-    send_cash_payment_pending_email(test_user.id, payment.id)
+    MailService.send_cash_payment_pending_email(test_user.id, payment.id)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -177,7 +170,6 @@ def test_send_cash_payment_pending_email_success(app, test_user, mocker):
 def test_send_cash_payment_pending_email_exception_handling(app, test_user, mocker, caplog):
     from app import db
     from app.models import Payment
-    from app.services.mail_service import send_cash_payment_pending_email
 
     mock_mail = mocker.patch("app.services.mail_service.mail")
     mock_mail.send.side_effect = Exception("SMTP error")
@@ -193,7 +185,7 @@ def test_send_cash_payment_pending_email_exception_handling(app, test_user, mock
     db.session.add(payment)
     db.session.commit()
 
-    send_cash_payment_pending_email(test_user.id, payment.id)
+    MailService.send_cash_payment_pending_email(test_user.id, payment.id)
 
     assert "Failed to send cash payment pending email" in caplog.text
 
@@ -245,7 +237,7 @@ def test_send_new_member_notification_sends_to_admins(app, mocker):
 
     mock_mail = mocker.patch("app.services.mail_service.mail")
 
-    send_new_member_notification(new_user.id)
+    MailService.send_new_member_notification(new_user.id)
 
     assert mock_mail.send.called
     msg = mock_mail.send.call_args[0][0]
@@ -272,6 +264,6 @@ def test_send_new_member_notification_exception_handling(app, mocker, caplog):
     mock_mail = mocker.patch("app.services.mail_service.mail")
     mock_mail.send.side_effect = Exception("SMTP Error")
 
-    send_new_member_notification(new_user.id)
+    MailService.send_new_member_notification(new_user.id)
 
     assert "Failed to send new member notification" in caplog.text

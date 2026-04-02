@@ -5,8 +5,6 @@ from datetime import datetime
 import click
 from flask.cli import AppGroup
 
-from app import db
-
 shoot_cli = AppGroup("shoot", help="Shoot management commands")
 
 
@@ -18,6 +16,7 @@ shoot_cli = AppGroup("shoot", help="Shoot management commands")
 def shoot_create(location, date, capacity, description):
     """Create a shoot"""
     from app.models import Shoot
+    from app.repositories import ShootRepository
 
     try:
         date_obj = datetime.strptime(date, "%Y-%m-%d %H:%M")
@@ -32,8 +31,8 @@ def shoot_create(location, date, capacity, description):
         description=description if description else None,
     )
 
-    db.session.add(shoot_obj)
-    db.session.commit()
+    ShootRepository.add(shoot_obj)
+    ShootRepository.save()
 
     click.echo(f"✓ Shoot created: {location} on {date}")
 
@@ -42,14 +41,9 @@ def shoot_create(location, date, capacity, description):
 @click.option("--upcoming", is_flag=True, help="Show only upcoming shoots")
 def shoot_list(upcoming):
     """List shoots"""
-    from app.models import Shoot
+    from app.repositories import ShootRepository
 
-    query = Shoot.query
-
-    if upcoming:
-        query = query.filter(Shoot.date > datetime.now())
-
-    shoots = query.order_by(Shoot.date.desc()).all()
+    shoots = ShootRepository.get_upcoming() if upcoming else ShootRepository.get_all()
 
     if not shoots:
         click.echo("No shoots found")

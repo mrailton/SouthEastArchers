@@ -15,6 +15,8 @@ class PaymentProcessingService:
         """Process a successful signup payment.
 
         Marks the payment as completed and activates the user's membership.
+        Both mutations are committed in a single atomic transaction so neither
+        can be persisted without the other.
         """
         payment = PaymentRepository.get_by_id(payment_id)
         user = UserRepository.get_by_id(user_id)
@@ -22,15 +24,19 @@ class PaymentProcessingService:
         if not payment or not user:
             return ServiceResult.fail("Payment or user not found.")
 
-        payment.mark_completed(transaction_id, processor="sumup")
-        if user.membership:
-            user.membership.activate()
-        UserRepository.save()
+        try:
+            payment.mark_completed(transaction_id, processor="sumup")
+            if user.membership:
+                user.membership.activate()
+            UserRepository.save()
+        except Exception as e:
+            current_app.logger.error(f"Signup payment commit failed: {e}")
+            return ServiceResult.fail("Payment could not be processed. Please try again.")
 
         try:
             payment_completed.send(user_id=user.id, payment_id=payment.id, payment_type=payment.payment_type)
         except Exception as e:
-            current_app.logger.error(f"Failed to emit payment_completed event: {str(e)}")
+            current_app.logger.error(f"Failed to emit payment_completed event: {e}")
 
         return ServiceResult.ok(message="Payment successful! Your membership is now active. A receipt has been sent to your email.")
 
@@ -39,6 +45,8 @@ class PaymentProcessingService:
         """Process a successful membership renewal payment.
 
         Marks the payment as completed and renews (or creates) the membership.
+        Both mutations are committed in a single atomic transaction so neither
+        can be persisted without the other.
         """
         payment = PaymentRepository.get_by_id(payment_id)
         user = UserRepository.get_by_id(user_id)
@@ -46,27 +54,31 @@ class PaymentProcessingService:
         if not payment or not user:
             return ServiceResult.fail("Payment or user not found.")
 
-        payment.mark_completed(transaction_id, processor="sumup")
+        try:
+            payment.mark_completed(transaction_id, processor="sumup")
 
-        if user.membership:
-            expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
-            user.membership.renew(expiry_date=expiry_date)
-        else:
-            start_date = date.today()
-            membership = Membership(
-                user_id=user.id,
-                start_date=start_date,
-                expiry_date=SettingsService.calculate_membership_expiry(start_date).date(),
-                status="active",
-            )
-            MembershipRepository.add(membership)
+            if user.membership:
+                expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
+                user.membership.renew(expiry_date=expiry_date)
+            else:
+                start_date = date.today()
+                membership = Membership(
+                    user_id=user.id,
+                    start_date=start_date,
+                    expiry_date=SettingsService.calculate_membership_expiry(start_date).date(),
+                    status="active",
+                )
+                MembershipRepository.add(membership)
 
-        UserRepository.save()
+            UserRepository.save()
+        except Exception as e:
+            current_app.logger.error(f"Membership renewal commit failed: {e}")
+            return ServiceResult.fail("Renewal could not be processed. Please try again.")
 
         try:
             payment_completed.send(user_id=user.id, payment_id=payment.id, payment_type=payment.payment_type)
         except Exception as e:
-            current_app.logger.error(f"Failed to emit payment_completed event: {str(e)}")
+            current_app.logger.error(f"Failed to emit payment_completed event: {e}")
 
         return ServiceResult.ok(message="Membership renewed successfully! A receipt has been sent to your email.")
 
@@ -75,7 +87,8 @@ class PaymentProcessingService:
         """Process a successful credit purchase payment.
 
         Marks the payment as completed, adds credits to the membership,
-        and records the credit purchase.
+        and records the credit purchase.  All mutations are committed in a
+        single atomic transaction so neither can be persisted without the other.
         """
         payment = PaymentRepository.get_by_id(payment_id)
         user = UserRepository.get_by_id(user_id)
@@ -83,18 +96,22 @@ class PaymentProcessingService:
         if not payment or not user:
             return ServiceResult.fail("Payment or user not found.")
 
-        payment.mark_completed(transaction_id, processor="sumup")
+        try:
+            payment.mark_completed(transaction_id, processor="sumup")
 
-        if user.membership:
-            user.membership.add_credits(quantity)
+            if user.membership:
+                user.membership.add_credits(quantity)
 
-        credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
-        CreditRepository.add(credit)
-        CreditRepository.save()
+            credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
+            CreditRepository.add(credit)
+            CreditRepository.save()
+        except Exception as e:
+            current_app.logger.error(f"Credit purchase commit failed: {e}")
+            return ServiceResult.fail("Credit purchase could not be processed. Please try again.")
 
         try:
             credit_purchased.send(user_id=user_id, payment_id=payment.id, quantity=quantity)
         except Exception as e:
-            current_app.logger.error(f"Failed to emit credit_purchased event: {str(e)}")
+            current_app.logger.error(f"Failed to emit credit_purchased event: {e}")
 
         return ServiceResult.ok(message=f"Successfully purchased {quantity} credits! A receipt has been sent to your email.")

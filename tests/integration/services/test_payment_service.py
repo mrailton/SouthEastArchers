@@ -266,6 +266,42 @@ def test_handle_credit_purchase_email_failure(mock_send_email, app, test_user):
     mock_send_email.assert_called_once()
 
 
+# Commit-failure handling
+
+
+@patch("app.repositories.base.BaseRepository.save", side_effect=Exception("DB write failed"))
+def test_handle_signup_payment_commit_failure_returns_fail(mock_save, app, test_user):
+    """If the commit fails, the service returns a failure result instead of propagating the exception."""
+    test_user.membership.status = "pending"
+    db.session.commit()
+
+    payment = create_payment_for_user(db, test_user, status="pending")
+    result = PaymentProcessingService.handle_signup_payment(test_user.id, payment.id, "txn_fail")
+
+    assert result.success is False
+    assert "could not be processed" in result.message
+
+
+@patch("app.repositories.base.BaseRepository.save", side_effect=Exception("DB write failed"))
+def test_handle_membership_renewal_commit_failure_returns_fail(mock_save, app, test_user):
+    """If the commit fails, the service returns a failure result instead of propagating the exception."""
+    payment = create_payment_for_user(db, test_user, status="pending")
+    result = PaymentProcessingService.handle_membership_renewal(test_user.id, payment.id, "txn_fail")
+
+    assert result.success is False
+    assert "could not be processed" in result.message
+
+
+@patch("app.repositories.base.BaseRepository.save", side_effect=Exception("DB write failed"))
+def test_handle_credit_purchase_commit_failure_returns_fail(mock_save, app, test_user):
+    """If the commit fails, the service returns a failure result instead of propagating the exception."""
+    payment = create_payment_for_user(db, test_user, amount_cents=5000, payment_type="credits", status="pending")
+    result = PaymentProcessingService.handle_credit_purchase(test_user.id, payment.id, 5, "txn_fail")
+
+    assert result.success is False
+    assert "could not be processed" in result.message
+
+
 # Cash Payment Service Tests
 
 

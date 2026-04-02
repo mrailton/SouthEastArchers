@@ -39,7 +39,7 @@ def create_expense_post():
         transaction, error = FinanceService.create_transaction(
             txn_type="expense",
             txn_date=form.date.data,
-            amount=float(form.amount.data),
+            amount_cents=int(round(float(form.amount.data) * 100)),
             category=form.category.data,
             description=form.description.data,
             created_by_id=current_user.id,
@@ -77,7 +77,7 @@ def create_income_post():
         transaction, error = FinanceService.create_transaction(
             txn_type="income",
             txn_date=form.date.data,
-            amount=float(form.amount.data),
+            amount_cents=int(round(float(form.amount.data) * 100)),
             category=form.category.data,
             description=form.description.data,
             created_by_id=current_user.id,
@@ -137,7 +137,7 @@ def edit_transaction_post(transaction_id):
         kwargs = dict(
             transaction=transaction,
             txn_date=form.date.data,
-            amount=float(form.amount.data),
+            amount_cents=int(round(float(form.amount.data) * 100)),
             category=form.category.data,
             description=form.description.data,
         )

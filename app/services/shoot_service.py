@@ -107,7 +107,6 @@ class ShootService:
         """Add visitors to a shoot and create income transactions for each."""
         settings = SettingsService.get()
         fee_cents = settings.visitor_shoot_fee
-        fee_amount = fee_cents / 100.0
         sumup_fee_pct = settings.sumup_fee_percentage
 
         for v in visitors:
@@ -125,7 +124,7 @@ class ShootService:
             FinanceService.create_transaction(
                 txn_type="income",
                 txn_date=shoot.date,
-                amount=fee_amount,
+                amount_cents=fee_cents,
                 category="shoot_fees",
                 description=description,
                 created_by_id=by_id,
@@ -135,11 +134,11 @@ class ShootService:
             # Record SumUp processing fee if applicable
             if v["payment_method"] == "sumup" and sumup_fee_pct is not None:
                 pct = float(sumup_fee_pct)
-                fee_expense = round(fee_cents * pct / 10000.0, 2)
+                fee_expense_cents = int(round(fee_cents * pct / 100.0))
                 FinanceService.create_transaction(
                     txn_type="expense",
                     txn_date=shoot.date,
-                    amount=fee_expense,
+                    amount_cents=fee_expense_cents,
                     category="payment_processing_fees",
                     description=f"SumUp fee ({pct}%) on {description}",
                     created_by_id=by_id,

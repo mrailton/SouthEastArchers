@@ -13,7 +13,7 @@ class FinanceService:
     def create_transaction(
         txn_type: str,
         txn_date: date,
-        amount: float,
+        amount_cents: int,
         category: str,
         description: str,
         created_by_id: int,
@@ -24,13 +24,13 @@ class FinanceService:
         transaction = FinancialTransaction(
             type=txn_type,
             date=txn_date,
+            amount_cents=amount_cents,
             category=category,
             description=description,
             created_by_id=created_by_id,
             source=source,
             receipt_reference=receipt_reference,
         )
-        transaction.amount = amount
 
         try:
             FinancialTransactionRepository.add(transaction)
@@ -67,8 +67,7 @@ class FinanceService:
 
         fee_pct = float(fee_pct)
         today = date.today()
-        payment_amount = payment_amount_cents / 100.0
-        fee_amount = round(payment_amount_cents * fee_pct / 10000.0, 2)
+        fee_amount_cents = int(round(payment_amount_cents * fee_pct / 100.0))
 
         # Determine income category based on payment type
         category = "membership_fees" if payment_type == "membership" else "shoot_fees"
@@ -77,7 +76,7 @@ class FinanceService:
         income, err = FinanceService.create_transaction(
             txn_type="income",
             txn_date=today,
-            amount=payment_amount,
+            amount_cents=payment_amount_cents,
             category=category,
             description=description,
             created_by_id=created_by_id,
@@ -91,7 +90,7 @@ class FinanceService:
         _, err = FinanceService.create_transaction(
             txn_type="expense",
             txn_date=today,
-            amount=fee_amount,
+            amount_cents=fee_amount_cents,
             category="payment_processing_fees",
             description=f"SumUp fee ({fee_pct}%) on {description}",
             created_by_id=created_by_id,
@@ -114,13 +113,12 @@ class FinanceService:
         Returns (success, error_message).
         """
         today = date.today()
-        payment_amount = payment_amount_cents / 100.0
         category = "membership_fees" if payment_type == "membership" else "shoot_fees"
 
         _, err = FinanceService.create_transaction(
             txn_type="income",
             txn_date=today,
-            amount=payment_amount,
+            amount_cents=payment_amount_cents,
             category=category,
             description=description,
             created_by_id=created_by_id,
@@ -135,7 +133,7 @@ class FinanceService:
     def update_transaction(
         transaction: FinancialTransaction,
         txn_date: date,
-        amount: float,
+        amount_cents: int,
         category: str,
         description: str,
         source: str | None = None,
@@ -147,7 +145,7 @@ class FinanceService:
         transaction.description = description
         transaction.source = source
         transaction.receipt_reference = receipt_reference
-        transaction.amount = amount
+        transaction.amount_cents = amount_cents
 
         try:
             FinancialTransactionRepository.save()

@@ -25,7 +25,6 @@ dependencies = [
     "gunicorn==25.1.0",
     "whitenoise==6.11.0",
     "sumup==0.0.13",
-    "ruff>=0.14.14",
     "fpdf2>=2.8.6",
 ]
 
@@ -108,6 +107,7 @@ type = "forbidden"
 source_modules = [
     "app.services.admin_service",
     "app.services.event_service",
+    "app.services.finance_service",
     "app.services.membership_service",
     "app.services.news_service",
     "app.services.payment_processing_service",

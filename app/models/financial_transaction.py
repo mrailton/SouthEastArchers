@@ -50,9 +50,5 @@ class FinancialTransaction(db.Model):
     def amount(self):
         return self.amount_cents / 100.0
 
-    @amount.setter
-    def amount(self, value):
-        self.amount_cents = int(round(value * 100))
-
     def __repr__(self):
         return f"<FinancialTransaction {self.id} type={self.type} amount={self.amount}>"

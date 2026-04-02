@@ -10,7 +10,7 @@ def test_create_expense(app, admin_user):
     txn, error = FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
-        amount=50.00,
+        amount_cents=5000,
         category="equipment",
         description="New target faces",
         created_by_id=admin_user.id,
@@ -31,7 +31,7 @@ def test_create_income(app, admin_user):
     txn, error = FinanceService.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 20),
-        amount=100.00,
+        amount_cents=10000,
         category="membership_fees",
         description="Annual membership - John Doe",
         created_by_id=admin_user.id,
@@ -51,7 +51,7 @@ def test_update_transaction(app, admin_user):
     txn, _ = FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
-        amount=50.00,
+        amount_cents=5000,
         category="equipment",
         description="New target faces",
         created_by_id=admin_user.id,
@@ -60,7 +60,7 @@ def test_update_transaction(app, admin_user):
     success, error = FinanceService.update_transaction(
         transaction=txn,
         txn_date=date(2026, 1, 16),
-        amount=75.50,
+        amount_cents=7550,
         category="supplies",
         description="Updated description",
         receipt_reference="REC-002",
@@ -78,7 +78,7 @@ def test_delete_transaction(app, admin_user):
     txn, _ = FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
-        amount=50.00,
+        amount_cents=5000,
         category="equipment",
         description="To delete",
         created_by_id=admin_user.id,
@@ -105,7 +105,7 @@ def test_get_all_transactions(app, admin_user):
     FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
-        amount=50.00,
+        amount_cents=5000,
         category="equipment",
         description="Expense 1",
         created_by_id=admin_user.id,
@@ -113,7 +113,7 @@ def test_get_all_transactions(app, admin_user):
     FinanceService.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 20),
-        amount=100.00,
+        amount_cents=10000,
         category="donations",
         description="Income 1",
         created_by_id=admin_user.id,
@@ -128,7 +128,7 @@ def test_get_expenses(app, admin_user):
     FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
-        amount=50.00,
+        amount_cents=5000,
         category="equipment",
         description="Expense",
         created_by_id=admin_user.id,
@@ -136,7 +136,7 @@ def test_get_expenses(app, admin_user):
     FinanceService.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 20),
-        amount=100.00,
+        amount_cents=10000,
         category="donations",
         description="Income",
         created_by_id=admin_user.id,
@@ -152,7 +152,7 @@ def test_get_income(app, admin_user):
     FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
-        amount=50.00,
+        amount_cents=5000,
         category="equipment",
         description="Expense",
         created_by_id=admin_user.id,
@@ -160,7 +160,7 @@ def test_get_income(app, admin_user):
     FinanceService.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 20),
-        amount=100.00,
+        amount_cents=10000,
         category="donations",
         description="Income",
         created_by_id=admin_user.id,
@@ -176,7 +176,7 @@ def test_generate_statement(app, admin_user):
     FinanceService.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 10),
-        amount=200.00,
+        amount_cents=20000,
         category="membership_fees",
         description="Membership fee",
         created_by_id=admin_user.id,
@@ -184,7 +184,7 @@ def test_generate_statement(app, admin_user):
     FinanceService.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 20),
-        amount=150.00,
+        amount_cents=15000,
         category="shoot_fees",
         description="Shoot fees collected",
         created_by_id=admin_user.id,
@@ -192,7 +192,7 @@ def test_generate_statement(app, admin_user):
     FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
-        amount=75.00,
+        amount_cents=7500,
         category="venue_hire",
         description="Hall hire January",
         created_by_id=admin_user.id,
@@ -201,7 +201,7 @@ def test_generate_statement(app, admin_user):
     FinanceService.create_transaction(
         txn_type="income",
         txn_date=date(2026, 2, 15),
-        amount=500.00,
+        amount_cents=50000,
         category="donations",
         description="Should not appear",
         created_by_id=admin_user.id,
@@ -240,7 +240,7 @@ def test_amount_property_rounding(app, admin_user):
     txn, _ = FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
-        amount=19.99,
+        amount_cents=1999,
         category="supplies",
         description="Test rounding",
         created_by_id=admin_user.id,
@@ -255,7 +255,7 @@ def test_generate_statement_pdf(app, admin_user):
     FinanceService.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 10),
-        amount=200.00,
+        amount_cents=20000,
         category="membership_fees",
         description="Membership fee",
         created_by_id=admin_user.id,
@@ -263,7 +263,7 @@ def test_generate_statement_pdf(app, admin_user):
     FinanceService.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
-        amount=75.00,
+        amount_cents=7500,
         category="venue_hire",
         description="Hall hire January",
         created_by_id=admin_user.id,

@@ -1,22 +1,23 @@
 from __future__ import annotations
 
-from datetime import datetime
+from sqlalchemy.orm import Session
 
 from app import db
+from app.utils.datetime_utils import utc_now
 
 # Association tables
 user_roles = db.Table(
     "user_roles",
     db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
     db.Column("role_id", db.Integer, db.ForeignKey("roles.id"), primary_key=True),
-    db.Column("created_at", db.DateTime, default=datetime.utcnow, nullable=False),
+    db.Column("created_at", db.DateTime, default=utc_now, nullable=False),
 )
 
 role_permissions = db.Table(
     "role_permissions",
     db.Column("role_id", db.Integer, db.ForeignKey("roles.id"), primary_key=True),
     db.Column("permission_id", db.Integer, db.ForeignKey("permissions.id"), primary_key=True),
-    db.Column("created_at", db.DateTime, default=datetime.utcnow, nullable=False),
+    db.Column("created_at", db.DateTime, default=utc_now, nullable=False),
 )
 
 
@@ -26,8 +27,8 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False, index=True)
     description = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     permissions = db.relationship("Permission", secondary=role_permissions, back_populates="roles")
     users = db.relationship("User", secondary=user_roles, back_populates="roles")
@@ -42,8 +43,8 @@ class Permission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), unique=True, nullable=False, index=True)
     description = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     roles = db.relationship("Role", secondary=role_permissions, back_populates="permissions")
 
@@ -129,7 +130,7 @@ ROLE_DEFINITIONS: dict[str, dict[str, list[str] | str]] = {
 }
 
 
-def seed_rbac(session) -> None:
+def seed_rbac(session: Session) -> None:
     """Idempotently seed default roles and permissions."""
     existing_permissions = {p.name: p for p in session.query(Permission).all()}
 

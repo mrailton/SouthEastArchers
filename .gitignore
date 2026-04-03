@@ -7,6 +7,7 @@ __pycache__/
 env/
 venv/
 ENV/
+.venv
 build/
 develop-eggs/
 dist/
@@ -22,10 +23,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# Virtual environments
-.venv
-venv/
 
 # IDE
 .vscode/
@@ -55,16 +52,11 @@ logs/
 htmlcov/
 .pytest_cache/
 .tox/
+.import_linter_cache/
+.hypothesis
 
 # Asset pipeline
 resources/static
 
 # Node modules
 node_modules/
-
-# Logs
-logs/
-*.log
-
-# Coolify
-.coolify/

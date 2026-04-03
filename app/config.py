@@ -1,5 +1,11 @@
+from __future__ import annotations
+
 import os
 from datetime import timedelta
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from flask import Flask
 
 
 def _get_bool_env(name: str, default: bool) -> bool:
@@ -46,11 +52,6 @@ class Config:
     SUMUP_MERCHANT_CODE = os.environ.get("SUMUP_MERCHANT_CODE")
     SUMUP_API_URL = "https://api.sumup.com"
 
-    # Membership (prices in cents to avoid floating point issues)
-    ANNUAL_MEMBERSHIP_COST = 10000  # 100.00 EUR (stored as cents)
-    MEMBERSHIP_NIGHTS_INCLUDED = 20
-    ADDITIONAL_NIGHT_COST = 500  # 5.00 EUR per night (stored as cents)
-
 
 class DevelopmentConfig(Config):
     """Development configuration"""
@@ -69,7 +70,7 @@ class TestingConfig(Config):
     """Testing configuration"""
 
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_DATABASE_URI = os.environ.get("TEST_DATABASE_URL", "mysql+pymysql://root@localhost:3306/southeastarchers_test")
     WTF_CSRF_ENABLED = False
     SESSION_COOKIE_SECURE = False
     PREFERRED_URL_SCHEME = "http"
@@ -79,7 +80,19 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
 
-    pass
+    SESSION_COOKIE_SECURE = True
+
+    @staticmethod
+    def init_app(app: Flask) -> None:
+        missing = []
+        if not os.environ.get("SECRET_KEY"):
+            missing.append("SECRET_KEY")
+        if not os.environ.get("MAIL_SERVER"):
+            missing.append("MAIL_SERVER")
+        if not os.environ.get("DATABASE_URL"):
+            missing.append("DATABASE_URL")
+        if missing:
+            raise RuntimeError(f"Required environment variable(s) not set for production: {', '.join(missing)}")
 
 
 config = {

@@ -1,0 +1,284 @@
+from unittest.mock import MagicMock, patch
+
+import pytest
+from flask import abort
+
+from app import create_app, db, login_manager
+
+# TestAppFactory
+
+
+def test_create_app_testing_config():
+    """Test app creation with testing config"""
+    app = create_app("testing")
+    assert app is not None
+    assert app.config["TESTING"] is True
+    assert "mysql" in app.config["SQLALCHEMY_DATABASE_URI"]
+
+
+def test_create_app_development_config(monkeypatch):
+    """Test app creation with development config (default)"""
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
+    monkeypatch.setenv("SECRET_KEY", "test-secret")
+    app = create_app("development")
+    assert app is not None
+    assert app.config["TESTING"] is False
+
+
+def test_production_config_raises_without_secret_key(monkeypatch):
+    """Test that ProductionConfig raises RuntimeError when SECRET_KEY is not set"""
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    monkeypatch.delenv("MAIL_SERVER", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    with pytest.raises(RuntimeError, match="SECRET_KEY"):
+        create_app("production")
+
+
+def test_production_config_raises_without_mail_server(monkeypatch):
+    """Test that ProductionConfig raises RuntimeError when MAIL_SERVER is not set"""
+    monkeypatch.setenv("SECRET_KEY", "real-production-secret")
+    monkeypatch.setenv("DATABASE_URL", "mysql+pymysql://u:p@localhost/db")
+    monkeypatch.delenv("MAIL_SERVER", raising=False)
+    with pytest.raises(RuntimeError, match="MAIL_SERVER"):
+        create_app("production")
+
+
+def test_production_config_raises_without_database_url(monkeypatch):
+    """Test that ProductionConfig raises RuntimeError when DATABASE_URL is not set"""
+    monkeypatch.setenv("SECRET_KEY", "real-production-secret")
+    monkeypatch.setenv("MAIL_SERVER", "smtp.example.com")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    with pytest.raises(RuntimeError, match="DATABASE_URL"):
+        create_app("production")
+
+
+def test_production_config_lists_all_missing_vars(monkeypatch):
+    """Test that ProductionConfig lists all missing vars in the error message"""
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    monkeypatch.delenv("MAIL_SERVER", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    with pytest.raises(RuntimeError, match="SECRET_KEY.*MAIL_SERVER.*DATABASE_URL"):
+        create_app("production")
+
+
+def test_production_config_accepts_custom_secret_key(monkeypatch):
+    """Test that ProductionConfig works when all required env vars are set"""
+    monkeypatch.setenv("SECRET_KEY", "real-production-secret")
+    monkeypatch.setenv("MAIL_SERVER", "smtp.example.com")
+    monkeypatch.setenv("DATABASE_URL", "mysql+pymysql://u:p@localhost/db")
+    app = create_app("production")
+    assert app is not None
+    assert app.config["SESSION_COOKIE_SECURE"] is True
+
+
+def test_app_has_correct_folders():
+    """Test app has correct template and static folders"""
+    app = create_app("testing")
+    assert "templates" in app.template_folder
+    assert "static" in app.static_folder
+    assert app.static_url_path == "/static"
+
+
+def test_extensions_initialized(app):
+    """Test that all extensions are properly initialized"""
+    # Check database
+    assert db.engine is not None
+
+    # Check login manager
+    assert login_manager.login_view == "auth.login"
+    assert login_manager.login_message == "Please log in to access this page."
+    assert login_manager.login_message_category == "warning"
+
+
+def test_blueprints_registered(app):
+    """Test that all blueprints are registered"""
+    blueprint_names = [bp.name for bp in app.blueprints.values()]
+    assert "public" in blueprint_names
+    assert "auth" in blueprint_names
+    assert "member" in blueprint_names
+    assert "admin" in blueprint_names
+    assert "payment" in blueprint_names
+
+
+# TestUserLoader
+
+
+def test_user_loader_returns_user(app, test_user):
+    """Test that user_loader function loads user correctly"""
+    with app.app_context():
+        # Call the user loader callback directly
+        user = login_manager._user_callback(str(test_user.id))
+        assert user is not None
+        assert user.id == test_user.id
+        assert user.email == test_user.email
+
+
+def test_user_loader_returns_none_for_invalid_id(app):
+    """Test that user_loader returns None for invalid user ID"""
+    with app.app_context():
+        user = login_manager._user_callback("99999")
+        assert user is None
+
+
+def test_user_loader_with_string_id(app, test_user):
+    """Test that user_loader handles string IDs correctly"""
+    with app.app_context():
+        user = login_manager._user_callback(str(test_user.id))
+        assert user is not None
+        assert user.id == test_user.id
+
+
+# TestErrorHandlers
+
+
+def test_404_error_handler(client):
+    """Test 404 error handler"""
+    response = client.get("/nonexistent-page-that-does-not-exist")
+    assert response.status_code == 404
+    assert b"Page Not Found" in response.data or b"404" in response.data
+
+
+def test_500_error_handler():
+    """Test 500 error handler by triggering an exception"""
+    # Create a fresh app instance to avoid "setup finished" error
+    from app import create_app
+
+    fresh_app = create_app("testing")
+
+    # Register a route that will cause an error before any requests
+    @fresh_app.route("/test-500")
+    def error_route():
+        # Force a 500 error
+        abort(500)
+
+    with fresh_app.test_client() as test_client:
+        response = test_client.get("/test-500")
+        assert response.status_code == 500
+        assert b"Internal Server Error" in response.data or b"500" in response.data
+
+
+def test_500_error_rolls_back_db_session(app):
+    """Test that error handler ensures db rollback is available"""
+    with app.app_context():
+        # Just verify the error handler exists and would handle rollback
+        # The actual rollback is tested implicitly through other tests
+        assert app.error_handler_spec is not None
+        assert 500 in app.error_handler_spec[None] or None in app.error_handler_spec
+
+
+# TestLogging
+
+
+def test_logging_configured(app):
+    """Test that logging is properly configured"""
+    assert app.logger is not None
+    assert app.logger.level == 20  # INFO level
+    assert len(app.logger.handlers) > 0
+
+
+def test_stream_handler_always_configured(app):
+    """Test that stream handler is always configured"""
+    # Stream handler should be present even in testing
+    assert app.logger is not None
+    assert len(app.logger.handlers) > 0
+
+    # Check that at least one handler is a StreamHandler
+    from logging import StreamHandler
+
+    stream_handlers = [h for h in app.logger.handlers if isinstance(h, StreamHandler)]
+    assert len(stream_handlers) > 0
+
+
+def test_logger_has_correct_level(app):
+    """Test that logger is set to INFO level"""
+    import logging
+
+    assert app.logger.level == logging.INFO
+
+
+@patch("os.path.exists")
+@patch("os.mkdir")
+@patch("app.RotatingFileHandler")
+def test_file_logging_in_production_mode(mock_handler, mock_mkdir, mock_exists):
+    """Test that file logging is configured when not in debug/testing mode"""
+    # Mock that logs directory doesn't exist
+    mock_exists.return_value = False
+
+    # Create a proper mock handler instance with level attribute
+    mock_handler_instance = MagicMock()
+    mock_handler_instance.level = 20  # INFO level
+    mock_handler_instance.setLevel = MagicMock()
+    mock_handler_instance.setFormatter = MagicMock()
+    mock_handler.return_value = mock_handler_instance
+
+    # Temporarily modify config to simulate production
+    from app.config import config
+
+    original_debug = config["testing"].DEBUG
+    original_testing = config["testing"].TESTING
+
+    try:
+        # Create a production-like config
+        config["testing"].DEBUG = False
+        config["testing"].TESTING = False
+
+        # Create app (this will trigger the file logging setup)
+        prod_app = create_app("testing")
+
+        # Verify logs directory was created
+        mock_mkdir.assert_called_once_with("logs")
+
+        # Verify RotatingFileHandler was instantiated
+        mock_handler.assert_called_once()
+
+        # Clean up the app's logger handlers to avoid test interference
+        prod_app.logger.handlers.clear()
+
+    finally:
+        # Restore original config
+        config["testing"].DEBUG = original_debug
+        config["testing"].TESTING = original_testing
+
+
+# TestHealthCheck
+
+
+def test_health_check_returns_ok(client):
+    """GET /health returns 200 with status ok when the database is reachable."""
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.get_json() == {"status": "ok"}
+
+
+def test_health_check_returns_error_on_db_failure(client):
+    """GET /health returns 500 when the database query fails."""
+    from unittest.mock import patch
+
+    with patch("app.db.session.execute", side_effect=Exception("db unreachable")):
+        response = client.get("/health")
+        assert response.status_code == 500
+        assert response.get_json() == {"status": "error"}
+
+
+# TestModelsImport
+
+
+def test_models_imported_in_app_context(app):
+    """Test that models are properly imported in app context"""
+    with app.app_context():
+        # Try to import and use models
+        from app.models import Credit, Event, Membership, News, Payment, Shoot, User
+
+        # Verify they're all accessible
+        assert User is not None
+        assert Membership is not None
+        assert Shoot is not None
+        assert Credit is not None
+        assert News is not None
+        assert Event is not None
+        assert Payment is not None
+
+        # Verify they can be queried (tables exist)
+        assert User.query.count() >= 0
+        assert Membership.query.count() >= 0
+        assert Shoot.query.count() >= 0

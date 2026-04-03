@@ -21,10 +21,10 @@ fi
 
 echo "✅ Database is ready!"
 echo "🔄 Running database migrations..."
-python manage.py db upgrade
+flask db upgrade
 
 echo "🔄 Seeding roles and permissions..."
-python manage.py rbac seed
+flask rbac seed
 
 echo "🚀 Starting application..."
 exec "$@"

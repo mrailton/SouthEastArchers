@@ -62,24 +62,23 @@ A web application for South East Archers club management, including membership m
    ```
 
 3. **Install dependencies:**
-   Using the management script (installs both Python and Node.js dependencies):
    ```bash
-   python manage.py install
+   make install
    ```
 
 4. **Initialize the database:**
    ```bash
-   python manage.py db upgrade
+   flask db upgrade
    ```
 
 5. **Seed roles and permissions:**
    ```bash
-   python manage.py rbac seed
+   flask rbac seed
    ```
 
 6. **Create an admin user:**
    ```bash
-   python manage.py user create --admin
+   flask user create --admin
    ```
 
 ## 🏃 Running the Application
@@ -87,19 +86,19 @@ A web application for South East Archers club management, including membership m
 ### Development Mode
 Runs both the Flask development server and Vite asset watcher:
 ```bash
-python manage.py dev
+make dev
 ```
 - Flask: http://localhost:5000
 - Vite: http://localhost:5173 (Asset hot-reloading)
 
 ### Individual Servers
-- **Flask only:** `python manage.py runserver`
+- **Flask only:** `flask run --debug`
 - **Vite only:** `npm run dev`
 
 ### Scheduled Tasks
 Run scheduled tasks (membership expiry, low credits reminders):
 ```bash
-python manage.py schedule run
+flask schedule run
 ```
 For production, set up a cron job to run this command every minute.
 
@@ -117,8 +116,7 @@ For production, set up a cron job to run this command every minute.
 ├── resources/              # Frontend assets (CSS, JS, images)
 ├── tests/                  # Test suite (95% coverage)
 ├── migrations/             # Database migration files
-├── web.py                  # Application entry point
-├── manage.py               # CLI management tool
+├── web.py                  # WSGI entry point
 └── pyproject.toml          # Python dependencies and configuration
 ```
 
@@ -134,12 +132,12 @@ The application uses a fine-grained RBAC system for security.
 
 ### Default Roles
 
-| Role | Description |
-|------|-------------|
-| Admin | Full access to all features |
+| Role               | Description                                       |
+|--------------------|---------------------------------------------------|
+| Admin              | Full access to all features                       |
 | Membership Manager | Manage members, memberships, and approve payments |
-| Content Manager | Manage news, events, and shoots |
-| Member | Standard member access |
+| Content Manager    | Manage news, events, and shoots                   |
+| Member             | Standard member access                            |
 
 ### Implementation
 
@@ -147,38 +145,57 @@ The application uses a fine-grained RBAC system for security.
 - **Decorators:** Use `@permission_required("perm.name")` in routes to enforce access
 - **Service:** `RBACService` for managing roles and permissions
 
-## ⌨️ CLI Commands (`manage.py`)
+## ⌨️ Commands
 
-| Command | Description |
-|---------|-------------|
-| `python manage.py dev` | Run development servers (Flask + Vite) |
-| `python manage.py install` | Install Python and Node.js dependencies |
-| `python manage.py db upgrade` | Apply database migrations |
-| `python manage.py user create` | Create a new user (add `--admin` for admin) |
-| `python manage.py test run` | Run the test suite |
-| `python manage.py test coverage` | Run tests with coverage report |
-| `python manage.py lint all` | Run linting and formatting (Ruff) |
-| `python manage.py assets build` | Build production assets |
-| `python manage.py schedule run` | Run due scheduled tasks |
-| `python manage.py stats` | Show application statistics |
-| `python manage.py rbac seed` | Seed default roles and permissions |
-| `python manage.py clean` | Remove cache and temporary files |
+### Makefile (dev/test tooling)
 
-Run `python manage.py --help` for a full list of commands.
+| Command                    | Description                                                |
+|----------------------------|------------------------------------------------------------|
+| `make install`             | Install Python and Node.js dependencies                    |
+| `make dev`                 | Run development servers (Flask + Vite)                     |
+| `make clean`               | Remove cache and temporary files                           |
+| `make test`                | Run the test suite                                         |
+| `make test-file FILE=path` | Run a single test file                                     |
+| `make test-k K="keyword"`  | Run tests matching a keyword                               |
+| `make test-coverage`       | Run tests with coverage report                             |
+| `make lint`                | Run all quality checks (Ruff + format + import boundaries) |
+| `make lint-fix`            | Auto-fix lint and formatting issues                        |
+| `make typecheck`           | Run mypy type checking                                     |
+| `make assets`              | Build production assets                                    |
+| `make assets-watch`        | Watch and rebuild assets on change                         |
+
+Run `make help` for a full list of targets.
+
+### Flask CLI (app-level commands)
+
+| Command               | Description                                 |
+|-----------------------|---------------------------------------------|
+| `flask db upgrade`    | Apply database migrations                   |
+| `flask user create`   | Create a new user (add `--admin` for admin) |
+| `flask user list`     | List all users                              |
+| `flask shoot create`  | Create a shoot                              |
+| `flask shoot list`    | List shoots                                 |
+| `flask schedule run`  | Run due scheduled tasks                     |
+| `flask schedule list` | List all scheduled tasks                    |
+| `flask rbac seed`     | Seed default roles and permissions          |
+| `flask stats`         | Show application statistics                 |
+| `flask db-reset`      | Reset the database (destructive)            |
+
+Run `flask --help` for a full list of commands.
 
 ## ⚙️ Environment Variables
 
 Key environment variables in `.env`:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `FLASK_ENV` | Application environment | `development` |
-| `SECRET_KEY` | Flask secret key | (required) |
-| `DATABASE_URL` | MySQL connection string | (required) |
-| `MAIL_SERVER` | SMTP server for emails | `localhost` |
-| `MAIL_PORT` | SMTP port | `587` |
-| `MAIL_USERNAME` | SMTP username | (optional) |
-| `MAIL_PASSWORD` | SMTP password | (optional) |
+| Variable        | Description                | Default                 |
+|-----------------|----------------------------|-------------------------|
+| `FLASK_ENV`     | Application environment    | `development`           |
+| `SECRET_KEY`    | Flask secret key           | (required)              |
+| `DATABASE_URL`  | MySQL connection string    | (required)              |
+| `MAIL_SERVER`   | SMTP server for emails     | `localhost`             |
+| `MAIL_PORT`     | SMTP port                  | `587`                   |
+| `MAIL_USERNAME` | SMTP username              | (optional)              |
+| `MAIL_PASSWORD` | SMTP password              | (optional)              |
 | `SUMUP_API_KEY` | SumUp API key for payments | (required for payments) |
 
 ## 🧪 Testing & Quality
@@ -187,16 +204,16 @@ The project maintains 95% test coverage with 539 tests.
 
 ```bash
 # Run tests
-python manage.py test run
+make test
 
 # Run with coverage report
-python manage.py test coverage
+make test-coverage
 
 # Linting
-python manage.py lint check
+make lint
 
 # Type checking
-python manage.py lint typecheck
+make typecheck
 ```
 
 ## 🐳 Docker & Production
@@ -221,7 +238,7 @@ docker run -p 5000:5000 --env-file .env southeastarchers
 - [ ] Set up MySQL database
 - [ ] Configure SMTP for email notifications
 - [ ] Set up SumUp API credentials
-- [ ] Configure cron job for `python manage.py schedule run`
+- [ ] Configure cron job for `flask schedule run`
 
 ## 📝 License
 

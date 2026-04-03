@@ -1,11 +1,10 @@
-"""Admin routes for financial transaction management."""
-
 from flask import Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.forms.admin_forms import ExpenseForm, FinancialStatementForm, IncomeForm
 from app.services import FinanceService
 from app.utils.decorators import permission_required
+from app.utils.pdf import generate_statement_pdf
 
 from . import bp
 
@@ -36,18 +35,18 @@ def create_expense_post():
     form = ExpenseForm()
 
     if form.validate_on_submit():
-        transaction, error = FinanceService.create_transaction(
+        result = FinanceService.create_transaction(
             txn_type="expense",
             txn_date=form.date.data,
-            amount=float(form.amount.data),
+            amount_cents=int(round(float(form.amount.data) * 100)),
             category=form.category.data,
             description=form.description.data,
             created_by_id=current_user.id,
             receipt_reference=form.receipt_reference.data or None,
         )
 
-        if error:
-            flash(error, "error")
+        if not result.success:
+            flash(result.message, "error")
             return render_template("admin/create_expense.html", form=form)
 
         flash("Expense recorded successfully!", "success")
@@ -74,18 +73,18 @@ def create_income_post():
     form = IncomeForm()
 
     if form.validate_on_submit():
-        transaction, error = FinanceService.create_transaction(
+        result = FinanceService.create_transaction(
             txn_type="income",
             txn_date=form.date.data,
-            amount=float(form.amount.data),
+            amount_cents=int(round(float(form.amount.data) * 100)),
             category=form.category.data,
             description=form.description.data,
             created_by_id=current_user.id,
             source=form.source.data or None,
         )
 
-        if error:
-            flash(error, "error")
+        if not result.success:
+            flash(result.message, "error")
             return render_template("admin/create_income.html", form=form)
 
         flash("Income recorded successfully!", "success")
@@ -137,7 +136,7 @@ def edit_transaction_post(transaction_id):
         kwargs = dict(
             transaction=transaction,
             txn_date=form.date.data,
-            amount=float(form.amount.data),
+            amount_cents=int(round(float(form.amount.data) * 100)),
             category=form.category.data,
             description=form.description.data,
         )
@@ -146,10 +145,10 @@ def edit_transaction_post(transaction_id):
         else:
             kwargs["source"] = form.source.data or None
 
-        success, error = FinanceService.update_transaction(**kwargs)
+        result = FinanceService.update_transaction(**kwargs)
 
-        if not success:
-            flash(error or "An error occurred while updating the transaction.", "error")
+        if not result.success:
+            flash(result.message or "An error occurred while updating the transaction.", "error")
             return render_template(
                 "admin/edit_transaction.html",
                 transaction=transaction,
@@ -174,10 +173,10 @@ def edit_transaction_post(transaction_id):
 @permission_required("finance.delete")
 def delete_transaction(transaction_id):
     """Delete a financial transaction."""
-    success, error = FinanceService.delete_transaction(transaction_id)
+    result = FinanceService.delete_transaction(transaction_id)
 
-    if not success:
-        flash(error or "An error occurred while deleting the transaction.", "error")
+    if not result.success:
+        flash(result.message or "An error occurred while deleting the transaction.", "error")
     else:
         flash("Transaction deleted successfully!", "success")
 
@@ -258,7 +257,7 @@ def financial_statement_pdf():
         return redirect(url_for("admin.financial_statement"))
 
     statement = FinanceService.generate_statement(start_date=start_date, end_date=end_date)
-    pdf_bytes = bytes(FinanceService.generate_statement_pdf(statement))
+    pdf_bytes = bytes(generate_statement_pdf(statement))
 
     filename = f"financial_statement_{start_date_str}_to_{end_date_str}.pdf"
     return Response(

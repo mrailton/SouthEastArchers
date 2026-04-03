@@ -102,6 +102,19 @@ def _register_error_handlers(app: Flask) -> None:
         return render_template("errors/500.html"), 500
 
 
+def _register_health_check(app: Flask) -> None:
+    """Register a /health endpoint for load balancers and orchestrators."""
+    from sqlalchemy import text
+
+    @app.get("/health")
+    def health():
+        try:
+            db.session.execute(text("SELECT 1"))
+            return {"status": "ok"}
+        except Exception:
+            return {"status": "error"}, 500
+
+
 def _register_context_processor(app: Flask) -> None:
     @app.context_processor
     def inject_now():
@@ -112,10 +125,9 @@ def _register_context_processor(app: Flask) -> None:
         from app.services.settings_service import SettingsService
 
         try:
-            settings = SettingsService.get()
             return {
-                "news_enabled": settings.news_enabled,
-                "events_enabled": settings.events_enabled,
+                "news_enabled": SettingsService.get("news_enabled"),
+                "events_enabled": SettingsService.get("events_enabled"),
             }
         except Exception:
             return {"news_enabled": False, "events_enabled": False}
@@ -135,19 +147,49 @@ def create_app(config_name=None):
     )
 
     # Load config
-    app.config.from_object(config[config_name])
+    config_class = config[config_name]
+    app.config.from_object(config_class)
+    if hasattr(config_class, "init_app"):
+        config_class.init_app(app)
 
     # Configure logging and initialize extensions/blueprints
     _configure_logging(app)
     _init_extensions(app)
     _register_blueprints(app)
     _register_error_handlers(app)
+    _register_health_check(app)
     _register_context_processor(app)
 
     # Connect domain event handlers
     from app.events.handlers import connect_handlers
 
     connect_handlers()
+
+    # Register CLI commands
+    from app.cli import register_commands
+
+    register_commands(app)
+
+    # Shell context for `flask shell`
+    @app.shell_context_processor
+    def make_shell_context():
+        from app import models, repositories, services
+
+        ctx: dict = {"db": db}
+
+        # All models (User, Membership, Payment, …)
+        for name in models.__all__:
+            ctx[name] = getattr(models, name)
+
+        # All repositories (UserRepository, PaymentRepository, …)
+        for name in repositories.__all__:
+            ctx[name] = getattr(repositories, name)
+
+        # All services (UserService, PaymentService, …)
+        for name in services.__all__:
+            ctx[name] = getattr(services, name)
+
+        return ctx
 
     with app.app_context():
         from app.models import Credit, Event, Membership, News, Payment, Shoot, User

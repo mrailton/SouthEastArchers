@@ -25,7 +25,6 @@ dependencies = [
     "gunicorn==25.1.0",
     "whitenoise==6.11.0",
     "sumup==0.0.13",
-    "ruff>=0.14.14",
     "fpdf2>=2.8.6",
 ]
 
@@ -41,6 +40,7 @@ dev = [
     "pytest-mock>=3.15.1",
     "ruff>=0.15.2",
     "import-linter>=2.10",
+    "hypothesis>=6.130.0",
 ]
 
 [tool.coverage.run]
@@ -84,38 +84,16 @@ root_packages = ["app"]
 include_external_packages = false
 
 [[tool.importlinter.contracts]]
-name = "Routes must not import db directly"
+name = "Only models and repositories may import app.db"
 type = "forbidden"
 source_modules = [
-    "app.routes.auth",
-    "app.routes.member",
-    "app.routes.payment",
-    "app.routes.public",
-    "app.routes.admin.dashboard",
-    "app.routes.admin.events",
-    "app.routes.admin.members",
-    "app.routes.admin.news",
-    "app.routes.admin.payments",
-    "app.routes.admin.roles",
-    "app.routes.admin.settings",
-    "app.routes.admin.shoots",
-]
-forbidden_modules = ["app.db"]
-
-[[tool.importlinter.contracts]]
-name = "Services must not import db directly"
-type = "forbidden"
-source_modules = [
-    "app.services.admin_service",
-    "app.services.event_service",
-    "app.services.membership_service",
-    "app.services.news_service",
-    "app.services.payment_processing_service",
-    "app.services.payment_service",
-    "app.services.rbac_service",
-    "app.services.settings_service",
-    "app.services.shoot_service",
-    "app.services.user_service",
+    "app.cli",
+    "app.events",
+    "app.forms",
+    "app.routes",
+    "app.scheduler",
+    "app.services",
+    "app.utils",
 ]
 forbidden_modules = ["app.db"]
 

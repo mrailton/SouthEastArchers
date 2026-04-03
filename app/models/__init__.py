@@ -1,4 +1,6 @@
-from .application_settings import ApplicationSettings
+from app.enums import PaymentMethod, PaymentType
+
+from .application_settings import Setting
 from .credit import Credit
 from .event import Event
 from .financial_transaction import FinancialTransaction
@@ -19,7 +21,9 @@ __all__ = [
     "News",
     "Event",
     "Payment",
-    "ApplicationSettings",
+    "PaymentType",
+    "PaymentMethod",
+    "Setting",
     "Role",
     "Permission",
     "FinancialTransaction",

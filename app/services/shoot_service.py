@@ -1,9 +1,13 @@
 from datetime import date
+from typing import Any
+
+from flask_sqlalchemy.pagination import Pagination
 
 from app.models import Shoot
 from app.models.shoot import ShootVisitor
 from app.repositories import ShootRepository, UserRepository
 from app.services.finance_service import FinanceService
+from app.services.result import ServiceResult
 from app.services.settings_service import SettingsService
 
 
@@ -16,8 +20,8 @@ class ShootService:
         attendee_ids: list[int] = None,
         visitors: list[dict] = None,
         created_by_id: int | None = None,
-    ) -> tuple[Shoot | None, list[str]]:
-        warnings = []
+    ) -> ServiceResult[Shoot]:
+        warnings: list[str] = []
         shoot = Shoot(date=shoot_date, location=location, description=description)
         ShootRepository.add(shoot)
 
@@ -25,24 +29,15 @@ class ShootService:
             ShootRepository.flush()
 
             if attendee_ids:
-                for user_id in attendee_ids:
-                    user = UserRepository.get_by_id(user_id)
-                    if user and user.membership:
-                        if user.membership.use_credit(allow_negative=True):
-                            shoot.users.append(user)
-                            total_credits = user.membership.credits_remaining()
-                            if total_credits < 0:
-                                warnings.append(f"{user.name} now has {total_credits} credits (negative balance).")
-                        else:
-                            warnings.append(f"{user.name} cannot be added (inactive membership).")
+                ShootService._filter_shoot_attendees(attendee_ids, shoot, warnings)
 
             if visitors:
                 ShootService._add_visitors(shoot, visitors, created_by_id)
 
             ShootRepository.save()
-            return shoot, warnings
+            return ServiceResult.ok(data=shoot, warnings=warnings)
         except Exception as e:
-            return None, [f"Error creating shoot: {str(e)}"]
+            return ServiceResult.fail(f"Error creating shoot: {str(e)}")
 
     @staticmethod
     def update_shoot(
@@ -53,8 +48,8 @@ class ShootService:
         attendee_ids: list[int] = None,
         visitors: list[dict] = None,
         created_by_id: int | None = None,
-    ) -> tuple[bool, list[str]]:
-        warnings = []
+    ) -> ServiceResult[None]:
+        warnings: list[str] = []
         new_attendee_ids = set(attendee_ids or [])
         old_attendee_ids = {u.id for u in shoot.users}
 
@@ -65,16 +60,7 @@ class ShootService:
                 user.membership.add_credits(1)
 
         added_ids = new_attendee_ids - old_attendee_ids
-        for user_id in added_ids:
-            user = UserRepository.get_by_id(user_id)
-            if user and user.membership:
-                if user.membership.use_credit(allow_negative=True):
-                    shoot.users.append(user)
-                    total_credits = user.membership.credits_remaining()
-                    if total_credits < 0:
-                        warnings.append(f"{user.name} now has {total_credits} credits (negative balance).")
-                else:
-                    warnings.append(f"{user.name} cannot be added (inactive membership).")
+        ShootService._filter_shoot_attendees(list(added_ids), shoot, warnings)
 
         shoot.users = [u for u in shoot.users if u.id in new_attendee_ids]
         shoot.date = shoot_date
@@ -82,7 +68,7 @@ class ShootService:
         shoot.description = description
 
         # Handle visitors: diff old vs new to avoid duplicate transactions
-        old_visitors = {(v.name, v.club, v.affiliation, v.payment_method) for v in shoot.visitors}
+        old_visitors = {(v.name, v.club, v.affiliation, v.payment_method) for v in shoot.visitors}  # type: ignore[attr-defined]
         new_visitors = {(v["name"], v["club"], v["affiliation"], v["payment_method"]) for v in (visitors or [])}
 
         # Remove visitors no longer in the list
@@ -98,17 +84,15 @@ class ShootService:
 
         try:
             ShootRepository.save()
-            return True, warnings
+            return ServiceResult.ok(warnings=warnings)
         except Exception as e:
-            return False, [f"Error updating shoot: {str(e)}"]
+            return ServiceResult.fail(f"Error updating shoot: {str(e)}")
 
     @staticmethod
     def _add_visitors(shoot: Shoot, visitors: list[dict], created_by_id: int | None) -> None:
         """Add visitors to a shoot and create income transactions for each."""
-        settings = SettingsService.get()
-        fee_cents = settings.visitor_shoot_fee
-        fee_amount = fee_cents / 100.0
-        sumup_fee_pct = settings.sumup_fee_percentage
+        fee_cents: int = SettingsService.get("visitor_shoot_fee")
+        sumup_fee_pct = SettingsService.get("sumup_fee_percentage")
 
         for v in visitors:
             visitor = ShootVisitor(
@@ -125,7 +109,7 @@ class ShootService:
             FinanceService.create_transaction(
                 txn_type="income",
                 txn_date=shoot.date,
-                amount=fee_amount,
+                amount_cents=fee_cents,
                 category="shoot_fees",
                 description=description,
                 created_by_id=by_id,
@@ -135,23 +119,18 @@ class ShootService:
             # Record SumUp processing fee if applicable
             if v["payment_method"] == "sumup" and sumup_fee_pct is not None:
                 pct = float(sumup_fee_pct)
-                fee_expense = round(fee_cents * pct / 10000.0, 2)
+                fee_expense_cents = int(round(fee_cents * pct / 100.0))
                 FinanceService.create_transaction(
                     txn_type="expense",
                     txn_date=shoot.date,
-                    amount=fee_expense,
+                    amount_cents=fee_expense_cents,
                     category="payment_processing_fees",
                     description=f"SumUp fee ({pct}%) on {description}",
                     created_by_id=by_id,
                 )
 
     @staticmethod
-    def get_all_shoots() -> list[Shoot]:
-        """Get all shoots ordered by date descending."""
-        return ShootRepository.get_all()
-
-    @staticmethod
-    def get_all_shoots_paginated(page: int = 1, per_page: int = 10):
+    def get_all_shoots_paginated(page: int = 1, per_page: int = 10) -> Pagination:
         """Get all shoots ordered by date descending with pagination."""
         return ShootRepository.get_all_paginated(page=page, per_page=per_page)
 
@@ -165,3 +144,16 @@ class ShootService:
         """Get active members with their credit information for form choices."""
         active_members = UserRepository.get_active_with_membership()
         return [(u.id, f"{u.name} ({u.membership.credits_remaining()} credits)") for u in active_members if u.membership and u.membership.is_active()]
+
+    @staticmethod
+    def _filter_shoot_attendees(attendee_ids: list[int], shoot: Shoot, warnings: list[Any]) -> None:
+        for user_id in attendee_ids:
+            user = UserRepository.get_by_id(user_id)
+            if user and user.membership:
+                if user.membership.use_credit(allow_negative=True):
+                    shoot.users.append(user)
+                    total_credits = user.membership.credits_remaining()
+                    if total_credits < 0:
+                        warnings.append(f"{user.name} now has {total_credits} credits (negative balance).")
+                else:
+                    warnings.append(f"{user.name} cannot be added (inactive membership).")

@@ -9,5 +9,6 @@ from . import bp
 @bp.get("/dashboard")
 @permission_required("admin.dashboard.view")
 def dashboard():
-    stats = AdminService.get_dashboard_stats()
-    return render_template("admin/dashboard.html", **stats)
+    result = AdminService.get_dashboard_stats()
+    assert result.data is not None
+    return render_template("admin/dashboard.html", **result.data)

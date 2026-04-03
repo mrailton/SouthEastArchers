@@ -18,7 +18,7 @@ class Event(db.Model):
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
-    def is_upcoming(self):
+    def is_upcoming(self) -> bool:
         now = utc_now()
 
         start = self.start_date
@@ -28,8 +28,8 @@ class Event(db.Model):
             now = now.replace(tzinfo=UTC)
         return start > now
 
-    def publish(self):
+    def publish(self) -> None:
         self.published = True
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Event {self.title} on {self.start_date}>"

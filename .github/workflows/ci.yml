@@ -21,6 +21,23 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:9.5
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: southeastarchers_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      TEST_DATABASE_URL: "mysql+pymysql://root:root@127.0.0.1:3306/southeastarchers_test"
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,7 +55,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Install system dependencies
         run: |
@@ -46,16 +63,19 @@ jobs:
           sudo apt-get install -y gcc default-libmysqlclient-dev pkg-config make
 
       - name: Install dependencies
-        run: uv run python manage.py install
+        run: make install
 
       - name: Check code quality and formatting
-        run: uv run python manage.py lint check
+        run: make lint
+
+      - name: Run mypy type checking
+        run: make typecheck
 
       - name: Build assets
-        run: uv run python manage.py assets build
+        run: make assets
 
       - name: Run tests with coverage
-        run: uv run python manage.py test coverage
+        run: make test-coverage
 
   build-and-push:
     needs: test

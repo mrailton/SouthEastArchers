@@ -10,6 +10,13 @@ from app.repositories.base import BaseRepository
 
 
 class RBACRepository(BaseRepository):
+    @staticmethod
+    def seed() -> None:
+        """Idempotently seed default roles and permissions."""
+        from app.models.rbac import seed_rbac
+
+        seed_rbac(db.session)  # type: ignore[arg-type]
+
     # --- Role ---
     @staticmethod
     def get_role(role_id: int) -> Role | None:
@@ -39,9 +46,6 @@ class RBACRepository(BaseRepository):
         db.session.delete(role)
 
     # --- Permission ---
-    @staticmethod
-    def get_permission_by_name(name: str) -> Permission | None:
-        return Permission.query.filter_by(name=name).first()
 
     @staticmethod
     def list_permissions() -> list[Permission]:
@@ -54,7 +58,3 @@ class RBACRepository(BaseRepository):
     @staticmethod
     def get_roles_by_ids(ids: Iterable[int]) -> list[Role]:
         return Role.query.filter(Role.id.in_(ids or [])).all()
-
-    @staticmethod
-    def add_permission(permission: Permission) -> None:
-        db.session.add(permission)

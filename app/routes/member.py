@@ -64,12 +64,12 @@ def profile_post():
     form = ProfileForm(obj=current_user)
 
     if form.validate_on_submit():
-        success, message = UserService.update_profile(
+        result = UserService.update_profile(
             user=current_user,
             name=form.name.data,
             phone=form.phone.data,
         )
-        flash(message, "success" if success else "error")
+        flash(result.message, "success" if result.success else "error")
         return redirect(url_for("member.profile"))
 
     for field, errors in form.errors.items():
@@ -93,17 +93,17 @@ def change_password_post():
     form = ChangePasswordForm()
 
     if form.validate_on_submit():
-        success, message = UserService.change_password(
+        result = UserService.change_password(
             user=current_user,
             current_password=form.current_password.data,
             new_password=form.new_password.data,
         )
 
-        if success:
-            flash(message, "success")
+        if result.success:
+            flash(result.message, "success")
             return redirect(url_for("member.profile"))
         else:
-            flash(message, "error")
+            flash(result.message, "error")
 
     for field, errors in form.errors.items():
         for error in errors:

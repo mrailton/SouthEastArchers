@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+from contextlib import contextmanager
+
 from app import db
 
 
@@ -24,5 +27,38 @@ class BaseRepository:
             raise
 
     @staticmethod
+    @contextmanager
+    def transaction() -> Generator[None]:
+        """Explicit atomic transaction boundary.
+
+        Usage::
+
+            with BaseRepository.transaction():
+                payment.mark_completed(...)
+                user.membership.activate()
+
+        On clean exit the session is committed via :meth:`save`.  If any
+        exception is raised inside the block the session is rolled back and
+        the exception re-raised — no mutations are persisted.
+        """
+        try:
+            yield
+        except Exception:
+            db.session.rollback()
+            raise
+        else:
+            BaseRepository.save()
+
+    @staticmethod
     def flush() -> None:
         db.session.flush()
+
+    @staticmethod
+    def drop_all() -> None:
+        """Drop all tables — destructive, for CLI/testing only."""
+        db.drop_all()
+
+    @staticmethod
+    def create_all() -> None:
+        """Create all tables from model metadata."""
+        db.create_all()

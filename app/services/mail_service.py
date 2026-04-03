@@ -1,250 +1,214 @@
+from collections.abc import Callable
+from typing import Any
+
 from flask import current_app, render_template, url_for
 from flask_mail import Message
 
 from app import mail
+from app.enums import PaymentMethod
+
+_PAYMENT_METHOD_LABELS = {
+    PaymentMethod.ONLINE: "Credit/Debit Card (SumUp)",
+    PaymentMethod.CASH: "Cash Payment",
+}
 
 
-def send_password_reset(user_id: int, token: str) -> None:
-    """Send a password reset email."""
-    from app.repositories import UserRepository
+class MailService:
+    @staticmethod
+    def _safe_url_for(endpoint: str, fallback_path: str, **kwargs: Any) -> str:
+        """Generate an external URL, falling back to *SITE_URL* config outside a request context."""
+        try:
+            return url_for(endpoint, _external=True, **kwargs)
+        except RuntimeError:
+            return str(current_app.config.get("SITE_URL", "https://southeastarchers.ie")) + fallback_path
 
-    try:
-        user = UserRepository.get_by_id(user_id)
-        if not user:
-            current_app.logger.error(f"Cannot send password reset: user {user_id} not found")
-            return
+    @staticmethod
+    def _send(user_id: int, email_type: str, build_message: Callable[..., Message | None]) -> None:
+        """Look up *user_id*, call *build_message(user)* to obtain a ``Message``, and send it.
 
-        reset_url = url_for("auth.reset_password", token=token, _external=True)
-
-        msg = Message(
-            subject="Reset Your Password - South East Archers",
-            recipients=[user.email],
-            html=render_template("email/reset_password.html", user=user, reset_url=reset_url),
-        )
-        mail.send(msg)
-        current_app.logger.info(f"Password reset email sent to {user.email}")
-    except Exception as e:
-        current_app.logger.error(f"Failed to send password reset email: {e}")
-
-
-def send_payment_receipt(user_id: int, payment_id: int) -> None:
-    """Send a payment receipt email."""
-    from app.repositories import PaymentRepository, UserRepository
-
-    try:
-        user = UserRepository.get_by_id(user_id)
-        payment = PaymentRepository.get_by_id(payment_id)
-        if not user or not payment:
-            current_app.logger.error(f"Cannot send receipt: user {user_id} or payment {payment_id} not found")
-            return
-
-        membership = user.membership
-        receipt_number = f"SEA-{payment.id:06d}"
-        payment_method_display = {
-            "online": "Credit/Debit Card (SumUp)",
-            "cash": "Cash Payment",
-        }.get(payment.payment_method, payment.payment_method.title())
+        If *build_message* returns ``None`` sending is silently skipped (e.g.
+        because a related record was not found).  All exceptions are caught and
+        logged so that mail failures never propagate to callers.
+        """
+        from app.repositories import UserRepository
 
         try:
-            login_url = url_for("auth.login", _external=True)
-        except RuntimeError:
-            login_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/login"
+            user = UserRepository.get_by_id(user_id)
+            if not user:
+                current_app.logger.error(f"Cannot send {email_type}: user {user_id} not found")
+                return
 
-        template_data = {
-            "name": user.name,
-            "receipt_number": receipt_number,
-            "payment_date": payment.created_at.strftime("%d %B %Y at %H:%M"),
-            "description": payment.description or "Annual Membership",
-            "payment_method": payment_method_display,
-            "transaction_id": (payment.external_transaction_id if payment.payment_method == "online" else None),
-            "amount": payment.amount,
-            "membership_start": membership.start_date.strftime("%d %B %Y"),
-            "membership_expiry": membership.expiry_date.strftime("%d %B %Y"),
-            "credits": membership.credits_remaining(),
-            "login_url": login_url,
-        }
+            msg = build_message(user)
+            if msg is None:
+                return
 
-        msg = Message(
-            subject="Payment Receipt - South East Archers",
-            recipients=[user.email],
-            html=render_template("email/payment_receipt.html", **template_data),
-            body=render_template("email/payment_receipt.txt", **template_data),
-        )
-        mail.send(msg)
-        current_app.logger.info(f"Payment receipt sent to {user.email}")
-    except Exception as e:
-        current_app.logger.error(f"Failed to send receipt email: {e}")
+            mail.send(msg)
+            current_app.logger.info(f"{email_type.capitalize()} sent to {user.email}")
+        except Exception as e:
+            current_app.logger.error(f"Failed to send {email_type}: {e}")
 
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
 
-def send_credit_purchase_receipt(user_id: int, payment_id: int, credits_purchased: int) -> None:
-    """Send a credit purchase receipt email."""
-    from app.repositories import PaymentRepository, UserRepository
+    @staticmethod
+    def send_password_reset(user_id: int, token: str) -> None:
+        """Send a password reset email."""
 
-    try:
-        user = UserRepository.get_by_id(user_id)
-        payment = PaymentRepository.get_by_id(payment_id)
-        if not user or not payment:
-            current_app.logger.error(f"Cannot send credit receipt: user {user_id} or payment {payment_id} not found")
-            return
+        def _build(user: Any) -> Message:
+            reset_url = url_for("auth.reset_password", token=token, _external=True)
+            return Message(
+                subject="Reset Your Password - South East Archers",
+                recipients=[user.email],
+                html=render_template("email/reset_password.html", user=user, reset_url=reset_url),
+            )
 
-        credits_remaining = user.membership.credits_remaining()
-        receipt_number = f"SEA-{payment.id:06d}"
-        payment_method_display = {
-            "online": "Credit/Debit Card (SumUp)",
-            "cash": "Cash Payment",
-        }.get(payment.payment_method, payment.payment_method.title())
+        MailService._send(user_id, "password reset email", _build)
 
-        try:
-            login_url = url_for("member.credits", _external=True)
-        except RuntimeError:
-            login_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/member/credits"
+    @staticmethod
+    def send_payment_receipt(user_id: int, payment_id: int) -> None:
+        """Send a payment receipt email."""
+        from app.repositories import PaymentRepository
 
-        template_data = {
-            "name": user.name,
-            "receipt_number": receipt_number,
-            "payment_date": payment.created_at.strftime("%d %B %Y at %H:%M"),
-            "description": payment.description or f"{credits_purchased} shooting credits",
-            "payment_method": payment_method_display,
-            "transaction_id": (payment.external_transaction_id if payment.payment_method == "online" else None),
-            "amount": payment.amount,
-            "credits_purchased": credits_purchased,
-            "credits_remaining": credits_remaining,
-            "login_url": login_url,
-        }
+        def _build(user: Any) -> Message | None:
+            payment = PaymentRepository.get_by_id(payment_id)
+            if not payment:
+                current_app.logger.error(f"Cannot send receipt: payment {payment_id} not found")
+                return None
 
-        msg = Message(
-            subject="Credit Purchase Receipt - South East Archers",
-            recipients=[user.email],
-            html=render_template("email/credit_receipt.html", **template_data),
-            body=render_template("email/credit_receipt.txt", **template_data),
-        )
-        mail.send(msg)
-        current_app.logger.info(f"Credit purchase receipt sent to {user.email}")
-    except Exception as e:
-        current_app.logger.error(f"Failed to send credit receipt email: {e}")
+            template_data = {
+                "name": user.name,
+                "receipt_number": f"SEA-{payment.id:06d}",
+                "payment_date": payment.created_at.strftime("%d %B %Y at %H:%M"),
+                "description": payment.description or "Annual Membership",
+                "payment_method": _PAYMENT_METHOD_LABELS.get(payment.payment_method, payment.payment_method.title()),
+                "transaction_id": payment.external_transaction_id if payment.payment_method == PaymentMethod.ONLINE else None,
+                "amount": payment.amount,
+                "membership_start": user.membership.start_date.strftime("%d %B %Y"),
+                "membership_expiry": user.membership.expiry_date.strftime("%d %B %Y"),
+                "credits": user.membership.credits_remaining(),
+                "login_url": MailService._safe_url_for("auth.login", "/login"),
+            }
 
+            return Message(
+                subject="Payment Receipt - South East Archers",
+                recipients=[user.email],
+                html=render_template("email/payment_receipt.html", **template_data),
+                body=render_template("email/payment_receipt.txt", **template_data),
+            )
 
-def send_welcome_email(user_id: int) -> None:
-    """Send a welcome email to a new user."""
-    from app.repositories import UserRepository
+        MailService._send(user_id, "receipt email", _build)
 
-    try:
-        user = UserRepository.get_by_id(user_id)
-        if not user:
-            current_app.logger.error(f"Cannot send welcome email: user {user_id} not found")
-            return
+    @staticmethod
+    def send_credit_purchase_receipt(user_id: int, payment_id: int, credits_purchased: int) -> None:
+        """Send a credit purchase receipt email."""
+        from app.repositories import PaymentRepository
 
-        try:
-            login_url = url_for("auth.login", _external=True)
-        except RuntimeError:
-            login_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/auth/login"
+        def _build(user: Any) -> Message | None:
+            payment = PaymentRepository.get_by_id(payment_id)
+            if not payment:
+                current_app.logger.error(f"Cannot send credit receipt: payment {payment_id} not found")
+                return None
 
-        membership_cost = current_app.config.get("ANNUAL_MEMBERSHIP_COST", 10000)
-        credits_included = current_app.config.get("MEMBERSHIP_NIGHTS_INCLUDED", 20)
+            template_data = {
+                "name": user.name,
+                "receipt_number": f"SEA-{payment.id:06d}",
+                "payment_date": payment.created_at.strftime("%d %B %Y at %H:%M"),
+                "description": payment.description or f"{credits_purchased} shooting credits",
+                "payment_method": _PAYMENT_METHOD_LABELS.get(payment.payment_method, payment.payment_method.title()),
+                "transaction_id": payment.external_transaction_id if payment.payment_method == PaymentMethod.ONLINE else None,
+                "amount": payment.amount,
+                "credits_purchased": credits_purchased,
+                "credits_remaining": user.membership.credits_remaining(),
+                "login_url": MailService._safe_url_for("member.credits", "/member/credits"),
+            }
 
-        msg = Message(
-            subject="Welcome to South East Archers!",
-            recipients=[user.email],
-            html=render_template(
-                "email/welcome.html",
-                user=user,
-                login_url=login_url,
-                membership_cost=membership_cost,
-                credits_included=credits_included,
-            ),
-            body=render_template(
-                "email/welcome.txt",
-                user=user,
-                login_url=login_url,
-                membership_cost=membership_cost,
-                credits_included=credits_included,
-            ),
-        )
-        mail.send(msg)
-        current_app.logger.info(f"Welcome email sent to {user.email}")
-    except Exception as e:
-        current_app.logger.error(f"Failed to send welcome email: {e}")
+            return Message(
+                subject="Credit Purchase Receipt - South East Archers",
+                recipients=[user.email],
+                html=render_template("email/credit_receipt.html", **template_data),
+                body=render_template("email/credit_receipt.txt", **template_data),
+            )
 
+        MailService._send(user_id, "credit receipt email", _build)
 
-def send_new_member_notification(new_user_id: int) -> None:
-    """Send a notification email to all admins with members.manage_membership permission."""
-    from app.repositories import UserRepository
+    @staticmethod
+    def send_welcome_email(user_id: int) -> None:
+        """Send a welcome email to a new user."""
+        from app.services.settings_service import SettingsService
 
-    try:
-        new_user = UserRepository.get_by_id(new_user_id)
-        if not new_user:
-            current_app.logger.error(f"Cannot send notification: user {new_user_id} not found")
-            return
+        def _build(user: Any) -> Message:
+            login_url = MailService._safe_url_for("auth.login", "/auth/login")
+            membership_cost = SettingsService.get("annual_membership_cost")
+            credits_included = SettingsService.get("membership_shoots_included")
 
-        admin_users = UserRepository.get_all_with_permission("members.manage_membership")
-        admin_emails: list[str] = [user.email for user in admin_users]
+            return Message(
+                subject="Welcome to South East Archers!",
+                recipients=[user.email],
+                html=render_template("email/welcome.html", user=user, login_url=login_url, membership_cost=membership_cost, credits_included=credits_included),
+                body=render_template("email/welcome.txt", user=user, login_url=login_url, membership_cost=membership_cost, credits_included=credits_included),
+            )
 
-        try:
-            admin_url = url_for("admin.members", _external=True)
-        except RuntimeError:
-            admin_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/admin/members"
+        MailService._send(user_id, "welcome email", _build)
 
-        msg = Message(
-            subject=f"New Member Sign-Up: {new_user.name} - South East Archers",
-            recipients=list(admin_emails),
-            html=render_template(
-                "email/new_member_notification.html",
-                new_member_name=new_user.name,
-                new_member_email=new_user.email,
-                new_member_phone=new_user.phone,
-                new_member_qualification=new_user.qualification,
-                admin_url=admin_url,
-            ),
-            body=render_template(
-                "email/new_member_notification.txt",
-                new_member_name=new_user.name,
-                new_member_email=new_user.email,
-                new_member_phone=new_user.phone,
-                new_member_qualification=new_user.qualification,
-                admin_url=admin_url,
-            ),
-        )
-        mail.send(msg)
-        current_app.logger.info(f"New member notification sent to {len(admin_emails)} admin(s) for new member {new_user.email}")
-    except Exception as e:
-        current_app.logger.error(f"Failed to send new member notification: {e}")
+    @staticmethod
+    def send_new_member_notification(new_user_id: int) -> None:
+        """Send a notification email to all admins with members.manage_membership permission."""
+        from app.repositories import UserRepository
 
+        def _build(new_user: Any) -> Message:
+            admin_users = UserRepository.get_all_with_permission("members.manage_membership")
+            admin_url = MailService._safe_url_for("admin.members", "/admin/members")
 
-def send_cash_payment_pending_email(user_id: int, payment_id: int) -> None:
-    """Send a confirmation email when a cash payment request is submitted."""
-    from app.repositories import PaymentRepository, UserRepository
-    from app.services.settings_service import SettingsService
+            return Message(
+                subject=f"New Member Sign-Up: {new_user.name} - South East Archers",
+                recipients=[u.email for u in admin_users],
+                html=render_template(
+                    "email/new_member_notification.html",
+                    new_member_name=new_user.name,
+                    new_member_email=new_user.email,
+                    new_member_phone=new_user.phone,
+                    new_member_qualification=new_user.qualification,
+                    admin_url=admin_url,
+                ),
+                body=render_template(
+                    "email/new_member_notification.txt",
+                    new_member_name=new_user.name,
+                    new_member_email=new_user.email,
+                    new_member_phone=new_user.phone,
+                    new_member_qualification=new_user.qualification,
+                    admin_url=admin_url,
+                ),
+            )
 
-    try:
-        user = UserRepository.get_by_id(user_id)
-        payment = PaymentRepository.get_by_id(payment_id)
-        if not user or not payment:
-            current_app.logger.error(f"Cannot send cash payment email: user {user_id} or payment {payment_id} not found")
-            return
+        MailService._send(new_user_id, "new member notification", _build)
 
-        settings = SettingsService.get()
+    @staticmethod
+    def send_cash_payment_pending_email(user_id: int, payment_id: int) -> None:
+        """Send a confirmation email when a cash payment request is submitted."""
+        from app.repositories import PaymentRepository
+        from app.services.settings_service import SettingsService
 
-        try:
-            history_url = url_for("payment.history", _external=True)
-        except RuntimeError:
-            history_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/payment/history"
+        def _build(user: Any) -> Message | None:
+            payment = PaymentRepository.get_by_id(payment_id)
+            if not payment:
+                current_app.logger.error(f"Cannot send cash payment email: payment {payment_id} not found")
+                return None
 
-        msg = Message(
-            subject="Cash Payment Submitted - South East Archers",
-            recipients=[user.email],
-            html=render_template(
-                "email/cash_payment_pending.html",
-                name=user.name,
-                reference=f"CASH-{payment.id}",
-                submitted_date=payment.created_at.strftime("%d %B %Y"),
-                description=payment.description,
-                amount=payment.amount,
-                instructions=settings.cash_payment_instructions,
-                payment_type=payment.payment_type,
-                history_url=history_url,
-            ),
-        )
-        mail.send(msg)
-        current_app.logger.info(f"Cash payment pending email sent to {user.email} for payment {payment_id}")
-    except Exception as e:
-        current_app.logger.error(f"Failed to send cash payment pending email: {e}")
+            return Message(
+                subject="Cash Payment Submitted - South East Archers",
+                recipients=[user.email],
+                html=render_template(
+                    "email/cash_payment_pending.html",
+                    name=user.name,
+                    reference=f"CASH-{payment.id}",
+                    submitted_date=payment.created_at.strftime("%d %B %Y"),
+                    description=payment.description,
+                    amount=payment.amount,
+                    instructions=SettingsService.get("cash_payment_instructions"),
+                    payment_type=payment.payment_type,
+                    history_url=MailService._safe_url_for("payment.history", "/payment/history"),
+                ),
+            )
+
+        MailService._send(user_id, "cash payment pending email", _build)

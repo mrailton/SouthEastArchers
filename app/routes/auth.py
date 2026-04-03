@@ -61,7 +61,7 @@ def signup_post():
     form = SignupForm()
 
     if form.validate_on_submit():
-        user, error = UserService.create_user(
+        result = UserService.create_user(
             name=form.name.data,
             email=form.email.data,
             password=form.password.data,
@@ -70,10 +70,11 @@ def signup_post():
             qualification_detail=form.qualification_detail.data,
         )
 
-        if error:
-            flash(error, "error")
+        if not result.success:
+            flash(result.message, "error")
             return render_template("auth/signup.html", form=form)
 
+        user = result.data
         assert user is not None
         user_registered.send(user_id=user.id)
 
@@ -151,13 +152,13 @@ def reset_password_post(token):
     form = ResetPasswordForm()
 
     if form.validate_on_submit():
-        success, message = UserService.reset_password(token, form.password.data)
+        result = UserService.reset_password(token, form.password.data)
 
-        if success:
-            flash(f"{message} Please login.", "success")
+        if result.success:
+            flash(f"{result.message} Please login.", "success")
             return redirect(url_for("auth.login"))
         else:
-            flash(message, "error")
+            flash(result.message, "error")
             return redirect(url_for("auth.forgot_password"))
 
     for field, errors in form.errors.items():

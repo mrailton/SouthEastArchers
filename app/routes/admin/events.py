@@ -28,7 +28,7 @@ def create_event_post():
     form = EventForm()
 
     if form.validate_on_submit():
-        event, error = EventService.create_event(
+        result = EventService.create_event(
             title=form.title.data,
             start_date=form.start_date.data,
             description=form.description.data,
@@ -36,8 +36,8 @@ def create_event_post():
             published=form.published.data,
         )
 
-        if error:
-            flash(error, "error")
+        if not result.success:
+            flash(result.message, "error")
             return render_template("admin/create_event.html", form=form)
 
         flash("Event created successfully!", "success")
@@ -72,7 +72,7 @@ def edit_event_post(event_id):
     form = EventForm(obj=event)
 
     if form.validate_on_submit():
-        success, error = EventService.update_event(
+        result = EventService.update_event(
             event=event,
             title=form.title.data,
             start_date=form.start_date.data,
@@ -81,8 +81,8 @@ def edit_event_post(event_id):
             published=form.published.data,
         )
 
-        if not success:
-            flash(error or "An error occurred while updating the event.", "error")
+        if not result.success:
+            flash(result.message or "An error occurred while updating the event.", "error")
             return render_template("admin/edit_event.html", event=event, form=form)
 
         flash("Event updated successfully!", "success")

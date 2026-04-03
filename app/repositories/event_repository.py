@@ -24,3 +24,7 @@ class EventRepository(BaseRepository):
     @staticmethod
     def add(event: Event) -> None:
         db.session.add(event)
+
+    @staticmethod
+    def count_upcoming() -> int:
+        return Event.query.filter(Event.start_date > utc_now()).count()

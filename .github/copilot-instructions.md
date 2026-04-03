@@ -2,38 +2,44 @@
 
 ## Build, Test & Lint
 
-All commands go through `manage.py` (Click CLI). Use `uv run` to ensure the correct virtualenv:
+Dev/test tooling uses a `Makefile`. App-level commands (user management, scheduling, RBAC) remain as Flask CLI commands.
 
 ```bash
 # Install all dependencies (Python + Node)
-python manage.py install
+make install
 
 # Run full test suite
-python manage.py test run
+make test
 
 # Run a single test file
-python manage.py test file tests/services/test_membership_service.py
+make test-file FILE=tests/integration/services/test_membership_service.py
 
 # Run tests matching a keyword
-python manage.py test run -k "test_activate_membership"
+make test-k K="test_activate_membership"
+
+# Run tests with coverage report
+make test-coverage
 
 # Lint (ruff check + ruff format --check + import-linter)
-python manage.py lint all
+make lint
 
 # Auto-fix lint/format issues
-python manage.py lint all --fix
+make lint-fix
 
 # Type checking (mypy)
-python manage.py lint typecheck
+make typecheck
 
 # Build frontend assets
-python manage.py assets build
+make assets
 
 # Dev servers (Flask + Vite hot-reload)
-python manage.py dev
+make dev
+
+# Clean cache and temporary files
+make clean
 ```
 
-CI runs: `lint check` → `assets build` → `test coverage` (see `.github/workflows/ci.yml`).
+CI runs: `make lint` → `make typecheck` → `make assets` → `make test-coverage` (see `.github/workflows/ci.yml`).
 
 ## Architecture
 
@@ -61,7 +67,7 @@ Vite builds assets from `resources/assets/` into `resources/static/`. Templates 
 ## Key Conventions
 
 - **Monetary values** are stored in cents (integer) to avoid floating-point issues. Fields are named `amount_cents`, `cost_cents`, etc.
-- **Service methods** are `@staticmethod` and return `tuple[bool, str]` — `(success, message)`.
+- **Service methods** are `@staticmethod` and return `ServiceResult[T]` (from `app.services.result`). `ServiceResult` is a frozen dataclass with fields `success: bool`, `data: T | None`, `message: str | None`, and `warnings: list[str]`. Use the convenience constructors `ServiceResult.ok(data=..., message=..., warnings=...)` and `ServiceResult.fail(message=..., warnings=...)` instead of building instances directly.
 - **Repository methods** are `@staticmethod`. Use `BaseRepository.save()` to commit (handles rollback on failure).
 - **RBAC**: Protect routes with `@permission_required("resource.action")` or `@any_permission_required([...])` from `app.utils.decorators`.
 - **Testing**: Tests use a real SQLite database (no mocks for DB). Fixtures like `test_user`, `admin_user`, `fake_mailer`, and `fake_queue` are in `tests/conftest.py`. Shared helpers (e.g., `create_user_with_membership`, `assert_email_sent`) are in `tests/helpers.py`.

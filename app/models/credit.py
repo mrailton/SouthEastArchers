@@ -15,5 +15,5 @@ class Credit(db.Model):
 
     adjusted_by = db.relationship("User", foreign_keys=[adjusted_by_id], lazy="joined")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Credit user_id={self.user_id} amount={self.amount}>"

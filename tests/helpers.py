@@ -1,5 +1,3 @@
-"""Test helpers and lightweight fakes used across tests."""
-
 from collections.abc import Callable
 from typing import Any
 
@@ -44,6 +42,40 @@ class FakeMailer:
         return self.sent_messages[-1] if self.sent_messages else None
 
 
+_UNSET = object()
+
+
+class FakePaymentProcessor:
+    """Fake payment processor that returns canned responses.
+
+    Drop-in replacement for ``SumUpService`` to avoid real API calls in tests.
+    Pass via ``PaymentService(processor=FakePaymentProcessor())``.
+    """
+
+    def __init__(
+        self,
+        checkout_response: dict[str, Any] | None = _UNSET,
+        get_checkout_response: Any = None,
+        verify_result: bool = True,
+    ) -> None:
+        self.checkout_response = {"id": "fake_checkout_id", "status": "PENDING"} if checkout_response is _UNSET else checkout_response
+        self.get_checkout_response = get_checkout_response
+        self.verify_result = verify_result
+        self.calls: list[tuple[str, tuple, dict]] = []
+
+    def create_checkout(self, **kwargs: Any) -> dict[str, Any] | None:
+        self.calls.append(("create_checkout", (), kwargs))
+        return self.checkout_response
+
+    def get_checkout(self, checkout_id: str) -> Any:
+        self.calls.append(("get_checkout", (checkout_id,), {}))
+        return self.get_checkout_response
+
+    def verify_payment(self, checkout_id: str) -> bool:
+        self.calls.append(("verify_payment", (checkout_id,), {}))
+        return self.verify_result
+
+
 # Higher-level helpers to reduce duplication in tests
 def create_payment_for_user(db, user, **kwargs):
     """Create and persist a Payment for `user` with sensible defaults.
@@ -51,6 +83,7 @@ def create_payment_for_user(db, user, **kwargs):
     Accepts override kwargs for fields such as id, amount, amount_cents, payment_method, status, etc.
     Returns the created Payment instance.
     """
+    from app.enums import PaymentMethod, PaymentType
     from app.models import Payment
 
     defaults = {
@@ -58,8 +91,8 @@ def create_payment_for_user(db, user, **kwargs):
         "amount_cents": kwargs.get("amount_cents", 10000),
         "amount": kwargs.get("amount", kwargs.get("amount_cents", 10000) / 100.0),
         "currency": kwargs.get("currency", "EUR"),
-        "payment_type": kwargs.get("payment_type", "membership"),
-        "payment_method": kwargs.get("payment_method", "online"),
+        "payment_type": kwargs.get("payment_type", PaymentType.MEMBERSHIP),
+        "payment_method": kwargs.get("payment_method", PaymentMethod.ONLINE),
         "status": kwargs.get("status", "completed"),
         "description": kwargs.get("description", None),
     }
@@ -183,3 +216,46 @@ def assert_email_contains(fake_mailer, substring: str):
     msg = assert_email_sent(fake_mailer)
     if substring not in (msg.html or "") and substring not in (msg.body or ""):
         raise AssertionError(f"Expected email to contain '{substring}'")
+
+
+_custom_role_counter = 0
+
+
+def create_user_with_permissions(db, permissions: list[str], **kwargs):
+    """Create a user with a custom role granting exactly the specified permissions.
+
+    Useful for testing RBAC edge cases without needing a full Admin role.
+    Returns the created User instance (active, with password ``password123``).
+    """
+    global _custom_role_counter
+
+    from app.models import Permission, Role, User
+
+    _custom_role_counter += 1
+    name = kwargs.pop("name", f"Custom User {_custom_role_counter}")
+    email = kwargs.pop("email", f"custom{_custom_role_counter}@example.com")
+    password = kwargs.pop("password", "password123")
+
+    user = User(
+        name=name,
+        email=email,
+        phone=kwargs.pop("phone", "0000000000"),
+        is_active=kwargs.pop("is_active", True),
+        **kwargs,
+    )
+    user.set_password(password)
+
+    # Build a one-off role with exactly the requested permissions
+    perm_objects = Permission.query.filter(Permission.name.in_(permissions)).all()
+    found_names = {p.name for p in perm_objects}
+    missing = set(permissions) - found_names
+    if missing:
+        raise ValueError(f"Permissions not found (run seed_rbac first): {missing}")
+
+    role = Role(name=f"_test_role_{_custom_role_counter}", description="Auto-generated test role")
+    role.permissions = perm_objects
+    user.roles.append(role)
+
+    db.session.add(user)
+    db.session.commit()
+    return user

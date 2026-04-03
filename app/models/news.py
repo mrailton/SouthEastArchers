@@ -14,9 +14,9 @@ class News(db.Model):
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
-    def publish(self):
+    def publish(self) -> None:
         self.published = True
         self.published_at = utc_now()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<News {self.title}>"

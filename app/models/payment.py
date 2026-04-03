@@ -10,8 +10,8 @@ class Payment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     amount_cents = db.Column(db.Integer, nullable=False)
     currency = db.Column(db.String(3), default="EUR")
-    payment_type = db.Column(db.Enum(PaymentType), nullable=False)
-    payment_method = db.Column(db.Enum(PaymentMethod), nullable=False, default=PaymentMethod.ONLINE)
+    payment_type = db.Column(db.Enum(PaymentType, values_callable=lambda e: [m.value for m in e]), nullable=False)
+    payment_method = db.Column(db.Enum(PaymentMethod, values_callable=lambda e: [m.value for m in e]), nullable=False, default=PaymentMethod.ONLINE)
     status = db.Column(
         db.Enum("pending", "completed", "failed", "cancelled"),
         default="pending",

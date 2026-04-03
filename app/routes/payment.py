@@ -10,6 +10,7 @@ from flask import (
 )
 from flask_login import current_user, login_required
 
+from app.enums import PaymentType
 from app.repositories import PaymentRepository
 from app.services import PaymentProcessingService, PaymentService
 from app.services.sumup_service import SumUpService
@@ -196,7 +197,7 @@ def membership_cash_payment():
         assert data is not None
         return render_template(
             "payment/cash_pending.html",
-            payment_type="membership",
+            payment_type=PaymentType.MEMBERSHIP,
             amount=data["amount"],
             instructions=data["instructions"],
         )
@@ -227,7 +228,7 @@ def credits_cash_payment():
         assert data is not None
         return render_template(
             "payment/cash_pending.html",
-            payment_type="credits",
+            payment_type=PaymentType.CREDITS,
             amount=data["amount"],
             quantity=data["quantity"],
             instructions=data["instructions"],

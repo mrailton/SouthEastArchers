@@ -4,6 +4,7 @@ from datetime import date
 
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 
+from app.enums import PaymentMethod, PaymentType
 from app.events import credit_purchased, payment_completed
 from app.models import Credit, Membership
 from app.repositories import CreditRepository, MembershipRepository, PaymentRepository, UserRepository
@@ -38,7 +39,7 @@ def approve_payment(payment_id):
     if not payment:
         abort(404)
 
-    if payment.status != "pending" or payment.payment_method != "cash":
+    if payment.status != "pending" or payment.payment_method != PaymentMethod.CASH:
         flash("This payment cannot be approved.", "error")
         return redirect(redirect_to)
 
@@ -51,7 +52,7 @@ def approve_payment(payment_id):
         # Mark payment as completed
         payment.mark_completed(processor="cash")
 
-        if payment.payment_type == "membership":
+        if payment.payment_type == PaymentType.MEMBERSHIP:
             # Activate, renew, or create membership
             if user.membership:
                 if user.membership.status != "active":
@@ -72,7 +73,7 @@ def approve_payment(payment_id):
                 )
                 MembershipRepository.add(membership)
 
-        elif payment.payment_type == "credits":
+        elif payment.payment_type == PaymentType.CREDITS:
             # Add credits to membership
             # Extract quantity from description (e.g., "5 shooting credits (Cash)")
             description = payment.description or ""
@@ -94,7 +95,7 @@ def approve_payment(payment_id):
 
         # Emit event — handler sends receipt email
         try:
-            if payment.payment_type == "credits":
+            if payment.payment_type == PaymentType.CREDITS:
                 quantity = 1
                 if "shooting credits" in (payment.description or "").lower():
                     try:
@@ -127,7 +128,7 @@ def reject_payment(payment_id):
     if not payment:
         abort(404)
 
-    if payment.status != "pending" or payment.payment_method != "cash":
+    if payment.status != "pending" or payment.payment_method != PaymentMethod.CASH:
         flash("This payment cannot be rejected.", "error")
         return redirect(redirect_to)
 

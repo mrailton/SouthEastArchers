@@ -45,3 +45,62 @@ def test_base_repository_save_rollback_cleans_session(app):
     assert User.query.filter_by(email="after@example.com").first() is not None
     # The first user should NOT have been saved
     assert User.query.filter_by(email="rollback@example.com").first() is None
+
+
+# ---------------------------------------------------------------------------
+# BaseRepository.transaction()
+# ---------------------------------------------------------------------------
+
+
+def test_transaction_commits_on_clean_exit(app):
+    """transaction() commits all mutations when the block exits cleanly."""
+    user = User(name="Txn Test", email="txn@example.com", qualification="none")
+    user.set_password("test123")
+
+    with BaseRepository.transaction():
+        db.session.add(user)
+
+    assert User.query.filter_by(email="txn@example.com").first() is not None
+
+
+def test_transaction_rolls_back_on_body_exception(app):
+    """transaction() rolls back and re-raises if the block raises."""
+    user = User(name="Txn Fail", email="txnfail@example.com", qualification="none")
+    user.set_password("test123")
+
+    with pytest.raises(ValueError, match="oops"):
+        with BaseRepository.transaction():
+            db.session.add(user)
+            raise ValueError("oops")
+
+    assert User.query.filter_by(email="txnfail@example.com").first() is None
+
+
+def test_transaction_rolls_back_on_commit_failure(app):
+    """transaction() rolls back when the underlying commit fails."""
+    user = User(name="Commit Fail", email="commitfail@example.com", qualification="none")
+    user.set_password("test123")
+
+    with patch("app.repositories.base.db.session.commit", side_effect=Exception("db down")):
+        with pytest.raises(Exception, match="db down"):
+            with BaseRepository.transaction():
+                db.session.add(user)
+
+    assert User.query.filter_by(email="commitfail@example.com").first() is None
+
+
+def test_transaction_session_usable_after_rollback(app):
+    """After a failed transaction the session is clean for subsequent work."""
+    with pytest.raises(RuntimeError):
+        with BaseRepository.transaction():
+            db.session.add(User(name="Bad", email="bad@example.com", qualification="none"))
+            raise RuntimeError("fail")
+
+    # Session should still be usable
+    user = User(name="Good", email="good@example.com", qualification="none")
+    user.set_password("test123")
+    with BaseRepository.transaction():
+        db.session.add(user)
+
+    assert User.query.filter_by(email="good@example.com").first() is not None
+    assert User.query.filter_by(email="bad@example.com").first() is None

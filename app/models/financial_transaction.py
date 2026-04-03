@@ -47,8 +47,8 @@ class FinancialTransaction(db.Model):
     created_by = db.relationship("User", foreign_keys=[created_by_id], lazy="joined")
 
     @property
-    def amount(self):
+    def amount(self) -> float:
         return self.amount_cents / 100.0
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<FinancialTransaction {self.id} type={self.type} amount={self.amount}>"

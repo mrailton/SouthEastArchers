@@ -4,6 +4,7 @@ from typing import cast
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
+from app.enums import PaymentType
 from app.events import membership_activated, user_activated
 from app.forms import CreateMemberForm, EditMemberForm
 from app.models import Credit
@@ -84,7 +85,7 @@ def activate_membership(user_id):
         flash(result.message, "error")
         return redirect(url_for("admin.member_detail", user_id=user_id))
 
-    payment = PaymentRepository.get_completed_for_user(user_id, "membership")
+    payment = PaymentRepository.get_completed_for_user(user_id, PaymentType.MEMBERSHIP)
 
     if payment:
         membership_activated.send(user_id=member.id, payment_id=payment.id)

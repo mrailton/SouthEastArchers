@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.enums import PaymentType
 from app.models import Membership, User
 from app.repositories import MembershipRepository, PaymentRepository
 from app.services.result import ServiceResult
@@ -37,7 +38,7 @@ class MembershipService:
         if user.membership.status == "active":
             return ServiceResult.fail("Membership is already active.")
 
-        pending_payment = PaymentRepository.get_pending_cash_for_user(user.id, "membership")
+        pending_payment = PaymentRepository.get_pending_cash_for_user(user.id, PaymentType.MEMBERSHIP)
 
         if pending_payment:
             pending_payment.mark_completed(processor="cash")

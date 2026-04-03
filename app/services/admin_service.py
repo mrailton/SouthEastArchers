@@ -1,9 +1,10 @@
 from app.repositories import MembershipRepository, PaymentRepository, UserRepository
+from app.services.result import ServiceResult
 
 
 class AdminService:
     @staticmethod
-    def get_dashboard_stats() -> dict:
+    def get_dashboard_stats() -> ServiceResult[dict]:
         """Get statistics for the admin dashboard."""
         total_members = UserRepository.count()
         active_memberships = MembershipRepository.count_active()
@@ -20,11 +21,13 @@ class AdminService:
             user = UserRepository.get_by_id(payment.user_id)
             pending_payments_data.append({"payment": payment, "user": user})
 
-        return {
-            "total_members": total_members,
-            "active_memberships": active_memberships,
-            "recent_members": recent_members,
-            "pending_cash_payments": pending_cash_payments,
-            "pending_payments_data": pending_payments_data,
-            "count_pending_users": count_pending_users,
-        }
+        return ServiceResult.ok(
+            data={
+                "total_members": total_members,
+                "active_memberships": active_memberships,
+                "recent_members": recent_members,
+                "pending_cash_payments": pending_cash_payments,
+                "pending_payments_data": pending_payments_data,
+                "count_pending_users": count_pending_users,
+            }
+        )

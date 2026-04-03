@@ -17,16 +17,16 @@ class Membership(db.Model):
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
-    def is_active(self):
+    def is_active(self) -> bool:
         return self.status == "active" and self.expiry_date >= date.today()
 
-    def credits_remaining(self):
+    def credits_remaining(self) -> int:
         """Return total credits available (initial + purchased)."""
         initial = self.initial_credits if self.initial_credits is not None else 0
         purchased = self.purchased_credits if self.purchased_credits is not None else 0
         return initial + purchased
 
-    def use_credit(self, allow_negative: bool = False):
+    def use_credit(self, allow_negative: bool = False) -> bool:
         """Use a credit from the membership.
 
         Uses initial credits first, then purchased credits.
@@ -80,7 +80,7 @@ class Membership(db.Model):
         if remaining > 0:
             self.purchased_credits = purchased - remaining
 
-    def renew(self, expiry_date: date, initial_credits: int = 20):
+    def renew(self, expiry_date: date, initial_credits: int = 20) -> None:
         """Renew the membership.
 
         Args:
@@ -93,15 +93,15 @@ class Membership(db.Model):
         # Keep purchased_credits as is - they don't expire
         self.status = "active"
 
-    def expire_initial_credits(self):
+    def expire_initial_credits(self) -> None:
         """Expire initial credits but retain purchased credits."""
         self.initial_credits = 0
 
-    def activate(self):
+    def activate(self) -> None:
         self.status = "active"
 
-    def deactivate(self):
+    def deactivate(self) -> None:
         self.status = "inactive"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Membership user_id={self.user_id} initial={self.initial_credits} purchased={self.purchased_credits}>"

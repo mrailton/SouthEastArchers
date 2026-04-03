@@ -5,115 +5,102 @@ from app import db
 from app.models import Credit, Payment
 from app.services import PaymentProcessingService, PaymentService
 from app.services.settings_service import SettingsService
-from tests.helpers import create_payment_for_user
+from tests.helpers import FakePaymentProcessor, create_payment_for_user
 
 # TestPaymentService module-level functions
 
 
 def test_create_checkout_success(app, test_user):
     """Test creating a checkout successfully"""
-    with patch("app.services.sumup_service.SumUpService.create_checkout") as mock_checkout:
-        mock_checkout.return_value = {"id": "checkout_123", "status": "PENDING"}
+    processor = FakePaymentProcessor(checkout_response={"id": "checkout_123", "status": "PENDING"})
+    service = PaymentService(processor=processor)
+    result = service.create_checkout(10000, "Test payment")
 
-        service = PaymentService()
-        result = service.create_checkout(10000, "Test payment")
-
-        assert result is not None
-        assert result["id"] == "checkout_123"
-        mock_checkout.assert_called_once()
+    assert result is not None
+    assert result["id"] == "checkout_123"
+    assert len(processor.calls) == 1
+    assert processor.calls[0][0] == "create_checkout"
 
 
 def test_create_checkout_failure(app, test_user):
     """Test creating checkout when API fails"""
-    with patch("app.services.sumup_service.SumUpService.create_checkout") as mock_checkout:
-        mock_checkout.return_value = None
+    processor = FakePaymentProcessor(checkout_response=None)
+    service = PaymentService(processor=processor)
+    result = service.create_checkout(10000, "Test payment")
 
-        service = PaymentService()
-        result = service.create_checkout(10000, "Test payment")
-
-        assert result is None
+    assert result is None
 
 
 def test_initiate_membership_payment_success(app, test_user):
     """Test initiating membership payment successfully"""
-    with patch("app.services.payment_service.PaymentService.create_checkout") as mock_checkout:
-        mock_checkout.return_value = {"id": "checkout_123"}
+    processor = FakePaymentProcessor(checkout_response={"id": "checkout_123"})
+    service = PaymentService(processor=processor)
+    result = service.initiate_membership_payment(test_user)
 
-        service = PaymentService()
-        result = service.initiate_membership_payment(test_user)
-
-        assert result.success is True
-        assert result.data["checkout_id"] == "checkout_123"
-        assert result.data["user_id"] == test_user.id
-        assert result.data["amount"] == SettingsService.get("annual_membership_cost") / 100.0
-        payment = Payment.query.filter_by(user_id=test_user.id, payment_type="membership", status="pending").first()
-        assert payment is not None
+    assert result.success is True
+    assert result.data["checkout_id"] == "checkout_123"
+    assert result.data["user_id"] == test_user.id
+    assert result.data["amount"] == SettingsService.get("annual_membership_cost") / 100.0
+    payment = Payment.query.filter_by(user_id=test_user.id, payment_type="membership", status="pending").first()
+    assert payment is not None
 
 
 def test_initiate_membership_payment_checkout_fails(app, test_user):
     """Test membership payment when checkout creation fails"""
-    with patch("app.services.payment_service.PaymentService.create_checkout") as mock_checkout:
-        mock_checkout.return_value = None
+    processor = FakePaymentProcessor(checkout_response=None)
+    initial_payment_count = Payment.query.count()
 
-        initial_payment_count = Payment.query.count()
+    service = PaymentService(processor=processor)
+    result = service.initiate_membership_payment(test_user)
 
-        service = PaymentService()
-        result = service.initiate_membership_payment(test_user)
-
-        assert result.success is False
-        assert "Error creating payment" in result.message
-        # Payment should be rolled back
-        assert Payment.query.count() == initial_payment_count
+    assert result.success is False
+    assert "Error creating payment" in result.message
+    # Payment should be rolled back
+    assert Payment.query.count() == initial_payment_count
 
 
 def test_initiate_credit_purchase_success(app, test_user):
     """Test initiating credit purchase successfully"""
-    with patch("app.services.payment_service.PaymentService.create_checkout") as mock_checkout:
-        mock_checkout.return_value = {"id": "checkout_456"}
+    processor = FakePaymentProcessor(checkout_response={"id": "checkout_456"})
+    service = PaymentService(processor=processor)
+    quantity = 5
+    result = service.initiate_credit_purchase(test_user, quantity)
 
-        service = PaymentService()
-        quantity = 5
-        result = service.initiate_credit_purchase(test_user, quantity)
+    assert result.success is True
+    assert result.data["checkout_id"] == "checkout_456"
+    assert result.data["user_id"] == test_user.id
+    assert result.data["quantity"] == quantity
 
-        assert result.success is True
-        assert result.data["checkout_id"] == "checkout_456"
-        assert result.data["user_id"] == test_user.id
-        assert result.data["quantity"] == quantity
-
-        expected_amount = quantity * SettingsService.get("additional_shoot_cost") / 100.0
-        assert result.data["amount"] == expected_amount
+    expected_amount = quantity * SettingsService.get("additional_shoot_cost") / 100.0
+    assert result.data["amount"] == expected_amount
 
 
 def test_initiate_credit_purchase_checkout_fails(app, test_user):
     """Test credit purchase when checkout creation fails"""
-    with patch("app.services.payment_service.PaymentService.create_checkout") as mock_checkout:
-        mock_checkout.return_value = None
+    processor = FakePaymentProcessor(checkout_response=None)
+    initial_payment_count = Payment.query.count()
 
-        initial_payment_count = Payment.query.count()
+    service = PaymentService(processor=processor)
+    result = service.initiate_credit_purchase(test_user, 3)
 
-        service = PaymentService()
-        result = service.initiate_credit_purchase(test_user, 3)
-
-        assert result.success is False
-        assert "Error creating payment" in result.message
-        # Payment should be rolled back
-        assert Payment.query.count() == initial_payment_count
+    assert result.success is False
+    assert "Error creating payment" in result.message
+    # Payment should be rolled back
+    assert Payment.query.count() == initial_payment_count
 
 
 def test_initiate_credit_purchase_different_quantities(app, test_user):
     """Test credit purchase with different quantities"""
-    with patch("app.services.payment_service.PaymentService.create_checkout") as mock_checkout:
-        mock_checkout.return_value = {"id": "checkout_789"}
+    processor = FakePaymentProcessor(checkout_response={"id": "checkout_789"})
+    service = PaymentService(processor=processor)
 
-        service = PaymentService()
+    for quantity in [1, 5, 10, 20]:
+        result = service.initiate_credit_purchase(test_user, quantity)
+        assert result.success is True
 
-        for quantity in [1, 5, 10, 20]:
-            result = service.initiate_credit_purchase(test_user, quantity)
-            assert result.success is True
-
-            expected_amount = quantity * SettingsService.get("additional_shoot_cost")
-            payment = Payment.query.filter_by(user_id=test_user.id, payment_type="credits").order_by(Payment.id.desc()).first()
-            assert payment.amount_cents == expected_amount
+        expected_amount = quantity * SettingsService.get("additional_shoot_cost")
+        payment = Payment.query.filter_by(user_id=test_user.id, payment_type="credits").order_by(Payment.id.desc()).first()
+        assert payment.amount_cents == expected_amount
 
 
 # TestPaymentProcessingService — pure business logic (no Flask session/request context needed)

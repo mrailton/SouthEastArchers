@@ -2,6 +2,7 @@ from typing import Any
 
 from flask import current_app
 
+from app.enums import PaymentMethod, PaymentType
 from app.events import cash_payment_submitted
 from app.models import Payment, User
 from app.repositories import PaymentRepository
@@ -11,8 +12,8 @@ from app.services.sumup_service import SumUpService
 
 
 class PaymentService:
-    def __init__(self) -> None:
-        self.processor = SumUpService()
+    def __init__(self, processor: Any = None) -> None:
+        self.processor = processor or SumUpService()
 
     def create_checkout(self, amount_cents: int, description: str) -> dict[str, Any] | None:
         return self.processor.create_checkout(
@@ -35,8 +36,8 @@ class PaymentService:
             user_id=user.id,
             amount_cents=amount_cents,
             currency="EUR",
-            payment_type="membership",
-            payment_method="online",
+            payment_type=PaymentType.MEMBERSHIP,
+            payment_method=PaymentMethod.ONLINE,
             description=description,
             status="pending",
         )
@@ -74,8 +75,8 @@ class PaymentService:
             user_id=user.id,
             amount_cents=amount_cents,
             currency="EUR",
-            payment_type="credits",
-            payment_method="online",
+            payment_type=PaymentType.CREDITS,
+            payment_method=PaymentMethod.ONLINE,
             description=f"{quantity} shooting credits",
             status="pending",
         )
@@ -114,8 +115,8 @@ class PaymentService:
             user_id=user.id,
             amount_cents=amount_cents,
             currency="EUR",
-            payment_type="membership",
-            payment_method="cash",
+            payment_type=PaymentType.MEMBERSHIP,
+            payment_method=PaymentMethod.CASH,
             description=f"Annual Membership (Cash) - {user.name}",
             status="pending",
         )
@@ -150,8 +151,8 @@ class PaymentService:
             user_id=user.id,
             amount_cents=amount_cents,
             currency="EUR",
-            payment_type="credits",
-            payment_method="cash",
+            payment_type=PaymentType.CREDITS,
+            payment_method=PaymentMethod.CASH,
             description=f"{quantity} shooting credits (Cash)",
             status="pending",
         )

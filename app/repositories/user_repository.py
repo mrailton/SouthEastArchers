@@ -5,7 +5,7 @@ from __future__ import annotations
 from flask_sqlalchemy.pagination import Pagination
 
 from app import db
-from app.models import User
+from app.models import Permission, Role, User
 from app.repositories.base import BaseRepository
 
 
@@ -48,7 +48,6 @@ class UserRepository(BaseRepository):
 
     @staticmethod
     def count_admins() -> int:
-        from app.models import Role
 
         return db.session.query(User).join(User.roles).filter(Role.name == "Admin").distinct().count()
 
@@ -63,12 +62,7 @@ class UserRepository(BaseRepository):
     @staticmethod
     def get_all_with_permission(permission_name: str) -> list[User]:
         """Get all users that have a specific permission via any of their roles."""
-        from app.models import Permission
-
-        perm = Permission.query.filter_by(name=permission_name).first()
-        if not perm:
-            return []
-        return [user for user in User.query.all() if any(any(p.id == perm.id for p in role.permissions) for role in user.roles)]
+        return User.query.join(User.roles).join(Role.permissions).filter(Permission.name == permission_name).distinct().all()
 
     @staticmethod
     def add(user: User) -> None:

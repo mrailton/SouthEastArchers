@@ -240,6 +240,26 @@ def test_file_logging_in_production_mode(mock_handler, mock_mkdir, mock_exists):
         config["testing"].TESTING = original_testing
 
 
+# TestHealthCheck
+
+
+def test_health_check_returns_ok(client):
+    """GET /health returns 200 with status ok when the database is reachable."""
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.get_json() == {"status": "ok"}
+
+
+def test_health_check_returns_error_on_db_failure(client):
+    """GET /health returns 500 when the database query fails."""
+    from unittest.mock import patch
+
+    with patch("app.db.session.execute", side_effect=Exception("db unreachable")):
+        response = client.get("/health")
+        assert response.status_code == 500
+        assert response.get_json() == {"status": "error"}
+
+
 # TestModelsImport
 
 

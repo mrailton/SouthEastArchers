@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+from contextlib import contextmanager
+
 from app import db
 
 
@@ -22,6 +25,29 @@ class BaseRepository:
         except Exception:
             db.session.rollback()
             raise
+
+    @staticmethod
+    @contextmanager
+    def transaction() -> Generator[None]:
+        """Explicit atomic transaction boundary.
+
+        Usage::
+
+            with BaseRepository.transaction():
+                payment.mark_completed(...)
+                user.membership.activate()
+
+        On clean exit the session is committed via :meth:`save`.  If any
+        exception is raised inside the block the session is rolled back and
+        the exception re-raised — no mutations are persisted.
+        """
+        try:
+            yield
+        except Exception:
+            db.session.rollback()
+            raise
+        else:
+            BaseRepository.save()
 
     @staticmethod
     def flush() -> None:

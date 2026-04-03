@@ -2,30 +2,38 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from app.repositories import SettingsRepository
 
+
 # ---------------------------------------------------------------------------
 # Setting definitions — each key's value type and default.
 # Monetary values are stored in cents (integers) to avoid floating-point issues.
 # ---------------------------------------------------------------------------
-SETTING_DEFINITIONS: dict[str, dict[str, Any]] = {
-    "membership_year_start_month": {"type": "int", "default": 3},
-    "membership_year_start_day": {"type": "int", "default": 1},
-    "annual_membership_cost": {"type": "int", "default": 10000},
-    "membership_shoots_included": {"type": "int", "default": 20},
-    "additional_shoot_cost": {"type": "int", "default": 500},
-    "visitor_shoot_fee": {"type": "int", "default": 1000},
-    "news_enabled": {"type": "bool", "default": False},
-    "events_enabled": {"type": "bool", "default": False},
-    "cash_payment_instructions": {
-        "type": "str",
-        "default": ("Please pay cash to a committee member at the next shoot night. Your membership/credits will be activated once payment is confirmed."),
-    },
-    "sumup_fee_percentage": {"type": "decimal", "default": None},
+@dataclass(frozen=True)
+class SettingDef:
+    type: str
+    default: Any
+
+
+SETTING_DEFINITIONS: dict[str, SettingDef] = {
+    "membership_year_start_month": SettingDef(type="int", default=3),
+    "membership_year_start_day": SettingDef(type="int", default=1),
+    "annual_membership_cost": SettingDef(type="int", default=10000),
+    "membership_shoots_included": SettingDef(type="int", default=20),
+    "additional_shoot_cost": SettingDef(type="int", default=500),
+    "visitor_shoot_fee": SettingDef(type="int", default=1000),
+    "news_enabled": SettingDef(type="bool", default=False),
+    "events_enabled": SettingDef(type="bool", default=False),
+    "cash_payment_instructions": SettingDef(
+        type="str",
+        default="Please pay cash to a committee member at the next shoot night. Your membership/credits will be activated once payment is confirmed.",
+    ),
+    "sumup_fee_percentage": SettingDef(type="decimal", default=None),
 }
 
 
@@ -66,7 +74,7 @@ class SettingsService:
         if not definition:
             raise KeyError(f"Unknown setting: {key}")
         raw = SettingsRepository.get_value(key)
-        return _deserialize(raw, definition["type"], definition["default"])
+        return _deserialize(raw, definition.type, definition.default)
 
     @staticmethod
     def set(key: str, value: Any) -> None:
@@ -74,7 +82,7 @@ class SettingsService:
         definition = SETTING_DEFINITIONS.get(key)
         if not definition:
             raise KeyError(f"Unknown setting: {key}")
-        raw = _serialize(value, definition["type"])
+        raw = _serialize(value, definition.type)
         SettingsRepository.set_value(key, raw)
         SettingsRepository.save()
 
@@ -85,7 +93,7 @@ class SettingsService:
         result: dict[str, Any] = {}
         for key, definition in SETTING_DEFINITIONS.items():
             raw = stored.get(key)
-            result[key] = _deserialize(raw, definition["type"], definition["default"])
+            result[key] = _deserialize(raw, definition.type, definition.default)
         return result
 
     @staticmethod
@@ -95,7 +103,7 @@ class SettingsService:
             definition = SETTING_DEFINITIONS.get(key)
             if not definition:
                 raise KeyError(f"Unknown setting: {key}")
-            raw = _serialize(value, definition["type"])
+            raw = _serialize(value, definition.type)
             SettingsRepository.set_value(key, raw)
         SettingsRepository.save()
 

@@ -29,7 +29,7 @@ class Shoot(db.Model):
 
     visitors = db.relationship("ShootVisitor", backref="shoot", lazy="joined", cascade="all, delete-orphan")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Shoot {self.date} at {self.location.value}>"
 
 

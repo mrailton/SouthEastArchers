@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from app import db
+from app.enums import PaymentMethod, PaymentType
 from app.models import Payment
 from app.repositories.base import BaseRepository
 
@@ -22,27 +23,27 @@ class PaymentRepository(BaseRepository):
 
     @staticmethod
     def get_pending_cash() -> list[Payment]:
-        return Payment.query.filter_by(payment_method="cash", status="pending").order_by(Payment.created_at.desc()).all()
+        return Payment.query.filter_by(payment_method=PaymentMethod.CASH, status="pending").order_by(Payment.created_at.desc()).all()
 
     @staticmethod
     def count_pending_cash() -> int:
-        return Payment.query.filter_by(payment_method="cash", status="pending").count()
+        return Payment.query.filter_by(payment_method=PaymentMethod.CASH, status="pending").count()
 
     @staticmethod
     def get_pending_cash_limited(limit: int = 5) -> list[Payment]:
-        return Payment.query.filter_by(payment_method="cash", status="pending").order_by(Payment.created_at.desc()).limit(limit).all()
+        return Payment.query.filter_by(payment_method=PaymentMethod.CASH, status="pending").order_by(Payment.created_at.desc()).limit(limit).all()
 
     @staticmethod
-    def get_pending_cash_for_user(user_id: int, payment_type: str = "membership") -> Payment | None:
+    def get_pending_cash_for_user(user_id: int, payment_type: str = PaymentType.MEMBERSHIP) -> Payment | None:
         return Payment.query.filter_by(
             user_id=user_id,
             payment_type=payment_type,
-            payment_method="cash",
+            payment_method=PaymentMethod.CASH,
             status="pending",
         ).first()
 
     @staticmethod
-    def get_completed_for_user(user_id: int, payment_type: str = "membership") -> Payment | None:
+    def get_completed_for_user(user_id: int, payment_type: str = PaymentType.MEMBERSHIP) -> Payment | None:
         return Payment.query.filter_by(
             user_id=user_id,
             payment_type=payment_type,

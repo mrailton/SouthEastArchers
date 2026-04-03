@@ -29,21 +29,21 @@ class User(UserMixin, db.Model):
     roles = db.relationship("Role", secondary="user_roles", back_populates="users")
 
     @property
-    def has_active_membership(self):
-        return self.membership and self.membership.is_active
+    def has_active_membership(self) -> bool:
+        return bool(self.membership and self.membership.is_active())
 
-    def set_password(self, password):
+    def set_password(self, password: str) -> None:
         self.password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
 
-    def check_password(self, password):
+    def check_password(self, password: str) -> bool:
         return bcrypt.check_password_hash(self.password_hash, password)
 
-    def generate_reset_token(self):
+    def generate_reset_token(self) -> str:
         serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
         return serializer.dumps(self.email, salt="password-reset-salt")
 
     @staticmethod
-    def verify_reset_token(token, max_age=3600):
+    def verify_reset_token(token: str, max_age: int = 3600) -> User | None:
         serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
         try:
             email = serializer.loads(token, salt="password-reset-salt", max_age=max_age)
@@ -66,5 +66,5 @@ class User(UserMixin, db.Model):
         user_permissions = self.permission_names()
         return any(name in user_permissions for name in permission_names)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<User {self.email}>"

@@ -1,11 +1,10 @@
-"""Admin routes for financial transaction management."""
-
 from flask import Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.forms.admin_forms import ExpenseForm, FinancialStatementForm, IncomeForm
 from app.services import FinanceService
 from app.utils.decorators import permission_required
+from app.utils.pdf import generate_statement_pdf
 
 from . import bp
 
@@ -258,7 +257,7 @@ def financial_statement_pdf():
         return redirect(url_for("admin.financial_statement"))
 
     statement = FinanceService.generate_statement(start_date=start_date, end_date=end_date)
-    pdf_bytes = bytes(FinanceService.generate_statement_pdf(statement))
+    pdf_bytes = bytes(generate_statement_pdf(statement))
 
     filename = f"financial_statement_{start_date_str}_to_{end_date_str}.pdf"
     return Response(

@@ -1,27 +1,29 @@
 from collections.abc import Callable
+from typing import Any
 
 from flask import current_app, render_template, url_for
 from flask_mail import Message
 
 from app import mail
+from app.enums import PaymentMethod
 
 _PAYMENT_METHOD_LABELS = {
-    "online": "Credit/Debit Card (SumUp)",
-    "cash": "Cash Payment",
+    PaymentMethod.ONLINE: "Credit/Debit Card (SumUp)",
+    PaymentMethod.CASH: "Cash Payment",
 }
 
 
 class MailService:
     @staticmethod
-    def _safe_url_for(endpoint: str, fallback_path: str, **kwargs) -> str:
+    def _safe_url_for(endpoint: str, fallback_path: str, **kwargs: Any) -> str:
         """Generate an external URL, falling back to *SITE_URL* config outside a request context."""
         try:
             return url_for(endpoint, _external=True, **kwargs)
         except RuntimeError:
-            return current_app.config.get("SITE_URL", "https://southeastarchers.ie") + fallback_path
+            return str(current_app.config.get("SITE_URL", "https://southeastarchers.ie")) + fallback_path
 
     @staticmethod
-    def _send(user_id: int, email_type: str, build_message: Callable) -> None:
+    def _send(user_id: int, email_type: str, build_message: Callable[..., Message | None]) -> None:
         """Look up *user_id*, call *build_message(user)* to obtain a ``Message``, and send it.
 
         If *build_message* returns ``None`` sending is silently skipped (e.g.
@@ -53,7 +55,7 @@ class MailService:
     def send_password_reset(user_id: int, token: str) -> None:
         """Send a password reset email."""
 
-        def _build(user):
+        def _build(user: Any) -> Message:
             reset_url = url_for("auth.reset_password", token=token, _external=True)
             return Message(
                 subject="Reset Your Password - South East Archers",
@@ -68,7 +70,7 @@ class MailService:
         """Send a payment receipt email."""
         from app.repositories import PaymentRepository
 
-        def _build(user):
+        def _build(user: Any) -> Message | None:
             payment = PaymentRepository.get_by_id(payment_id)
             if not payment:
                 current_app.logger.error(f"Cannot send receipt: payment {payment_id} not found")
@@ -80,7 +82,7 @@ class MailService:
                 "payment_date": payment.created_at.strftime("%d %B %Y at %H:%M"),
                 "description": payment.description or "Annual Membership",
                 "payment_method": _PAYMENT_METHOD_LABELS.get(payment.payment_method, payment.payment_method.title()),
-                "transaction_id": payment.external_transaction_id if payment.payment_method == "online" else None,
+                "transaction_id": payment.external_transaction_id if payment.payment_method == PaymentMethod.ONLINE else None,
                 "amount": payment.amount,
                 "membership_start": user.membership.start_date.strftime("%d %B %Y"),
                 "membership_expiry": user.membership.expiry_date.strftime("%d %B %Y"),
@@ -102,7 +104,7 @@ class MailService:
         """Send a credit purchase receipt email."""
         from app.repositories import PaymentRepository
 
-        def _build(user):
+        def _build(user: Any) -> Message | None:
             payment = PaymentRepository.get_by_id(payment_id)
             if not payment:
                 current_app.logger.error(f"Cannot send credit receipt: payment {payment_id} not found")
@@ -114,7 +116,7 @@ class MailService:
                 "payment_date": payment.created_at.strftime("%d %B %Y at %H:%M"),
                 "description": payment.description or f"{credits_purchased} shooting credits",
                 "payment_method": _PAYMENT_METHOD_LABELS.get(payment.payment_method, payment.payment_method.title()),
-                "transaction_id": payment.external_transaction_id if payment.payment_method == "online" else None,
+                "transaction_id": payment.external_transaction_id if payment.payment_method == PaymentMethod.ONLINE else None,
                 "amount": payment.amount,
                 "credits_purchased": credits_purchased,
                 "credits_remaining": user.membership.credits_remaining(),
@@ -135,7 +137,7 @@ class MailService:
         """Send a welcome email to a new user."""
         from app.services.settings_service import SettingsService
 
-        def _build(user):
+        def _build(user: Any) -> Message:
             login_url = MailService._safe_url_for("auth.login", "/auth/login")
             membership_cost = SettingsService.get("annual_membership_cost")
             credits_included = SettingsService.get("membership_shoots_included")
@@ -154,7 +156,7 @@ class MailService:
         """Send a notification email to all admins with members.manage_membership permission."""
         from app.repositories import UserRepository
 
-        def _build(new_user):
+        def _build(new_user: Any) -> Message:
             admin_users = UserRepository.get_all_with_permission("members.manage_membership")
             admin_url = MailService._safe_url_for("admin.members", "/admin/members")
 
@@ -187,7 +189,7 @@ class MailService:
         from app.repositories import PaymentRepository
         from app.services.settings_service import SettingsService
 
-        def _build(user):
+        def _build(user: Any) -> Message | None:
             payment = PaymentRepository.get_by_id(payment_id)
             if not payment:
                 current_app.logger.error(f"Cannot send cash payment email: payment {payment_id} not found")

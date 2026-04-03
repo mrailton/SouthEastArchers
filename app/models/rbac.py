@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from sqlalchemy.orm import Session
+
 from app import db
 from app.utils.datetime_utils import utc_now
 
@@ -128,7 +130,7 @@ ROLE_DEFINITIONS: dict[str, dict[str, list[str] | str]] = {
 }
 
 
-def seed_rbac(session) -> None:
+def seed_rbac(session: Session) -> None:
     """Idempotently seed default roles and permissions."""
     existing_permissions = {p.name: p for p in session.query(Permission).all()}
 

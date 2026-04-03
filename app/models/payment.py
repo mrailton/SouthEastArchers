@@ -1,4 +1,5 @@
 from app import db
+from app.enums import PaymentMethod, PaymentType
 from app.utils.datetime_utils import utc_now
 
 
@@ -9,8 +10,8 @@ class Payment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     amount_cents = db.Column(db.Integer, nullable=False)
     currency = db.Column(db.String(3), default="EUR")
-    payment_type = db.Column(db.Enum("membership", "credits"), nullable=False)
-    payment_method = db.Column(db.Enum("cash", "online"), nullable=False, default="online")
+    payment_type = db.Column(db.Enum(PaymentType), nullable=False)
+    payment_method = db.Column(db.Enum(PaymentMethod), nullable=False, default=PaymentMethod.ONLINE)
     status = db.Column(
         db.Enum("pending", "completed", "failed", "cancelled"),
         default="pending",
@@ -22,21 +23,21 @@ class Payment(db.Model):
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
-    def mark_completed(self, transaction_id=None, processor=None):
+    def mark_completed(self, transaction_id: str | None = None, processor: str | None = None) -> None:
         self.status = "completed"
         self.external_transaction_id = transaction_id
         self.payment_processor = processor
 
-    def mark_failed(self):
+    def mark_failed(self) -> None:
         self.status = "failed"
 
     @property
-    def amount(self):
+    def amount(self) -> float:
         return self.amount_cents / 100.0
 
     @amount.setter
-    def amount(self, value):
+    def amount(self, value: float) -> None:
         self.amount_cents = int(round(value * 100))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Payment {self.id} user_id={self.user_id} {self.status}>"

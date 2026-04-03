@@ -102,6 +102,19 @@ def _register_error_handlers(app: Flask) -> None:
         return render_template("errors/500.html"), 500
 
 
+def _register_health_check(app: Flask) -> None:
+    """Register a /health endpoint for load balancers and orchestrators."""
+    from sqlalchemy import text
+
+    @app.get("/health")
+    def health():
+        try:
+            db.session.execute(text("SELECT 1"))
+            return {"status": "ok"}
+        except Exception:
+            return {"status": "error"}, 500
+
+
 def _register_context_processor(app: Flask) -> None:
     @app.context_processor
     def inject_now():
@@ -144,6 +157,7 @@ def create_app(config_name=None):
     _init_extensions(app)
     _register_blueprints(app)
     _register_error_handlers(app)
+    _register_health_check(app)
     _register_context_processor(app)
 
     # Connect domain event handlers
@@ -159,18 +173,23 @@ def create_app(config_name=None):
     # Shell context for `flask shell`
     @app.shell_context_processor
     def make_shell_context():
-        from app.models import Credit, Event, Membership, News, Payment, Shoot, User
+        from app import models, repositories, services
 
-        return {
-            "db": db,
-            "User": User,
-            "Membership": Membership,
-            "Shoot": Shoot,
-            "News": News,
-            "Event": Event,
-            "Payment": Payment,
-            "Credit": Credit,
-        }
+        ctx: dict = {"db": db}
+
+        # All models (User, Membership, Payment, …)
+        for name in models.__all__:
+            ctx[name] = getattr(models, name)
+
+        # All repositories (UserRepository, PaymentRepository, …)
+        for name in repositories.__all__:
+            ctx[name] = getattr(repositories, name)
+
+        # All services (UserService, PaymentService, …)
+        for name in services.__all__:
+            ctx[name] = getattr(services, name)
+
+        return ctx
 
     with app.app_context():
         from app.models import Credit, Event, Membership, News, Payment, Shoot, User

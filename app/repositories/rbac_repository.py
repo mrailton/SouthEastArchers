@@ -15,7 +15,7 @@ class RBACRepository(BaseRepository):
         """Idempotently seed default roles and permissions."""
         from app.models.rbac import seed_rbac
 
-        seed_rbac(db.session)
+        seed_rbac(db.session)  # type: ignore[arg-type]
 
     # --- Role ---
     @staticmethod

@@ -10,6 +10,7 @@ from typing import Any
 
 from flask import current_app
 
+from app.enums import PaymentType
 from app.events import (
     cash_payment_submitted,
     credit_purchased,
@@ -58,7 +59,7 @@ def _on_payment_completed(sender: Any, **kwargs: Any) -> None:
     except Exception as e:
         current_app.logger.error(f"Event handler _on_payment_completed failed: {e}")
 
-    _record_payment_financial_transactions(payment_id, kwargs.get("payment_type", "membership"))
+    _record_payment_financial_transactions(payment_id, kwargs.get("payment_type", PaymentType.MEMBERSHIP))
 
 
 def _on_credit_purchased(sender: Any, **kwargs: Any) -> None:
@@ -73,7 +74,7 @@ def _on_credit_purchased(sender: Any, **kwargs: Any) -> None:
     except Exception as e:
         current_app.logger.error(f"Event handler _on_credit_purchased failed: {e}")
 
-    _record_payment_financial_transactions(payment_id, "credits")
+    _record_payment_financial_transactions(payment_id, PaymentType.CREDITS)
 
 
 def _on_cash_payment_submitted(sender: Any, **kwargs: Any) -> None:

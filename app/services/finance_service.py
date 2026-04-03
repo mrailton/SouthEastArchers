@@ -1,11 +1,10 @@
-"""Service layer for financial transaction operations."""
-
 from __future__ import annotations
 
 from datetime import date
 
 from flask_sqlalchemy.pagination import Pagination
 
+from app.enums import PaymentType
 from app.models import FinancialTransaction
 from app.repositories import FinancialTransactionRepository
 from app.services.result import ServiceResult
@@ -70,7 +69,7 @@ class FinanceService:
         fee_amount_cents = int(round(payment_amount_cents * fee_pct / 100.0))
 
         # Determine income category based on payment type
-        category = "membership_fees" if payment_type == "membership" else "shoot_fees"
+        category = "membership_fees" if payment_type == PaymentType.MEMBERSHIP else "shoot_fees"
 
         # 1. Record the income
         result = FinanceService.create_transaction(
@@ -110,7 +109,7 @@ class FinanceService:
     ) -> ServiceResult[None]:
         """Record an income transaction for a completed cash payment."""
         today = date.today()
-        category = "membership_fees" if payment_type == "membership" else "shoot_fees"
+        category = "membership_fees" if payment_type == PaymentType.MEMBERSHIP else "shoot_fees"
 
         result = FinanceService.create_transaction(
             txn_type="income",
@@ -215,128 +214,3 @@ class FinanceService:
             "start_date": start_date,
             "end_date": end_date,
         }
-
-    @staticmethod
-    def generate_statement_pdf(statement: dict) -> bytes:
-        """Generate a PDF of a financial statement and return it as bytes."""
-        from fpdf import FPDF
-
-        pdf = FPDF()
-        pdf.set_auto_page_break(auto=True, margin=20)
-        pdf.add_page()
-
-        # --- Title ---
-        pdf.set_font("Helvetica", "B", 18)
-        pdf.cell(0, 12, "South East Archers", new_x="LMARGIN", new_y="NEXT", align="C")
-        pdf.set_font("Helvetica", "B", 14)
-        pdf.cell(0, 10, "Financial Statement", new_x="LMARGIN", new_y="NEXT", align="C")
-
-        # --- Period ---
-        pdf.set_font("Helvetica", "", 10)
-        period = f"{statement['start_date'].strftime('%d %B %Y')} - {statement['end_date'].strftime('%d %B %Y')}"
-        pdf.cell(0, 8, period, new_x="LMARGIN", new_y="NEXT", align="C")
-        pdf.ln(6)
-
-        # --- Summary box ---
-        eur = "EUR "
-        pdf.set_font("Helvetica", "B", 11)
-        pdf.set_fill_color(240, 240, 240)
-        pdf.cell(63, 8, f"Total Income:  {eur}{statement['total_income']:.2f}", border=1, fill=True)
-        pdf.cell(63, 8, f"Total Expenses:  {eur}{statement['total_expenses']:.2f}", border=1, fill=True)
-        net = statement["net"]
-        net_label = f"Net Balance:  {eur}{abs(net):.2f}" if net >= 0 else f"Net Balance:  -{eur}{abs(net):.2f}"
-        pdf.cell(64, 8, net_label, border=1, fill=True, new_x="LMARGIN", new_y="NEXT")
-        pdf.ln(6)
-
-        cat_label_w = 120
-        cat_count_w = 30
-        cat_amt_w = 40
-
-        def _render_category_breakdown(title: str, categories: list, color: tuple) -> None:
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.set_text_color(*color)
-            pdf.cell(0, 9, f"{title} by Category", new_x="LMARGIN", new_y="NEXT")
-            pdf.set_text_color(0, 0, 0)
-
-            if not categories:
-                pdf.set_font("Helvetica", "I", 10)
-                pdf.cell(0, 8, f"No {title.lower()} for this period.", new_x="LMARGIN", new_y="NEXT")
-                pdf.ln(4)
-                return
-
-            # Header
-            pdf.set_font("Helvetica", "B", 9)
-            pdf.set_fill_color(230, 230, 230)
-            pdf.cell(cat_label_w, 7, "Category", border=1, fill=True)
-            pdf.cell(cat_count_w, 7, "Count", border=1, fill=True, align="C")
-            pdf.cell(cat_amt_w, 7, "Amount", border=1, fill=True, align="R", new_x="LMARGIN", new_y="NEXT")
-
-            # Rows
-            pdf.set_font("Helvetica", "", 9)
-            for cat in categories:
-                pdf.cell(cat_label_w, 7, cat["label"], border=1)
-                pdf.cell(cat_count_w, 7, str(cat["count"]), border=1, align="C")
-                pdf.cell(cat_amt_w, 7, f"{eur}{cat['total']:.2f}", border=1, align="R", new_x="LMARGIN", new_y="NEXT")
-            pdf.ln(6)
-
-        # --- Category breakdowns ---
-        _render_category_breakdown("Income", statement.get("income_by_category", []), (0, 128, 0))
-        _render_category_breakdown("Expenses", statement.get("expense_by_category", []), (192, 0, 0))
-
-        col_date_w = 28
-        col_cat_w = 40
-        col_desc_w = 82
-        col_amt_w = 40
-
-        def _render_table(title: str, items: list, color: tuple) -> None:
-            pdf.set_font("Helvetica", "B", 12)
-            pdf.set_text_color(*color)
-            pdf.cell(0, 9, title, new_x="LMARGIN", new_y="NEXT")
-            pdf.set_text_color(0, 0, 0)
-
-            if not items:
-                pdf.set_font("Helvetica", "I", 10)
-                pdf.cell(0, 8, f"No {title.lower()} recorded for this period.", new_x="LMARGIN", new_y="NEXT")
-                pdf.ln(4)
-                return
-
-            # Table header
-            pdf.set_font("Helvetica", "B", 9)
-            pdf.set_fill_color(230, 230, 230)
-            pdf.cell(col_date_w, 7, "Date", border=1, fill=True)
-            pdf.cell(col_cat_w, 7, "Category", border=1, fill=True)
-            pdf.cell(col_desc_w, 7, "Description", border=1, fill=True)
-            pdf.cell(col_amt_w, 7, "Amount", border=1, fill=True, align="R", new_x="LMARGIN", new_y="NEXT")
-
-            # Table rows
-            pdf.set_font("Helvetica", "", 9)
-            total_cents = 0
-            for item in items:
-                total_cents += item.amount_cents
-                category_label = item.category.replace("_", " ").title()
-                desc = item.description[:45] + "..." if len(item.description) > 48 else item.description
-                pdf.cell(col_date_w, 7, item.date.strftime("%Y-%m-%d"), border=1)
-                pdf.cell(col_cat_w, 7, category_label, border=1)
-                pdf.cell(col_desc_w, 7, desc, border=1)
-                pdf.cell(col_amt_w, 7, f"{eur}{item.amount:.2f}", border=1, align="R", new_x="LMARGIN", new_y="NEXT")
-
-            # Total row
-            pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(col_date_w + col_cat_w + col_desc_w, 7, "Total", border=1)
-            pdf.cell(col_amt_w, 7, f"{eur}{total_cents / 100:.2f}", border=1, align="R", new_x="LMARGIN", new_y="NEXT")
-            pdf.ln(6)
-
-        # --- Income table ---
-        _render_table("Income", statement["income_items"], (0, 128, 0))
-
-        # --- Expenses table ---
-        _render_table("Expenses", statement["expense_items"], (192, 0, 0))
-
-        # --- Footer ---
-        pdf.ln(4)
-        pdf.set_font("Helvetica", "I", 8)
-        pdf.set_text_color(128, 128, 128)
-        generated = date.today().strftime("%d %B %Y")
-        pdf.cell(0, 6, f"Generated on {generated} | South East Archers", align="C")
-
-        return bytes(pdf.output() or b"")

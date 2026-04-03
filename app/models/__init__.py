@@ -1,3 +1,5 @@
+from app.enums import PaymentMethod, PaymentType
+
 from .application_settings import Setting
 from .credit import Credit
 from .event import Event
@@ -19,6 +21,8 @@ __all__ = [
     "News",
     "Event",
     "Payment",
+    "PaymentType",
+    "PaymentMethod",
     "Setting",
     "Role",
     "Permission",

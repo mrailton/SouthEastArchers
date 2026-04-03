@@ -4,7 +4,7 @@ from flask import current_app
 
 from app.events import credit_purchased, payment_completed
 from app.models import Credit, Membership
-from app.repositories import CreditRepository, MembershipRepository, PaymentRepository, UserRepository
+from app.repositories import BaseRepository, CreditRepository, MembershipRepository, PaymentRepository, UserRepository
 from app.services.result import ServiceResult
 from app.services.settings_service import SettingsService
 
@@ -25,10 +25,10 @@ class PaymentProcessingService:
             return ServiceResult.fail("Payment or user not found.")
 
         try:
-            payment.mark_completed(transaction_id, processor="sumup")
-            if user.membership:
-                user.membership.activate()
-            UserRepository.save()
+            with BaseRepository.transaction():
+                payment.mark_completed(transaction_id, processor="sumup")
+                if user.membership:
+                    user.membership.activate()
         except Exception as e:
             current_app.logger.error(f"Signup payment commit failed: {e}")
             return ServiceResult.fail("Payment could not be processed. Please try again.")
@@ -55,22 +55,21 @@ class PaymentProcessingService:
             return ServiceResult.fail("Payment or user not found.")
 
         try:
-            payment.mark_completed(transaction_id, processor="sumup")
+            with BaseRepository.transaction():
+                payment.mark_completed(transaction_id, processor="sumup")
 
-            if user.membership:
-                expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
-                user.membership.renew(expiry_date=expiry_date)
-            else:
-                start_date = date.today()
-                membership = Membership(
-                    user_id=user.id,
-                    start_date=start_date,
-                    expiry_date=SettingsService.calculate_membership_expiry(start_date).date(),
-                    status="active",
-                )
-                MembershipRepository.add(membership)
-
-            UserRepository.save()
+                if user.membership:
+                    expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
+                    user.membership.renew(expiry_date=expiry_date)
+                else:
+                    start_date = date.today()
+                    membership = Membership(
+                        user_id=user.id,
+                        start_date=start_date,
+                        expiry_date=SettingsService.calculate_membership_expiry(start_date).date(),
+                        status="active",
+                    )
+                    MembershipRepository.add(membership)
         except Exception as e:
             current_app.logger.error(f"Membership renewal commit failed: {e}")
             return ServiceResult.fail("Renewal could not be processed. Please try again.")
@@ -97,14 +96,14 @@ class PaymentProcessingService:
             return ServiceResult.fail("Payment or user not found.")
 
         try:
-            payment.mark_completed(transaction_id, processor="sumup")
+            with BaseRepository.transaction():
+                payment.mark_completed(transaction_id, processor="sumup")
 
-            if user.membership:
-                user.membership.add_credits(quantity)
+                if user.membership:
+                    user.membership.add_credits(quantity)
 
-            credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
-            CreditRepository.add(credit)
-            CreditRepository.save()
+                credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
+                CreditRepository.add(credit)
         except Exception as e:
             current_app.logger.error(f"Credit purchase commit failed: {e}")
             return ServiceResult.fail("Credit purchase could not be processed. Please try again.")

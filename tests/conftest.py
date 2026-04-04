@@ -3,6 +3,7 @@ import shutil
 from datetime import date, timedelta
 
 import pytest
+from sqlalchemy import event
 
 from app import create_app, db
 from app.models import Membership, Role, User
@@ -66,25 +67,31 @@ def app(app_instance):
 
     Each test runs inside a database transaction that is rolled back after
     the test finishes, avoiding the cost of DELETE-all + re-seed RBAC.
+
+    Uses the nested-transaction / savepoint pattern so that db.session.commit()
+    calls inside tests release the current savepoint without committing the
+    outer transaction. A new savepoint is created after each commit so that
+    subsequent commits are also caught, and the final rollback undoes all test
+    changes cleanly.
     """
     with app_instance.app_context():
-        connection = db.engine.connect()
-        transaction = connection.begin()
+        # begin_nested() auto-starts an outer transaction and then creates a
+        # SAVEPOINT within it, so commit() inside tests only releases the
+        # savepoint rather than committing to the database.
+        db.session.begin_nested()
 
-        # Route every session through our transacted connection so that
-        # commits become savepoint releases rather than real commits.
-        SessionClass = db.session.session_factory.class_
-        original_get_bind = SessionClass.get_bind
-        SessionClass.get_bind = lambda self, *args, **kw: connection
-
-        db.session.remove()  # clear stale session state
+        @event.listens_for(db.session, "after_transaction_end")
+        def restart_savepoint(session, trans):
+            # When the outermost savepoint ends (committed or rolled back),
+            # immediately open a new one so the next commit() is also caught.
+            if trans.nested and not trans._parent.nested:
+                session.begin_nested()
 
         yield app_instance
 
+        event.remove(db.session, "after_transaction_end", restart_savepoint)
+        db.session.rollback()  # roll back outer transaction – undoes all test changes
         db.session.remove()
-        SessionClass.get_bind = original_get_bind
-        transaction.rollback()
-        connection.close()
 
 
 def pytest_collection_modifyitems(items):

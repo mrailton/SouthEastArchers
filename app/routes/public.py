@@ -1,52 +1,19 @@
-from flask import Blueprint, abort, flash, redirect, render_template, url_for
-from flask_login import current_user
+from flask import Blueprint
 
-from app.services import EventService, NewsService
-from app.services.settings_service import SettingsService
+from app.controllers.public import (
+    AboutController,
+    EventsController,
+    IndexController,
+    MembershipController,
+    NewsDetailController,
+    NewsListController,
+)
 
 bp = Blueprint("public", __name__)
 
-
-@bp.get("/")
-def index():
-    return render_template("public/index.html")
-
-
-@bp.get("/about")
-def about():
-    return render_template("public/about.html")
-
-
-@bp.get("/news")
-def news_list():
-    if not SettingsService.get("news_enabled"):
-        abort(404)
-    news = NewsService.get_published_articles()
-    return render_template("public/news.html", news=news)
-
-
-@bp.get("/news/<int:news_id>")
-def news_detail(news_id):
-    if not SettingsService.get("news_enabled"):
-        abort(404)
-    news = NewsService.get_article_by_id(news_id)
-    if not news or not news.published:
-        abort(404)
-    return render_template("public/news_detail.html", news=news)
-
-
-@bp.get("/events")
-def events():
-    if not SettingsService.get("events_enabled"):
-        abort(404)
-    events = EventService.get_upcoming_published_events()
-    return render_template("public/events.html", events=events)
-
-
-@bp.get("/membership")
-def membership():
-    if current_user.is_authenticated and current_user.has_active_membership:
-        flash("You already have an active membership", "error")
-        return redirect(url_for("member.dashboard"))
-
-    return render_template("public/membership.html")
+bp.add_url_rule("/", view_func=IndexController(), endpoint="index", methods=["GET"])
+bp.add_url_rule("/about", view_func=AboutController(), endpoint="about", methods=["GET"])
+bp.add_url_rule("/news", view_func=NewsListController(), endpoint="news_list", methods=["GET"])
+bp.add_url_rule("/news/<int:news_id>", view_func=NewsDetailController(), endpoint="news_detail", methods=["GET"])
+bp.add_url_rule("/events", view_func=EventsController(), endpoint="events", methods=["GET"])
+bp.add_url_rule("/membership", view_func=MembershipController(), endpoint="membership", methods=["GET"])

@@ -8,8 +8,6 @@ from app.controllers.payment.membership_payment_controller import MembershipPaym
 from app.controllers.payment.membership_payment_post_controller import MembershipPaymentPostController
 from app.controllers.payment.show_checkout_controller import ShowCheckoutController
 
-MAX_CREDIT_QUANTITY = 50
-
 
 __all__ = [
     "CompleteCheckoutController",

@@ -1,4 +1,4 @@
-"""Tests for admin finance routes."""
+"""Tests for admin finance controllers."""
 
 from datetime import date
 
@@ -234,7 +234,7 @@ def test_financial_statement_end_before_start(client, admin_user):
 
 
 def test_finance_requires_admin(client, test_user):
-    """Test that finance routes require admin permissions."""
+    """Test that finance controllers require admin permissions."""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
 
     response = client.get("/admin/finance")

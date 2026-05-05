@@ -1,4 +1,4 @@
-"""Tests for admin settings routes"""
+"""Tests for admin settings controllers"""
 
 from app.services.settings_service import SettingsService
 

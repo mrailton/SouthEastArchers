@@ -1,16 +1,12 @@
 from flask import flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 
-from app.controllers import BaseController
-from app.controllers.payment import MAX_CREDIT_QUANTITY
 from app.services import PaymentService
 
+MAX_CREDIT_QUANTITY = 50
 
-class CreditsPaymentPostController(BaseController):
-    def __init__(self):
-        super().__init__()
-        self.payment_service = PaymentService
 
+class CreditsPaymentPostController:
     @login_required
     def __call__(self):
         try:
@@ -23,7 +19,7 @@ class CreditsPaymentPostController(BaseController):
             flash(f"Quantity must be between 1 and {MAX_CREDIT_QUANTITY}.", "error")
             return render_template("payment/credits.html")
 
-        payment_service = self.payment_service()
+        payment_service = PaymentService()
         result = payment_service.initiate_credit_purchase(current_user, quantity)
 
         if result.success:

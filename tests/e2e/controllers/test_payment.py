@@ -24,7 +24,7 @@ def test_show_checkout_with_default_values(client, test_user):
     assert response.status_code == 200
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 @patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_complete_checkout_signup_payment_success(mock_email, mock_sumup_class, client, app, test_user):
     """Test successful signup payment completion via widget"""
@@ -68,8 +68,8 @@ def test_complete_checkout_signup_payment_success(mock_email, mock_sumup_class, 
     assert payment.status == "completed"
 
 
-@patch("app.routes.payment.PaymentProcessingService.handle_signup_payment")
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.PaymentProcessingService.handle_signup_payment")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 @patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_complete_checkout_signup_payment_email_failure(mock_email, mock_sumup_class, mock_handle, client, app, test_user):
     """Test successful payment but email sending fails"""
@@ -122,7 +122,7 @@ def test_complete_checkout_signup_payment_email_failure(mock_email, mock_sumup_c
         assert payment.status == "completed"
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 def test_complete_checkout_signup_payment_failed(mock_sumup_class, client, app, test_user):
     """Test failed signup payment completion"""
     with app.app_context():
@@ -159,7 +159,7 @@ def test_complete_checkout_signup_payment_failed(mock_sumup_class, client, app, 
     assert b"Payment declined" in response.data
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 def test_complete_checkout_pending_status(mock_sumup_class, client, test_user):
     """Test payment with pending status"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
@@ -181,7 +181,7 @@ def test_complete_checkout_pending_status(mock_sumup_class, client, test_user):
     assert b"pending" in response.data.lower()
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 @patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_complete_checkout_membership_renewal(mock_email, mock_sumup_class, client, app, test_user):
     """Test membership renewal payment"""
@@ -221,7 +221,7 @@ def test_complete_checkout_membership_renewal(mock_email, mock_sumup_class, clie
     assert payment.status == "completed"
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 @patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_complete_checkout_membership_renewal_no_existing_membership(mock_email, mock_sumup_class, client, app):
     """Test membership renewal creates new membership if none exists"""
@@ -277,8 +277,8 @@ def test_complete_checkout_membership_renewal_no_existing_membership(mock_email,
         assert user.membership.status == "active"
 
 
-@patch("app.routes.payment.PaymentProcessingService.handle_membership_renewal")
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.PaymentProcessingService.handle_membership_renewal")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 @patch("app.services.mail_service.MailService.send_payment_receipt")
 def test_complete_checkout_membership_renewal_email_failure(mock_email, mock_sumup_class, mock_handle, client, app, test_user):
     """Test membership renewal handles email failure gracefully"""
@@ -331,7 +331,7 @@ def test_complete_checkout_membership_renewal_email_failure(mock_email, mock_sum
         assert payment.status == "completed"
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 @patch("app.services.mail_service.MailService.send_credit_purchase_receipt")
 def test_complete_checkout_credit_purchase(mock_credit_receipt, mock_sumup_class, client, app, test_user):
     """Test credit purchase payment sends receipt email"""
@@ -388,7 +388,7 @@ def test_complete_checkout_credit_purchase(mock_credit_receipt, mock_sumup_class
     mock_credit_receipt.assert_called_once_with(test_user.id, payment_id, 5)
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 def test_complete_checkout_exception_handling(mock_sumup_class, client, test_user):
     """Test exception handling during checkout completion"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
@@ -405,7 +405,7 @@ def test_complete_checkout_exception_handling(mock_sumup_class, client, test_use
     assert b"error" in response.data.lower() or b"failed" in response.data.lower() or b"declined" in response.data.lower()
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 def test_complete_checkout_unknown_status(mock_sumup_class, client, test_user):
     """Test payment with unknown status"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
@@ -427,7 +427,7 @@ def test_complete_checkout_unknown_status(mock_sumup_class, client, test_user):
     assert b"Payment failed" in response.data or b"Payment declined" in response.data
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 def test_complete_checkout_generic_success_no_session_data(mock_sumup_class, client, test_user):
     """Test successful payment without specific session data (generic case)"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
@@ -449,7 +449,7 @@ def test_complete_checkout_generic_success_no_session_data(mock_sumup_class, cli
     assert b"Payment processed successfully" in response.data or b"Payment successful" in response.data
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.controllers.payment.complete_checkout_controller.SumUpService")
 def test_complete_checkout_null_checkout(mock_sumup_class, client, test_user):
     """Test completion when checkout cannot be retrieved"""
     client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
@@ -486,7 +486,7 @@ def test_membership_payment_page_get(client, test_user):
         assert response.status_code == 200
 
 
-@patch("app.routes.payment.PaymentService")
+@patch("app.controllers.payment.membership_payment_post_controller.PaymentService")
 def test_membership_payment_post_success(mock_service_class, client, app, test_user):
     """Test successful membership payment creation"""
     mock_service = Mock()
@@ -512,7 +512,7 @@ def test_membership_payment_post_success(mock_service_class, client, app, test_u
         assert response.status_code == 200
 
 
-@patch("app.routes.payment.PaymentService")
+@patch("app.controllers.payment.membership_payment_post_controller.PaymentService")
 def test_membership_payment_checkout_failure(mock_service_class, client, app, test_user):
     """Test membership payment when checkout creation fails"""
     mock_service = Mock()
@@ -548,7 +548,7 @@ def test_credits_page_logged_in(client, test_user):
         assert response.status_code == 200
 
 
-@patch("app.routes.payment.PaymentService")
+@patch("app.controllers.payment.credits_payment_post_controller.PaymentService")
 def test_credits_purchase_post_success(mock_service_class, client, app, test_user):
     """Test successful credit purchase"""
     mock_service = Mock()
@@ -575,7 +575,7 @@ def test_credits_purchase_post_success(mock_service_class, client, app, test_use
         assert response.status_code == 200
 
 
-@patch("app.routes.payment.PaymentService")
+@patch("app.controllers.payment.credits_payment_post_controller.PaymentService")
 def test_credits_purchase_checkout_failure(mock_service_class, client, app, test_user):
     """Test credit purchase when checkout creation fails"""
     mock_service = Mock()

@@ -1,4 +1,4 @@
-"""Tests for admin cash payment approval routes"""
+"""Tests for admin cash payment approval controllers"""
 
 from unittest.mock import patch
 
@@ -382,7 +382,7 @@ def test_approve_membership_payment_user_not_found(client, admin_user, test_user
     db.session.commit()
 
     # Mock UserRepository.get_by_id to simulate user not found
-    with patch("app.routes.admin.payments.UserRepository.get_by_id", return_value=None):
+    with patch("app.repositories.UserRepository.get_by_id", return_value=None):
         response = client.post(f"/admin/payments/{payment.id}/approve", follow_redirects=True)
 
     assert response.status_code == 200

@@ -6,15 +6,10 @@ from app.utils import clear_session_keys, get_user_id_from_session
 
 
 class CompleteCheckoutController:
-    def __init__(self):
-        super().__init__()
-        self.sumup_service = SumUpService
-        self.payment_processing_service = PaymentProcessingService
-
     @login_required
     def __call__(self, checkout_id):
         try:
-            sumup = self.sumup_service()
+            sumup = SumUpService()
             checkout = sumup.get_checkout(checkout_id)
 
             if not checkout:
@@ -43,14 +38,14 @@ class CompleteCheckoutController:
 
             signup_payment_id = session.get("signup_payment_id")
             if session.get("signup_user_id") and signup_payment_id:
-                result = self.payment_processing_service.handle_signup_payment(user_id, signup_payment_id, txn_id)
+                result = PaymentProcessingService.handle_signup_payment(user_id, signup_payment_id, txn_id)
                 clear_session_keys("signup_user_id", "signup_payment_id", "checkout_amount", "checkout_description")
                 flash(result.message, "success" if result.success else "error")
                 return redirect(url_for("auth.login"))
 
             renewal_payment_id = session.get("membership_renewal_payment_id")
             if session.get("membership_renewal_user_id") and renewal_payment_id:
-                result = self.payment_processing_service.handle_membership_renewal(user_id, renewal_payment_id, txn_id)
+                result = PaymentProcessingService.handle_membership_renewal(user_id, renewal_payment_id, txn_id)
                 clear_session_keys("membership_renewal_user_id", "membership_renewal_payment_id", "checkout_amount", "checkout_description")
                 flash(result.message, "success" if result.success else "error")
                 return redirect(url_for("member.dashboard"))
@@ -58,7 +53,7 @@ class CompleteCheckoutController:
             credit_payment_id = session.get("credit_purchase_payment_id")
             if session.get("credit_purchase_user_id") and credit_payment_id:
                 quantity = session.get("credit_purchase_quantity", 1)
-                result = self.payment_processing_service.handle_credit_purchase(user_id, credit_payment_id, quantity, txn_id)
+                result = PaymentProcessingService.handle_credit_purchase(user_id, credit_payment_id, quantity, txn_id)
                 clear_session_keys(
                     "credit_purchase_user_id", "credit_purchase_payment_id", "credit_purchase_quantity", "checkout_amount", "checkout_description"
                 )

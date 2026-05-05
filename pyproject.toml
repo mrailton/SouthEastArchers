@@ -88,6 +88,7 @@ name = "Only models and repositories may import app.db"
 type = "forbidden"
 source_modules = [
     "app.cli",
+    "app.controllers",
     "app.events",
     "app.forms",
     "app.routes",

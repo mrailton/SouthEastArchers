@@ -145,7 +145,7 @@ def test_signup_password_mismatch(client):
 def test_forgot_password_email_send_failure(client, test_user, mocker):
     """Test forgot password when email sending fails"""
     # Mock password_reset_requested signal to raise an exception
-    mock_send = mocker.patch("app.routes.auth.password_reset_requested.send", side_effect=Exception("SMTP Error"))
+    mock_send = mocker.patch("app.events.password_reset_requested.send", side_effect=Exception("SMTP Error"))
 
     response = client.post(
         "/auth/forgot-password",
@@ -172,7 +172,7 @@ def test_forgot_password_form_validation_error(client):
 
 def test_signup_sends_new_member_notification(client, mocker):
     """A successful signup triggers user_registered event with the new user's id."""
-    mock_signal = mocker.patch("app.routes.auth.user_registered.send")
+    mock_signal = mocker.patch("app.events.user_registered.send")
 
     response = client.post(
         "/auth/signup",
@@ -196,7 +196,7 @@ def test_signup_sends_new_member_notification(client, mocker):
 
 def test_signup_notification_not_called_on_duplicate_email(client, test_user, mocker):
     """Notification is NOT triggered when signup fails due to duplicate email."""
-    mock_signal = mocker.patch("app.routes.auth.user_registered.send")
+    mock_signal = mocker.patch("app.events.user_registered.send")
 
     client.post(
         "/auth/signup",
@@ -216,7 +216,7 @@ def test_signup_notification_not_called_on_duplicate_email(client, test_user, mo
 
 def test_signup_notification_not_called_on_validation_failure(client, mocker):
     """Notification is NOT triggered when form validation fails."""
-    mock_signal = mocker.patch("app.routes.auth.user_registered.send")
+    mock_signal = mocker.patch("app.events.user_registered.send")
 
     client.post(
         "/auth/signup",

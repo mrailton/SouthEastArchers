@@ -6,13 +6,9 @@ from app.services import PaymentService
 
 
 class MembershipCashPaymentController:
-    def __init__(self):
-        super().__init__()
-        self.payment_service = PaymentService
-
     @login_required
     def __call__(self):
-        payment_service = self.payment_service()
+        payment_service = PaymentService()
         result = payment_service.initiate_cash_membership_payment(current_user)
 
         if result.success:

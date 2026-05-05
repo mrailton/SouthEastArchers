@@ -1,11 +1,10 @@
 from flask import render_template
 from flask_login import current_user, login_required
 
-from app.controllers import BaseController
 from app.repositories import PaymentRepository
 
 
-class HistoryController(BaseController):
+class HistoryController:
     def __init__(self):
         super().__init__()
         self.payment_repository = PaymentRepository

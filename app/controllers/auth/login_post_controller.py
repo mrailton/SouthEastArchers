@@ -1,12 +1,11 @@
 from flask import flash, redirect, render_template, request, url_for
 from flask_login import login_user
 
-from app.controllers import BaseController
 from app.forms import LoginForm
 from app.services import UserService
 
 
-class LoginPostController(BaseController):
+class LoginPostController:
     def __init__(self):
         super().__init__()
         self.service = UserService

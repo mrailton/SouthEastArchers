@@ -1,12 +1,11 @@
 from flask import flash, redirect, render_template, url_for
 
-from app.controllers import BaseController
 from app.events import user_registered
 from app.forms import SignupForm
 from app.services import UserService
 
 
-class SignupPostController(BaseController):
+class SignupPostController:
     """Handle signup form submission"""
 
     def __init__(self):

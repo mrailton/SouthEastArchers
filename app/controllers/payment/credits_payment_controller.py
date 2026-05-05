@@ -1,10 +1,8 @@
 from flask import flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
-from app.controllers import BaseController
 
-
-class CreditsPaymentController(BaseController):
+class CreditsPaymentController:
     @login_required
     def __call__(self):
         if not current_user.membership:

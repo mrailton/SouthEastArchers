@@ -1,10 +1,9 @@
 from flask import render_template
 
-from app.controllers import BaseController
 from app.forms import ForgotPasswordForm
 
 
-class ForgotPasswordController(BaseController):
+class ForgotPasswordController:
     """Display forgot password form"""
 
     def __call__(self):

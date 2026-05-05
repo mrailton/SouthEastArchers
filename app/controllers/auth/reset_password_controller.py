@@ -1,11 +1,10 @@
 from flask import flash, redirect, render_template, url_for
 
-from app.controllers import BaseController
 from app.forms import ResetPasswordForm
 from app.models import User
 
 
-class ResetPasswordController(BaseController):
+class ResetPasswordController:
     """Display reset password form"""
 
     def __call__(self, token):

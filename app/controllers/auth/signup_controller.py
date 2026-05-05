@@ -1,10 +1,9 @@
 from flask import render_template
 
-from app.controllers import BaseController
 from app.forms import SignupForm
 
 
-class SignupController(BaseController):
+class SignupController:
     """Display signup form"""
 
     def __call__(self):

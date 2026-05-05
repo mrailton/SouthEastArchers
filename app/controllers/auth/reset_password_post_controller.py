@@ -1,12 +1,11 @@
 from flask import flash, redirect, render_template, url_for
 
-from app.controllers import BaseController
 from app.forms import ResetPasswordForm
 from app.models import User
 from app.services import UserService
 
 
-class ResetPasswordPostController(BaseController):
+class ResetPasswordPostController:
     """Handle reset password form submission"""
 
     def __init__(self):

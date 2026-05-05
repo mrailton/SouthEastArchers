@@ -1,12 +1,11 @@
 from flask import flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
-from app.controllers import BaseController
 from app.enums import PaymentType
 from app.services import PaymentService
 
 
-class MembershipCashPaymentController(BaseController):
+class MembershipCashPaymentController:
     def __init__(self):
         super().__init__()
         self.payment_service = PaymentService

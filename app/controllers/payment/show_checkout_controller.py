@@ -1,10 +1,8 @@
 from flask import render_template, session
 from flask_login import login_required
 
-from app.controllers import BaseController
 
-
-class ShowCheckoutController(BaseController):
+class ShowCheckoutController:
     @login_required
     def __call__(self, checkout_id):
         amount = session.get("checkout_amount", 100.00)

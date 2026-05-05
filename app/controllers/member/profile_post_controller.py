@@ -1,12 +1,11 @@
 from flask import flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
-from app.controllers import BaseController
 from app.forms import ProfileForm
 from app.services import UserService
 
 
-class ProfilePostController(BaseController):
+class ProfilePostController:
     def __init__(self):
         super().__init__()
         self.service = UserService

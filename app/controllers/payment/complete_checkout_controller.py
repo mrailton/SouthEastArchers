@@ -1,12 +1,11 @@
 from flask import current_app, flash, redirect, session, url_for
 from flask_login import current_user, login_required
 
-from app.controllers import BaseController
 from app.services import PaymentProcessingService, SumUpService
 from app.utils import clear_session_keys, get_user_id_from_session
 
 
-class CompleteCheckoutController(BaseController):
+class CompleteCheckoutController:
     def __init__(self):
         super().__init__()
         self.sumup_service = SumUpService

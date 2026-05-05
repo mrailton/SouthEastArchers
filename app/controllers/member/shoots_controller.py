@@ -1,11 +1,10 @@
 from flask import render_template
 from flask_login import current_user, login_required
 
-from app.controllers import BaseController
 from app.models import Shoot, User
 
 
-class ShootsController(BaseController):
+class ShootsController:
     @login_required
     def __call__(self):
         user = current_user

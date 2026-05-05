@@ -1,10 +1,8 @@
 from flask import flash, redirect, url_for
 from flask_login import login_required
 
-from app.controllers import BaseController
 
-
-class LogoutController(BaseController):
+class LogoutController:
     def __init__(self):
         super().__init__()
         from flask_login import logout_user

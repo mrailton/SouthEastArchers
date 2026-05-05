@@ -198,3 +198,45 @@ def test_is_upcoming_with_aware_datetime(app):
 
     # Should handle timezone-aware datetime correctly
     assert event.is_upcoming() is True
+
+
+def test_is_upcoming_start_aware_now_naive(app):
+    """Test is_upcoming when start is aware but now is naive (line 28 handling)"""
+    from datetime import datetime
+
+    from app import db
+
+    # Create event with timezone-aware datetime in the future
+    future_date = datetime(2030, 12, 31, 12, 0, 0, tzinfo=UTC)
+    event = Event(
+        title="Future Event Aware",
+        description="Test description",
+        start_date=future_date,
+        published=True,
+    )
+    db.session.add(event)
+    db.session.commit()
+
+    # The method should handle the case where start is aware but now is naive
+    assert event.is_upcoming() is True
+
+
+def test_event_repr_with_date(app):
+    """Test event repr shows the date"""
+    from datetime import datetime
+
+    from app import db
+
+    start_date = datetime(2030, 6, 15, 10, 0, 0)
+    event = Event(
+        title="Repr Test Event",
+        description="Test",
+        start_date=start_date,
+        published=True,
+    )
+    db.session.add(event)
+    db.session.commit()
+
+    repr_str = repr(event)
+    assert "Repr Test Event" in repr_str
+    assert "Event" in repr_str

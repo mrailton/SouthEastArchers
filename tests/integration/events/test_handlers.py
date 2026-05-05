@@ -74,11 +74,91 @@ def test_handler_exception_is_caught(app):
         user_registered.send(user_id=1)
 
 
-def test_handler_exception_is_logged(app):
+def test_handler_exception_is_logged(app, caplog):
     """Handler exceptions are logged."""
     with patch("app.services.mail_service.MailService.send_new_member_notification", side_effect=Exception("boom")):
         # The handler catches the exception and logs it — verify no propagation
         user_registered.send(user_id=1)
+        # Verify the error was logged
+        assert "failed" in caplog.text.lower() or "error" in caplog.text.lower()
+
+
+def test_user_activated_handler_exception_logged(app, caplog):
+    """user_activated handler exception is logged."""
+    with patch("app.services.mail_service.MailService.send_welcome_email", side_effect=Exception("boom")):
+        user_activated.send(user_id=1)
+        assert "failed" in caplog.text.lower() or "error" in caplog.text.lower()
+
+
+def test_payment_completed_handler_exception_logged(app, caplog):
+    """payment_completed handler exception is logged."""
+    with patch("app.services.mail_service.MailService.send_payment_receipt", side_effect=Exception("boom")):
+        payment_completed.send(user_id=1, payment_id=99, payment_type="membership")
+        assert "failed" in caplog.text.lower() or "error" in caplog.text.lower()
+
+
+def test_credit_purchased_handler_exception_logged(app, caplog):
+    """credit_purchased handler exception is logged."""
+    with patch("app.services.mail_service.MailService.send_credit_purchase_receipt", side_effect=Exception("boom")):
+        credit_purchased.send(user_id=1, payment_id=55, quantity=5)
+        assert "failed" in caplog.text.lower() or "error" in caplog.text.lower()
+
+
+def test_cash_payment_submitted_handler_exception_logged(app, caplog):
+    """cash_payment_submitted handler exception is logged."""
+    with patch("app.services.mail_service.MailService.send_cash_payment_pending_email", side_effect=Exception("boom")):
+        cash_payment_submitted.send(user_id=1, payment_id=20)
+        assert "failed" in caplog.text.lower() or "error" in caplog.text.lower()
+
+
+def test_password_reset_requested_handler_exception_logged(app, caplog):
+    """password_reset_requested handler exception is logged."""
+    with patch("app.services.mail_service.MailService.send_password_reset", side_effect=Exception("boom")):
+        password_reset_requested.send(user_id=1, token="abc123")
+        assert "failed" in caplog.text.lower() or "error" in caplog.text.lower()
+
+
+def test_membership_activated_handler_exception_logged(app, caplog):
+    """membership_activated handler exception is logged."""
+    with patch("app.services.mail_service.MailService.send_payment_receipt", side_effect=Exception("boom")):
+        membership_activated.send(user_id=1, payment_id=77)
+        assert "failed" in caplog.text.lower() or "error" in caplog.text.lower()
+
+
+def test_record_payment_financial_transactions_no_payment(app):
+    """Test _record_payment_financial_transactions when payment not found."""
+    from app.events.handlers import _record_payment_financial_transactions
+
+    # Should return early without error
+    _record_payment_financial_transactions(payment_id=99999, payment_type="membership")
+
+
+def test_record_payment_financial_transactions_unsupported_processor(app):
+    """Test _record_payment_financial_transactions with unsupported processor."""
+    from app import db
+    from app.enums import PaymentType
+    from app.events.handlers import _record_payment_financial_transactions
+
+    # Create a payment with unsupported processor
+    from app.models import Payment, User
+
+    # Create a valid user first
+    user = User(name="Test", email="test_financial@example.com", password_hash="hash")
+    db.session.add(user)
+    db.session.flush()
+
+    payment = Payment(
+        user_id=user.id,
+        amount_cents=10000,
+        payment_type=PaymentType.MEMBERSHIP,
+        payment_processor="unknown",  # Unsupported
+        status="completed",
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    # Should return early without error
+    _record_payment_financial_transactions(payment_id=payment.id, payment_type="membership")
 
 
 def test_payment_completed_records_sumup_financial_transactions(app):

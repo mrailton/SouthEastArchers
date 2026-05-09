@@ -35,7 +35,7 @@
                 <div class="flex items-center">
                     <a href="{{ url_for('member.dashboard') if current_user.is_authenticated else url_for('public.index') }}" class="flex items-center space-x-4 group">
                         <div class="relative p-1">
-                            <img src="{{ url_for('static', filename='images/logo.jpeg') }}" 
+                            <img src="{{ url_for('static', filename='images/logo.png') }}"
                                  alt="South East Archers Logo" 
                                  class="h-28 w-auto object-contain transition-transform duration-300 group-hover:scale-110"
                                  style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">
@@ -162,7 +162,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
                 <div class="flex flex-col items-center md:items-start">
-                    <img src="{{ url_for('static', filename='images/logo.jpeg') }}" 
+                    <img src="{{ url_for('static', filename='images/logo.png') }}"
                          alt="South East Archers Logo" 
                          class="h-32 w-auto object-contain mb-6 rounded-lg shadow-lg">
                     <h3 class="text-xl font-bold mb-2">South East Archers</h3>

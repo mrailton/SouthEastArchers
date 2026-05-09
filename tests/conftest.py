@@ -187,3 +187,41 @@ def fake_mailer():
 
     inject_fake_mailer(fm)
     return fm
+
+
+@pytest.fixture
+def admin_client(client, admin_user):
+    """Return a test client pre-authenticated as admin."""
+    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+    return client
+
+
+@pytest.fixture
+def member_client(client, test_user):
+    """Return a test client pre-authenticated as a member."""
+    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    return client
+
+
+@pytest.fixture
+def member_with_credits(app, name="Test Member", email="member@example.com", initial_credits=3, purchased_credits=0, status="active"):
+    """Create a user with an active membership and specified credits."""
+    from datetime import date, timedelta
+
+    user = User(name=name, email=email, phone="1234567890", is_active=True)
+    user.set_password("password123")
+    db.session.add(user)
+    db.session.flush()
+
+    membership = Membership(
+        user_id=user.id,
+        start_date=date.today() - timedelta(days=30),
+        expiry_date=date.today() + timedelta(days=335),
+        initial_credits=initial_credits,
+        purchased_credits=purchased_credits,
+        status=status,
+    )
+    db.session.add(membership)
+    db.session.commit()
+
+    return user

@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-from sqlalchemy.orm import Session
+from typing import TYPE_CHECKING
+
+from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from app import db
 from app.utils.datetime_utils import utc_now
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 # Association tables
 user_roles = db.Table(
@@ -24,14 +30,14 @@ role_permissions = db.Table(
 class Role(db.Model):
     __tablename__ = "roles"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    description = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
-    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    description: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[DateTime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
-    permissions = db.relationship("Permission", secondary=role_permissions, back_populates="roles")
-    users = db.relationship("User", secondary=user_roles, back_populates="roles")
+    permissions: Mapped[list[Permission]] = relationship("Permission", secondary=role_permissions, back_populates="roles")
+    users: Mapped[list[User]] = relationship("User", secondary=user_roles, back_populates="roles")
 
     def __repr__(self) -> str:  # pragma: no cover - trivial
         return f"<Role {self.name}>"
@@ -40,13 +46,13 @@ class Role(db.Model):
 class Permission(db.Model):
     __tablename__ = "permissions"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), unique=True, nullable=False, index=True)
-    description = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
-    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
+    description: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[DateTime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
-    roles = db.relationship("Role", secondary=role_permissions, back_populates="permissions")
+    roles: Mapped[list[Role]] = relationship("Role", secondary=role_permissions, back_populates="permissions")
 
     def __repr__(self) -> str:  # pragma: no cover - trivial
         return f"<Permission {self.name}>"

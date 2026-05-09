@@ -1,93 +1,15 @@
-from flask import abort, flash, redirect, render_template, url_for
-
-from app.forms import NewsForm
-from app.services import NewsService
-from app.utils.decorators import permission_required
+from app.controllers.admin.news import (
+    CreateNewsController,
+    CreateNewsPostController,
+    EditNewsController,
+    EditNewsPostController,
+    NewsController,
+)
 
 from . import bp
 
-
-@bp.get("/news")
-@permission_required("news.read")
-def news():
-    articles = NewsService.get_all_articles()
-    return render_template("admin/news.html", articles=articles)
-
-
-@bp.get("/news/create")
-@permission_required("news.create")
-def create_news():
-    """Display news creation form"""
-    return render_template("admin/create_news.html", form=NewsForm())
-
-
-@bp.post("/news/create")
-@permission_required("news.create")
-def create_news_post():
-    """Handle news creation form submission"""
-    form = NewsForm()
-
-    if form.validate_on_submit():
-        result = NewsService.create_article(
-            title=form.title.data,
-            summary=form.summary.data,
-            content=form.content.data,
-            published=form.published.data,
-        )
-
-        if not result.success:
-            flash(result.message, "error")
-            return render_template("admin/create_news.html", form=form)
-
-        flash("News article created!", "success")
-        return redirect(url_for("admin.news"))
-
-    for field, errors in form.errors.items():
-        for error in errors:
-            flash(error, "error")
-
-    return render_template("admin/create_news.html", form=NewsForm())
-
-
-@bp.get("/news/<int:news_id>/edit")
-@permission_required("news.update")
-def edit_news(news_id):
-    """Display news edit form"""
-    news = NewsService.get_article_by_id(news_id)
-    if not news:
-        abort(404)
-
-    return render_template("admin/edit_news.html", news=news, form=NewsForm(obj=news))
-
-
-@bp.post("/news/<int:news_id>/edit")
-@permission_required("news.update")
-def edit_news_post(news_id):
-    """Handle news edit form submission"""
-    news = NewsService.get_article_by_id(news_id)
-    if not news:
-        abort(404)
-
-    form = NewsForm(obj=news)
-
-    if form.validate_on_submit():
-        result = NewsService.update_article(
-            article=news,
-            title=form.title.data,
-            summary=form.summary.data,
-            content=form.content.data,
-            published=form.published.data,
-        )
-
-        if not result.success:
-            flash(result.message or "An error occurred while updating the article.", "error")
-            return render_template("admin/edit_news.html", news=news, form=form)
-
-        flash("News article updated successfully!", "success")
-        return redirect(url_for("admin.news"))
-
-    for field, errors in form.errors.items():
-        for error in errors:
-            flash(error, "error")
-
-    return render_template("admin/edit_news.html", news=news, form=NewsForm(obj=news))
+bp.add_url_rule("/news", view_func=NewsController(), endpoint="news", methods=["GET"])
+bp.add_url_rule("/news/create", view_func=CreateNewsController(), endpoint="create_news", methods=["GET"])
+bp.add_url_rule("/news/create", view_func=CreateNewsPostController(), endpoint="create_news_post", methods=["POST"])
+bp.add_url_rule("/news/<int:news_id>/edit", view_func=EditNewsController(), endpoint="edit_news", methods=["GET"])
+bp.add_url_rule("/news/<int:news_id>/edit", view_func=EditNewsPostController(), endpoint="edit_news_post", methods=["POST"])

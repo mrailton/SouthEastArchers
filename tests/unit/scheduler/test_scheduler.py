@@ -200,60 +200,26 @@ def test_weekends_constraint():
     assert not event.is_due(datetime(2024, 1, 19, 0, 0))  # Friday
 
 
-def test_mondays_constraint():
-    """Test mondays constraint"""
-    event = Event(Mock()).daily().mondays()
+@pytest.mark.parametrize("day_method,due_weekday,not_due_weekday", [
+    ("mondays", 0, 1),      # Monday due, Tuesday not
+    ("tuesdays", 1, 2),     # Tuesday due, Wednesday not
+    ("wednesdays", 2, 3),    # Wednesday due, Thursday not
+    ("thursdays", 3, 4),    # Thursday due, Friday not
+    ("fridays", 4, 5),      # Friday due, Saturday not
+    ("saturdays", 5, 0),   # Saturday due, Monday not
+    ("sundays", 6, 1),      # Sunday due, Tuesday not
+])
+def test_day_constraint(day_method, due_weekday, not_due_weekday):
+    """Test day-of-week constraints for the scheduler."""
+    from datetime import timedelta
 
-    assert event.is_due(datetime(2024, 1, 15, 0, 0))  # Monday
-    assert not event.is_due(datetime(2024, 1, 16, 0, 0))  # Tuesday
+    event = Event(Mock()).daily().__getattribute__(day_method)()
 
+    due_date = datetime(2024, 1, 15) + timedelta(days=(due_weekday - 0) % 7)
+    not_due_date = datetime(2024, 1, 15) + timedelta(days=(not_due_weekday - 0) % 7)
 
-def test_tuesdays_constraint():
-    """Test tuesdays constraint"""
-    event = Event(Mock()).daily().tuesdays()
-
-    assert event.is_due(datetime(2024, 1, 16, 0, 0))  # Tuesday
-    assert not event.is_due(datetime(2024, 1, 15, 0, 0))  # Monday
-
-
-def test_wednesdays_constraint():
-    """Test wednesdays constraint"""
-    event = Event(Mock()).daily().wednesdays()
-
-    assert event.is_due(datetime(2024, 1, 17, 0, 0))  # Wednesday
-    assert not event.is_due(datetime(2024, 1, 16, 0, 0))  # Tuesday
-
-
-def test_thursdays_constraint():
-    """Test thursdays constraint"""
-    event = Event(Mock()).daily().thursdays()
-
-    assert event.is_due(datetime(2024, 1, 18, 0, 0))  # Thursday
-    assert not event.is_due(datetime(2024, 1, 17, 0, 0))  # Wednesday
-
-
-def test_fridays_constraint():
-    """Test fridays constraint"""
-    event = Event(Mock()).daily().fridays()
-
-    assert event.is_due(datetime(2024, 1, 19, 0, 0))  # Friday
-    assert not event.is_due(datetime(2024, 1, 18, 0, 0))  # Thursday
-
-
-def test_saturdays_constraint():
-    """Test saturdays constraint"""
-    event = Event(Mock()).daily().saturdays()
-
-    assert event.is_due(datetime(2024, 1, 20, 0, 0))  # Saturday
-    assert not event.is_due(datetime(2024, 1, 19, 0, 0))  # Friday
-
-
-def test_sundays_constraint():
-    """Test sundays constraint"""
-    event = Event(Mock()).daily().sundays()
-
-    assert event.is_due(datetime(2024, 1, 21, 0, 0))  # Sunday
-    assert not event.is_due(datetime(2024, 1, 20, 0, 0))  # Saturday
+    assert event.is_due(due_date)
+    assert not event.is_due(not_due_date)
 
 
 def test_when_constraint():

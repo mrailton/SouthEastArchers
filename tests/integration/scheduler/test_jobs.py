@@ -60,11 +60,14 @@ def _create_member(email, initial_credits=2, status="active", is_active=True):
     return user
 
 
-@pytest.mark.parametrize("status,is_active,email", [
-    ("pending", True, "pending_membership@example.com"),
-    (None, False, "inactive_user@example.com"),
-    (None, True, ""),
-])
+@pytest.mark.parametrize(
+    "status,is_active,email",
+    [
+        ("pending", True, "pending_membership@example.com"),
+        (None, False, "inactive_user@example.com"),
+        (None, True, ""),
+    ],
+)
 def test_low_credits_reminder_skips_invalid(app, status, is_active, email):
     """Test that reminders are skipped for invalid memberships/users."""
     _create_member(email, status=status or "active", is_active=is_active)
@@ -83,20 +86,6 @@ def test_low_credits_reminder_handles_negative_credits(app):
         assert mock_mail.send.called
         call_args = mock_mail.send.call_args[0][0]
         assert "-2" in call_args.html or "negative" in call_args.html.lower()
-
-
-@pytest.mark.parametrize("status,is_active,email", [
-    ("pending", True, "pending_membership@example.com"),
-    (None, False, "inactive_user@example.com"),
-    (None, True, ""),
-])
-def test_low_credits_reminder_skips_invalid(app, status, is_active, email):
-    """Test that reminders are skipped for invalid memberships/users."""
-    _create_member(email, status=status or "active", is_active=is_active)
-
-    with patch("app.scheduler.jobs.low_credits_reminder.mail") as mock_mail:
-        send_low_credits_reminder()
-        assert not mock_mail.send.called
 
 
 def test_low_credits_reminder_sends_to_multiple_members(app):

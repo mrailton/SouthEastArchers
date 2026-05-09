@@ -200,15 +200,18 @@ def test_weekends_constraint():
     assert not event.is_due(datetime(2024, 1, 19, 0, 0))  # Friday
 
 
-@pytest.mark.parametrize("day_method,due_weekday,not_due_weekday", [
-    ("mondays", 0, 1),      # Monday due, Tuesday not
-    ("tuesdays", 1, 2),     # Tuesday due, Wednesday not
-    ("wednesdays", 2, 3),    # Wednesday due, Thursday not
-    ("thursdays", 3, 4),    # Thursday due, Friday not
-    ("fridays", 4, 5),      # Friday due, Saturday not
-    ("saturdays", 5, 0),   # Saturday due, Monday not
-    ("sundays", 6, 1),      # Sunday due, Tuesday not
-])
+@pytest.mark.parametrize(
+    "day_method,due_weekday,not_due_weekday",
+    [
+        ("mondays", 0, 1),  # Monday due, Tuesday not
+        ("tuesdays", 1, 2),  # Tuesday due, Wednesday not
+        ("wednesdays", 2, 3),  # Wednesday due, Thursday not
+        ("thursdays", 3, 4),  # Thursday due, Friday not
+        ("fridays", 4, 5),  # Friday due, Saturday not
+        ("saturdays", 5, 0),  # Saturday due, Monday not
+        ("sundays", 6, 1),  # Sunday due, Tuesday not
+    ],
+)
 def test_day_constraint(day_method, due_weekday, not_due_weekday):
     """Test day-of-week constraints for the scheduler."""
     from datetime import timedelta

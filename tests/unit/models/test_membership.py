@@ -19,16 +19,19 @@ def test_credits_remaining_shows_negative(test_user):
     assert test_user.membership.credits_remaining() == -5
 
 
-@pytest.mark.parametrize("initial,purchased,allow_negative,expected_result", [
-    (2, 5, False, True),
-    (0, 5, False, True),
-    (0, 0, False, False),
-    (None, 3, False, True),
-    (0, None, False, False),  # None is treated as 0, no credits available
-    (None, None, False, False),
-    (0, 0, True, True),
-    (None, None, True, True),
-])
+@pytest.mark.parametrize(
+    "initial,purchased,allow_negative,expected_result",
+    [
+        (2, 5, False, True),
+        (0, 5, False, True),
+        (0, 0, False, False),
+        (None, 3, False, True),
+        (0, None, False, False),  # None is treated as 0, no credits available
+        (None, None, False, False),
+        (0, 0, True, True),
+        (None, None, True, True),
+    ],
+)
 def test_use_credit_success_and_failure(test_user, initial, purchased, allow_negative, expected_result):
     """Test use_credit success/failure with various credit states."""
     m = test_user.membership
@@ -40,12 +43,15 @@ def test_use_credit_success_and_failure(test_user, initial, purchased, allow_neg
     assert result is expected_result
 
 
-@pytest.mark.parametrize("initial,purchased,allow_negative,expected_initial,expected_purchased", [
-    (2, 5, False, 1, 5),
-    (0, 5, False, 0, 4),
-    (0, 0, True, -1, 0),
-    (0, 0, False, 0, 0),
-])
+@pytest.mark.parametrize(
+    "initial,purchased,allow_negative,expected_initial,expected_purchased",
+    [
+        (2, 5, False, 1, 5),
+        (0, 5, False, 0, 4),
+        (0, 0, True, -1, 0),
+        (0, 0, False, 0, 0),
+    ],
+)
 def test_use_credit_deducts_correct_source(test_user, initial, purchased, allow_negative, expected_initial, expected_purchased):
     """Test that credits are deducted from the correct source (initial first, then purchased)."""
     m = test_user.membership
@@ -73,10 +79,13 @@ def test_use_credit_falls_through_to_purchased(test_user):
     assert m.purchased_credits == 1
 
 
-@pytest.mark.parametrize("initial,purchased,allow_negative,expected_initial", [
-    (0, 0, True, -2),
-    (-3, 0, True, -5),
-])
+@pytest.mark.parametrize(
+    "initial,purchased,allow_negative,expected_initial",
+    [
+        (0, 0, True, -2),
+        (-3, 0, True, -5),
+    ],
+)
 def test_use_credit_negative_balance(test_user, initial, purchased, allow_negative, expected_initial):
     """Test that allow_negative allows going into negative balance."""
     m = test_user.membership
@@ -100,12 +109,15 @@ def test_use_credit_with_allow_negative_inactive_membership(test_user):
     assert result is False
 
 
-@pytest.mark.parametrize("initial,purchased,status,expiry_date,allow_negative,expected_result", [
-    (0, 0, "pending", date.today() + timedelta(days=30), True, False),
-    (0, 0, "active", date.today() - timedelta(days=1), True, False),
-    (0, 0, "active", date.today(), True, True),
-    (5, 0, "pending", date.today() + timedelta(days=30), False, True),
-])
+@pytest.mark.parametrize(
+    "initial,purchased,status,expiry_date,allow_negative,expected_result",
+    [
+        (0, 0, "pending", date.today() + timedelta(days=30), True, False),
+        (0, 0, "active", date.today() - timedelta(days=1), True, False),
+        (0, 0, "active", date.today(), True, True),
+        (5, 0, "pending", date.today() + timedelta(days=30), False, True),
+    ],
+)
 def test_use_credit_membership_status(test_user, initial, purchased, status, expiry_date, allow_negative, expected_result):
     """Test use_credit behavior based on membership status."""
     m = test_user.membership

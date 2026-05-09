@@ -75,15 +75,18 @@ def test_handler_exception_is_caught(app):
         user_registered.send(user_id=1)
 
 
-@pytest.mark.parametrize("signal,method_path,send_kwargs", [
-    (user_registered, "app.services.mail_service.MailService.send_new_member_notification", {"user_id": 1}),
-    (user_activated, "app.services.mail_service.MailService.send_welcome_email", {"user_id": 1}),
-    (payment_completed, "app.services.mail_service.MailService.send_payment_receipt", {"user_id": 1, "payment_id": 99, "payment_type": "membership"}),
-    (credit_purchased, "app.services.mail_service.MailService.send_credit_purchase_receipt", {"user_id": 1, "payment_id": 55, "quantity": 5}),
-    (cash_payment_submitted, "app.services.mail_service.MailService.send_cash_payment_pending_email", {"user_id": 1, "payment_id": 20}),
-    (password_reset_requested, "app.services.mail_service.MailService.send_password_reset", {"user_id": 1, "token": "abc123"}),
-    (membership_activated, "app.services.mail_service.MailService.send_payment_receipt", {"user_id": 1, "payment_id": 77}),
-])
+@pytest.mark.parametrize(
+    "signal,method_path,send_kwargs",
+    [
+        (user_registered, "app.services.mail_service.MailService.send_new_member_notification", {"user_id": 1}),
+        (user_activated, "app.services.mail_service.MailService.send_welcome_email", {"user_id": 1}),
+        (payment_completed, "app.services.mail_service.MailService.send_payment_receipt", {"user_id": 1, "payment_id": 99, "payment_type": "membership"}),
+        (credit_purchased, "app.services.mail_service.MailService.send_credit_purchase_receipt", {"user_id": 1, "payment_id": 55, "quantity": 5}),
+        (cash_payment_submitted, "app.services.mail_service.MailService.send_cash_payment_pending_email", {"user_id": 1, "payment_id": 20}),
+        (password_reset_requested, "app.services.mail_service.MailService.send_password_reset", {"user_id": 1, "token": "abc123"}),
+        (membership_activated, "app.services.mail_service.MailService.send_payment_receipt", {"user_id": 1, "payment_id": 77}),
+    ],
+)
 def test_handler_exception_is_logged(app, caplog, signal, method_path, send_kwargs):
     """Handler exceptions are caught and logged."""
     with patch(method_path, side_effect=Exception("boom")):
@@ -122,26 +125,81 @@ def test_record_payment_financial_transactions_unsupported_processor(app):
     _record_payment_financial_transactions(payment_id=payment.id, payment_type="membership")
 
 
-@pytest.mark.parametrize("signal,payment_processor,payment_amount,description,created_by_id,external_id,record_method,record_args", [
-    (payment_completed, "sumup", 10000, "Annual membership", 1, "txn_123", "app.services.finance_service.FinanceService.record_sumup_payment_transactions", {"payment_amount_cents": 10000, "payment_type": "membership", "description": "Annual membership", "created_by_id": 1, "receipt_reference": "txn_123"}),
-    (payment_completed, "cash", 10000, "Annual membership (Cash)", 2, None, "app.services.finance_service.FinanceService.record_cash_payment_transaction", {"payment_amount_cents": 10000, "payment_type": "membership", "description": "Annual membership (Cash)", "created_by_id": 2}),
-    (credit_purchased, "sumup", 500, "1 shooting credit", 3, "txn_456", "app.services.finance_service.FinanceService.record_sumup_payment_transactions", {"payment_amount_cents": 500, "payment_type": "credits", "description": "1 shooting credit", "created_by_id": 3, "receipt_reference": "txn_456"}),
-    (credit_purchased, "cash", 500, "1 shooting credit (Cash)", 4, None, "app.services.finance_service.FinanceService.record_cash_payment_transaction", {"payment_amount_cents": 500, "payment_type": "credits", "description": "1 shooting credit (Cash)", "created_by_id": 4}),
-])
-def test_payment_signal_records_financial_transactions(app, signal, payment_processor, payment_amount, description, created_by_id, external_id, record_method, record_args):
+@pytest.mark.parametrize(
+    "signal,payment_processor,payment_amount,description,created_by_id,external_id,record_method,record_args",
+    [
+        (
+            payment_completed,
+            "sumup",
+            10000,
+            "Annual membership",
+            1,
+            "txn_123",
+            "app.services.finance_service.FinanceService.record_sumup_payment_transactions",
+            {
+                "payment_amount_cents": 10000,
+                "payment_type": "membership",
+                "description": "Annual membership",
+                "created_by_id": 1,
+                "receipt_reference": "txn_123",
+            },
+        ),
+        (
+            payment_completed,
+            "cash",
+            10000,
+            "Annual membership (Cash)",
+            2,
+            None,
+            "app.services.finance_service.FinanceService.record_cash_payment_transaction",
+            {"payment_amount_cents": 10000, "payment_type": "membership", "description": "Annual membership (Cash)", "created_by_id": 2},
+        ),
+        (
+            credit_purchased,
+            "sumup",
+            500,
+            "1 shooting credit",
+            3,
+            "txn_456",
+            "app.services.finance_service.FinanceService.record_sumup_payment_transactions",
+            {"payment_amount_cents": 500, "payment_type": "credits", "description": "1 shooting credit", "created_by_id": 3, "receipt_reference": "txn_456"},
+        ),
+        (
+            credit_purchased,
+            "cash",
+            500,
+            "1 shooting credit (Cash)",
+            4,
+            None,
+            "app.services.finance_service.FinanceService.record_cash_payment_transaction",
+            {"payment_amount_cents": 500, "payment_type": "credits", "description": "1 shooting credit (Cash)", "created_by_id": 4},
+        ),
+    ],
+)
+def test_payment_signal_records_financial_transactions(
+    app, signal, payment_processor, payment_amount, description, created_by_id, external_id, record_method, record_args
+):
     """payment_completed/credit_purchased signals create financial transactions."""
-    receipt_method = "app.services.mail_service.MailService.send_payment_receipt" if signal == payment_completed else "app.services.mail_service.MailService.send_credit_purchase_receipt"
+    receipt_method = (
+        "app.services.mail_service.MailService.send_payment_receipt"
+        if signal == payment_completed
+        else "app.services.mail_service.MailService.send_credit_purchase_receipt"
+    )
 
     with patch(receipt_method):
         with patch("app.repositories.PaymentRepository") as mock_repo:
             with patch(record_method) as mock_record:
-                mock_payment = type("Payment", (), {
-                    "payment_processor": payment_processor,
-                    "amount_cents": payment_amount,
-                    "description": description,
-                    "user_id": created_by_id,
-                    "external_transaction_id": external_id,
-                })()
+                mock_payment = type(
+                    "Payment",
+                    (),
+                    {
+                        "payment_processor": payment_processor,
+                        "amount_cents": payment_amount,
+                        "description": description,
+                        "user_id": created_by_id,
+                        "external_transaction_id": external_id,
+                    },
+                )()
                 mock_repo.get_by_id.return_value = mock_payment
                 mock_record.return_value = (True, None)
 

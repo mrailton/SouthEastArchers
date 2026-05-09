@@ -2,7 +2,7 @@ from collections.abc import Callable, Iterable
 from functools import wraps
 from typing import Any, TypeVar
 
-from flask import Response, abort, flash, redirect, url_for
+from flask import Response, abort, flash, redirect, request, url_for
 from flask_login import current_user
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -16,7 +16,7 @@ def permission_required(*permissions: str) -> Callable[[F], F]:
         def wrapped(*args: Any, **kwargs: Any) -> Response | Any:
             if not current_user.is_authenticated:
                 flash("Please log in first.", "warning")
-                return redirect(url_for("auth.login"))
+                return redirect(url_for("auth.login", next=request.path))
 
             missing = [perm for perm in permissions if not getattr(current_user, "has_permission", lambda _p: False)(perm)]
             if missing:
@@ -40,7 +40,7 @@ def any_permission_required(permissions: Iterable[str]) -> Callable[[F], F]:
         def wrapped(*args: Any, **kwargs: Any) -> Response | Any:
             if not current_user.is_authenticated:
                 flash("Please log in first.", "warning")
-                return redirect(url_for("auth.login"))
+                return redirect(url_for("auth.login", next=request.path))
 
             has_perm = getattr(current_user, "has_any_permission", lambda *args: False)(*perms)
             if not has_perm:

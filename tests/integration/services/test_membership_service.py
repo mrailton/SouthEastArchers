@@ -180,6 +180,35 @@ def test_deactivate_user_without_membership(app):
     assert "No membership found" in result.message
 
 
+# Create membership tests
+def test_create_membership_for_user_without(app):
+    """Test creating membership for user who doesn't have one"""
+    user = User(name="New Membership", email="newmem@example.com")
+    user.set_password("password123")
+    db.session.add(user)
+    db.session.commit()
+
+    assert user.membership is None
+
+    result = MembershipService.create_membership(user)
+
+    assert result.success is True
+    assert "created successfully" in result.message.lower() or "created" in result.message.lower()
+    assert user.membership is not None
+    assert user.membership.status == "active"
+    assert user.membership.initial_credits > 0
+
+
+def test_create_membership_for_user_with_existing(app, test_user):
+    """Test creating membership when user already has one fails"""
+    assert test_user.membership is not None
+
+    result = MembershipService.create_membership(test_user)
+
+    assert result.success is False
+    assert "already has a membership" in result.message
+
+
 # Get expired memberships tests
 def test_get_expired_memberships(app):
     """Test getting expired but still active-status memberships"""

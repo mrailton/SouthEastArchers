@@ -52,6 +52,9 @@ class Config:
     SUMUP_MERCHANT_CODE = os.environ.get("SUMUP_MERCHANT_CODE")
     SUMUP_API_URL = "https://api.sumup.com"
 
+    RECAPTCHA_PUBLIC_KEY = os.environ.get("RECAPTCHA_PUBLIC_KEY")
+    RECAPTCHA_PRIVATE_KEY = os.environ.get("RECAPTCHA_PRIVATE_KEY")
+
 
 class DevelopmentConfig(Config):
     """Development configuration"""

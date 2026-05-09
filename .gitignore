@@ -60,3 +60,4 @@ resources/static
 
 # Node modules
 node_modules/
+*:Zone.Identifier

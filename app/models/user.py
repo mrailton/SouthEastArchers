@@ -1,32 +1,43 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from flask import current_app
 from flask_login import UserMixin
 from itsdangerous import URLSafeTimedSerializer
+from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app import bcrypt, db
 from app.utils.datetime_utils import utc_now
+
+if TYPE_CHECKING:
+    from app.models.credit import Credit
+    from app.models.membership import Membership
+    from app.models.payment import Payment
+    from app.models.rbac import Role
+    from app.models.shoot import Shoot
 
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    phone = db.Column(db.String(20), nullable=True)
-    password_hash = db.Column(db.String(255), nullable=False)
-    qualification = db.Column(db.String(255), nullable=False, default="None")
-    qualification_detail = db.Column(db.String(255), nullable=True)
-    is_active = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=utc_now)
-    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False, index=True)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    qualification: Mapped[str] = mapped_column(String(255), nullable=False, default="None")
+    qualification_detail: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[DateTime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
-    membership = db.relationship("Membership", backref="user", uselist=False, cascade="all, delete-orphan")
-    credits = db.relationship("Credit", backref="user", foreign_keys="Credit.user_id", cascade="all, delete-orphan")
-    shoots = db.relationship("Shoot", secondary="user_shoots", backref="users")
-    payments = db.relationship("Payment", backref="user", cascade="all, delete-orphan")
-    roles = db.relationship("Role", secondary="user_roles", back_populates="users")
+    membership: Mapped[Membership | None] = relationship("Membership", backref="user", uselist=False, cascade="all, delete-orphan")
+    credits: Mapped[list[Credit]] = relationship("Credit", backref="user", foreign_keys="Credit.user_id", cascade="all, delete-orphan")
+    shoots: Mapped[list[Shoot]] = relationship("Shoot", secondary="user_shoots", backref="users")
+    payments: Mapped[list[Payment]] = relationship("Payment", backref="user", cascade="all, delete-orphan")
+    roles: Mapped[list[Role]] = relationship("Role", secondary="user_roles", back_populates="users")
 
     @property
     def has_active_membership(self) -> bool:

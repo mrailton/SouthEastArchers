@@ -16,7 +16,7 @@ export default defineConfig({
       input: {
         site: resolve(__dirname, 'resources/assets/js/site.js'),
         admin: resolve(__dirname, 'resources/assets/js/admin.js'),
-        logo: resolve(__dirname, 'resources/assets/images/logo.jpeg'),
+        logo: resolve(__dirname, 'resources/assets/images/logo.png'),
       },
       output: {
         entryFileNames: 'js/[name].min.js',

@@ -104,15 +104,16 @@
 
             <!-- Conditional detail field: single input, label/placeholder driven by Alpine -->
             <div x-show="qualification !== 'none'" x-cloak class="mt-4">
-                <label class="block text-gray-700 font-bold mb-2">
+                <label for="qualification_detail" class="block text-gray-700 font-bold mb-2">
                     <span x-show="qualification === 'beginner'">Where did you complete your beginners course? *</span>
                     <span x-show="qualification === 'ai'">Archery Ireland Membership Number *</span>
                     <span x-show="qualification === 'ifaf'">IFAF Membership Number *</span>
                 </label>
-                <input class="w-full border border-gray-300 rounded px-3 py-2"
-                       type="text"
+                <input type="text"
+                       id="qualification_detail"
                        name="qualification_detail"
                        x-model="qualificationDetail"
+                       class="w-full border border-gray-300 rounded px-3 py-2"
                        :placeholder="qualification === 'beginner' ? 'e.g. Dublin Archery Club, 2024' : qualification === 'ai' ? 'e.g. 12345' : 'e.g. 67890'"
                        :required="qualification !== 'none'">
                 <p class="text-sm text-gray-500 mt-1">
@@ -121,6 +122,10 @@
                     <span x-show="qualification === 'ifaf'">Please enter your Irish Field Archery Federation membership number.</span>
                 </p>
             </div>
+        </div>
+
+        <div class="flex justify-center">
+            {{ form.recaptcha }}
         </div>
         
         <button type="submit" class="w-full btn-secondary py-3">
@@ -134,5 +139,6 @@
             <a href="{{ url_for('auth.login') }}" class="link-primary">Login here</a>
         </p>
     </div>
+</div>
 </div>
 {% endblock %}

@@ -9,12 +9,7 @@ def get_dashboard_stats() -> ServiceResult[dict]:
     count_pending_users = UserRepository.count_pending_users()
 
     pending_cash_payments = PaymentRepository.count_pending_cash()
-    pending_payments_list = PaymentRepository.get_pending_cash_limited(limit=5)
-
-    pending_payments_data = []
-    for payment in pending_payments_list:
-        user = UserRepository.get_by_id(payment.user_id)
-        pending_payments_data.append({"payment": payment, "user": user})
+    pending_payments_data = PaymentRepository.get_pending_cash_limited_with_users(limit=5)
 
     return ServiceResult.ok(
         data={

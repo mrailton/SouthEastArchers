@@ -4,7 +4,7 @@ from datetime import date
 from app.enums import PaymentType
 from app.events import membership_activated
 from app.models import Membership, User
-from app.repositories import MembershipRepository, PaymentRepository
+from app.repositories import BaseRepository, MembershipRepository, PaymentRepository
 from app.services import payments, settings
 from app.services.result import ServiceResult
 
@@ -39,13 +39,12 @@ def activate_membership(user: User) -> ServiceResult[None]:
     if user.membership.status == "active":
         return ServiceResult.fail("Membership is already active.")
 
-    pending_payment = PaymentRepository.get_pending_cash_for_user(user.id, PaymentType.MEMBERSHIP)
-    if pending_payment:
-        pending_payment.mark_completed(processor="cash")
-
-    user.membership.activate()
     try:
-        MembershipRepository.save()
+        with BaseRepository.transaction():
+            pending_payment = PaymentRepository.get_pending_cash_for_user(user.id, PaymentType.MEMBERSHIP)
+            if pending_payment:
+                pending_payment.mark_completed(processor="cash")
+            user.membership.activate()
         return ServiceResult.ok(message="Membership activated successfully.")
     except Exception as exc:
         return ServiceResult.fail(f"Error activating membership: {exc}")

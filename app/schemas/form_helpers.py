@@ -6,11 +6,9 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
-from fastapi import Request
 from markupsafe import Markup, escape
 from pydantic import BaseModel, ValidationError
 
-from app.templating import flash
 from app.utils.formdata import MultiDict
 
 
@@ -26,11 +24,6 @@ def multidict_to_dict(raw: MultiDict | Mapping[str, Any]) -> dict[str, Any]:
 
 def single_field_errors(errors: dict[str, list[str]]) -> dict[str, str]:
     return {field: messages[0] for field, messages in errors.items() if messages}
-
-
-def flash_field_errors(request: Request, errors: dict[str, list[str]]) -> None:
-    for message in single_field_errors(errors).values():
-        flash(request, "error", message)
 
 
 def pydantic_errors(exc: ValidationError) -> dict[str, list[str]]:

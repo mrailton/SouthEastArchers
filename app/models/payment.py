@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Model
 from app.enums import PaymentMethod, PaymentType
@@ -36,6 +40,8 @@ class Payment(Model):
     external_transaction_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+
+    user: Mapped[User] = relationship("User", back_populates="payments")
 
     def mark_completed(self, transaction_id: str | None = None, processor: str | None = None) -> None:
         self.status = "completed"

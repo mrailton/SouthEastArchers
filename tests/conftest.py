@@ -110,6 +110,19 @@ def app(app_instance):
     connection.close()
 
 
+@pytest.fixture(autouse=True)
+def _reset_request_scoped_state():
+    """Clear deferred events and rate-limit buckets between tests."""
+    from app.events.background import take_deferred_handlers
+    from app.utils import rate_limit
+
+    take_deferred_handlers()
+    rate_limit._buckets.clear()
+    yield
+    take_deferred_handlers()
+    rate_limit._buckets.clear()
+
+
 def pytest_collection_modifyitems(items):
     for item in items:
         path = str(item.fspath)

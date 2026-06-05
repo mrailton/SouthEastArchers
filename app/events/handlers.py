@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 from app.enums import PaymentType
@@ -13,6 +14,7 @@ from app.events import (
     user_activated,
     user_registered,
 )
+from app.events.background import defer_handler
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +149,32 @@ def _record_payment_financial_transactions(payment_id: int, payment_type: str) -
         logger.error(f"Failed to record financial transactions for payment {payment_id}: {e}")
 
 
+def _make_deferred_receiver(handler) -> Callable[..., None]:
+    def receiver(sender: Any, **kwargs: Any) -> None:
+        from app.core.config import get_settings
+        from app.events.background import run_handler_safe
+
+        if get_settings().is_testing:
+            run_handler_safe(handler, sender, **kwargs)
+        else:
+            defer_handler(handler, sender, **kwargs)
+
+    receiver.__name__ = f"deferred_{handler.__name__}"
+    return receiver
+
+
+# Strong references prevent blinker from garbage-collecting weak receiver refs.
+_RECEIVERS: list[tuple[Any, Callable[..., None]]] = [
+    (user_registered, _make_deferred_receiver(_on_user_registered)),
+    (user_activated, _make_deferred_receiver(_on_user_activated)),
+    (payment_completed, _make_deferred_receiver(_on_payment_completed)),
+    (credit_purchased, _make_deferred_receiver(_on_credit_purchased)),
+    (cash_payment_submitted, _make_deferred_receiver(_on_cash_payment_submitted)),
+    (password_reset_requested, _make_deferred_receiver(_on_password_reset_requested)),
+    (membership_activated, _make_deferred_receiver(_on_membership_activated)),
+]
+
+
 # ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
@@ -164,10 +192,5 @@ def connect_handlers() -> None:
         return
     _handlers_connected = True
 
-    user_registered.connect(_on_user_registered)
-    user_activated.connect(_on_user_activated)
-    payment_completed.connect(_on_payment_completed)
-    credit_purchased.connect(_on_credit_purchased)
-    cash_payment_submitted.connect(_on_cash_payment_submitted)
-    password_reset_requested.connect(_on_password_reset_requested)
-    membership_activated.connect(_on_membership_activated)
+    for signal, receiver in _RECEIVERS:
+        signal.connect(receiver)

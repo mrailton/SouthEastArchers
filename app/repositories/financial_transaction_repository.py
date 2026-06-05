@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from datetime import date
 
-from app.db import Pagination, db, paginate_query
+from sqlalchemy import select
+
+from app.db import Pagination, db, paginate
 from app.models import FinancialTransaction
 from app.repositories.base import BaseRepository
 
@@ -16,12 +18,11 @@ class FinancialTransactionRepository(BaseRepository):
 
     @staticmethod
     def get_all_paginated(page: int = 1, per_page: int = 20) -> Pagination:
-        """Return a paginated query ordered by date descending, then created_at descending."""
-        return paginate_query(
-            FinancialTransaction.query.order_by(FinancialTransaction.date.desc(), FinancialTransaction.created_at.desc()),
-            page=page,
-            per_page=per_page,
+        stmt = select(FinancialTransaction).order_by(
+            FinancialTransaction.date.desc(),
+            FinancialTransaction.created_at.desc(),
         )
+        return paginate(db.session, stmt, page=page, per_page=per_page)
 
     @staticmethod
     def get_by_date_range(
@@ -29,13 +30,14 @@ class FinancialTransactionRepository(BaseRepository):
         end_date: date,
         txn_type: str | None = None,
     ) -> list[FinancialTransaction]:
-        query = FinancialTransaction.query.filter(
+        stmt = select(FinancialTransaction).where(
             FinancialTransaction.date >= start_date,
             FinancialTransaction.date <= end_date,
         )
         if txn_type:
-            query = query.filter_by(type=txn_type)
-        return query.order_by(FinancialTransaction.date.desc(), FinancialTransaction.created_at.desc()).all()
+            stmt = stmt.where(FinancialTransaction.type == txn_type)
+        stmt = stmt.order_by(FinancialTransaction.date.desc(), FinancialTransaction.created_at.desc())
+        return list(db.session.scalars(stmt).unique().all())
 
     @staticmethod
     def add(transaction: FinancialTransaction) -> None:

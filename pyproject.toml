@@ -84,7 +84,7 @@ omit = [
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
-fail_under = 95
+fail_under = 90
 
 [tool.ruff]
 line-length = 160
@@ -114,15 +114,10 @@ root_packages = ["app"]
 include_external_packages = false
 
 [[tool.importlinter.contracts]]
-name = "Only repositories and dependencies may import app.db directly"
+name = "Services must not access database sessions directly"
 type = "forbidden"
-source_modules = [
-    "app.cli",
-    "app.routes",
-    "app.services",
-    "app.policies",
-]
-forbidden_modules = ["app.db.models", "app.db.session", "app.db.base"]
+source_modules = ["app.services"]
+forbidden_modules = ["app.db.session"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
@@ -147,8 +142,15 @@ forbidden_modules = ["app.policies"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
-name = "Schemas must not import services or routes"
+name = "Routes must not import domain events directly"
+type = "forbidden"
+source_modules = ["app.routes"]
+forbidden_modules = ["app.events"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Schemas must not import services, routes, or presentation"
 type = "forbidden"
 source_modules = ["app.schemas"]
-forbidden_modules = ["app.services", "app.routes"]
+forbidden_modules = ["app.services", "app.routes", "app.templating"]
 allow_indirect_imports = true

@@ -76,6 +76,13 @@ def flash(request: Request, category: str, message: str) -> None:
     request.session["_flashes"] = flashes
 
 
+def flash_field_errors(request: Request, errors: dict[str, list[str]]) -> None:
+    from app.schemas.form_helpers import single_field_errors
+
+    for message in single_field_errors(errors).values():
+        flash(request, "error", message)
+
+
 def _feature_flags() -> dict[str, bool]:
     return {
         "news_enabled": app_settings.get("news_enabled"),

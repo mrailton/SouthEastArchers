@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import quote
@@ -46,6 +47,21 @@ if STATIC_DIR.is_dir():
 
 setup_template_globals()
 app.include_router(api_router)
+
+
+@app.middleware("http")
+async def run_deferred_event_handlers(request: Request, call_next):
+    from app.events.background import run_handler_safe, take_deferred_handlers
+
+    response = await call_next(request)
+    deferred = take_deferred_handlers()
+    if settings.is_testing:
+        for handler, args, kwargs in deferred:
+            run_handler_safe(handler, *args, **kwargs)
+    else:
+        for handler, args, kwargs in deferred:
+            asyncio.create_task(asyncio.to_thread(run_handler_safe, handler, *args, **kwargs))
+    return response
 
 
 @app.exception_handler(LoginRequired)

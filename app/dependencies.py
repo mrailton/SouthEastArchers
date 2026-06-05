@@ -4,14 +4,10 @@ import secrets
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
-from sqlalchemy.orm import Session
 from starlette.datastructures import UploadFile
 
-from app.core.database import get_db
 from app.exceptions import LoginRequired
 from app.models.user import User
-
-DbSession = Annotated[Session, Depends(get_db)]
 
 
 async def get_session_user(request: Request) -> User | None:
@@ -60,5 +56,5 @@ def verify_csrf(request: Request, token: str | UploadFile | None) -> None:
     if token is not None and not isinstance(token, str):
         token = None
     session_token = request.session.get("csrf_token")
-    if not session_token or not token or token != session_token:
+    if not session_token or not token or not secrets.compare_digest(session_token, token):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token mismatch")

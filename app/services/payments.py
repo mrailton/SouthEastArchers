@@ -10,7 +10,7 @@ from app.models.credit import Credit
 from app.models.membership import Membership
 from app.models.payment import Payment
 from app.models.user import User
-from app.repositories import CreditRepository, MembershipRepository, PaymentRepository, UserRepository
+from app.repositories import BaseRepository, CreditRepository, MembershipRepository, PaymentRepository, UserRepository
 from app.services import settings
 from app.services.result import ServiceResult
 from app.services.sumup import SumUpService
@@ -183,8 +183,7 @@ def validate_credit_quantity(quantity: int) -> ServiceResult[int]:
 
 
 def get_pending_cash_payment_rows() -> list[dict[str, Any]]:
-    payments = PaymentRepository.get_pending_cash()
-    return [{"payment": payment, "user": UserRepository.get_by_id(payment.user_id)} for payment in payments]
+    return PaymentRepository.get_pending_cash_with_users()
 
 
 def get_completed_membership_payment(user_id: int) -> Payment | None:
@@ -203,32 +202,32 @@ def approve_cash_payment(payment_id: int) -> ServiceResult[dict[str, Any]]:
         return ServiceResult.fail("User not found.")
 
     try:
-        payment.mark_completed(processor="cash")
-        if payment.payment_type == PaymentType.MEMBERSHIP:
-            if member.membership:
-                if member.membership.status != "active":
-                    member.membership.activate()
+        with BaseRepository.transaction():
+            payment.mark_completed(processor="cash")
+            if payment.payment_type == PaymentType.MEMBERSHIP:
+                if member.membership:
+                    if member.membership.status != "active":
+                        member.membership.activate()
+                    else:
+                        expiry_date = settings.calculate_membership_expiry(date.today()).date()
+                        member.membership.renew(expiry_date=expiry_date)
                 else:
                     expiry_date = settings.calculate_membership_expiry(date.today()).date()
-                    member.membership.renew(expiry_date=expiry_date)
-            else:
-                expiry_date = settings.calculate_membership_expiry(date.today()).date()
-                membership = Membership(
-                    user_id=member.id,
-                    start_date=date.today(),
-                    expiry_date=expiry_date,
-                    initial_credits=settings.get("membership_shoots_included"),
-                    purchased_credits=0,
-                    status="active",
-                )
-                MembershipRepository.add(membership)
-        elif payment.payment_type == PaymentType.CREDITS:
-            quantity = _credit_quantity_from_description(payment.description)
-            if member.membership:
-                member.membership.add_credits(quantity)
-            CreditRepository.add(Credit(user_id=member.id, amount=quantity, payment_id=payment.id))
+                    membership = Membership(
+                        user_id=member.id,
+                        start_date=date.today(),
+                        expiry_date=expiry_date,
+                        initial_credits=settings.get("membership_shoots_included"),
+                        purchased_credits=0,
+                        status="active",
+                    )
+                    MembershipRepository.add(membership)
+            elif payment.payment_type == PaymentType.CREDITS:
+                quantity = _credit_quantity_from_description(payment.description)
+                if member.membership:
+                    member.membership.add_credits(quantity)
+                CreditRepository.add(Credit(user_id=member.id, amount=quantity, payment_id=payment.id))
 
-        PaymentRepository.save()
         _emit_payment_completed_events(payment, member)
         return ServiceResult.ok(data={"member_name": member.name}, message=f"Payment approved for {member.name}!")
     except Exception as exc:

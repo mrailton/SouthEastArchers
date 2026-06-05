@@ -51,6 +51,31 @@ class ProfileForm(CsrfForm):
     phone: str = ""
 
 
+class CreditsForm(CsrfForm):
+    quantity: int = 1
+
+    @field_validator("quantity", mode="before")
+    @classmethod
+    def coerce_quantity(cls, value: object) -> object:
+        if value is None or value == "":
+            return 1
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str):
+            try:
+                return int(value)
+            except ValueError as exc:
+                raise ValueError("Invalid quantity.") from exc
+        raise ValueError("Invalid quantity.")
+
+    @field_validator("quantity")
+    @classmethod
+    def validate_quantity(cls, value: int) -> int:
+        if value < 1 or value > 50:
+            raise ValueError("Quantity must be between 1 and 50.")
+        return value
+
+
 class ChangePasswordForm(CsrfForm):
     current_password: str
     new_password: str = Field(min_length=8)

@@ -196,6 +196,9 @@ def test_handle_credit_purchase_with_quantity(mock_send_email, app, test_user):
     quantity = 10
 
     result = payment_processing.handle_credit_purchase(test_user.id, payment.id, quantity, "txn_credits_123")
+    from app.events.background import flush_deferred_handlers
+
+    flush_deferred_handlers()
 
     assert result.success is True
     assert "10 credits" in result.message
@@ -223,6 +226,9 @@ def test_handle_credit_purchase_email_failure(mock_send_email, app, test_user):
     quantity = 5
 
     result = payment_processing.handle_credit_purchase(test_user.id, payment.id, quantity, "txn_456")
+    from app.events.background import flush_deferred_handlers
+
+    flush_deferred_handlers()
 
     # Service should still succeed
     assert result.success is True
@@ -303,7 +309,9 @@ def test_initiate_cash_membership_payment_success(mock_send_email, app, test_use
     assert payment is not None
     assert payment.amount_cents == settings.get("annual_membership_cost")
 
-    # Verify email was sent
+    from app.events.background import flush_deferred_handlers
+
+    flush_deferred_handlers()
     mock_send_email.assert_called_once_with(test_user.id, payment.id)
 
 
@@ -332,7 +340,9 @@ def test_initiate_cash_credit_purchase_success(mock_send_email, app, test_user):
     assert payment.amount_cents == quantity * additional_shoot_cost
     assert f"{quantity} shooting credits" in payment.description
 
-    # Verify email was sent
+    from app.events.background import flush_deferred_handlers
+
+    flush_deferred_handlers()
     mock_send_email.assert_called_once_with(test_user.id, payment.id)
 
 

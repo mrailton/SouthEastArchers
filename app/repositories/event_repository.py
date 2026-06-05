@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from sqlalchemy import func, select
+
 from app.db import db
 from app.models import Event
 from app.repositories.base import BaseRepository
@@ -15,11 +17,13 @@ class EventRepository(BaseRepository):
 
     @staticmethod
     def get_all() -> list[Event]:
-        return Event.query.order_by(Event.start_date.desc()).all()
+        stmt = select(Event).order_by(Event.start_date.desc())
+        return list(db.session.scalars(stmt).unique().all())
 
     @staticmethod
     def get_upcoming_published() -> list[Event]:
-        return Event.query.filter_by(published=True).filter(Event.start_date >= utc_now()).order_by(Event.start_date).all()
+        stmt = select(Event).where(Event.published.is_(True), Event.start_date >= utc_now()).order_by(Event.start_date)
+        return list(db.session.scalars(stmt).unique().all())
 
     @staticmethod
     def add(event: Event) -> None:
@@ -27,4 +31,5 @@ class EventRepository(BaseRepository):
 
     @staticmethod
     def count_upcoming() -> int:
-        return Event.query.filter(Event.start_date > utc_now()).count()
+        stmt = select(func.count()).select_from(Event).where(Event.start_date > utc_now())
+        return db.session.scalar(stmt) or 0

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from app.db import Pagination, db, paginate_query
+from sqlalchemy import func, select
+
+from app.db import Pagination, db, paginate
 from app.models import Shoot
 from app.repositories.base import BaseRepository
 from app.utils.datetime_utils import utc_now
@@ -15,19 +17,23 @@ class ShootRepository(BaseRepository):
 
     @staticmethod
     def get_all() -> list[Shoot]:
-        return Shoot.query.order_by(Shoot.date.desc()).all()
+        stmt = select(Shoot).order_by(Shoot.date.desc())
+        return list(db.session.scalars(stmt).unique().all())
 
     @staticmethod
     def get_upcoming() -> list[Shoot]:
-        return Shoot.query.filter(Shoot.date > utc_now()).order_by(Shoot.date.desc()).all()
+        stmt = select(Shoot).where(Shoot.date > utc_now()).order_by(Shoot.date.desc())
+        return list(db.session.scalars(stmt).unique().all())
 
     @staticmethod
     def count_upcoming() -> int:
-        return Shoot.query.filter(Shoot.date > utc_now()).count()
+        stmt = select(func.count()).select_from(Shoot).where(Shoot.date > utc_now())
+        return db.session.scalar(stmt) or 0
 
     @staticmethod
     def get_all_paginated(page: int = 1, per_page: int = 10) -> Pagination:
-        return paginate_query(Shoot.query.order_by(Shoot.date.desc()), page=page, per_page=per_page)
+        stmt = select(Shoot).order_by(Shoot.date.desc())
+        return paginate(db.session, stmt, page=page, per_page=per_page)
 
     @staticmethod
     def add(shoot: Shoot) -> None:

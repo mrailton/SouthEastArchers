@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from sqlalchemy import select
+
 from app.db import db
 from app.models.application_settings import Setting
 from app.repositories.base import BaseRepository
@@ -10,13 +12,11 @@ from app.repositories.base import BaseRepository
 class SettingsRepository(BaseRepository):
     @staticmethod
     def get_value(key: str) -> str | None:
-        """Return the raw string value for *key*, or ``None`` if not stored."""
         row = db.session.get(Setting, key)
         return row.value if row else None
 
     @staticmethod
     def set_value(key: str, value: str | None) -> None:
-        """Upsert a single setting (does **not** commit)."""
         row = db.session.get(Setting, key)
         if row:
             row.value = value
@@ -25,6 +25,5 @@ class SettingsRepository(BaseRepository):
 
     @staticmethod
     def get_all() -> dict[str, str | None]:
-        """Return every stored setting as ``{key: raw_value}``."""
-        rows = Setting.query.all()
-        return {r.key: r.value for r in rows}
+        rows = db.session.scalars(select(Setting)).unique().all()
+        return {row.key: row.value for row in rows}

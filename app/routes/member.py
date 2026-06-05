@@ -2,10 +2,10 @@ from fastapi import APIRouter, Query, Request
 from fastapi.responses import RedirectResponse
 
 from app.dependencies import CurrentUser, verify_csrf
-from app.schemas.form_helpers import flash_field_errors, parse_form, single_field_errors
+from app.schemas.form_helpers import parse_form, single_field_errors
 from app.schemas.forms import ChangePasswordForm, ProfileForm
 from app.services import credits, users
-from app.templating import flash, render
+from app.templating import flash, flash_field_errors, render
 from app.utils.formdata import request_form_data
 
 router = APIRouter(prefix="/member", tags=["member"])
@@ -32,7 +32,7 @@ async def dashboard(
 
 @router.get("/shoots", name="member.shoots")
 async def shoots(request: Request, user: CurrentUser):
-    user_shoots = sorted(user.shoots, key=lambda shoot: shoot.date, reverse=True)
+    user_shoots = users.get_user_shoots(user)
     return render(request, "member/shoots.html", {"shoots": user_shoots}, user=user)
 
 

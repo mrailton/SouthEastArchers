@@ -65,7 +65,7 @@ def paginate[T](session: Session, stmt: Select[tuple[T]], *, page: int = 1, per_
     page = max(page, 1)
     per_page = max(per_page, 1)
     total = session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
-    items = list(session.scalars(stmt.offset((page - 1) * per_page).limit(per_page)).all())
+    items = list(session.scalars(stmt.offset((page - 1) * per_page).limit(per_page)).unique().all())
     return Pagination(items=items, page=page, per_page=per_page, total=total)
 
 

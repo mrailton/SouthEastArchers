@@ -7,11 +7,11 @@ from itsdangerous import URLSafeTimedSerializer
 
 from app.core.config import get_settings
 from app.db import Pagination
-from app.events import user_activated
+from app.events import password_reset_requested, user_activated, user_registered
 from app.models.credit import Credit
 from app.models.membership import Membership
 from app.models.user import User
-from app.repositories import CreditRepository, MembershipRepository, RBACRepository, UserRepository
+from app.repositories import BaseRepository, CreditRepository, MembershipRepository, RBACRepository, UserRepository
 from app.services import settings
 from app.services.result import ServiceResult
 
@@ -56,12 +56,29 @@ def create_user(
     )
     user.set_password(password)
     try:
-        UserRepository.add(user)
-        UserRepository.save()
+        with BaseRepository.transaction():
+            UserRepository.add(user)
+        try:
+            user_registered.send(user_id=user.id)
+        except Exception:
+            logger.exception("Failed to dispatch user_registered event")
         return ServiceResult.ok(data=user)
     except Exception as exc:
         logger.error("Error creating user: %s", exc)
         return ServiceResult.fail("An error occurred during registration.")
+
+
+def request_password_reset(email: str) -> ServiceResult[None]:
+    """Generate a reset token and notify the user when the account exists."""
+    user = UserRepository.get_by_email(email)
+    if user:
+        token = generate_reset_token(user.email)
+        try:
+            password_reset_requested.send(user_id=user.id, token=token)
+        except Exception:
+            logger.exception("Failed to send password reset email to %s", user.email)
+            return ServiceResult.fail("An error occurred sending the email. Please try again later.")
+    return ServiceResult.ok()
 
 
 def generate_reset_token(email: str) -> str:
@@ -139,6 +156,10 @@ def authenticate(email: str, password: str) -> User | None:
     return None
 
 
+def get_user_shoots(user: User) -> list:
+    return sorted(user.shoots, key=lambda shoot: shoot.date, reverse=True)
+
+
 def get_user_payments_paginated(user_id: int, *, page: int = 1, per_page: int = 5) -> Pagination:
     from app.repositories import PaymentRepository
 
@@ -161,26 +182,26 @@ def create_member(
     user.set_password(password)
 
     try:
-        UserRepository.add(user)
-        UserRepository.flush()
+        with BaseRepository.transaction():
+            UserRepository.add(user)
+            UserRepository.flush()
 
-        if role_ids:
-            roles = RBACRepository.get_roles_by_ids(role_ids)
-            user.roles = roles  # type: ignore[assignment]
+            if role_ids:
+                roles = RBACRepository.get_roles_by_ids(role_ids)
+                user.roles = roles  # type: ignore[assignment]
 
-        if create_membership:
-            start = date.today()
-            membership = Membership(
-                user_id=user.id,
-                start_date=start,
-                expiry_date=settings.calculate_membership_expiry(start).date(),
-                initial_credits=20,
-                purchased_credits=0,
-                status="active",
-            )
-            MembershipRepository.add(membership)
+            if create_membership:
+                start = date.today()
+                membership = Membership(
+                    user_id=user.id,
+                    start_date=start,
+                    expiry_date=settings.calculate_membership_expiry(start).date(),
+                    initial_credits=settings.get("membership_shoots_included"),
+                    purchased_credits=0,
+                    status="active",
+                )
+                MembershipRepository.add(membership)
 
-        UserRepository.save()
         return ServiceResult.ok(data=user)
     except Exception as exc:
         logger.error("Error creating member: %s", exc)

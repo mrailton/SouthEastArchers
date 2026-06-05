@@ -58,8 +58,9 @@ def update_shoot(
     try:
         with BaseRepository.transaction():
             removed_ids = old_attendee_ids - new_attendee_ids
+            removed_users = UserRepository.get_by_ids_with_membership(list(removed_ids))
             for user_id in removed_ids:
-                user = UserRepository.get_by_id(user_id)
+                user = removed_users.get(user_id)
                 if user and user.membership:
                     user.membership.add_credits(1)
 
@@ -143,8 +144,9 @@ def get_active_members_with_credits() -> list[tuple[int, str]]:
 
 
 def _filter_shoot_attendees(attendee_ids: list[int], shoot: Shoot, warnings: list[Any]) -> None:
+    users_by_id = UserRepository.get_by_ids_with_membership(attendee_ids)
     for user_id in attendee_ids:
-        user = UserRepository.get_by_id(user_id)
+        user = users_by_id.get(user_id)
         if user and user.membership:
             if user.membership.use_credit(allow_negative=True):
                 shoot.users.append(user)

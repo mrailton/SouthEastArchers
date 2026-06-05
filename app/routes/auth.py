@@ -1,19 +1,15 @@
-import logging
-
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 
 from app.core.config import get_settings
 from app.dependencies import CurrentUser, require_guest, verify_csrf
-from app.events import password_reset_requested, user_registered
-from app.schemas.form_helpers import flash_field_errors, parse_form, single_field_errors
+from app.schemas.form_helpers import parse_form, single_field_errors
 from app.schemas.forms import ForgotPasswordForm, LoginForm, ResetPasswordForm, SignupForm
 from app.services import recaptcha as recaptcha_service
 from app.services import users
-from app.templating import flash, render
+from app.templating import flash, flash_field_errors, render
 from app.utils.formdata import request_form_data
-
-logger = logging.getLogger(__name__)
+from app.utils.rate_limit import check_rate_limit
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -28,6 +24,10 @@ async def login_store(
     request: Request,
     next_url: str | None = Query(None, alias="next"),
 ):
+    if check_rate_limit(request, "auth:login"):
+        flash(request, "error", "Too many login attempts. Please try again later.")
+        return render(request, "auth/login.html", status_code=429)
+
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     form, errors, _values = parse_form(LoginForm, form_data)
@@ -106,13 +106,6 @@ async def signup_store(request: Request):
             status_code=422,
         )
 
-    user = result.data
-    assert user is not None
-    try:
-        user_registered.send(user_id=user.id)
-    except Exception:
-        logger.exception("Failed to dispatch user_registered event")
-
     flash(
         request,
         "success",
@@ -135,6 +128,10 @@ async def forgot_password_page(request: Request):
 
 @router.post("/forgot-password", name="auth.forgot_password_post", dependencies=[Depends(require_guest)])
 async def forgot_password_store(request: Request):
+    if check_rate_limit(request, "auth:forgot-password"):
+        flash(request, "error", "Too many reset requests. Please try again later.")
+        return render(request, "auth/forgot_password.html", status_code=429)
+
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     form, errors, _values = parse_form(ForgotPasswordForm, form_data)
@@ -143,15 +140,10 @@ async def forgot_password_store(request: Request):
         return render(request, "auth/forgot_password.html", status_code=422)
 
     assert form is not None
-    user = users.get_user_by_email(str(form.email))
-    if user:
-        token = users.generate_reset_token(user.email)
-        try:
-            password_reset_requested.send(user_id=user.id, token=token)
-        except Exception:
-            logger.exception("Failed to send password reset email to %s", user.email)
-            flash(request, "error", "An error occurred sending the email. Please try again later.")
-            return render(request, "auth/forgot_password.html", status_code=422)
+    result = users.request_password_reset(str(form.email))
+    if not result.success:
+        flash(request, "error", result.message)
+        return render(request, "auth/forgot_password.html", status_code=422)
 
     flash(request, "info", "If an account exists with that email, you will receive a password reset link.")
     return RedirectResponse(url="/auth/login", status_code=303)

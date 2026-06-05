@@ -1,11 +1,9 @@
-from sqlalchemy import text
-
-from app.db import get_current_session
+from app.repositories.base import BaseRepository
 
 
 def check_database() -> bool:
     try:
-        get_current_session().execute(text("SELECT 1"))
+        BaseRepository.ping()
         return True
     except Exception:
         return False

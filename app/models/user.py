@@ -36,7 +36,7 @@ class User(Model):
     membership: Mapped[Membership | None] = relationship("Membership", back_populates="user", uselist=False, cascade="all, delete-orphan")
     credits: Mapped[list[Credit]] = relationship("Credit", backref="user", foreign_keys="Credit.user_id", cascade="all, delete-orphan")
     shoots: Mapped[list[Shoot]] = relationship("Shoot", secondary="user_shoots", back_populates="users")
-    payments: Mapped[list[Payment]] = relationship("Payment", backref="user", cascade="all, delete-orphan")
+    payments: Mapped[list[Payment]] = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
     roles: Mapped[list[Role]] = relationship("Role", secondary="user_roles", back_populates="users")
 
     @property

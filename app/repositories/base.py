@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Generator
 from contextlib import contextmanager
 
+from sqlalchemy import text
+
 from app.db import db
 
 
@@ -31,6 +33,10 @@ class BaseRepository:
     @staticmethod
     def flush() -> None:
         db.session.flush()
+
+    @staticmethod
+    def ping() -> None:
+        db.session.execute(text("SELECT 1"))
 
     @staticmethod
     def drop_all() -> None:

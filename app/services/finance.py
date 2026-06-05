@@ -6,7 +6,7 @@ from datetime import date
 from app.db import Pagination
 from app.enums import PaymentType
 from app.models import FinancialTransaction
-from app.repositories import FinancialTransactionRepository
+from app.repositories import BaseRepository, FinancialTransactionRepository
 from app.services import settings
 from app.services.result import ServiceResult
 
@@ -90,32 +90,37 @@ def record_sumup_payment_transactions(
     fee_amount_cents = int(round(payment_amount_cents * fee_pct / 100.0))
     category = "membership_fees" if payment_type == PaymentType.MEMBERSHIP else "shoot_fees"
 
-    result = create_transaction(
-        txn_type="income",
-        txn_date=today,
-        amount_cents=payment_amount_cents,
-        category=category,
-        description=description,
-        created_by_id=created_by_id,
-        source="SumUp",
-        receipt_reference=receipt_reference,
-    )
-    if not result.success:
-        return ServiceResult.fail(f"Error recording income: {result.message}")
+    try:
+        with BaseRepository.transaction():
+            income = add_transaction(
+                txn_type="income",
+                txn_date=today,
+                amount_cents=payment_amount_cents,
+                category=category,
+                description=description,
+                created_by_id=created_by_id,
+                source="SumUp",
+                receipt_reference=receipt_reference,
+            )
+            if not income.success:
+                raise RuntimeError(income.message)
 
-    result = create_transaction(
-        txn_type="expense",
-        txn_date=today,
-        amount_cents=fee_amount_cents,
-        category="payment_processing_fees",
-        description=f"SumUp fee ({fee_pct}%) on {description}",
-        created_by_id=created_by_id,
-        receipt_reference=receipt_reference,
-    )
-    if not result.success:
-        return ServiceResult.fail(f"Error recording SumUp fee: {result.message}")
-
-    return ServiceResult.ok()
+            expense = add_transaction(
+                txn_type="expense",
+                txn_date=today,
+                amount_cents=fee_amount_cents,
+                category="payment_processing_fees",
+                description=f"SumUp fee ({fee_pct}%) on {description}",
+                created_by_id=created_by_id,
+                receipt_reference=receipt_reference,
+            )
+            if not expense.success:
+                raise RuntimeError(expense.message)
+        return ServiceResult.ok()
+    except RuntimeError as exc:
+        return ServiceResult.fail(str(exc))
+    except Exception as exc:
+        return ServiceResult.fail(f"Error recording SumUp payment transactions: {exc}")
 
 
 def record_cash_payment_transaction(

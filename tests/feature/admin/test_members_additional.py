@@ -51,8 +51,8 @@ def test_create_membership_for_user_without_one(admin_client, app):
 
 
 def test_activate_membership_with_completed_payment(admin_client, test_user):
-    from tests.helpers import create_payment_for_user
     from app import db
+    from tests.helpers import create_payment_for_user
 
     test_user.membership.status = "pending"
     db.session.commit()

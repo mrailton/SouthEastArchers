@@ -78,8 +78,7 @@ Run due scheduled jobs (membership expiry, low-credits reminders) via your sched
 │   ├── repositories/       # Data access
 │   ├── models/             # SQLAlchemy models
 │   ├── db/                 # Database session layer
-│   ├── forms/              # WTForms (admin)
-│   ├── schemas/            # Pydantic forms (auth/member)
+│   ├── schemas/            # Pydantic models and form schemas
 │   ├── resources/          # Templates and frontend assets
 │   │   ├── templates/      # Jinja2 templates
 │   │   └── static/         # CSS/JS source; dist/ holds Vite build output
@@ -98,8 +97,19 @@ Run due scheduled jobs (membership expiry, low-credits reminders) via your sched
 | `make test` | Run the test suite |
 | `make test-coverage` | Run tests with coverage report |
 | `make lint` | Run Ruff checks |
-| `uv run python -m app.cli db upgrade` | Apply database migrations |
-| `uv run python -m app.cli rbac seed` | Seed default roles and permissions |
+| `uv run sea db upgrade` | Apply database migrations |
+| `uv run sea rbac seed` | Seed default roles and permissions |
+| `uv run sea scheduler list` | List scheduled jobs |
+| `uv run sea scheduler run <job>` | Run a scheduled job (for cron) |
+
+### Cron jobs
+
+Run these via system cron (example, daily at 00:01 and weekly Monday 09:00):
+
+```cron
+1 0 * * * cd /path/to/SouthEastArchers && uv run sea scheduler run expire-memberships
+0 9 * * 1 cd /path/to/SouthEastArchers && uv run sea scheduler run low-credits-reminder
+```
 
 ## Environment Variables
 

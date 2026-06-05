@@ -2,18 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from app.models.event import Event
 from app.repositories import EventRepository
 from app.services.result import ServiceResult
-from app.utils.datetime_utils import utc_now
 
 
-def get_upcoming_published_events(db: Session) -> list[Event]:
-    now = utc_now()
-    return list(db.scalars(select(Event).where(Event.published.is_(True), Event.start_date >= now).order_by(Event.start_date)).all())
+def get_upcoming_published_events() -> list[Event]:
+    return EventRepository.get_upcoming_published()
 
 
 def create_event(

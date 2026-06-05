@@ -1,4 +1,4 @@
-"""Smoke tests that invalid form POSTs return 422 (or 200 with errors for WTForms)."""
+"""Smoke tests that invalid form POSTs return 422 with validation errors."""
 
 from datetime import datetime
 

@@ -1,21 +1,16 @@
 from __future__ import annotations
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from app.models.news import News
 from app.repositories import NewsRepository
 from app.services.result import ServiceResult
 from app.utils.datetime_utils import utc_now
 
 
-def get_published_articles(db: Session) -> list[News]:
-    return list(db.scalars(select(News).where(News.published.is_(True)).order_by(News.published_at.desc())).all())
+def get_published_articles() -> list[News]:
+    return NewsRepository.get_published()
 
 
-def get_article_by_id(news_id: int, db: Session | None = None) -> News | None:
-    if db is not None:
-        return db.get(News, news_id)
+def get_article_by_id(news_id: int) -> News | None:
     return NewsRepository.get_by_id(news_id)
 
 

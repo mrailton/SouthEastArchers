@@ -1,4 +1,4 @@
-"""Admin member routes — HTTP wiring, permissions, and flashes (business logic: user_service integration tests)."""
+"""Admin member routes — HTTP wiring, permissions, and flashes (business logic: users service tests)."""
 
 from app import db
 from app.models import User

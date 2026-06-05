@@ -1,8 +1,6 @@
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from app.models.credit import Credit
+from app.repositories import CreditRepository
 
 
-def get_user_credits(db: Session, user_id: int) -> list[Credit]:
-    return list(db.scalars(select(Credit).where(Credit.user_id == user_id)).all())
+def get_user_credits(user_id: int) -> list[Credit]:
+    return CreditRepository.get_by_user(user_id)

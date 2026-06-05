@@ -4,14 +4,38 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, Response
 
 from app.dependencies import CurrentUser, DbSession, require_perms, verify_csrf
-from app.forms.admin_forms import ExpenseForm, FinancialStatementForm, IncomeForm
 from app.routes.admin._helpers import flash_form_errors
+from app.schemas.admin_forms import (
+    EXPENSE_CATEGORY_CHOICES,
+    INCOME_CATEGORY_CHOICES,
+    ExpenseForm,
+    FinancialStatementForm,
+    IncomeForm,
+)
+from app.schemas.form_helpers import FormView, parse_form
 from app.services import finance
 from app.templating import flash, render
 from app.utils.formdata import request_form_data
 from app.utils.pdf import generate_statement_pdf
 
 router = APIRouter(tags=["admin.finance"])
+
+
+def _expense_form_view(*, values: dict | None = None, errors: dict | None = None) -> FormView:
+    return FormView(values=values or {}, errors=errors, choices={"category": EXPENSE_CATEGORY_CHOICES})
+
+
+def _income_form_view(*, values: dict | None = None, errors: dict | None = None) -> FormView:
+    return FormView(values=values or {}, errors=errors, choices={"category": INCOME_CATEGORY_CHOICES})
+
+
+def _statement_form_view(*, values: dict | None = None, errors: dict | None = None) -> FormView:
+    return FormView(values=values or {}, errors=errors)
+
+
+def _transaction_form_view(transaction, *, values: dict | None = None, errors: dict | None = None) -> FormView:
+    choices = EXPENSE_CATEGORY_CHOICES if transaction.type == "expense" else INCOME_CATEGORY_CHOICES
+    return FormView(values=values or {}, errors=errors, choices={"category": choices})
 
 
 @router.get("/finance", name="admin.finance", dependencies=[require_perms("finance.read")])
@@ -26,66 +50,67 @@ async def finance_index(request: Request, db: DbSession, user: CurrentUser):
         "admin/finance.html",
         {"transactions": pagination.items, "pagination": pagination, "per_page": per_page},
         user=user,
-        db=db,
     )
 
 
 @router.get("/finance/expense/create", name="admin.create_expense", dependencies=[require_perms("finance.create")])
 async def create_expense_page(request: Request, db: DbSession, user: CurrentUser):
-    form = ExpenseForm()
-    return render(request, "admin/create_expense.html", {"form": form}, user=user, db=db)
+    form = _expense_form_view()
+    return render(request, "admin/create_expense.html", {"form": form}, user=user)
 
 
 @router.post("/finance/expense/create", name="admin.create_expense_post", dependencies=[require_perms("finance.create")])
 async def create_expense_store(request: Request, db: DbSession, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
-    form = ExpenseForm(formdata=form_data)
-    if form.validate():
+    parsed, errors, values = parse_form(ExpenseForm, form_data)
+    form = _expense_form_view(values=values, errors=errors)
+    if parsed:
         result = finance.create_transaction(
             txn_type="expense",
-            txn_date=form.date.data,
-            amount_cents=int(round(float(form.amount.data) * 100)),
-            category=form.category.data,
-            description=form.description.data,
+            txn_date=parsed.date,
+            amount_cents=int(round(float(parsed.amount) * 100)),
+            category=parsed.category,
+            description=parsed.description,
             created_by_id=user.id,
-            receipt_reference=form.receipt_reference.data or None,
+            receipt_reference=parsed.receipt_reference or None,
         )
         if result.success:
             flash(request, "success", "Expense recorded successfully!")
             return RedirectResponse(url="/admin/finance", status_code=303)
         flash(request, "error", result.message)
-    flash_form_errors(request, form)
-    return render(request, "admin/create_expense.html", {"form": form}, user=user, db=db, status_code=422)
+    flash_form_errors(request, errors)
+    return render(request, "admin/create_expense.html", {"form": form}, user=user, status_code=422)
 
 
 @router.get("/finance/income/create", name="admin.create_income", dependencies=[require_perms("finance.create")])
 async def create_income_page(request: Request, db: DbSession, user: CurrentUser):
-    form = IncomeForm()
-    return render(request, "admin/create_income.html", {"form": form}, user=user, db=db)
+    form = _income_form_view()
+    return render(request, "admin/create_income.html", {"form": form}, user=user)
 
 
 @router.post("/finance/income/create", name="admin.create_income_post", dependencies=[require_perms("finance.create")])
 async def create_income_store(request: Request, db: DbSession, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
-    form = IncomeForm(formdata=form_data)
-    if form.validate():
+    parsed, errors, values = parse_form(IncomeForm, form_data)
+    form = _income_form_view(values=values, errors=errors)
+    if parsed:
         result = finance.create_transaction(
             txn_type="income",
-            txn_date=form.date.data,
-            amount_cents=int(round(float(form.amount.data) * 100)),
-            category=form.category.data,
-            description=form.description.data,
+            txn_date=parsed.date,
+            amount_cents=int(round(float(parsed.amount) * 100)),
+            category=parsed.category,
+            description=parsed.description,
             created_by_id=user.id,
-            source=form.source.data or None,
+            source=parsed.source or None,
         )
         if result.success:
             flash(request, "success", "Income recorded successfully!")
             return RedirectResponse(url="/admin/finance", status_code=303)
         flash(request, "error", result.message)
-    flash_form_errors(request, form)
-    return render(request, "admin/create_income.html", {"form": form}, user=user, db=db, status_code=422)
+    flash_form_errors(request, errors)
+    return render(request, "admin/create_income.html", {"form": form}, user=user, status_code=422)
 
 
 @router.get("/finance/statement", name="admin.financial_statement", dependencies=[require_perms("finance.report")])
@@ -93,26 +118,24 @@ async def financial_statement_page(request: Request, db: DbSession, user: Curren
     today = date.today()
     current_year = today.year
     start_date = date(current_year, 3, 1) if today.month >= 3 else date(current_year - 1, 3, 1)
-    form = FinancialStatementForm()
-    form.start_date.data = start_date
-    form.end_date.data = today
-    return render(request, "admin/financial_statement.html", {"form": form, "statement": None}, user=user, db=db)
+    form = _statement_form_view(values={"start_date": start_date, "end_date": today})
+    return render(request, "admin/financial_statement.html", {"form": form, "statement": None}, user=user)
 
 
 @router.post("/finance/statement", name="admin.financial_statement_post", dependencies=[require_perms("finance.report")])
 async def financial_statement_store(request: Request, db: DbSession, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
-    form = FinancialStatementForm(formdata=form_data)
-    if form.validate():
-        if form.end_date.data < form.start_date.data:
+    parsed, errors, values = parse_form(FinancialStatementForm, form_data)
+    form = _statement_form_view(values=values, errors=errors)
+    if parsed:
+        if parsed.end_date < parsed.start_date:
             flash(request, "error", "End date must be after start date.")
-            return render(request, "admin/financial_statement.html", {"form": form, "statement": None}, user=user, db=db)
-        else:
-            statement = finance.generate_statement(form.start_date.data, form.end_date.data)
-            return render(request, "admin/financial_statement.html", {"form": form, "statement": statement}, user=user, db=db)
-    flash_form_errors(request, form)
-    return render(request, "admin/financial_statement.html", {"form": form, "statement": None}, user=user, db=db, status_code=422)
+            return render(request, "admin/financial_statement.html", {"form": form, "statement": None}, user=user)
+        statement = finance.generate_statement(parsed.start_date, parsed.end_date)
+        return render(request, "admin/financial_statement.html", {"form": form, "statement": statement}, user=user)
+    flash_form_errors(request, errors)
+    return render(request, "admin/financial_statement.html", {"form": form, "statement": None}, user=user, status_code=422)
 
 
 @router.get("/finance/statement/pdf", name="admin.financial_statement_pdf", dependencies=[require_perms("finance.report")])
@@ -141,10 +164,9 @@ async def financial_statement_pdf(request: Request, db: DbSession, user: Current
 async def edit_transaction_page(transaction_id: int, request: Request, db: DbSession, user: CurrentUser):
     transaction = finance.get_transaction_by_id(transaction_id)
     if not transaction:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
-    form = ExpenseForm(obj=transaction) if transaction.type == "expense" else IncomeForm(obj=transaction)
-    form.amount.data = transaction.amount_cents / 100
-    return render(request, "admin/edit_transaction.html", {"transaction": transaction, "form": form}, user=user, db=db)
+        return render(request, "errors/404.html", user=user, status_code=404)
+    form = _transaction_form_view(transaction)
+    return render(request, "admin/edit_transaction.html", {"transaction": transaction, "form": form}, user=user)
 
 
 @router.post("/finance/{transaction_id}/edit", name="admin.edit_transaction_post", dependencies=[require_perms("finance.update")])
@@ -153,32 +175,33 @@ async def edit_transaction_store(transaction_id: int, request: Request, db: DbSe
     verify_csrf(request, form_data.get("csrf_token"))
     transaction = finance.get_transaction_by_id(transaction_id)
     if not transaction:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
-    form = ExpenseForm(formdata=form_data, obj=transaction) if transaction.type == "expense" else IncomeForm(formdata=form_data, obj=transaction)
-    if form.validate():
+        return render(request, "errors/404.html", user=user, status_code=404)
+    form_cls = ExpenseForm if transaction.type == "expense" else IncomeForm
+    parsed, errors, values = parse_form(form_cls, form_data)
+    form = _transaction_form_view(transaction, values=values, errors=errors)
+    if parsed:
         kwargs = {
             "transaction": transaction,
-            "txn_date": form.date.data,
-            "amount_cents": int(round(float(form.amount.data) * 100)),
-            "category": form.category.data,
-            "description": form.description.data,
+            "txn_date": parsed.date,
+            "amount_cents": int(round(float(parsed.amount) * 100)),
+            "category": parsed.category,
+            "description": parsed.description,
         }
         if transaction.type == "expense":
-            kwargs["receipt_reference"] = form.receipt_reference.data or None
+            kwargs["receipt_reference"] = parsed.receipt_reference or None
         else:
-            kwargs["source"] = form.source.data or None
+            kwargs["source"] = parsed.source or None
         result = finance.update_transaction(**kwargs)
         if result.success:
             flash(request, "success", "Transaction updated successfully!")
             return RedirectResponse(url="/admin/finance", status_code=303)
         flash(request, "error", result.message or "An error occurred while updating the transaction.")
-    flash_form_errors(request, form)
+    flash_form_errors(request, errors)
     return render(
         request,
         "admin/edit_transaction.html",
         {"transaction": transaction, "form": form},
         user=user,
-        db=db,
         status_code=422,
     )
 

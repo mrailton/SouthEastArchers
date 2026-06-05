@@ -1,6 +1,6 @@
 .PHONY: help install setup dev server clean test test-parallel test-verbose test-file test-coverage test-k \
        lint lint-fix lint-check format format-check typecheck lint-imports \
-       assets assets-watch
+       assets assets-watch db-upgrade rbac-seed
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -85,4 +85,10 @@ assets: ## Build production assets with Vite
 
 assets-watch: ## Watch and rebuild assets on change
 	npm run dev
+
+db-upgrade: ## Apply database migrations
+	uv run sea db upgrade
+
+rbac-seed: ## Seed default roles and permissions
+	uv run sea rbac seed
 

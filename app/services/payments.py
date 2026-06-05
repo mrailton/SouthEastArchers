@@ -4,10 +4,6 @@ import logging
 from datetime import date
 from typing import Any, Protocol
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
-from app.core.settings import get_setting
 from app.enums import PaymentMethod, PaymentType
 from app.events import cash_payment_submitted, credit_purchased, payment_completed
 from app.models.credit import Credit
@@ -37,18 +33,17 @@ def create_checkout(
     return processor.create_checkout(amount=amount_cents, currency="EUR", description=description)
 
 
-def get_user_payments(db: Session, user_id: int) -> list[Payment]:
-    return list(db.scalars(select(Payment).where(Payment.user_id == user_id).order_by(Payment.created_at.desc())).all())
+def get_user_payments(user_id: int) -> list[Payment]:
+    return PaymentRepository.get_by_user(user_id)
 
 
 def initiate_membership_payment(
-    db: Session,
     user: User,
     *,
     processor: CheckoutProcessor | None = None,
 ) -> ServiceResult[dict]:
     processor = processor or SumUpService()
-    amount_cents: int = get_setting(db, "annual_membership_cost")
+    amount_cents: int = settings.get("annual_membership_cost")
     description = f"Annual Membership - {user.name}"
 
     payment = Payment(
@@ -60,11 +55,12 @@ def initiate_membership_payment(
         description=description,
         status="pending",
     )
-    db.add(payment)
-    db.flush()
+    PaymentRepository.add(payment)
+    PaymentRepository.flush()
 
     checkout = processor.create_checkout(amount=amount_cents, currency="EUR", description=description)
     if checkout:
+        PaymentRepository.save()
         return ServiceResult.ok(
             data={
                 "checkout_id": checkout.get("id"),
@@ -75,20 +71,19 @@ def initiate_membership_payment(
             }
         )
 
-    db.delete(payment)
-    db.flush()
+    PaymentRepository.delete(payment)
+    PaymentRepository.flush()
     return ServiceResult.fail("Error creating payment. Please try again.")
 
 
 def initiate_credit_purchase(
-    db: Session,
     user: User,
     quantity: int,
     *,
     processor: CheckoutProcessor | None = None,
 ) -> ServiceResult[dict]:
     processor = processor or SumUpService()
-    amount_cents: int = quantity * get_setting(db, "additional_shoot_cost")
+    amount_cents: int = quantity * settings.get("additional_shoot_cost")
     description = f"{quantity} credits - {user.name}"
 
     payment = Payment(
@@ -100,11 +95,12 @@ def initiate_credit_purchase(
         description=f"{quantity} shooting credits",
         status="pending",
     )
-    db.add(payment)
-    db.flush()
+    PaymentRepository.add(payment)
+    PaymentRepository.flush()
 
     checkout = processor.create_checkout(amount=amount_cents, currency="EUR", description=description)
     if checkout:
+        PaymentRepository.save()
         return ServiceResult.ok(
             data={
                 "checkout_id": checkout.get("id"),
@@ -116,13 +112,13 @@ def initiate_credit_purchase(
             }
         )
 
-    db.delete(payment)
-    db.flush()
+    PaymentRepository.delete(payment)
+    PaymentRepository.flush()
     return ServiceResult.fail("Error creating payment. Please try again.")
 
 
-def initiate_cash_membership_payment(db: Session, user: User) -> ServiceResult[dict]:
-    amount_cents: int = get_setting(db, "annual_membership_cost")
+def initiate_cash_membership_payment(user: User) -> ServiceResult[dict]:
+    amount_cents: int = settings.get("annual_membership_cost")
     payment = Payment(
         user_id=user.id,
         amount_cents=amount_cents,
@@ -132,25 +128,26 @@ def initiate_cash_membership_payment(db: Session, user: User) -> ServiceResult[d
         description=f"Annual Membership (Cash) - {user.name}",
         status="pending",
     )
-    db.add(payment)
-    db.flush()
+    PaymentRepository.add(payment)
+    PaymentRepository.flush()
 
     try:
         cash_payment_submitted.send(user_id=user.id, payment_id=payment.id)
     except Exception:
         logger.exception("Failed to emit cash_payment_submitted event")
 
+    PaymentRepository.save()
     return ServiceResult.ok(
         data={
             "payment_id": payment.id,
             "amount": amount_cents / 100.0,
-            "instructions": get_setting(db, "cash_payment_instructions"),
+            "instructions": settings.get("cash_payment_instructions"),
         }
     )
 
 
-def initiate_cash_credit_purchase(db: Session, user: User, quantity: int) -> ServiceResult[dict]:
-    amount_cents: int = quantity * get_setting(db, "additional_shoot_cost")
+def initiate_cash_credit_purchase(user: User, quantity: int) -> ServiceResult[dict]:
+    amount_cents: int = quantity * settings.get("additional_shoot_cost")
     payment = Payment(
         user_id=user.id,
         amount_cents=amount_cents,
@@ -160,20 +157,21 @@ def initiate_cash_credit_purchase(db: Session, user: User, quantity: int) -> Ser
         description=f"{quantity} shooting credits (Cash)",
         status="pending",
     )
-    db.add(payment)
-    db.flush()
+    PaymentRepository.add(payment)
+    PaymentRepository.flush()
 
     try:
         cash_payment_submitted.send(user_id=user.id, payment_id=payment.id)
     except Exception:
         logger.exception("Failed to emit cash_payment_submitted event")
 
+    PaymentRepository.save()
     return ServiceResult.ok(
         data={
             "payment_id": payment.id,
             "quantity": quantity,
             "amount": amount_cents / 100.0,
-            "instructions": get_setting(db, "cash_payment_instructions"),
+            "instructions": settings.get("cash_payment_instructions"),
         }
     )
 

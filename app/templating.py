@@ -6,12 +6,11 @@ from urllib.parse import urlencode, urljoin
 
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import text
-from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.dependencies import get_csrf_token
 from app.routes_map import FALLBACK_ROUTES
+from app.services import settings as app_settings
 
 TEMPLATES_DIR = Path(__file__).parent / "resources" / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -76,19 +75,11 @@ def flash(request: Request, category: str, message: str) -> None:
     request.session["_flashes"] = flashes
 
 
-def _feature_flags(db: Session | None) -> dict[str, bool]:
-    defaults = {"news_enabled": False, "events_enabled": False}
-    if db is None:
-        return defaults
-    try:
-        rows = db.execute(text("SELECT `key`, value FROM setting WHERE `key` IN ('news_enabled', 'events_enabled')")).fetchall()
-        raw = {row[0]: row[1] for row in rows}
-        return {
-            "news_enabled": str(raw.get("news_enabled", "")).lower() in ("true", "1", "yes"),
-            "events_enabled": str(raw.get("events_enabled", "")).lower() in ("true", "1", "yes"),
-        }
-    except Exception:
-        return defaults
+def _feature_flags() -> dict[str, bool]:
+    return {
+        "news_enabled": app_settings.get("news_enabled"),
+        "events_enabled": app_settings.get("events_enabled"),
+    }
 
 
 def _pop_flashes(request: Request) -> list[tuple[str, str]]:
@@ -118,7 +109,6 @@ def render(
     name: str,
     context: dict | None = None,
     user=None,
-    db: Session | None = None,
     status_code: int = 200,
 ):
     current_user = user if user is not None else AnonymousUser()
@@ -133,7 +123,7 @@ def render(
         "errors": {},
         "now": datetime.now(UTC),
         "endpoint_is": endpoint_is,
-        **_feature_flags(db),
+        **_feature_flags(),
     }
     if "validation_errors" in request.session:
         ctx["errors"] = request.session.pop("validation_errors")

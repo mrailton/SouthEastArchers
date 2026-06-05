@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from dotenv import load_dotenv
-from pydantic import AliasChoices, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_file_encoding="utf-8", extra="ignore")
 
     app_name: str = "South East Archers"
-    app_env: str = Field(default="development", validation_alias=AliasChoices("APP_ENV", "FLASK_ENV"))
+    app_env: str = Field(default="development", validation_alias="APP_ENV")
     app_debug: bool = False
     app_url: str = "http://127.0.0.1:8000"
 

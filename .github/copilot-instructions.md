@@ -43,9 +43,11 @@ Vite builds `app/resources/static/js/{site,admin}.js` into `app/resources/static
 
 - Monetary values are stored in **cents** (integer).
 - Service methods return `ServiceResult[T]` from `app.services.result`.
+- Services commit via `Repository.save()`; routes never call `mark_for_commit`.
+- Scheduled jobs run via external cron: `uv run sea scheduler run expire-memberships` / `low-credits-reminder`.
 - Repository methods extend `BaseRepository` for commits/rollbacks.
 - RBAC: protect admin routes with `require_perms(...)` from `app/routes/admin/_helpers.py`.
-- Admin forms use WTForms (`app/forms/`); auth/member forms use Pydantic (`app/schemas/forms.py`).
+- Forms use Pydantic schemas (`app/schemas/admin_forms.py`, `app/schemas/forms.py`); routes parse POST data with `parse_form()` and pass `FormView` to templates.
 - CSRF: session token via `get_csrf_token()`; verify on POST with `verify_csrf()`.
 - Testing: SQLite in-memory DB, FastAPI `TestClient` with `CSRFClient` wrapper, fixtures in `tests/conftest.py`. HTTP route tests live in `tests/feature/` and should only assert HTTP behaviour (status, redirect, flash, permissions) — business logic belongs in `tests/unit/`. Helpers in `tests/http_helpers.py`.
 - Config: Pydantic `Settings` in `app/core/config.py` (environments: `development`, `testing`, `production`).

@@ -1,4 +1,4 @@
-"""Member routes — auth gates and form error display (profile/password logic: user_service tests)."""
+"""Member routes — auth gates and form error display (profile/password logic: users service tests)."""
 
 
 def test_dashboard_requires_login(client):

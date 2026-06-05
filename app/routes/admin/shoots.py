@@ -2,13 +2,20 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
 from app.dependencies import CurrentUser, DbSession, require_perms, verify_csrf
-from app.forms.admin_forms import ShootForm
 from app.routes.admin._helpers import flash_form_errors, flash_service_warnings
+from app.schemas.admin_forms import ShootForm
+from app.schemas.form_helpers import parse_form
 from app.services import settings, shoots
 from app.templating import flash, render
 from app.utils.formdata import parse_visitors_from_form, request_form_data
 
 router = APIRouter(tags=["admin.shoots"])
+
+
+def _shoot_page_context():
+    active_members = shoots.get_active_members_with_credits()
+    visitor_fee = settings.get("visitor_shoot_fee") / 100.0
+    return {"active_members": active_members, "visitor_fee": visitor_fee}
 
 
 @router.get("/shoots", name="admin.shoots", dependencies=[require_perms("shoots.read")])
@@ -23,80 +30,51 @@ async def shoots_index(request: Request, db: DbSession, user: CurrentUser):
         "admin/shoots.html",
         {"shoots": pagination.items, "pagination": pagination, "per_page": per_page},
         user=user,
-        db=db,
     )
 
 
 @router.get("/shoots/create", name="admin.create_shoot", dependencies=[require_perms("shoots.create")])
 async def create_shoot_page(request: Request, db: DbSession, user: CurrentUser):
-    form = ShootForm()
-    form.attendees.choices = shoots.get_active_members_with_credits()
-    active_members = shoots.get_active_members_with_credits()
-    visitor_fee = settings.get("visitor_shoot_fee") / 100.0
-    return render(
-        request,
-        "admin/create_shoot.html",
-        {"form": form, "active_members": active_members, "visitor_fee": visitor_fee},
-        user=user,
-        db=db,
-    )
+    return render(request, "admin/create_shoot.html", _shoot_page_context(), user=user)
 
 
 @router.post("/shoots/create", name="admin.create_shoot_post", dependencies=[require_perms("shoots.create")])
 async def create_shoot_store(request: Request, db: DbSession, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
-    form = ShootForm(formdata=form_data)
-    form.attendees.choices = shoots.get_active_members_with_credits()
-    if form.validate():
+    parsed, errors, _values = parse_form(ShootForm, form_data)
+    if parsed:
         visitors = parse_visitors_from_form(form_data)
         result = shoots.create_shoot(
-            shoot_date=form.date.data,
-            location=form.location.data,
-            description=form.description.data,
-            attendee_ids=form.attendees.data or [],
+            shoot_date=parsed.date,
+            location=parsed.location,
+            description=parsed.description,
+            attendee_ids=parsed.attendees,
             visitors=visitors,
             created_by_id=user.id,
         )
         if result.success:
             flash_service_warnings(request, result)
             visitor_count = len(visitors)
-            msg = f"Shoot created with {len(form.attendees.data or [])} attendees"
+            msg = f"Shoot created with {len(parsed.attendees)} attendees"
             if visitor_count:
                 msg += f" and {visitor_count} visitor{'s' if visitor_count != 1 else ''}"
             flash(request, "success", f"{msg}!")
             return RedirectResponse(url="/admin/shoots", status_code=303)
         flash(request, "error", result.message)
-    flash_form_errors(request, form)
-    active_members = shoots.get_active_members_with_credits()
-    visitor_fee = settings.get("visitor_shoot_fee") / 100.0
-    return render(
-        request,
-        "admin/create_shoot.html",
-        {"form": form, "active_members": active_members, "visitor_fee": visitor_fee},
-        user=user,
-        db=db,
-        status_code=422,
-    )
+    else:
+        flash_form_errors(request, errors)
+    return render(request, "admin/create_shoot.html", _shoot_page_context(), user=user, status_code=422)
 
 
 @router.get("/shoots/{shoot_id}/edit", name="admin.edit_shoot", dependencies=[require_perms("shoots.update")])
 async def edit_shoot_page(shoot_id: int, request: Request, db: DbSession, user: CurrentUser):
     shoot = shoots.get_shoot_by_id(shoot_id)
     if not shoot:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
-    form = ShootForm(obj=shoot)
-    form.attendees.choices = shoots.get_active_members_with_credits()
-    form.attendees.data = [u.id for u in shoot.users]
-    active_members = shoots.get_active_members_with_credits()
-    visitor_fee = settings.get("visitor_shoot_fee") / 100.0
-    return render(
-        request,
-        "admin/edit_shoot.html",
-        {"form": form, "shoot": shoot, "active_members": active_members, "visitor_fee": visitor_fee},
-        user=user,
-        db=db,
-    )
+        return render(request, "errors/404.html", user=user, status_code=404)
+    context = _shoot_page_context()
+    context["shoot"] = shoot
+    return render(request, "admin/edit_shoot.html", context, user=user)
 
 
 @router.post("/shoots/{shoot_id}/edit", name="admin.edit_shoot_post", dependencies=[require_perms("shoots.update")])
@@ -105,17 +83,16 @@ async def edit_shoot_store(shoot_id: int, request: Request, db: DbSession, user:
     verify_csrf(request, form_data.get("csrf_token"))
     shoot = shoots.get_shoot_by_id(shoot_id)
     if not shoot:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
-    form = ShootForm(formdata=form_data, obj=shoot)
-    form.attendees.choices = shoots.get_active_members_with_credits()
-    if form.validate():
+        return render(request, "errors/404.html", user=user, status_code=404)
+    parsed, errors, _values = parse_form(ShootForm, form_data)
+    if parsed:
         visitors = parse_visitors_from_form(form_data)
         result = shoots.update_shoot(
             shoot,
-            shoot_date=form.date.data,
-            location=form.location.data,
-            description=form.description.data,
-            attendee_ids=form.attendees.data or [],
+            shoot_date=parsed.date,
+            location=parsed.location,
+            description=parsed.description,
+            attendee_ids=parsed.attendees,
             visitors=visitors,
             created_by_id=user.id,
         )
@@ -124,14 +101,8 @@ async def edit_shoot_store(shoot_id: int, request: Request, db: DbSession, user:
             flash(request, "success", "Shoot updated!")
             return RedirectResponse(url="/admin/shoots", status_code=303)
         flash(request, "error", result.message)
-    flash_form_errors(request, form)
-    active_members = shoots.get_active_members_with_credits()
-    visitor_fee = settings.get("visitor_shoot_fee") / 100.0
-    return render(
-        request,
-        "admin/edit_shoot.html",
-        {"form": form, "shoot": shoot, "active_members": active_members, "visitor_fee": visitor_fee},
-        user=user,
-        db=db,
-        status_code=422,
-    )
+    else:
+        flash_form_errors(request, errors)
+    context = _shoot_page_context()
+    context["shoot"] = shoot
+    return render(request, "admin/edit_shoot.html", context, user=user, status_code=422)

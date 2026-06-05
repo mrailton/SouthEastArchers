@@ -12,7 +12,7 @@ router = APIRouter(tags=["admin.payments"])
 @router.get("/payments", name="admin.pending_payments", dependencies=[require_perms("payments.approve")])
 async def pending_payments(request: Request, db: DbSession, user: CurrentUser):
     payment_rows = payments.get_pending_cash_payment_rows()
-    return render(request, "admin/pending_payments.html", {"payment_data": payment_rows}, user=user, db=db)
+    return render(request, "admin/pending_payments.html", {"payment_data": payment_rows}, user=user)
 
 
 @router.post("/payments/{payment_id}/approve", name="admin.approve_payment", dependencies=[require_perms("payments.approve")])
@@ -25,7 +25,7 @@ async def approve_payment(payment_id: int, request: Request, db: DbSession, user
 
     result = payments.approve_cash_payment(payment_id)
     if result.message == "Payment not found.":
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
+        return render(request, "errors/404.html", user=user, status_code=404)
     flash(request, "success" if result.success else "error", result.message)
     return RedirectResponse(url=redirect_to, status_code=303)
 
@@ -40,6 +40,6 @@ async def reject_payment(payment_id: int, request: Request, db: DbSession, user:
 
     result = payments.reject_cash_payment(payment_id)
     if result.message == "Payment not found.":
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
+        return render(request, "errors/404.html", user=user, status_code=404)
     flash(request, "success" if result.success else "error", result.message)
     return RedirectResponse(url=redirect_to, status_code=303)

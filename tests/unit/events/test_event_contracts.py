@@ -80,7 +80,7 @@ def test_cash_membership_emits_cash_payment_submitted(app, test_user, fake_maile
     received: list[dict] = []
 
     with cash_payment_submitted.connected_to(lambda sender, **kw: received.append(kw)):
-        payments.initiate_cash_membership_payment(db.session, test_user)
+        payments.initiate_cash_membership_payment(test_user)
 
     assert len(received) == 1
     assert received[0]["user_id"] == test_user.id
@@ -93,7 +93,7 @@ def test_cash_credit_purchase_emits_cash_payment_submitted(app, test_user, fake_
     received: list[dict] = []
 
     with cash_payment_submitted.connected_to(lambda sender, **kw: received.append(kw)):
-        payments.initiate_cash_credit_purchase(db.session, test_user, quantity=3)
+        payments.initiate_cash_credit_purchase(test_user, quantity=3)
 
     assert len(received) == 1
     assert received[0]["user_id"] == test_user.id

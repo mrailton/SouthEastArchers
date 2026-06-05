@@ -2,11 +2,9 @@ from fastapi import APIRouter, Query, Request
 from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
-from app.core.database import mark_for_commit
 from app.dependencies import CurrentUser, DbSession, verify_csrf
 from app.schemas.forms import ChangePasswordForm, ProfileForm
-from app.services import credits as credit_service
-from app.services import users as user_service
+from app.services import credits, users
 from app.templating import flash, render
 
 router = APIRouter(prefix="/member", tags=["member"])
@@ -23,43 +21,42 @@ def _validation_errors(exc: ValidationError) -> dict[str, str]:
 @router.get("/dashboard", name="member.dashboard")
 async def dashboard(
     request: Request,
-    db: DbSession,
+    _db: DbSession,
     user: CurrentUser,
     page: int = Query(1, ge=1),
 ):
-    payments = user_service.get_user_payments_paginated(db, user.id, page=page, per_page=5)
+    payment_page = users.get_user_payments_paginated(user.id, page=page, per_page=5)
     return render(
         request,
         "member/dashboard.html",
         {
             "membership": user.membership,
             "shoots_attended": len(user.shoots),
-            "payments": payments,
+            "payments": payment_page,
         },
         user=user,
-        db=db,
     )
 
 
 @router.get("/shoots", name="member.shoots")
-async def shoots(request: Request, db: DbSession, user: CurrentUser):
+async def shoots(request: Request, _db: DbSession, user: CurrentUser):
     user_shoots = sorted(user.shoots, key=lambda shoot: shoot.date, reverse=True)
-    return render(request, "member/shoots.html", {"shoots": user_shoots}, user=user, db=db)
+    return render(request, "member/shoots.html", {"shoots": user_shoots}, user=user)
 
 
 @router.get("/credits", name="member.credits")
-async def credits(request: Request, db: DbSession, user: CurrentUser):
-    user_credits = credit_service.get_user_credits(db, user.id)
-    return render(request, "member/credits.html", {"credits": user_credits}, user=user, db=db)
+async def credits_page(request: Request, _db: DbSession, user: CurrentUser):
+    user_credits = credits.get_user_credits(user.id)
+    return render(request, "member/credits.html", {"credits": user_credits}, user=user)
 
 
 @router.get("/profile", name="member.profile")
-async def profile(request: Request, db: DbSession, user: CurrentUser):
-    return render(request, "member/profile.html", user=user, db=db)
+async def profile(request: Request, _db: DbSession, user: CurrentUser):
+    return render(request, "member/profile.html", user=user)
 
 
 @router.post("/profile", name="member.profile_post")
-async def profile_update(request: Request, db: DbSession, user: CurrentUser):
+async def profile_update(request: Request, _db: DbSession, user: CurrentUser):
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
     try:
@@ -74,23 +71,21 @@ async def profile_update(request: Request, db: DbSession, user: CurrentUser):
             "member/profile.html",
             {"errors": _validation_errors(exc)},
             user=user,
-            db=db,
             status_code=422,
         )
 
-    result = user_service.update_profile(user, name=form.name, phone=form.phone or None, db=db)
-    mark_for_commit(db)
+    result = users.update_profile(user, name=form.name, phone=form.phone or None)
     flash(request, "success" if result.success else "error", result.message)
     return RedirectResponse(url="/member/profile", status_code=303)
 
 
 @router.get("/change-password", name="member.change_password")
-async def change_password_page(request: Request, db: DbSession, user: CurrentUser):
-    return render(request, "member/change_password.html", user=user, db=db)
+async def change_password_page(request: Request, _db: DbSession, user: CurrentUser):
+    return render(request, "member/change_password.html", user=user)
 
 
 @router.post("/change-password", name="member.change_password_post")
-async def change_password_store(request: Request, db: DbSession, user: CurrentUser):
+async def change_password_store(request: Request, _db: DbSession, user: CurrentUser):
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
     try:
@@ -108,20 +103,17 @@ async def change_password_store(request: Request, db: DbSession, user: CurrentUs
             "member/change_password.html",
             {"errors": _validation_errors(exc)},
             user=user,
-            db=db,
             status_code=422,
         )
 
-    result = user_service.change_password(
+    result = users.change_password(
         user,
         current_password=form.current_password,
         new_password=form.new_password,
-        db=db,
     )
     if not result.success:
         flash(request, "error", result.message)
-        return render(request, "member/change_password.html", user=user, db=db, status_code=422)
+        return render(request, "member/change_password.html", user=user, status_code=422)
 
-    mark_for_commit(db)
     flash(request, "success", result.message)
     return RedirectResponse(url="/member/profile", status_code=303)

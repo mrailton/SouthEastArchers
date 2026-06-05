@@ -13,9 +13,10 @@ def redirect_back(request: Request, default: str) -> str:
     return target
 
 
-def flash_form_errors(request: Request, form) -> None:
-    for field, errors in form.errors.items():
-        for error in errors:
+def flash_form_errors(request: Request, form_or_errors) -> None:
+    errors = form_or_errors.errors if hasattr(form_or_errors, "errors") else form_or_errors
+    for field, field_errors in errors.items():
+        for error in field_errors:
             flash(request, "error", f"{field}: {error}")
 
 

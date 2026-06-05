@@ -5,12 +5,11 @@ from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
 from app.core.config import get_settings
-from app.core.database import mark_for_commit
 from app.dependencies import CurrentUser, DbSession, require_guest, verify_csrf
 from app.events import password_reset_requested, user_registered
 from app.schemas.forms import ForgotPasswordForm, LoginForm, ResetPasswordForm, SignupForm
 from app.services import recaptcha as recaptcha_service
-from app.services import users as user_service
+from app.services import users
 from app.templating import flash, render
 
 logger = logging.getLogger(__name__)
@@ -39,7 +38,7 @@ def login_page(request: Request):
 @router.post("/login", name="auth.login_post", dependencies=[Depends(require_guest)])
 async def login_store(
     request: Request,
-    db: DbSession,
+    _db: DbSession,
     next_url: str | None = Query(None, alias="next"),
 ):
     raw = await request.form()
@@ -54,7 +53,7 @@ async def login_store(
         _flash_validation_errors(request, exc)
         return render(request, "auth/login.html", status_code=422)
 
-    user = user_service.authenticate(str(form.email), form.password, db=db)
+    user = users.authenticate(str(form.email), form.password)
     if user is None:
         flash(request, "error", "Invalid username or password.")
         return render(request, "auth/login.html", status_code=422)
@@ -67,7 +66,6 @@ async def login_store(
     request.session["user_id"] = user.id
     if csrf_token:
         request.session["csrf_token"] = csrf_token
-    mark_for_commit(db)
     flash(request, "success", "Logged in successfully!")
     destination = next_url if next_url and next_url.startswith("/") else "/member/dashboard"
     return RedirectResponse(url=destination, status_code=303)
@@ -80,7 +78,7 @@ def signup_page(request: Request):
 
 
 @router.post("/signup", name="auth.signup_post", dependencies=[Depends(require_guest)])
-async def signup_store(request: Request, db: DbSession):
+async def signup_store(request: Request, _db: DbSession):
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
     form_values = {key: str(raw.get(key, "")) for key in raw.keys()}
@@ -119,8 +117,7 @@ async def signup_store(request: Request, db: DbSession):
             status_code=422,
         )
 
-    result = user_service.create_user(
-        db=db,
+    result = users.create_user(
         name=form.name,
         email=str(form.email),
         password=form.password,
@@ -139,7 +136,6 @@ async def signup_store(request: Request, db: DbSession):
 
     user = result.data
     assert user is not None
-    mark_for_commit(db)
     try:
         user_registered.send(user_id=user.id)
     except Exception:
@@ -166,7 +162,7 @@ def forgot_password_page(request: Request):
 
 
 @router.post("/forgot-password", name="auth.forgot_password_post", dependencies=[Depends(require_guest)])
-async def forgot_password_store(request: Request, db: DbSession):
+async def forgot_password_store(request: Request, _db: DbSession):
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
     try:
@@ -178,9 +174,9 @@ async def forgot_password_store(request: Request, db: DbSession):
         _flash_validation_errors(request, exc)
         return render(request, "auth/forgot_password.html", status_code=422)
 
-    user = user_service.get_user_by_email(db, str(form.email))
+    user = users.get_user_by_email(str(form.email))
     if user:
-        token = user_service.generate_reset_token(user.email)
+        token = users.generate_reset_token(user.email)
         try:
             password_reset_requested.send(user_id=user.id, token=token)
         except Exception:
@@ -198,10 +194,10 @@ def reset_password_page(token: str, request: Request):
 
 
 @router.post("/reset-password/{token}", name="auth.reset_password_post", dependencies=[Depends(require_guest)])
-async def reset_password_store(token: str, request: Request, db: DbSession):
+async def reset_password_store(token: str, request: Request, _db: DbSession):
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
-    user = user_service.verify_reset_token(db, token)
+    user = users.verify_reset_token(token)
     if not user:
         flash(request, "error", "Invalid or expired reset link.")
         return RedirectResponse(url="/auth/forgot-password", status_code=303)
@@ -220,11 +216,10 @@ async def reset_password_store(token: str, request: Request, db: DbSession):
             status_code=422,
         )
 
-    result = user_service.reset_password(token, form.password, db=db)
+    result = users.reset_password(token, form.password)
     if not result.success:
         flash(request, "error", result.message)
         return RedirectResponse(url="/auth/forgot-password", status_code=303)
 
-    mark_for_commit(db)
     flash(request, "success", f"{result.message} Please login.")
     return RedirectResponse(url="/auth/login", status_code=303)

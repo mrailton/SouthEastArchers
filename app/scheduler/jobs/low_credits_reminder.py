@@ -1,7 +1,7 @@
 import logging
 
 from app.core.config import get_settings
-from app.models import Membership, User
+from app.repositories import MembershipRepository
 from app.templating import templates, url_for
 from app.utils.mail import send_email
 
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def send_low_credits_reminder():
-    memberships = Membership.query.filter(Membership.status == "active").join(User).filter(User.is_active).all()
+    memberships = MembershipRepository.get_active_for_active_users()
     low_credit_memberships = [m for m in memberships if m.credits_remaining() <= 3]
 
     if not low_credit_memberships:

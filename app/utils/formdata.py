@@ -4,7 +4,7 @@ from collections.abc import Mapping
 
 
 class MultiDict:
-    """Minimal multidict for WTForms (replaces Werkzeug in form parsing)."""
+    """Minimal multidict for HTML form parsing (replaces Werkzeug MultiDict)."""
 
     def __init__(self) -> None:
         self._store: dict[str, list[str]] = {}

@@ -5,13 +5,52 @@ from __future__ import annotations
 import click
 
 import app.core.config  # noqa: F401 - load .env
-from app.db import init_db
+from app.db import db, init_db, reset_current_session, set_current_session
+
+SCHEDULED_JOBS: tuple[str, ...] = (
+    "expire-memberships",
+    "low-credits-reminder",
+)
+
+
+def _open_cli_session() -> tuple[object | None, object | None]:
+    from app.db import get_current_session
+
+    try:
+        get_current_session()
+        return None, None
+    except RuntimeError:
+        session = db.create_session()
+        token = set_current_session(session)
+        return session, token
+
+
+def _close_cli_session(session: object | None, token: object | None) -> None:
+    if session is not None and token is not None:
+        session.close()  # type: ignore[union-attr]
+        reset_current_session(token)  # type: ignore[arg-type]
+
+
+def _resolve_job(job_name: str):
+    if job_name == "expire-memberships":
+        from app.scheduler.jobs.expire_memberships import expire_memberships
+
+        return expire_memberships
+    if job_name == "low-credits-reminder":
+        from app.scheduler.jobs.low_credits_reminder import send_low_credits_reminder
+
+        return send_low_credits_reminder
+    return None
 
 
 @click.group()
 def cli() -> None:
     """South East Archers management commands."""
     init_db()
+
+
+def main() -> None:
+    cli()
 
 
 @cli.group("db")
@@ -50,5 +89,44 @@ def rbac_seed() -> None:
     """Seed default roles and permissions (idempotent)."""
     from app.repositories import RBACRepository
 
-    RBACRepository.seed()
-    click.echo("✓ RBAC roles and permissions seeded (idempotent).")
+    session, token = _open_cli_session()
+    try:
+        RBACRepository.seed()
+        click.echo("✓ RBAC roles and permissions seeded (idempotent).")
+    finally:
+        _close_cli_session(session, token)
+
+
+@cli.group("scheduler")
+def scheduler_cli() -> None:
+    """Scheduled maintenance jobs (intended for external cron)."""
+
+
+@scheduler_cli.command("list")
+def scheduler_list() -> None:
+    """List available scheduled jobs."""
+    for name in SCHEDULED_JOBS:
+        click.echo(name)
+
+
+@scheduler_cli.command("run")
+@click.argument("job_name")
+def scheduler_run(job_name: str) -> None:
+    """Run a scheduled job by name."""
+    from app.routes_map import FALLBACK_ROUTES
+    from app.templating import register_route_names, setup_template_globals
+
+    job = _resolve_job(job_name)
+    if job is None:
+        click.echo(f"Unknown job: {job_name}")
+        click.echo(f"Available jobs: {', '.join(SCHEDULED_JOBS)}")
+        raise SystemExit(1)
+
+    register_route_names([type("Route", (), {"name": name, "path": path})() for name, path in FALLBACK_ROUTES.items()])
+    setup_template_globals()
+
+    session, token = _open_cli_session()
+    try:
+        job()  # type: ignore[operator]
+    finally:
+        _close_cli_session(session, token)

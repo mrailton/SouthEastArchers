@@ -31,7 +31,7 @@ def test_create_checkout_failure(app, test_user):
 def test_initiate_membership_payment_success(app, test_user):
     """Test initiating membership payment successfully"""
     processor = FakePaymentProcessor(checkout_response={"id": "checkout_123"})
-    result = payments.initiate_membership_payment(db.session, test_user, processor=processor)
+    result = payments.initiate_membership_payment(test_user, processor=processor)
 
     assert result.success is True
     assert result.data["checkout_id"] == "checkout_123"
@@ -46,7 +46,7 @@ def test_initiate_membership_payment_checkout_fails(app, test_user):
     processor = FakePaymentProcessor(checkout_response=None)
     initial_payment_count = Payment.query.count()
 
-    result = payments.initiate_membership_payment(db.session, test_user, processor=processor)
+    result = payments.initiate_membership_payment(test_user, processor=processor)
 
     assert result.success is False
     assert "Error creating payment" in result.message
@@ -58,7 +58,7 @@ def test_initiate_credit_purchase_success(app, test_user):
     """Test initiating credit purchase successfully"""
     processor = FakePaymentProcessor(checkout_response={"id": "checkout_456"})
     quantity = 5
-    result = payments.initiate_credit_purchase(db.session, test_user, quantity, processor=processor)
+    result = payments.initiate_credit_purchase(test_user, quantity, processor=processor)
 
     assert result.success is True
     assert result.data["checkout_id"] == "checkout_456"
@@ -74,7 +74,7 @@ def test_initiate_credit_purchase_checkout_fails(app, test_user):
     processor = FakePaymentProcessor(checkout_response=None)
     initial_payment_count = Payment.query.count()
 
-    result = payments.initiate_credit_purchase(db.session, test_user, 3, processor=processor)
+    result = payments.initiate_credit_purchase(test_user, 3, processor=processor)
 
     assert result.success is False
     assert "Error creating payment" in result.message
@@ -86,7 +86,7 @@ def test_initiate_credit_purchase_different_quantities(app, test_user):
     """Test credit purchase with different quantities"""
     processor = FakePaymentProcessor(checkout_response={"id": "checkout_789"})
     for quantity in [1, 5, 10, 20]:
-        result = payments.initiate_credit_purchase(db.session, test_user, quantity, processor=processor)
+        result = payments.initiate_credit_purchase(test_user, quantity, processor=processor)
         assert result.success is True
 
         expected_amount = quantity * settings.get("additional_shoot_cost")
@@ -286,7 +286,7 @@ def test_handle_credit_purchase_commit_failure_returns_fail(mock_save, app, test
 @patch("app.services.mail.send_cash_payment_pending_email")
 def test_initiate_cash_membership_payment_success(mock_send_email, app, test_user):
     """Test initiating cash membership payment creates pending payment"""
-    result = payments.initiate_cash_membership_payment(db.session, test_user)
+    result = payments.initiate_cash_membership_payment(test_user)
 
     assert result.success is True
     assert "payment_id" in result.data
@@ -311,7 +311,7 @@ def test_initiate_cash_membership_payment_success(mock_send_email, app, test_use
 def test_initiate_cash_credit_purchase_success(mock_send_email, app, test_user):
     """Test initiating cash credit purchase creates pending payment"""
     quantity = 5
-    result = payments.initiate_cash_credit_purchase(db.session, test_user, quantity)
+    result = payments.initiate_cash_credit_purchase(test_user, quantity)
 
     additional_shoot_cost = settings.get("additional_shoot_cost")
     assert result.success is True
@@ -342,7 +342,7 @@ def test_initiate_cash_credit_purchase_different_quantities(mock_send_email, app
     additional_shoot_cost = settings.get("additional_shoot_cost")
 
     for quantity in [1, 5, 10, 20]:
-        result = payments.initiate_cash_credit_purchase(db.session, test_user, quantity)
+        result = payments.initiate_cash_credit_purchase(test_user, quantity)
         assert result.success is True
         assert result.data["quantity"] == quantity
 
@@ -364,7 +364,7 @@ def test_initiate_cash_membership_email_failure_does_not_block(mock_send_email, 
     """Test cash membership payment succeeds even if confirmation email fails"""
     mock_send_email.side_effect = Exception("Mail server down")
 
-    result = payments.initiate_cash_membership_payment(db.session, test_user)
+    result = payments.initiate_cash_membership_payment(test_user)
 
     # Payment should still succeed even if email fails
     assert result.success is True

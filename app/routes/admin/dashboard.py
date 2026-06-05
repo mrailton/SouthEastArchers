@@ -11,4 +11,4 @@ router = APIRouter(tags=["admin.dashboard"])
 async def dashboard(request: Request, db: DbSession, user: CurrentUser):
     result = admin.get_dashboard_stats()
     assert result.data is not None
-    return render(request, "admin/dashboard.html", result.data, user=user, db=db)
+    return render(request, "admin/dashboard.html", result.data, user=user)

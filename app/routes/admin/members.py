@@ -3,8 +3,9 @@ from fastapi.responses import RedirectResponse
 
 from app.dependencies import CurrentUser, DbSession, require_perms, verify_csrf
 from app.events import membership_activated
-from app.forms.admin_forms import CreateMemberForm, EditMemberForm
 from app.routes.admin._helpers import flash_form_errors
+from app.schemas.admin_forms import QUALIFICATION_CHOICES, CreateMemberForm, EditMemberForm
+from app.schemas.form_helpers import FormView, parse_form
 from app.services import memberships, payments, rbac, users
 from app.templating import flash, render
 from app.utils.formdata import request_form_data
@@ -14,6 +15,28 @@ router = APIRouter(tags=["admin.members"])
 
 def _role_choices():
     return rbac.role_choices()
+
+
+def _member_form_view(member, *, errors: dict | None = None) -> FormView:
+    values = {
+        "name": member.name,
+        "email": member.email,
+        "phone": member.phone or "",
+        "qualification": member.qualification or "none",
+        "qualification_detail": member.qualification_detail or "",
+        "password": "",
+        "roles": [role.id for role in member.roles],
+        "is_active": member.is_active,
+        "membership_start_date": member.membership.start_date if member.membership else None,
+        "membership_expiry_date": member.membership.expiry_date if member.membership else None,
+        "membership_initial_credits": member.membership.initial_credits if member.membership else None,
+        "membership_purchased_credits": member.membership.purchased_credits if member.membership else None,
+    }
+    return FormView(
+        values=values,
+        errors=errors,
+        choices={"roles": _role_choices(), "qualification": QUALIFICATION_CHOICES},
+    )
 
 
 @router.get("/members", name="admin.members", dependencies=[require_perms("members.read")])
@@ -38,67 +61,56 @@ async def members_index(request: Request, db: DbSession, user: CurrentUser):
             "membership_filter": membership_filter,
         },
         user=user,
-        db=db,
     )
 
 
 @router.get("/members/create", name="admin.create_member", dependencies=[require_perms("members.create")])
 async def create_member_page(request: Request, db: DbSession, user: CurrentUser):
-    form = CreateMemberForm()
-    form.roles.choices = _role_choices()
-    return render(request, "admin/create_member.html", {"form": form}, user=user, db=db)
+    form = FormView(choices={"roles": _role_choices()})
+    return render(request, "admin/create_member.html", {"form": form}, user=user)
 
 
 @router.post("/members/create", name="admin.create_member_post", dependencies=[require_perms("members.create")])
 async def create_member_store(request: Request, db: DbSession, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
-    form = CreateMemberForm(formdata=form_data)
-    form.roles.choices = _role_choices()
-    if form.validate():
+    parsed, errors, values = parse_form(CreateMemberForm, form_data)
+    form = FormView(values=values, errors=errors, choices={"roles": _role_choices()})
+    if parsed:
         result = users.create_member(
-            name=form.name.data,
-            email=form.email.data,
-            phone=form.phone.data,
-            password=form.password.data or "changeme123",
-            role_ids=form.roles.data,
-            create_membership=form.create_membership.data,
-            qualification=form.qualification.data if hasattr(form, "qualification") else "none",
+            name=parsed.name,
+            email=str(parsed.email),
+            phone=parsed.phone or None,
+            password=parsed.password or "changeme123",
+            role_ids=parsed.roles,
+            create_membership=parsed.create_membership,
         )
         if result.success:
-            flash(request, "success", f"Member {form.name.data} created successfully!")
+            flash(request, "success", f"Member {parsed.name} created successfully!")
             member_id = result.data.id if result.data else None
             if member_id:
                 return RedirectResponse(url=f"/admin/members/{member_id}", status_code=303)
             return RedirectResponse(url="/admin/members", status_code=303)
         flash(request, "error", result.message)
-        return render(request, "admin/create_member.html", {"form": form}, user=user, db=db)
-    flash_form_errors(request, form)
-    return render(request, "admin/create_member.html", {"form": form}, user=user, db=db, status_code=422)
+        return render(request, "admin/create_member.html", {"form": form}, user=user)
+    flash_form_errors(request, errors)
+    return render(request, "admin/create_member.html", {"form": form}, user=user, status_code=422)
 
 
 @router.get("/members/{user_id}", name="admin.member_detail", dependencies=[require_perms("members.read")])
 async def member_detail(user_id: int, request: Request, db: DbSession, user: CurrentUser):
     member = users.get_user_by_id(user_id)
     if not member:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
-    return render(request, "admin/member_detail.html", {"member": member}, user=user, db=db)
+        return render(request, "errors/404.html", user=user, status_code=404)
+    return render(request, "admin/member_detail.html", {"member": member}, user=user)
 
 
 @router.get("/members/{user_id}/edit", name="admin.edit_member", dependencies=[require_perms("members.update")])
 async def edit_member_page(user_id: int, request: Request, db: DbSession, user: CurrentUser):
     member = users.get_user_by_id(user_id)
     if not member:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
-    form = EditMemberForm(obj=member)
-    if member.membership:
-        form.membership_start_date.data = member.membership.start_date
-        form.membership_expiry_date.data = member.membership.expiry_date
-        form.membership_initial_credits.data = member.membership.initial_credits
-        form.membership_purchased_credits.data = member.membership.purchased_credits
-    form.roles.choices = _role_choices()
-    form.roles.data = [r.id for r in member.roles]
-    return render(request, "admin/edit_member.html", {"member": member, "form": form}, user=user, db=db)
+        return render(request, "errors/404.html", user=user, status_code=404)
+    return render(request, "admin/edit_member.html", {"member": member, "form": _member_form_view(member)}, user=user)
 
 
 @router.post("/members/{user_id}/edit", name="admin.edit_member_post", dependencies=[require_perms("members.update")])
@@ -107,30 +119,30 @@ async def edit_member_store(user_id: int, request: Request, db: DbSession, user:
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)
     if not member:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
-    form = EditMemberForm(formdata=form_data, obj=member)
-    form.roles.choices = _role_choices()
-    if form.validate():
+        return render(request, "errors/404.html", user=user, status_code=404)
+    parsed, errors, values = parse_form(EditMemberForm, form_data)
+    form = FormView(values=values, errors=errors, choices={"roles": _role_choices(), "qualification": QUALIFICATION_CHOICES})
+    if parsed:
         result = users.update_member(
             user=member,
-            name=form.name.data,
-            email=form.email.data,
-            phone=form.phone.data,
-            qualification=form.qualification.data,
-            qualification_detail=form.qualification_detail.data or None,
-            role_ids=form.roles.data,
-            is_active=form.is_active.data,
-            password=form.password.data or None,
-            membership_start_date=form.membership_start_date.data,
-            membership_expiry_date=form.membership_expiry_date.data,
-            membership_initial_credits=form.membership_initial_credits.data,
-            membership_purchased_credits=form.membership_purchased_credits.data,
+            name=parsed.name,
+            email=str(parsed.email),
+            phone=parsed.phone or None,
+            qualification=parsed.qualification,
+            qualification_detail=parsed.qualification_detail or None,
+            role_ids=parsed.roles,
+            is_active=parsed.is_active,
+            password=parsed.password or None,
+            membership_start_date=parsed.membership_start_date,
+            membership_expiry_date=parsed.membership_expiry_date,
+            membership_initial_credits=parsed.membership_initial_credits,
+            membership_purchased_credits=parsed.membership_purchased_credits,
         )
         flash(request, "success" if result.success else "error", result.message)
         if result.success:
             return RedirectResponse(url=f"/admin/members/{user_id}", status_code=303)
-    flash_form_errors(request, form)
-    return render(request, "admin/edit_member.html", {"member": member, "form": form}, user=user, db=db, status_code=422)
+    flash_form_errors(request, errors)
+    return render(request, "admin/edit_member.html", {"member": member, "form": form}, user=user, status_code=422)
 
 
 @router.post("/members/{user_id}/activate", name="admin.activate_user", dependencies=[require_perms("members.activate_account")])
@@ -139,7 +151,7 @@ async def activate_user(user_id: int, request: Request, db: DbSession, user: Cur
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)
     if not member:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
+        return render(request, "errors/404.html", user=user, status_code=404)
     result = users.activate_account(user_id)
     flash(request, "success" if result.success else ("warning" if "already active" in result.message else "error"), result.message)
     return RedirectResponse(url=f"/admin/members/{user_id}", status_code=303)
@@ -155,7 +167,7 @@ async def renew_membership(user_id: int, request: Request, db: DbSession, user: 
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)
     if not member:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
+        return render(request, "errors/404.html", user=user, status_code=404)
     result = memberships.renew_membership(member)
     flash(request, "success" if result.success else "error", result.message)
     return RedirectResponse(url=f"/admin/members/{user_id}", status_code=303)
@@ -171,7 +183,7 @@ async def create_membership(user_id: int, request: Request, db: DbSession, user:
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)
     if not member:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
+        return render(request, "errors/404.html", user=user, status_code=404)
     result = memberships.create_membership(member)
     flash(request, "success" if result.success else "error", result.message)
     return RedirectResponse(url=f"/admin/members/{user_id}", status_code=303)
@@ -187,7 +199,7 @@ async def activate_membership(user_id: int, request: Request, db: DbSession, use
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)
     if not member:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
+        return render(request, "errors/404.html", user=user, status_code=404)
     result = memberships.activate_membership(member)
     if not result.success:
         flash(request, "error", result.message)
@@ -214,7 +226,7 @@ async def adjust_credits(user_id: int, request: Request, db: DbSession, user: Cu
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)
     if not member:
-        return render(request, "errors/404.html", user=user, db=db, status_code=404)
+        return render(request, "errors/404.html", user=user, status_code=404)
     if not member.membership:
         flash(request, "error", "Member does not have a membership.")
         return RedirectResponse(url=f"/admin/members/{user_id}", status_code=303)

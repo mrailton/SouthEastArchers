@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 from app.db import db
-from app.models import Membership
+from app.models import Membership, User
 from app.repositories.base import BaseRepository
 
 
@@ -20,6 +20,10 @@ class MembershipRepository(BaseRepository):
             Membership.status == "active",
             Membership.expiry_date < date.today(),
         ).all()
+
+    @staticmethod
+    def get_active_for_active_users() -> list[Membership]:
+        return Membership.query.filter(Membership.status == "active").join(User).filter(User.is_active.is_(True)).all()
 
     @staticmethod
     def add(membership: Membership) -> None:

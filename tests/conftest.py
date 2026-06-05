@@ -141,8 +141,6 @@ def client(app):
     async def override_get_db():
         try:
             yield session
-            if session.info.pop("commit", False):
-                session.commit()
         except Exception:
             session.rollback()
             raise

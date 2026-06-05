@@ -48,3 +48,38 @@ def test_edit_event_not_found(admin_client):
 def test_events_requires_admin(member_client):
     response = member_client.get("/admin/events")
     assert response.status_code in (302, 403)
+
+
+def test_create_event_page(admin_client):
+    response = admin_client.get("/admin/events/create")
+    assert response.status_code == 200
+
+
+def test_edit_event_success(admin_client):
+    event_date = datetime.now().strftime("%Y-%m-%dT%H:%M")
+    admin_client.post(
+        "/admin/events/create",
+        data={
+            "title": "Editable Event",
+            "description": "Event description",
+            "start_date": event_date,
+            "location": "Range",
+        },
+        follow_redirects=False,
+    )
+    event = Event.query.filter_by(title="Editable Event").first()
+    response = admin_client.get(f"/admin/events/{event.id}/edit")
+    assert response.status_code == 200
+
+    response = admin_client.post(
+        f"/admin/events/{event.id}/edit",
+        data={
+            "title": "Updated Event",
+            "description": "Updated description",
+            "start_date": event_date,
+            "location": "New Range",
+            "published": "on",
+        },
+        follow_redirects=True,
+    )
+    assert b"Event updated" in response.content

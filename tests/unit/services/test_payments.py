@@ -377,3 +377,146 @@ def test_initiate_cash_membership_email_failure_does_not_block(mock_send_email, 
         status="pending",
     ).first()
     assert payment is not None
+
+
+def test_validate_credit_quantity_invalid(app):
+    result = payments.validate_credit_quantity(0)
+    assert result.success is False
+    result = payments.validate_credit_quantity(51)
+    assert result.success is False
+
+
+def test_get_user_payments(app, test_user):
+    create_payment_for_user(db, test_user, payment_type="membership", status="completed")
+    rows = payments.get_user_payments(test_user.id)
+    assert len(rows) >= 1
+
+
+def test_get_completed_membership_payment(app, test_user):
+    create_payment_for_user(db, test_user, payment_type="membership", status="completed")
+    payment = payments.get_completed_membership_payment(test_user.id)
+    assert payment is not None
+
+
+def test_approve_cash_membership_payment(app, test_user):
+    payment = create_payment_for_user(
+        db,
+        test_user,
+        payment_type="membership",
+        payment_method="cash",
+        status="pending",
+    )
+    result = payments.approve_cash_payment(payment.id)
+    assert result.success is True
+    assert payment.status == "completed"
+
+
+def test_approve_cash_credits_payment(app, test_user):
+    payment = create_payment_for_user(
+        db,
+        test_user,
+        payment_type="credits",
+        payment_method="cash",
+        status="pending",
+        description="5 shooting credits",
+    )
+    before = test_user.membership.purchased_credits
+    result = payments.approve_cash_payment(payment.id)
+    assert result.success is True
+    assert test_user.membership.purchased_credits == before + 5
+
+
+def test_approve_cash_payment_not_found(app):
+    result = payments.approve_cash_payment(99999)
+    assert result.success is False
+
+
+def test_reject_cash_payment(app, test_user):
+    payment = create_payment_for_user(
+        db,
+        test_user,
+        payment_type="membership",
+        payment_method="cash",
+        status="pending",
+    )
+    result = payments.reject_cash_payment(payment.id)
+    assert result.success is True
+    assert payment.status == "cancelled"
+
+
+def test_reject_cash_payment_cannot_reject_completed(app, test_user):
+    payment = create_payment_for_user(
+        db,
+        test_user,
+        payment_type="membership",
+        payment_method="cash",
+        status="completed",
+    )
+    result = payments.reject_cash_payment(payment.id)
+    assert result.success is False
+
+
+def test_credit_quantity_from_description_edge_cases(app):
+    assert payments._credit_quantity_from_description("5 shooting credits") == 5
+    assert payments._credit_quantity_from_description("bad shooting credits") == 1
+    assert payments._credit_quantity_from_description(None) == 1
+
+
+@patch("app.services.payments._emit_payment_completed_events")
+def test_approve_cash_payment_renews_active_membership(mock_emit, app, test_user):
+    payment = create_payment_for_user(
+        db,
+        test_user,
+        payment_type="membership",
+        payment_method="cash",
+        status="pending",
+    )
+    result = payments.approve_cash_payment(payment.id)
+    assert result.success is True
+    assert payment.status == "completed"
+    mock_emit.assert_called_once()
+
+
+def test_approve_cash_payment_creates_membership(app, admin_user):
+    from app import db
+    from app.models import User
+
+    user = User(name="New Cash", email="cashnew@example.com", phone="1", is_active=True)
+    user.set_password("password123")
+    db.session.add(user)
+    db.session.commit()
+    payment = create_payment_for_user(
+        db,
+        user,
+        payment_type="membership",
+        payment_method="cash",
+        status="pending",
+    )
+    result = payments.approve_cash_payment(payment.id)
+    assert result.success is True
+    assert user.membership is not None
+    assert user.membership.status == "active"
+
+
+@patch("app.services.payments.cash_payment_submitted.send", side_effect=RuntimeError("event"))
+def test_initiate_cash_membership_event_failure_still_succeeds(mock_send, app, test_user):
+    result = payments.initiate_cash_membership_payment(test_user)
+    assert result.success is True
+
+
+def test_approve_cash_payment_user_not_found(app):
+    from app import db
+    from app.models import Payment
+
+    payment = Payment(
+        user_id=99999,
+        amount_cents=1000,
+        payment_type="membership",
+        payment_method="cash",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+    result = payments.approve_cash_payment(payment.id)
+    assert result.success is False
+    assert "User not found" in result.message

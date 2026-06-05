@@ -61,3 +61,24 @@ def test_news_disabled_returns_404(client, app):
 def test_events_disabled_returns_404(client, app):
     response = client.get("/events")
     assert response.status_code == 404
+
+
+def test_about_page(client):
+    response = client.get("/about")
+    assert response.status_code == 200
+
+
+def test_membership_page(client):
+    response = client.get("/membership")
+    assert response.status_code == 200
+
+
+def test_news_list_shows_published(client, app):
+    _enable_features()
+    news = News(title="Published", content="Published article content here.", published=True)
+    news.publish()
+    db.session.add(news)
+    db.session.commit()
+    response = client.get("/news")
+    assert response.status_code == 200
+    assert b"Published" in response.content

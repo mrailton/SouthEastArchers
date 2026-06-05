@@ -29,3 +29,23 @@ def test_flash_stores_message():
     request = Request(scope)
     flash(request, "success", "Saved")
     assert request.session["_flashes"] == [("success", "Saved")]
+
+
+def test_url_for_unknown_route_raises():
+    import pytest
+
+    with pytest.raises(ValueError, match="Unknown route"):
+        url_for("definitely.not.a.route")
+
+
+def test_anonymous_user_permissions():
+    from app.templating import AnonymousUser
+
+    user = AnonymousUser()
+    assert user.is_authenticated is False
+    assert user.has_permission("members.read") is False
+    assert user.has_any_permission("members.read", "finance.read") is False
+
+
+def test_url_for_external():
+    assert url_for("health", _external=True).startswith("http")

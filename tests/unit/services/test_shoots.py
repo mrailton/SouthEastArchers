@@ -403,3 +403,76 @@ def test_inactive_warning_message(app):
     assert "Inactive Ian" in result.warnings[0]
     assert "cannot be added" in result.warnings[0].lower()
     assert "inactive membership" in result.warnings[0].lower()
+
+
+def test_create_shoot_with_cash_visitor(app, admin_user):
+    result = shoots.create_shoot(
+        shoot_date=date.today(),
+        location="HALL",
+        visitors=[
+            {
+                "name": "Visitor One",
+                "club": "Other Club",
+                "affiliation": "AI",
+                "payment_method": "cash",
+            }
+        ],
+        created_by_id=admin_user.id,
+    )
+    assert result.success is True
+    assert len(result.data.visitors) == 1
+    from app.models import FinancialTransaction
+
+    income = FinancialTransaction.query.filter_by(type="income", category="shoot_fees").first()
+    assert income is not None
+    assert "Visitor One" in income.description
+
+
+def test_create_shoot_with_sumup_visitor_records_fee(app, admin_user):
+    from app.services import settings
+
+    settings.set("sumup_fee_percentage", "2.5")
+    result = shoots.create_shoot(
+        shoot_date=date.today(),
+        location="MEADOW",
+        visitors=[
+            {
+                "name": "SumUp Guest",
+                "club": "Guest Club",
+                "affiliation": "IFAF",
+                "payment_method": "sumup",
+            }
+        ],
+        created_by_id=admin_user.id,
+    )
+    assert result.success is True
+    from app.models import FinancialTransaction
+
+    expense = FinancialTransaction.query.filter_by(type="expense", category="payment_processing_fees").first()
+    assert expense is not None
+
+
+def test_update_shoot_removes_visitor(app, admin_user):
+    created = shoots.create_shoot(
+        shoot_date=date.today(),
+        location="HALL",
+        visitors=[
+            {
+                "name": "Remove Me",
+                "club": "Club",
+                "affiliation": "AI",
+                "payment_method": "cash",
+            }
+        ],
+        created_by_id=admin_user.id,
+    )
+    shoot = created.data
+    result = shoots.update_shoot(
+        shoot,
+        shoot_date=date.today(),
+        location="HALL",
+        visitors=[],
+        created_by_id=admin_user.id,
+    )
+    assert result.success is True
+    assert len(shoot.visitors) == 0

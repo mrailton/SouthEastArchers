@@ -284,3 +284,56 @@ def test_record_cash_payment_transaction_credit_purchase(app, admin_user):
     assert income.category == "shoot_fees"
     assert income.amount == 5.00
     assert income.source == "Cash"
+
+
+def test_create_transaction_failure(app, admin_user):
+    from unittest.mock import patch
+
+    with patch("app.services.finance.FinancialTransactionRepository.save", side_effect=RuntimeError("db")):
+        result = finance.create_transaction(
+            txn_type="expense",
+            txn_date=date(2026, 1, 15),
+            amount_cents=100,
+            category="equipment",
+            description="Fail",
+            created_by_id=admin_user.id,
+        )
+    assert result.success is False
+
+
+def test_update_transaction_failure(app, admin_user):
+    from unittest.mock import patch
+
+    created = finance.create_transaction(
+        txn_type="income",
+        txn_date=date(2026, 1, 15),
+        amount_cents=1000,
+        category="donations",
+        description="Donation",
+        created_by_id=admin_user.id,
+    )
+    with patch("app.services.finance.FinancialTransactionRepository.save", side_effect=RuntimeError("db")):
+        result = finance.update_transaction(
+            transaction=created.data,
+            txn_date=date(2026, 1, 16),
+            amount_cents=2000,
+            category="donations",
+            description="Updated",
+        )
+    assert result.success is False
+
+
+def test_delete_transaction_failure(app, admin_user):
+    from unittest.mock import patch
+
+    created = finance.create_transaction(
+        txn_type="expense",
+        txn_date=date(2026, 1, 15),
+        amount_cents=500,
+        category="equipment",
+        description="Delete me",
+        created_by_id=admin_user.id,
+    )
+    with patch("app.services.finance.FinancialTransactionRepository.delete", side_effect=RuntimeError("db")):
+        result = finance.delete_transaction(created.data.id)
+    assert result.success is False

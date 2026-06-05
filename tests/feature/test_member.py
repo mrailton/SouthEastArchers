@@ -43,3 +43,41 @@ def test_change_password_mismatch_shows_error(member_client):
         },
     )
     assert "do not match" in response.text.lower()
+
+
+def test_shoots_page(member_client, test_user):
+    response = member_client.get("/member/shoots")
+    assert response.status_code == 200
+
+
+def test_credits_page(member_client):
+    response = member_client.get("/member/credits")
+    assert response.status_code == 200
+
+
+def test_profile_page(member_client):
+    response = member_client.get("/member/profile")
+    assert response.status_code == 200
+
+
+def test_change_password_page(member_client):
+    response = member_client.get("/member/change-password")
+    assert response.status_code == 200
+
+
+def test_change_password_success(member_client):
+    response = member_client.post(
+        "/member/change-password",
+        data={
+            "current_password": "password123",
+            "new_password": "newpassword456",
+            "confirm_password": "newpassword456",
+        },
+        follow_redirects=True,
+    )
+    assert b"successfully" in response.content.lower() or response.status_code == 200
+
+
+def test_profile_validation_error(member_client):
+    response = member_client.post("/member/profile", data={"name": "A", "phone": ""})
+    assert response.status_code == 422

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
+
 from app.db import Pagination, db, paginate_query
 from app.models import Permission, Role, User
 from app.repositories.base import BaseRepository
@@ -13,8 +16,13 @@ class UserRepository(BaseRepository):
         return db.session.get(User, user_id)
 
     @staticmethod
+    def get_by_id_with_permissions(user_id: int) -> User | None:
+        stmt = select(User).options(joinedload(User.roles).joinedload(Role.permissions)).where(User.id == user_id)
+        return db.session.scalars(stmt).unique().first()
+
+    @staticmethod
     def get_by_email(email: str) -> User | None:
-        return User.query.filter_by(email=email).first()
+        return db.session.scalars(select(User).where(User.email == email)).first()
 
     @staticmethod
     def get_all(order_by_name: bool = True) -> list[User]:

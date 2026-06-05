@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
-from app.dependencies import CurrentUser, DbSession, require_perms, verify_csrf
+from app.dependencies import CurrentUser, require_perms, verify_csrf
 from app.routes.admin._helpers import flash_form_errors
 from app.schemas.admin_forms import RoleForm
 from app.schemas.form_helpers import FormView, parse_form
@@ -27,20 +27,20 @@ def _role_form_view(role=None, *, values: dict | None = None, errors: dict | Non
 
 
 @router.get("/roles", name="admin.roles_index", dependencies=[require_perms("roles.manage")])
-async def roles_index(request: Request, db: DbSession, user: CurrentUser):
+async def roles_index(request: Request, user: CurrentUser):
     roles = rbac.list_roles()
     permissions = rbac.list_permissions()
     return render(request, "admin/roles.html", {"roles": roles, "permissions": permissions}, user=user)
 
 
 @router.get("/roles/create", name="admin.create_role", dependencies=[require_perms("roles.manage")])
-async def create_role_page(request: Request, db: DbSession, user: CurrentUser):
+async def create_role_page(request: Request, user: CurrentUser):
     form = _role_form_view()
     return render(request, "admin/role_form.html", {"form": form, "role": None, "mode": "create"}, user=user)
 
 
 @router.post("/roles/create", name="admin.create_role_post", dependencies=[require_perms("roles.manage")])
-async def create_role_store(request: Request, db: DbSession, user: CurrentUser):
+async def create_role_store(request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     parsed, errors, values = parse_form(RoleForm, form_data)
@@ -57,7 +57,7 @@ async def create_role_store(request: Request, db: DbSession, user: CurrentUser):
 
 
 @router.get("/roles/{role_id}/edit", name="admin.edit_role", dependencies=[require_perms("roles.manage")])
-async def edit_role_page(role_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def edit_role_page(role_id: int, request: Request, user: CurrentUser):
     role = rbac.get_role(role_id)
     if not role:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -66,7 +66,7 @@ async def edit_role_page(role_id: int, request: Request, db: DbSession, user: Cu
 
 
 @router.post("/roles/{role_id}/edit", name="admin.edit_role_post", dependencies=[require_perms("roles.manage")])
-async def edit_role_store(role_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def edit_role_store(role_id: int, request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     role = rbac.get_role(role_id)
@@ -85,7 +85,7 @@ async def edit_role_store(role_id: int, request: Request, db: DbSession, user: C
 
 
 @router.post("/roles/{role_id}/delete", name="admin.delete_role", dependencies=[require_perms("roles.manage")])
-async def delete_role(role_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def delete_role(role_id: int, request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     role = rbac.get_role(role_id)

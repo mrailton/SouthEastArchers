@@ -1,7 +1,4 @@
-from typing import Annotated
-
-from fastapi import Form
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class CsrfForm(BaseModel):
@@ -13,15 +10,9 @@ class LoginForm(CsrfForm):
     password: str
 
 
-def login_form(
-    csrf_token: Annotated[str, Form()] = "",
-    email: Annotated[str, Form()] = "",
-    password: Annotated[str, Form()] = "",
-) -> LoginForm:
-    return LoginForm(csrf_token=csrf_token, email=email, password=password)
-
-
 class SignupForm(CsrfForm):
+    model_config = ConfigDict(populate_by_name=True)
+
     name: str = Field(min_length=2)
     email: EmailStr
     phone: str = ""
@@ -29,7 +20,7 @@ class SignupForm(CsrfForm):
     password_confirm: str = ""
     qualification: str = "none"
     qualification_detail: str = ""
-    g_recaptcha_response: str = ""
+    g_recaptcha_response: str = Field("", alias="g-recaptcha-response")
 
     @field_validator("password_confirm")
     @classmethod
@@ -39,39 +30,8 @@ class SignupForm(CsrfForm):
         return value
 
 
-def signup_form(
-    csrf_token: Annotated[str, Form()] = "",
-    name: Annotated[str, Form()] = "",
-    email: Annotated[str, Form()] = "",
-    phone: Annotated[str, Form()] = "",
-    password: Annotated[str, Form()] = "",
-    password_confirm: Annotated[str, Form()] = "",
-    qualification: Annotated[str, Form()] = "none",
-    qualification_detail: Annotated[str, Form()] = "",
-    g_recaptcha_response: Annotated[str, Form(alias="g-recaptcha-response")] = "",
-) -> SignupForm:
-    return SignupForm(
-        csrf_token=csrf_token,
-        name=name,
-        email=email,
-        phone=phone or "",
-        password=password,
-        password_confirm=password_confirm,
-        qualification=qualification,
-        qualification_detail=qualification_detail,
-        g_recaptcha_response=g_recaptcha_response,
-    )
-
-
 class ForgotPasswordForm(CsrfForm):
     email: EmailStr
-
-
-def forgot_password_form(
-    csrf_token: Annotated[str, Form()] = "",
-    email: Annotated[str, Form()] = "",
-) -> ForgotPasswordForm:
-    return ForgotPasswordForm(csrf_token=csrf_token, email=email)
 
 
 class ResetPasswordForm(CsrfForm):
@@ -84,14 +44,6 @@ class ResetPasswordForm(CsrfForm):
         if value != info.data.get("password"):
             raise ValueError("Passwords do not match")
         return value
-
-
-def reset_password_form(
-    csrf_token: Annotated[str, Form()] = "",
-    password: Annotated[str, Form()] = "",
-    password_confirm: Annotated[str, Form()] = "",
-) -> ResetPasswordForm:
-    return ResetPasswordForm(csrf_token=csrf_token, password=password, password_confirm=password_confirm)
 
 
 class ProfileForm(CsrfForm):

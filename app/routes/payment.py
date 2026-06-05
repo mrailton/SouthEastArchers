@@ -1,28 +1,23 @@
-import logging
-
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
-from app.dependencies import CurrentUser, DbSession, verify_csrf
+from app.dependencies import CurrentUser, verify_csrf
 from app.enums import PaymentType
 from app.services import payment_processing
 from app.services import payments as payment_service
-from app.services.sumup import SumUpService
 from app.templating import flash, render
 from app.utils.checkout_session import clear_session_keys, get_user_id_from_session
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/payment", tags=["payment"])
 
 
 @router.get("/membership", name="payment.membership_payment")
-async def membership_payment_page(request: Request, _db: DbSession, user: CurrentUser):
+async def membership_payment_page(request: Request, user: CurrentUser):
     return render(request, "payment/membership.html", user=user)
 
 
 @router.post("/membership", name="payment.membership_payment_post")
-async def membership_payment_store(request: Request, _db: DbSession, user: CurrentUser):
+async def membership_payment_store(request: Request, user: CurrentUser):
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
     result = payment_service.initiate_membership_payment(user)
@@ -40,7 +35,7 @@ async def membership_payment_store(request: Request, _db: DbSession, user: Curre
 
 
 @router.post("/membership/cash", name="payment.membership_cash_payment")
-async def membership_cash_payment(request: Request, _db: DbSession, user: CurrentUser):
+async def membership_cash_payment(request: Request, user: CurrentUser):
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
     result = payment_service.initiate_cash_membership_payment(user)
@@ -63,7 +58,7 @@ async def membership_cash_payment(request: Request, _db: DbSession, user: Curren
 
 
 @router.get("/credits", name="payment.credits")
-async def credits_payment_page(request: Request, _db: DbSession, user: CurrentUser):
+async def credits_payment_page(request: Request, user: CurrentUser):
     if not user.membership:
         flash(request, "error", "You must have an active membership to purchase credits.")
         return RedirectResponse(url="/payment/membership", status_code=303)
@@ -71,7 +66,7 @@ async def credits_payment_page(request: Request, _db: DbSession, user: CurrentUs
 
 
 @router.post("/credits", name="payment.credits_post")
-async def credits_payment_store(request: Request, _db: DbSession, user: CurrentUser):
+async def credits_payment_store(request: Request, user: CurrentUser):
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
     try:
@@ -101,7 +96,7 @@ async def credits_payment_store(request: Request, _db: DbSession, user: CurrentU
 
 
 @router.post("/credits/cash", name="payment.credits_cash_payment")
-async def credits_cash_payment(request: Request, _db: DbSession, user: CurrentUser):
+async def credits_cash_payment(request: Request, user: CurrentUser):
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
     try:
@@ -136,7 +131,7 @@ async def credits_cash_payment(request: Request, _db: DbSession, user: CurrentUs
 
 
 @router.get("/checkout/{checkout_id}", name="payment.show_checkout")
-async def show_checkout(checkout_id: str, request: Request, _db: DbSession, user: CurrentUser):
+async def show_checkout(checkout_id: str, request: Request, user: CurrentUser):
     amount = request.session.get("checkout_amount", 100.00)
     description = request.session.get("checkout_description", "Payment")
     return render(
@@ -148,79 +143,27 @@ async def show_checkout(checkout_id: str, request: Request, _db: DbSession, user
 
 
 @router.post("/checkout/{checkout_id}/complete", name="payment.complete_checkout")
-async def complete_checkout(checkout_id: str, request: Request, _db: DbSession, user: CurrentUser):
+async def complete_checkout(checkout_id: str, request: Request, user: CurrentUser):
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
-    try:
-        sumup = SumUpService()
-        checkout = sumup.get_checkout(checkout_id)
-        if not checkout:
-            flash(request, "error", "Could not verify payment status. Please contact us.")
-            return RedirectResponse(url=f"/payment/checkout/{checkout_id}", status_code=303)
-
-        status = getattr(checkout, "status", None)
-        transaction_code = getattr(checkout, "transaction_code", None)
-        transaction_id = getattr(checkout, "transaction_id", None)
-
-        if status != "PAID":
-            if status == "FAILED":
-                flash(request, "error", "Payment declined: Payment was not approved")
-            elif status == "PENDING":
-                flash(request, "warning", "Payment is pending. Please contact us if the issue persists.")
-            else:
-                flash(request, "error", "Payment failed: Payment was not approved")
-            return RedirectResponse(url=f"/payment/checkout/{checkout_id}", status_code=303)
-
-        txn_id = transaction_code or transaction_id or checkout_id
-        user_id = get_user_id_from_session(request, user)
-        if user_id is None:
-            flash(request, "error", "User session not found. Please try again.")
-            return RedirectResponse(url="/auth/login", status_code=303)
-
-        signup_payment_id = request.session.get("signup_payment_id")
-        if request.session.get("signup_user_id") and signup_payment_id:
-            result = payment_processing.handle_signup_payment(user_id, signup_payment_id, txn_id)
-            clear_session_keys(request, "signup_user_id", "signup_payment_id", "checkout_amount", "checkout_description")
-            flash(request, "success" if result.success else "error", result.message)
-            return RedirectResponse(url="/auth/login", status_code=303)
-
-        renewal_payment_id = request.session.get("membership_renewal_payment_id")
-        if request.session.get("membership_renewal_user_id") and renewal_payment_id:
-            result = payment_processing.handle_membership_renewal(user_id, renewal_payment_id, txn_id)
-            clear_session_keys(
-                request,
-                "membership_renewal_user_id",
-                "membership_renewal_payment_id",
-                "checkout_amount",
-                "checkout_description",
-            )
-            flash(request, "success" if result.success else "error", result.message)
-            return RedirectResponse(url="/member/dashboard", status_code=303)
-
-        credit_payment_id = request.session.get("credit_purchase_payment_id")
-        if request.session.get("credit_purchase_user_id") and credit_payment_id:
-            quantity = request.session.get("credit_purchase_quantity", 1)
-            result = payment_processing.handle_credit_purchase(user_id, credit_payment_id, quantity, txn_id)
-            clear_session_keys(
-                request,
-                "credit_purchase_user_id",
-                "credit_purchase_payment_id",
-                "credit_purchase_quantity",
-                "checkout_amount",
-                "checkout_description",
-            )
-            flash(request, "success" if result.success else "error", result.message)
-            return RedirectResponse(url="/member/dashboard", status_code=303)
-
-        flash(request, "success", "Payment processed successfully!")
-        return RedirectResponse(url="/member/dashboard", status_code=303)
-    except Exception:
-        logger.exception("Error completing checkout")
-        flash(request, "error", "An error occurred processing your payment. Please try again.")
+    result = payment_processing.fulfill_checkout(
+        checkout_id=checkout_id,
+        session=request.session,
+        user_id=get_user_id_from_session(request, user),
+    )
+    if not result.success:
+        flash(request, "error", result.message)
         return RedirectResponse(url=f"/payment/checkout/{checkout_id}", status_code=303)
+
+    fulfillment = result.data
+    assert fulfillment is not None
+    if fulfillment.session_keys_to_clear:
+        clear_session_keys(request, *fulfillment.session_keys_to_clear)
+    flash(request, fulfillment.flash_category, fulfillment.flash_message)
+    return RedirectResponse(url=fulfillment.redirect_url, status_code=303)
 
 
 @router.get("/history", name="payment.history")
-async def payment_history(request: Request, _db: DbSession, user: CurrentUser):
+async def payment_history(request: Request, user: CurrentUser):
     payments = payment_service.get_user_payments(user.id)
     return render(request, "payment/history.html", {"payments": payments}, user=user)

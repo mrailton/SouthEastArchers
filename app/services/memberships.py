@@ -1,10 +1,14 @@
+import logging
 from datetime import date
 
 from app.enums import PaymentType
+from app.events import membership_activated
 from app.models import Membership, User
 from app.repositories import MembershipRepository, PaymentRepository
-from app.services import settings
+from app.services import payments, settings
 from app.services.result import ServiceResult
+
+logger = logging.getLogger(__name__)
 
 
 def create_membership(user: User) -> ServiceResult[None]:
@@ -45,6 +49,24 @@ def activate_membership(user: User) -> ServiceResult[None]:
         return ServiceResult.ok(message="Membership activated successfully.")
     except Exception as exc:
         return ServiceResult.fail(f"Error activating membership: {exc}")
+
+
+def activate_membership_for_admin(user: User) -> ServiceResult[None]:
+    """Activate membership and send a receipt email when a completed payment exists."""
+    result = activate_membership(user)
+    if not result.success:
+        return result
+
+    payment = payments.get_completed_membership_payment(user.id)
+    message = f"Membership activated for {user.name}!"
+    if payment:
+        try:
+            membership_activated.send(user_id=user.id, payment_id=payment.id)
+            message = f"{message} Receipt email sent."
+        except Exception:
+            logger.exception("Failed to send membership activation receipt for user %s", user.id)
+
+    return ServiceResult.ok(message=message)
 
 
 def renew_membership(user: User) -> ServiceResult[None]:

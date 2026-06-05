@@ -13,7 +13,7 @@ from app.services.result import ServiceResult
 logger = logging.getLogger(__name__)
 
 
-def create_transaction(
+def add_transaction(
     txn_type: str,
     txn_date: date,
     amount_cents: int,
@@ -23,6 +23,7 @@ def create_transaction(
     source: str | None = None,
     receipt_reference: str | None = None,
 ) -> ServiceResult[FinancialTransaction]:
+    """Stage a transaction in the current unit of work (flush only, no commit)."""
     transaction = FinancialTransaction(
         type=txn_type,
         date=txn_date,
@@ -36,8 +37,38 @@ def create_transaction(
 
     try:
         FinancialTransactionRepository.add(transaction)
-        FinancialTransactionRepository.save()
+        FinancialTransactionRepository.flush()
         return ServiceResult.ok(data=transaction)
+    except Exception as exc:
+        return ServiceResult.fail(f"Error creating transaction: {exc}")
+
+
+def create_transaction(
+    txn_type: str,
+    txn_date: date,
+    amount_cents: int,
+    category: str,
+    description: str,
+    created_by_id: int,
+    source: str | None = None,
+    receipt_reference: str | None = None,
+) -> ServiceResult[FinancialTransaction]:
+    result = add_transaction(
+        txn_type=txn_type,
+        txn_date=txn_date,
+        amount_cents=amount_cents,
+        category=category,
+        description=description,
+        created_by_id=created_by_id,
+        source=source,
+        receipt_reference=receipt_reference,
+    )
+    if not result.success:
+        return result
+
+    try:
+        FinancialTransactionRepository.save()
+        return result
     except Exception as exc:
         return ServiceResult.fail(f"Error creating transaction: {exc}")
 

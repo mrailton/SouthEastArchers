@@ -1,27 +1,19 @@
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import RedirectResponse
-from pydantic import ValidationError
 
-from app.dependencies import CurrentUser, DbSession, verify_csrf
+from app.dependencies import CurrentUser, verify_csrf
+from app.schemas.form_helpers import flash_field_errors, parse_form, single_field_errors
 from app.schemas.forms import ChangePasswordForm, ProfileForm
 from app.services import credits, users
 from app.templating import flash, render
+from app.utils.formdata import request_form_data
 
 router = APIRouter(prefix="/member", tags=["member"])
-
-
-def _validation_errors(exc: ValidationError) -> dict[str, str]:
-    errors: dict[str, str] = {}
-    for error in exc.errors():
-        field = ".".join(str(part) for part in error["loc"])
-        errors[field or "form"] = error["msg"]
-    return errors
 
 
 @router.get("/dashboard", name="member.dashboard")
 async def dashboard(
     request: Request,
-    _db: DbSession,
     user: CurrentUser,
     page: int = Query(1, ge=1),
 ):
@@ -39,73 +31,63 @@ async def dashboard(
 
 
 @router.get("/shoots", name="member.shoots")
-async def shoots(request: Request, _db: DbSession, user: CurrentUser):
+async def shoots(request: Request, user: CurrentUser):
     user_shoots = sorted(user.shoots, key=lambda shoot: shoot.date, reverse=True)
     return render(request, "member/shoots.html", {"shoots": user_shoots}, user=user)
 
 
 @router.get("/credits", name="member.credits")
-async def credits_page(request: Request, _db: DbSession, user: CurrentUser):
+async def credits_page(request: Request, user: CurrentUser):
     user_credits = credits.get_user_credits(user.id)
     return render(request, "member/credits.html", {"credits": user_credits}, user=user)
 
 
 @router.get("/profile", name="member.profile")
-async def profile(request: Request, _db: DbSession, user: CurrentUser):
+async def profile(request: Request, user: CurrentUser):
     return render(request, "member/profile.html", user=user)
 
 
 @router.post("/profile", name="member.profile_post")
-async def profile_update(request: Request, _db: DbSession, user: CurrentUser):
-    raw = await request.form()
-    verify_csrf(request, raw.get("csrf_token"))
-    try:
-        form = ProfileForm(
-            csrf_token=str(raw.get("csrf_token", "")),
-            name=str(raw.get("name", "")),
-            phone=str(raw.get("phone", "")),
-        )
-    except ValidationError as exc:
+async def profile_update(request: Request, user: CurrentUser):
+    form_data = await request_form_data(request)
+    verify_csrf(request, form_data.get("csrf_token"))
+    form, errors, _values = parse_form(ProfileForm, form_data)
+    if errors:
         return render(
             request,
             "member/profile.html",
-            {"errors": _validation_errors(exc)},
+            {"errors": single_field_errors(errors)},
             user=user,
             status_code=422,
         )
 
+    assert form is not None
     result = users.update_profile(user, name=form.name, phone=form.phone or None)
     flash(request, "success" if result.success else "error", result.message)
     return RedirectResponse(url="/member/profile", status_code=303)
 
 
 @router.get("/change-password", name="member.change_password")
-async def change_password_page(request: Request, _db: DbSession, user: CurrentUser):
+async def change_password_page(request: Request, user: CurrentUser):
     return render(request, "member/change_password.html", user=user)
 
 
 @router.post("/change-password", name="member.change_password_post")
-async def change_password_store(request: Request, _db: DbSession, user: CurrentUser):
-    raw = await request.form()
-    verify_csrf(request, raw.get("csrf_token"))
-    try:
-        form = ChangePasswordForm(
-            csrf_token=str(raw.get("csrf_token", "")),
-            current_password=str(raw.get("current_password", "")),
-            new_password=str(raw.get("new_password", "")),
-            confirm_password=str(raw.get("confirm_password", "")),
-        )
-    except ValidationError as exc:
-        for message in _validation_errors(exc).values():
-            flash(request, "error", message)
+async def change_password_store(request: Request, user: CurrentUser):
+    form_data = await request_form_data(request)
+    verify_csrf(request, form_data.get("csrf_token"))
+    form, errors, _values = parse_form(ChangePasswordForm, form_data)
+    if errors:
+        flash_field_errors(request, errors)
         return render(
             request,
             "member/change_password.html",
-            {"errors": _validation_errors(exc)},
+            {"errors": single_field_errors(errors)},
             user=user,
             status_code=422,
         )
 
+    assert form is not None
     result = users.change_password(
         user,
         current_password=form.current_password,

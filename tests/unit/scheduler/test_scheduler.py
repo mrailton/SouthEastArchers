@@ -344,9 +344,9 @@ def test_command_executes_management_command():
 
     event = schedule.command("test command", "Test")
 
-    with patch("os.system") as mock_system:
+    with patch("subprocess.run") as mock_run:
         event.run()
-        mock_system.assert_called_once_with("uv run python -m app.cli test command")
+        mock_run.assert_called_once_with(["uv", "run", "python", "-m", "app.cli", "test", "command"], check=False)
 
 
 def test_due_events_returns_due_tasks():

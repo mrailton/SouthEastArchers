@@ -10,7 +10,7 @@ from app.services.result import ServiceResult
 from tests.http_helpers import set_session
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.services.payment_processing.SumUpService")
 @patch("app.services.mail.send_payment_receipt")
 def test_complete_checkout_signup_payment(mock_email, mock_sumup_class, member_client, test_user):
     payment = Payment(
@@ -37,14 +37,14 @@ def test_complete_checkout_signup_payment(mock_email, mock_sumup_class, member_c
     assert b"Payment successful" in response.content
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.services.payment_processing.SumUpService")
 def test_complete_checkout_failed_status(mock_sumup_class, member_client):
     mock_sumup_class.return_value.get_checkout.return_value = Mock(status="FAILED", transaction_code=None, transaction_id=None)
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
     assert b"Payment declined" in response.content
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.services.payment_processing.SumUpService")
 @patch("app.services.mail.send_payment_receipt")
 def test_complete_checkout_membership_renewal(mock_email, mock_sumup_class, member_client, test_user):
     payment = Payment(
@@ -68,7 +68,7 @@ def test_complete_checkout_membership_renewal(mock_email, mock_sumup_class, memb
     assert b"successfully" in response.content.lower()
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.services.payment_processing.SumUpService")
 def test_complete_checkout_null_checkout(mock_sumup_class, member_client):
     mock_sumup_class.return_value.get_checkout.return_value = None
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
@@ -187,14 +187,14 @@ def test_payment_history_page(member_client):
     assert response.status_code == 200
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.services.payment_processing.SumUpService")
 def test_complete_checkout_pending_status(mock_sumup_class, member_client):
     mock_sumup_class.return_value.get_checkout.return_value = Mock(status="PENDING")
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
     assert b"pending" in response.content.lower()
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.services.payment_processing.SumUpService")
 @patch("app.services.payment_processing.handle_credit_purchase")
 def test_complete_checkout_credit_purchase(mock_handle, mock_sumup_class, member_client, test_user):
     from app import db
@@ -245,21 +245,21 @@ def test_credits_cash_payment_failure(mock_initiate, member_client):
     assert b"Cash credit error" in response.content
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.services.payment_processing.SumUpService")
 def test_complete_checkout_generic_failure_status(mock_sumup_class, member_client):
     mock_sumup_class.return_value.get_checkout.return_value = Mock(status="UNKNOWN")
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
     assert b"not approved" in response.content.lower()
 
 
-@patch("app.routes.payment.SumUpService")
+@patch("app.services.payment_processing.SumUpService")
 def test_complete_checkout_missing_user_session(mock_sumup_class, member_client):
     mock_sumup_class.return_value.get_checkout.return_value = Mock(status="PAID", transaction_code="TXN", transaction_id="txn")
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
     assert b"session not found" in response.content.lower() or b"Payment processed successfully" in response.content
 
 
-@patch("app.routes.payment.SumUpService", side_effect=RuntimeError("boom"))
+@patch("app.services.payment_processing.SumUpService", side_effect=RuntimeError("boom"))
 def test_complete_checkout_exception(mock_sumup_class, member_client):
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
     assert b"error occurred" in response.content.lower()

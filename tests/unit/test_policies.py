@@ -1,7 +1,8 @@
 import pytest
 
 from app.dependencies import LoginRequired
-from app.policies import AuthorizationError, has_any_permission, has_permission, require_all_permissions, require_permission
+from app.exceptions import AuthorizationError
+from app.policies import has_any_permission, has_permission, require_all_permissions, require_permission
 
 
 def test_has_permission_none_user():

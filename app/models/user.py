@@ -61,15 +61,6 @@ class User(Model):
         serializer = URLSafeTimedSerializer(get_settings().secret_key)
         return serializer.dumps(self.email, salt="password-reset-salt")
 
-    @staticmethod
-    def verify_reset_token(token: str, max_age: int = 3600) -> User | None:
-        serializer = URLSafeTimedSerializer(get_settings().secret_key)
-        try:
-            email = serializer.loads(token, salt="password-reset-salt", max_age=max_age)
-            return User.query.filter_by(email=email).first()
-        except Exception:
-            return None
-
     def has_role(self, role_name: str) -> bool:
         return any(role.name == role_name for role in self.roles)
 

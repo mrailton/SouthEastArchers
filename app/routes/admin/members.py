@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
-from app.dependencies import CurrentUser, DbSession, require_perms, verify_csrf
-from app.events import membership_activated
+from app.dependencies import CurrentUser, require_perms, verify_csrf
 from app.routes.admin._helpers import flash_form_errors
 from app.schemas.admin_forms import QUALIFICATION_CHOICES, CreateMemberForm, EditMemberForm
 from app.schemas.form_helpers import FormView, parse_form
-from app.services import memberships, payments, rbac, users
+from app.services import memberships, rbac, users
 from app.templating import flash, render
 from app.utils.formdata import request_form_data
 
@@ -40,7 +39,7 @@ def _member_form_view(member, *, errors: dict | None = None) -> FormView:
 
 
 @router.get("/members", name="admin.members", dependencies=[require_perms("members.read")])
-async def members_index(request: Request, db: DbSession, user: CurrentUser):
+async def members_index(request: Request, user: CurrentUser):
     page = int(request.query_params.get("page", 1))
     per_page = int(request.query_params.get("per_page", 20))
     if per_page not in (5, 10, 20, 50, 100):
@@ -65,13 +64,13 @@ async def members_index(request: Request, db: DbSession, user: CurrentUser):
 
 
 @router.get("/members/create", name="admin.create_member", dependencies=[require_perms("members.create")])
-async def create_member_page(request: Request, db: DbSession, user: CurrentUser):
+async def create_member_page(request: Request, user: CurrentUser):
     form = FormView(choices={"roles": _role_choices()})
     return render(request, "admin/create_member.html", {"form": form}, user=user)
 
 
 @router.post("/members/create", name="admin.create_member_post", dependencies=[require_perms("members.create")])
-async def create_member_store(request: Request, db: DbSession, user: CurrentUser):
+async def create_member_store(request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     parsed, errors, values = parse_form(CreateMemberForm, form_data)
@@ -98,7 +97,7 @@ async def create_member_store(request: Request, db: DbSession, user: CurrentUser
 
 
 @router.get("/members/{user_id}", name="admin.member_detail", dependencies=[require_perms("members.read")])
-async def member_detail(user_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def member_detail(user_id: int, request: Request, user: CurrentUser):
     member = users.get_user_by_id(user_id)
     if not member:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -106,7 +105,7 @@ async def member_detail(user_id: int, request: Request, db: DbSession, user: Cur
 
 
 @router.get("/members/{user_id}/edit", name="admin.edit_member", dependencies=[require_perms("members.update")])
-async def edit_member_page(user_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def edit_member_page(user_id: int, request: Request, user: CurrentUser):
     member = users.get_user_by_id(user_id)
     if not member:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -114,7 +113,7 @@ async def edit_member_page(user_id: int, request: Request, db: DbSession, user: 
 
 
 @router.post("/members/{user_id}/edit", name="admin.edit_member_post", dependencies=[require_perms("members.update")])
-async def edit_member_store(user_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def edit_member_store(user_id: int, request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)
@@ -146,7 +145,7 @@ async def edit_member_store(user_id: int, request: Request, db: DbSession, user:
 
 
 @router.post("/members/{user_id}/activate", name="admin.activate_user", dependencies=[require_perms("members.activate_account")])
-async def activate_user(user_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def activate_user(user_id: int, request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)
@@ -162,7 +161,7 @@ async def activate_user(user_id: int, request: Request, db: DbSession, user: Cur
     name="admin.renew_membership",
     dependencies=[require_perms("members.manage_membership")],
 )
-async def renew_membership(user_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def renew_membership(user_id: int, request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)
@@ -178,7 +177,7 @@ async def renew_membership(user_id: int, request: Request, db: DbSession, user: 
     name="admin.create_membership",
     dependencies=[require_perms("members.manage_membership")],
 )
-async def create_membership(user_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def create_membership(user_id: int, request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)
@@ -194,25 +193,14 @@ async def create_membership(user_id: int, request: Request, db: DbSession, user:
     name="admin.activate_membership",
     dependencies=[require_perms("members.manage_membership")],
 )
-async def activate_membership(user_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def activate_membership(user_id: int, request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)
     if not member:
         return render(request, "errors/404.html", user=user, status_code=404)
-    result = memberships.activate_membership(member)
-    if not result.success:
-        flash(request, "error", result.message)
-        return RedirectResponse(url=f"/admin/members/{user_id}", status_code=303)
-    payment = payments.get_completed_membership_payment(user_id)
-    try:
-        if payment:
-            membership_activated.send(user_id=member.id, payment_id=payment.id)
-            flash(request, "success", f"Membership activated for {member.name}! Receipt email sent.")
-        else:
-            flash(request, "success", f"Membership activated for {member.name}!")
-    except Exception:
-        flash(request, "success", f"Membership activated for {member.name}!")
+    result = memberships.activate_membership_for_admin(member)
+    flash(request, "success" if result.success else "error", result.message)
     return RedirectResponse(url=f"/admin/members/{user_id}", status_code=303)
 
 
@@ -221,7 +209,7 @@ async def activate_membership(user_id: int, request: Request, db: DbSession, use
     name="admin.adjust_credits",
     dependencies=[require_perms("members.manage_membership")],
 )
-async def adjust_credits(user_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def adjust_credits(user_id: int, request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     member = users.get_user_by_id(user_id)

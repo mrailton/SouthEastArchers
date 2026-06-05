@@ -70,7 +70,12 @@ def generate_reset_token(email: str) -> str:
 
 
 def verify_reset_token(token: str, max_age: int = 86400) -> User | None:
-    return User.verify_reset_token(token, max_age=max_age)
+    serializer = URLSafeTimedSerializer(get_settings().secret_key)
+    try:
+        email = serializer.loads(token, salt="password-reset-salt", max_age=max_age)
+    except Exception:
+        return None
+    return UserRepository.get_by_email(email)
 
 
 def create_password_reset_token(user: User) -> str:
@@ -78,7 +83,7 @@ def create_password_reset_token(user: User) -> str:
 
 
 def reset_password(token: str, new_password: str) -> ServiceResult[None]:
-    user = User.verify_reset_token(token, max_age=86400)
+    user = verify_reset_token(token, max_age=86400)
     if not user:
         return ServiceResult.fail("Invalid or expired reset link.")
     user.set_password(new_password)

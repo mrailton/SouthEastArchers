@@ -9,8 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import get_settings
 from app.db import init_db
-from app.dependencies import LoginRequired
-from app.policies import AuthorizationError
+from app.exceptions import AuthorizationError, LoginRequired
 from app.routes import api_router
 from app.templating import register_route_names, render, setup_template_globals
 

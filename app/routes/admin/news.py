@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
-from app.dependencies import CurrentUser, DbSession, require_perms, verify_csrf
+from app.dependencies import CurrentUser, require_perms, verify_csrf
 from app.routes.admin._helpers import flash_form_errors
 from app.schemas.admin_forms import NewsForm
 from app.schemas.form_helpers import parse_form
@@ -13,18 +13,18 @@ router = APIRouter(tags=["admin.news"])
 
 
 @router.get("/news", name="admin.news", dependencies=[require_perms("news.read")])
-async def news_index(request: Request, db: DbSession, user: CurrentUser):
+async def news_index(request: Request, user: CurrentUser):
     articles = news.get_all_articles()
     return render(request, "admin/news.html", {"news": articles}, user=user)
 
 
 @router.get("/news/create", name="admin.create_news", dependencies=[require_perms("news.create")])
-async def create_news_page(request: Request, db: DbSession, user: CurrentUser):
+async def create_news_page(request: Request, user: CurrentUser):
     return render(request, "admin/create_news.html", user=user)
 
 
 @router.post("/news/create", name="admin.create_news_post", dependencies=[require_perms("news.create")])
-async def create_news_store(request: Request, db: DbSession, user: CurrentUser):
+async def create_news_store(request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     parsed, errors, _values = parse_form(NewsForm, form_data)
@@ -45,7 +45,7 @@ async def create_news_store(request: Request, db: DbSession, user: CurrentUser):
 
 
 @router.get("/news/{news_id}/edit", name="admin.edit_news", dependencies=[require_perms("news.update")])
-async def edit_news_page(news_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def edit_news_page(news_id: int, request: Request, user: CurrentUser):
     article = news.get_article_by_id(news_id)
     if not article:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -53,7 +53,7 @@ async def edit_news_page(news_id: int, request: Request, db: DbSession, user: Cu
 
 
 @router.post("/news/{news_id}/edit", name="admin.edit_news_post", dependencies=[require_perms("news.update")])
-async def edit_news_store(news_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def edit_news_store(news_id: int, request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     article = news.get_article_by_id(news_id)

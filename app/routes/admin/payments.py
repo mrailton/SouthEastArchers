@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
-from app.dependencies import CurrentUser, DbSession, require_perms, verify_csrf
+from app.dependencies import CurrentUser, require_perms, verify_csrf
 from app.services import payments
 from app.templating import flash, render
 from app.utils.formdata import request_form_data
@@ -10,13 +10,13 @@ router = APIRouter(tags=["admin.payments"])
 
 
 @router.get("/payments", name="admin.pending_payments", dependencies=[require_perms("payments.approve")])
-async def pending_payments(request: Request, db: DbSession, user: CurrentUser):
+async def pending_payments(request: Request, user: CurrentUser):
     payment_rows = payments.get_pending_cash_payment_rows()
     return render(request, "admin/pending_payments.html", {"payment_data": payment_rows}, user=user)
 
 
 @router.post("/payments/{payment_id}/approve", name="admin.approve_payment", dependencies=[require_perms("payments.approve")])
-async def approve_payment(payment_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def approve_payment(payment_id: int, request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     redirect_to = form_data.get("redirect_to") or "/admin/payments"
@@ -31,7 +31,7 @@ async def approve_payment(payment_id: int, request: Request, db: DbSession, user
 
 
 @router.post("/payments/{payment_id}/reject", name="admin.reject_payment", dependencies=[require_perms("payments.approve")])
-async def reject_payment(payment_id: int, request: Request, db: DbSession, user: CurrentUser):
+async def reject_payment(payment_id: int, request: Request, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     redirect_to = form_data.get("redirect_to") or "/admin/payments"

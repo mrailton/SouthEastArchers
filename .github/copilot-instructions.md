@@ -46,8 +46,10 @@ Vite builds `app/resources/static/js/{site,admin}.js` into `app/resources/static
 - Services commit via `Repository.save()`; routes never call `mark_for_commit`.
 - Scheduled jobs run via external cron: `uv run sea scheduler run expire-memberships` / `low-credits-reminder`.
 - Repository methods extend `BaseRepository` for commits/rollbacks.
-- RBAC: protect admin routes with `require_perms(...)` from `app/routes/admin/_helpers.py`.
-- Forms use Pydantic schemas (`app/schemas/admin_forms.py`, `app/schemas/forms.py`); routes parse POST data with `parse_form()` and pass `FormView` to templates.
+- RBAC: protect admin routes with `require_perms(...)` from `app/dependencies.py`; permission checks use `app/policies.py`.
+- Auth exceptions (`LoginRequired`, `AuthorizationError`) live in `app/exceptions.py`.
+- Forms use Pydantic schemas (`app/schemas/admin_forms.py`, `app/schemas/forms.py`); routes parse POST data with `parse_form()` from `app/schemas/form_helpers.py` and pass `FormView` to admin templates.
+- Database sessions are opened per request via `Depends(get_db)` on `api_router` in `app/routes/__init__.py`.
 - CSRF: session token via `get_csrf_token()`; verify on POST with `verify_csrf()`.
 - Testing: SQLite in-memory DB, FastAPI `TestClient` with `CSRFClient` wrapper, fixtures in `tests/conftest.py`. HTTP route tests live in `tests/feature/` and should only assert HTTP behaviour (status, redirect, flash, permissions) — business logic belongs in `tests/unit/`. Helpers in `tests/http_helpers.py`.
 - Config: Pydantic `Settings` in `app/core/config.py` (environments: `development`, `testing`, `production`).

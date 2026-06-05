@@ -8,23 +8,19 @@ from sqlalchemy.orm import Session
 from starlette.datastructures import UploadFile
 
 from app.core.database import get_db
+from app.exceptions import LoginRequired
 from app.models.user import User
-
-
-class LoginRequired(Exception):
-    pass
-
 
 DbSession = Annotated[Session, Depends(get_db)]
 
 
-async def get_session_user(request: Request, db: Session = Depends(get_db)) -> User | None:
+async def get_session_user(request: Request) -> User | None:
     user_id = request.session.get("user_id")
     if not user_id:
         return None
     from app.repositories import UserRepository
 
-    return UserRepository.get_by_id(int(user_id))
+    return UserRepository.get_by_id_with_permissions(int(user_id))
 
 
 async def require_auth(user: User | None = Depends(get_session_user)) -> User:

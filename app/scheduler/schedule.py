@@ -22,9 +22,9 @@ class Schedule:
         """Schedule a management command."""
 
         def run_command():
-            import os
+            import subprocess
 
-            os.system(f"uv run python -m app.cli {command}")
+            subprocess.run(["uv", "run", "python", "-m", "app.cli", *command.split()], check=False)
 
         event = Event(run_command, description or f"Command: {command}")
         self._events.append(event)

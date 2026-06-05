@@ -2,12 +2,8 @@
 
 from __future__ import annotations
 
-from app.dependencies import LoginRequired
+from app.exceptions import AuthorizationError, LoginRequired
 from app.models.user import User
-
-
-class AuthorizationError(Exception):
-    pass
 
 
 def has_permission(user: User | None, permission_name: str) -> bool:

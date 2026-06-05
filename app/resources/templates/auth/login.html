@@ -16,11 +16,7 @@
         </div>
         
         <form method="POST" class="space-y-6">
-            {% if csrf_token is defined %}
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            {% elif form is defined %}
-            {{ form.hidden_tag() }}
-            {% endif %}
             <div>
                 <label class="form-label" for="email">Email Address</label>
                 <input class="form-input" 

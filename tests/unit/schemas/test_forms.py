@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
+from app.schemas.form_helpers import parse_form
 from app.schemas.forms import (
     ChangePasswordForm,
     ForgotPasswordForm,
@@ -8,19 +9,22 @@ from app.schemas.forms import (
     ProfileForm,
     ResetPasswordForm,
     SignupForm,
-    forgot_password_form,
-    login_form,
-    reset_password_form,
-    signup_form,
 )
+from app.utils.formdata import MultiDict
 
 
-def test_login_form_factory():
-    form = login_form(csrf_token="t", email="a@example.com", password="secret")
+def test_login_form_parse():
+    data = MultiDict()
+    data.add("csrf_token", "t")
+    data.add("email", "a@example.com")
+    data.add("password", "secret")
+    form, errors, _values = parse_form(LoginForm, data)
+    assert errors == {}
+    assert form is not None
     assert isinstance(form, LoginForm)
 
 
-def test_signup_form_factory_and_password_mismatch():
+def test_signup_form_parse_and_password_mismatch():
     with pytest.raises(ValidationError):
         SignupForm(
             name="Test User",
@@ -28,17 +32,34 @@ def test_signup_form_factory_and_password_mismatch():
             password="password123",
             password_confirm="different",
         )
-    form = signup_form(
-        name="Test User",
-        email="test@example.com",
-        password="password123",
-        password_confirm="password123",
-    )
+    data = MultiDict()
+    data.add("name", "Test User")
+    data.add("email", "test@example.com")
+    data.add("password", "password123")
+    data.add("password_confirm", "password123")
+    form, errors, _values = parse_form(SignupForm, data)
+    assert errors == {}
     assert isinstance(form, SignupForm)
 
 
-def test_forgot_password_form_factory():
-    form = forgot_password_form(email="a@example.com")
+def test_signup_form_recaptcha_alias():
+    data = MultiDict()
+    data.add("name", "Test User")
+    data.add("email", "test@example.com")
+    data.add("password", "password123")
+    data.add("password_confirm", "password123")
+    data.add("g-recaptcha-response", "token-value")
+    form, errors, _values = parse_form(SignupForm, data)
+    assert errors == {}
+    assert form is not None
+    assert form.g_recaptcha_response == "token-value"
+
+
+def test_forgot_password_form_parse():
+    data = MultiDict()
+    data.add("email", "a@example.com")
+    form, errors, _values = parse_form(ForgotPasswordForm, data)
+    assert errors == {}
     assert isinstance(form, ForgotPasswordForm)
 
 
@@ -47,8 +68,12 @@ def test_reset_password_form_mismatch():
         ResetPasswordForm(password="password123", password_confirm="x")
 
 
-def test_reset_password_form_factory():
-    form = reset_password_form(password="password123", password_confirm="password123")
+def test_reset_password_form_parse():
+    data = MultiDict()
+    data.add("password", "password123")
+    data.add("password_confirm", "password123")
+    form, errors, _values = parse_form(ResetPasswordForm, data)
+    assert errors == {}
     assert isinstance(form, ResetPasswordForm)
 
 

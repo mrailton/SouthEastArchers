@@ -43,9 +43,11 @@ def update_event(
     published: bool = False,
 ) -> ServiceResult[None]:
     event.title = title
-    event.description = description
+    if description is not None:
+        event.description = description
     event.start_date = start_date
-    event.location = location
+    if location is not None:
+        event.location = location
     event.published = published
 
     try:

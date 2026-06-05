@@ -33,9 +33,9 @@ class User(Model):
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[DateTime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
-    membership: Mapped[Membership | None] = relationship("Membership", backref="user", uselist=False, cascade="all, delete-orphan")
+    membership: Mapped[Membership | None] = relationship("Membership", back_populates="user", uselist=False, cascade="all, delete-orphan")
     credits: Mapped[list[Credit]] = relationship("Credit", backref="user", foreign_keys="Credit.user_id", cascade="all, delete-orphan")
-    shoots: Mapped[list[Shoot]] = relationship("Shoot", secondary="user_shoots", backref="users")
+    shoots: Mapped[list[Shoot]] = relationship("Shoot", secondary="user_shoots", back_populates="users")
     payments: Mapped[list[Payment]] = relationship("Payment", backref="user", cascade="all, delete-orphan")
     roles: Mapped[list[Role]] = relationship("Role", secondary="user_roles", back_populates="users")
 

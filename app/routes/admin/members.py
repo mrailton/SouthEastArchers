@@ -231,8 +231,8 @@ async def adjust_credits(user_id: int, request: Request, db: DbSession, user: Cu
         flash(request, "error", "Member does not have a membership.")
         return RedirectResponse(url=f"/admin/members/{user_id}", status_code=303)
     try:
-        quantity = int(form_data.get("quantity", 0))
-        action = form_data.get("action", "add")
+        quantity = int(form_data.get("quantity") or "0")
+        action = form_data.get("action") or "add"
     except ValueError:
         flash(request, "error", "Please enter a valid number of credits.")
         return RedirectResponse(url=f"/admin/members/{user_id}", status_code=303)

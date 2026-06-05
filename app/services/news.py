@@ -46,8 +46,10 @@ def update_article(
     published: bool = False,
 ) -> ServiceResult[None]:
     article.title = title
-    article.summary = summary
-    article.content = content
+    if summary is not None:
+        article.summary = summary
+    if content is not None:
+        article.content = content
     article.published = published
 
     if published and not article.published_at:

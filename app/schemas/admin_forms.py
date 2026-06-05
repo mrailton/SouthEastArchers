@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date as Date
+from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -65,14 +66,14 @@ SETTINGS_FIELD_DESCRIPTIONS: dict[str, str] = {
 
 
 class ShootForm(CsrfForm):
-    date: date
+    date: Date
     location: Literal["HALL", "MEADOW", "WOODS"]
     description: str = ""
     attendees: list[int] = Field(default_factory=list)
 
     @field_validator("date", mode="before")
     @classmethod
-    def parse_date(cls, value: object) -> date:
+    def parse_date(cls, value: object) -> Date:
         parsed = coerce_optional_date(value)
         if parsed is None:
             raise ValueError("Date is required.")
@@ -142,8 +143,8 @@ class EditMemberForm(CsrfForm):
     password: str = ""
     roles: list[int] = Field(default_factory=list)
     is_active: bool = True
-    membership_start_date: date | None = None
-    membership_expiry_date: date | None = None
+    membership_start_date: Date | None = None
+    membership_expiry_date: Date | None = None
     membership_initial_credits: int | None = None
     membership_purchased_credits: int | None = None
 
@@ -163,7 +164,7 @@ class EditMemberForm(CsrfForm):
         mode="before",
     )
     @classmethod
-    def parse_optional_dates(cls, value: object) -> date | None:
+    def parse_optional_dates(cls, value: object) -> Date | None:
         return coerce_optional_date(value)
 
     @field_validator("membership_initial_credits", "membership_purchased_credits", mode="before")
@@ -171,7 +172,7 @@ class EditMemberForm(CsrfForm):
     def parse_optional_int(cls, value: object) -> int | None:
         if value is None or value == "":
             return None
-        return int(value)
+        return int(str(value))
 
 
 class SettingsForm(CsrfForm):
@@ -209,7 +210,7 @@ class RoleForm(CsrfForm):
 
 
 class ExpenseForm(CsrfForm):
-    date: date
+    date: Date
     amount: Decimal = Field(gt=0)
     category: str
     description: str = Field(min_length=3)
@@ -217,7 +218,7 @@ class ExpenseForm(CsrfForm):
 
     @field_validator("date", mode="before")
     @classmethod
-    def parse_date(cls, value: object) -> date:
+    def parse_date(cls, value: object) -> Date:
         parsed = coerce_optional_date(value)
         if parsed is None:
             raise ValueError("Date is required.")
@@ -233,7 +234,7 @@ class ExpenseForm(CsrfForm):
 
 
 class IncomeForm(CsrfForm):
-    date: date
+    date: Date
     amount: Decimal = Field(gt=0)
     category: str
     description: str = Field(min_length=3)
@@ -241,7 +242,7 @@ class IncomeForm(CsrfForm):
 
     @field_validator("date", mode="before")
     @classmethod
-    def parse_date(cls, value: object) -> date:
+    def parse_date(cls, value: object) -> Date:
         parsed = coerce_optional_date(value)
         if parsed is None:
             raise ValueError("Date is required.")
@@ -257,12 +258,12 @@ class IncomeForm(CsrfForm):
 
 
 class FinancialStatementForm(CsrfForm):
-    start_date: date
-    end_date: date
+    start_date: Date
+    end_date: Date
 
     @field_validator("start_date", "end_date", mode="before")
     @classmethod
-    def parse_date(cls, value: object) -> date:
+    def parse_date(cls, value: object) -> Date:
         parsed = coerce_optional_date(value)
         if parsed is None:
             raise ValueError("Date is required.")

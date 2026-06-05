@@ -157,11 +157,16 @@ def seed_rbac(session: Session) -> None:
     for role_name, config in ROLE_DEFINITIONS.items():
         role = existing_roles.get(role_name)
         if not role:
-            role = Role(name=role_name, description=config.get("description", ""))
+            raw_description = config.get("description", "")
+            role = Role(
+                name=role_name,
+                description=raw_description if isinstance(raw_description, str) else "",
+            )
             session.add(role)
             existing_roles[role_name] = role
-        if config.get("description"):
-            role.description = config["description"]
+        role_description = config.get("description")
+        if isinstance(role_description, str):
+            role.description = role_description
 
         desired_permissions = {existing_permissions[name] for name in config["permissions"]}
         role.permissions = list(desired_permissions)

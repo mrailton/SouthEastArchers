@@ -5,7 +5,7 @@ from typing import Any
 
 from app.db import Pagination
 from app.models import Shoot
-from app.models.shoot import ShootVisitor
+from app.models.shoot import ShootLocation, ShootVisitor
 from app.repositories import ShootRepository, UserRepository
 from app.services import finance, settings
 from app.services.result import ServiceResult
@@ -20,7 +20,7 @@ def create_shoot(
     created_by_id: int | None = None,
 ) -> ServiceResult[Shoot]:
     warnings: list[str] = []
-    shoot = Shoot(date=shoot_date, location=location, description=description)
+    shoot = Shoot(date=shoot_date, location=ShootLocation[location], description=description)
     ShootRepository.add(shoot)
 
     try:
@@ -62,7 +62,7 @@ def update_shoot(
 
     shoot.users = [u for u in shoot.users if u.id in new_attendee_ids]
     shoot.date = shoot_date
-    shoot.location = location
+    shoot.location = ShootLocation[location]
     shoot.description = description
 
     old_visitors = {(v.name, v.club, v.affiliation, v.payment_method) for v in shoot.visitors}  # type: ignore[attr-defined]

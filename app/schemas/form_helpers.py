@@ -31,7 +31,10 @@ def pydantic_errors(exc: ValidationError) -> dict[str, list[str]]:
     return errors
 
 
-def parse_form(model_cls: type[BaseModel], raw: MultiDict | Mapping[str, Any]) -> tuple[BaseModel | None, dict[str, list[str]], dict[str, Any]]:
+def parse_form[FormModelT: BaseModel](
+    model_cls: type[FormModelT],
+    raw: MultiDict | Mapping[str, Any],
+) -> tuple[FormModelT | None, dict[str, list[str]], dict[str, Any]]:
     data = multidict_to_dict(raw)
     try:
         model = model_cls.model_validate(data)

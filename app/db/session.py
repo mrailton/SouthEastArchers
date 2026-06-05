@@ -4,6 +4,7 @@ from contextvars import ContextVar, Token
 from typing import Any
 
 from sqlalchemy import create_engine, or_
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Query, Session, sessionmaker
 
 from app.core.config import Settings, get_settings
@@ -27,7 +28,7 @@ class Model(Base):
 
 class Database:
     def __init__(self) -> None:
-        self.engine = None
+        self.engine: Engine | None = None
         self._session_factory: sessionmaker[Session] | None = None
 
     def create_session(self) -> Session:
@@ -62,11 +63,13 @@ class Database:
     def create_all(self) -> None:
         if self.engine is None:
             init_db()
+        assert self.engine is not None
         Base.metadata.create_all(self.engine)
 
     def drop_all(self) -> None:
         if self.engine is None:
             init_db()
+        assert self.engine is not None
         Base.metadata.drop_all(self.engine)
 
     def remove(self) -> None:

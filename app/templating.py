@@ -44,9 +44,10 @@ def url_for(name: str, _external: bool = False, **path_params: object) -> str:
         filename = str(path_params.get("filename", ""))
         path = f"/static/{filename}"
     else:
-        path = _route_names.get(name)
-        if path is None:
+        route_path = _route_names.get(name)
+        if route_path is None:
             raise ValueError(f"Unknown route name: {name}")
+        path = route_path
         used_keys: set[str] = set()
         for key, value in path_params.items():
             if key.startswith("_"):

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from app.db import db, paginate_query
+from app.db.pagination import Pagination
 from app.enums import PaymentMethod, PaymentType
 from app.models import Payment
 from app.repositories.base import BaseRepository
@@ -18,7 +19,7 @@ class PaymentRepository(BaseRepository):
         return Payment.query.filter_by(user_id=user_id).order_by(Payment.created_at.desc()).all()
 
     @staticmethod
-    def get_by_user_paginated(user_id: int, page: int = 1, per_page: int = 5) -> object:
+    def get_by_user_paginated(user_id: int, page: int = 1, per_page: int = 5) -> Pagination:
         return paginate_query(Payment.query.filter_by(user_id=user_id).order_by(Payment.created_at.desc()), page=page, per_page=per_page)
 
     @staticmethod

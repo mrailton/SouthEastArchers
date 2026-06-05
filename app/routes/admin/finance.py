@@ -176,26 +176,38 @@ async def edit_transaction_store(transaction_id: int, request: Request, db: DbSe
     transaction = finance.get_transaction_by_id(transaction_id)
     if not transaction:
         return render(request, "errors/404.html", user=user, status_code=404)
-    form_cls = ExpenseForm if transaction.type == "expense" else IncomeForm
-    parsed, errors, values = parse_form(form_cls, form_data)
-    form = _transaction_form_view(transaction, values=values, errors=errors)
-    if parsed:
-        kwargs = {
-            "transaction": transaction,
-            "txn_date": parsed.date,
-            "amount_cents": int(round(float(parsed.amount) * 100)),
-            "category": parsed.category,
-            "description": parsed.description,
-        }
-        if transaction.type == "expense":
-            kwargs["receipt_reference"] = parsed.receipt_reference or None
-        else:
-            kwargs["source"] = parsed.source or None
-        result = finance.update_transaction(**kwargs)
-        if result.success:
-            flash(request, "success", "Transaction updated successfully!")
-            return RedirectResponse(url="/admin/finance", status_code=303)
-        flash(request, "error", result.message or "An error occurred while updating the transaction.")
+    if transaction.type == "expense":
+        parsed_expense, errors, values = parse_form(ExpenseForm, form_data)
+        form = _transaction_form_view(transaction, values=values, errors=errors)
+        if parsed_expense:
+            result = finance.update_transaction(
+                transaction=transaction,
+                txn_date=parsed_expense.date,
+                amount_cents=int(round(float(parsed_expense.amount) * 100)),
+                category=parsed_expense.category,
+                description=parsed_expense.description,
+                receipt_reference=parsed_expense.receipt_reference or None,
+            )
+            if result.success:
+                flash(request, "success", "Transaction updated successfully!")
+                return RedirectResponse(url="/admin/finance", status_code=303)
+            flash(request, "error", result.message or "An error occurred while updating the transaction.")
+    else:
+        parsed_income, errors, values = parse_form(IncomeForm, form_data)
+        form = _transaction_form_view(transaction, values=values, errors=errors)
+        if parsed_income:
+            result = finance.update_transaction(
+                transaction=transaction,
+                txn_date=parsed_income.date,
+                amount_cents=int(round(float(parsed_income.amount) * 100)),
+                category=parsed_income.category,
+                description=parsed_income.description,
+                source=parsed_income.source or None,
+            )
+            if result.success:
+                flash(request, "success", "Transaction updated successfully!")
+                return RedirectResponse(url="/admin/finance", status_code=303)
+            flash(request, "error", result.message or "An error occurred while updating the transaction.")
     flash_form_errors(request, errors)
     return render(
         request,

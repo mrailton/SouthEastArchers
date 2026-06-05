@@ -75,7 +75,7 @@ async def credits_payment_store(request: Request, _db: DbSession, user: CurrentU
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
     try:
-        quantity = int(raw.get("quantity", 1))
+        quantity = int(str(raw.get("quantity") or "1"))
     except ValueError, TypeError:
         flash(request, "error", "Invalid quantity.")
         return render(request, "payment/credits.html", user=user, status_code=422)
@@ -105,7 +105,7 @@ async def credits_cash_payment(request: Request, _db: DbSession, user: CurrentUs
     raw = await request.form()
     verify_csrf(request, raw.get("csrf_token"))
     try:
-        quantity = int(raw.get("quantity", 1))
+        quantity = int(str(raw.get("quantity") or "1"))
     except ValueError, TypeError:
         flash(request, "error", "Invalid quantity.")
         return RedirectResponse(url="/payment/credits", status_code=303)

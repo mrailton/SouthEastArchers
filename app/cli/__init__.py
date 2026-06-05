@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from contextvars import Token
+
 import click
+from sqlalchemy.orm import Session
 
 import app.core.config  # noqa: F401 - load .env
 from app.db import db, init_db, reset_current_session, set_current_session
@@ -13,7 +16,7 @@ SCHEDULED_JOBS: tuple[str, ...] = (
 )
 
 
-def _open_cli_session() -> tuple[object | None, object | None]:
+def _open_cli_session() -> tuple[Session | None, Token | None]:
     from app.db import get_current_session
 
     try:
@@ -25,10 +28,10 @@ def _open_cli_session() -> tuple[object | None, object | None]:
         return session, token
 
 
-def _close_cli_session(session: object | None, token: object | None) -> None:
+def _close_cli_session(session: Session | None, token: Token | None) -> None:
     if session is not None and token is not None:
-        session.close()  # type: ignore[union-attr]
-        reset_current_session(token)  # type: ignore[arg-type]
+        session.close()
+        reset_current_session(token)
 
 
 def _resolve_job(job_name: str):

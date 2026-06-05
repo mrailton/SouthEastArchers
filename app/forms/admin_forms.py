@@ -76,22 +76,34 @@ class EditMemberForm(AdminForm):
 
 class SettingsForm(AdminForm):
     membership_year_start_month = IntegerField(
-        "Membership Year Start Month", validators=[DataRequired(), NumberRange(min=1, max=12)], description="Month when membership year starts (1-12)"
+        "Membership Year Start Month",
+        validators=[DataRequired(), NumberRange(min=1, max=12)],
+        description="Month when membership year starts (1-12)",
     )
     membership_year_start_day = IntegerField(
-        "Membership Year Start Day", validators=[DataRequired(), NumberRange(min=1, max=31)], description="Day when membership year starts (1-31)"
+        "Membership Year Start Day",
+        validators=[DataRequired(), NumberRange(min=1, max=31)],
+        description="Day when membership year starts (1-31)",
     )
     annual_membership_cost = IntegerField(
-        "Annual Membership Cost (€)", validators=[DataRequired(), NumberRange(min=0)], description="Cost in euros (e.g., 100 for €100)"
+        "Annual Membership Cost (€)",
+        validators=[DataRequired(), NumberRange(min=0)],
+        description="Cost in euros (e.g., 100 for €100)",
     )
     membership_shoots_included = IntegerField(
-        "Shoots Included", validators=[DataRequired(), NumberRange(min=0)], description="Number of shoots included with membership"
+        "Shoots Included",
+        validators=[DataRequired(), NumberRange(min=0)],
+        description="Number of shoots included with membership",
     )
     additional_shoot_cost = IntegerField(
-        "Additional Shoot Cost (€)", validators=[DataRequired(), NumberRange(min=0)], description="Cost per additional shoot in euros"
+        "Additional Shoot Cost (€)",
+        validators=[DataRequired(), NumberRange(min=0)],
+        description="Cost per additional shoot in euros",
     )
     visitor_shoot_fee = IntegerField(
-        "Visitor Shoot Fee (€)", validators=[DataRequired(), NumberRange(min=0)], description="Fee per shoot for visiting non-member archers"
+        "Visitor Shoot Fee (€)",
+        validators=[DataRequired(), NumberRange(min=0)],
+        description="Fee per shoot for visiting non-member archers",
     )
     cash_payment_instructions = TextAreaField(
         "Cash Payment Instructions",

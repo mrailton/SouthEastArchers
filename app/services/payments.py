@@ -23,11 +23,7 @@ class CheckoutProcessor(Protocol):
 
 
 def get_user_payments(db: Session, user_id: int) -> list[Payment]:
-    return list(
-        db.scalars(
-            select(Payment).where(Payment.user_id == user_id).order_by(Payment.created_at.desc())
-        ).all()
-    )
+    return list(db.scalars(select(Payment).where(Payment.user_id == user_id).order_by(Payment.created_at.desc())).all())
 
 
 def initiate_membership_payment(

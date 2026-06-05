@@ -11,7 +11,7 @@ from app.core.config import get_settings
 from app.db import init_db
 from app.dependencies import LoginRequired
 from app.policies import AuthorizationError
-from app.routers import api_router
+from app.routes import api_router
 from app.templating import register_route_names, render, setup_template_globals
 
 settings = get_settings()
@@ -58,6 +58,7 @@ async def authorization_error_handler(request: Request, _exc: AuthorizationError
 
 
 if settings.is_testing:
+
     @app.post("/__test__/session")
     async def set_test_session(request: Request):
         data = await request.json()

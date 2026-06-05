@@ -29,7 +29,15 @@ class MailService:
             return get_settings().app_url.rstrip("/") + fallback_path
 
     @staticmethod
-    def _send(user_id: int, email_type: str, subject: str, recipients: list[str], html_template: str, text_template: str | None = None, **context: Any) -> None:
+    def _send(
+        user_id: int,
+        email_type: str,
+        subject: str,
+        recipients: list[str],
+        html_template: str,
+        text_template: str | None = None,
+        **context: Any,
+    ) -> None:
         from app.repositories import UserRepository
 
         try:

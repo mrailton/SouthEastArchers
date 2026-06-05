@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.config import get_settings
 from app.core.security import hash_password, verify_password
-from app.db import Model, db
+from app.db import Model
 from app.utils.datetime_utils import utc_now
 
 if TYPE_CHECKING:

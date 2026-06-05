@@ -10,7 +10,7 @@ def mark_for_commit(session: Session) -> None:
     session.info["commit"] = True
 
 
-async def get_db() -> AsyncGenerator[Session, None]:
+async def get_db() -> AsyncGenerator[Session]:
     init_db()
     session = database.create_session()
     token = set_current_session(session)

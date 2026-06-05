@@ -1,6 +1,7 @@
 from datetime import UTC
 
 from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
+
 from app.db import Model
 from app.utils.datetime_utils import utc_now
 

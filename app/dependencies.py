@@ -41,6 +41,16 @@ CurrentUser = Annotated[User, Depends(require_auth)]
 OptionalUser = Annotated[User | None, Depends(get_session_user)]
 
 
+def require_perms(*permission_names: str):
+    async def _dependency(user: CurrentUser) -> User:
+        from app.policies import require_all_permissions
+
+        require_all_permissions(user, *permission_names)
+        return user
+
+    return Depends(_dependency)
+
+
 def get_csrf_token(request: Request) -> str:
     token = request.session.get("csrf_token")
     if not token:

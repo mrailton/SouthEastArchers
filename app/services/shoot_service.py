@@ -2,7 +2,6 @@ from datetime import date
 from typing import Any
 
 from app.db import Pagination
-
 from app.models import Shoot
 from app.models.shoot import ShootVisitor
 from app.repositories import ShootRepository, UserRepository

@@ -1,7 +1,5 @@
 from unittest.mock import Mock, patch
 
-import pytest
-
 from app.core.config import get_settings
 from app.services.sumup_service import SumUpService
 

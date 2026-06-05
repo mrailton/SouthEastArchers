@@ -1,15 +1,14 @@
 import logging
-
-logger = logging.getLogger(__name__)
-
 from datetime import date
 
 from app.db import Pagination
-
-from app.models import Membership, User
-from app.repositories import MembershipRepository, RBACRepository, UserRepository
+from app.events import user_activated
+from app.models import Credit, Membership, User
+from app.repositories import CreditRepository, MembershipRepository, RBACRepository, UserRepository
 from app.services.result import ServiceResult
 from app.services.settings_service import SettingsService
+
+logger = logging.getLogger(__name__)
 
 
 class UserService:
@@ -204,3 +203,53 @@ class UserService:
         UserRepository.save()
 
         return ServiceResult.ok(message="Password reset successfully.")
+
+    @staticmethod
+    def activate_account(user_id: int) -> ServiceResult[User]:
+        member = UserRepository.get_by_id(user_id)
+        if not member:
+            return ServiceResult.fail("User not found.")
+        if member.is_active:
+            return ServiceResult.fail(f"{member.name}'s account is already active.")
+        member.is_active = True
+        UserRepository.save()
+        try:
+            user_activated.send(user_id=user_id)
+        except Exception:
+            pass
+        return ServiceResult.ok(data=member, message=f"Account activated for {member.name}! Welcome email sent.")
+
+    @staticmethod
+    def adjust_member_credits(
+        member: User,
+        *,
+        admin_user_id: int,
+        quantity: int,
+        action: str,
+        reason: str,
+    ) -> ServiceResult[None]:
+        if not member.membership:
+            return ServiceResult.fail("Member does not have a membership.")
+        if quantity < 1:
+            return ServiceResult.fail("Please enter a valid number of credits (minimum 1).")
+        if action == "remove":
+            member.membership.remove_credits(quantity)
+            signed_amount = -quantity
+            verb = "Removed"
+            preposition = "from"
+        else:
+            member.membership.add_credits(quantity)
+            signed_amount = quantity
+            verb = "Added"
+            preposition = "to"
+        CreditRepository.add(
+            Credit(
+                user_id=member.id,
+                amount=signed_amount,
+                payment_id=None,
+                reason=reason,
+                adjusted_by_id=admin_user_id,
+            )
+        )
+        CreditRepository.save()
+        return ServiceResult.ok(message=f"{verb} {quantity} credit(s) {preposition} {member.name}'s account.")

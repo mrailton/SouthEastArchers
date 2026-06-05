@@ -7,7 +7,7 @@ Dev/test tooling uses a `Makefile`. App-level commands use the Click CLI in `app
 ```bash
 make install
 make test
-make test-file FILE=tests/integration/services/test_membership_service.py
+make test-file FILE=tests/unit/services/test_membership_service.py
 make test-k K="test_activate_membership"
 make test-coverage
 make lint
@@ -22,11 +22,11 @@ CI runs: `make lint` → `make typecheck` → `make assets` → `make test-cover
 
 ## Architecture
 
-FastAPI app using **Routers → Services → Repositories** with domain events for side effects.
+FastAPI app using **Routes → Services → Repositories** with domain events for side effects.
 
 | Layer | Role | May import |
 |---|---|---|
-| **Routers** (`app/routers/`) | HTTP handling, form validation, templates | Services, schemas/forms, policies |
+| **Routes** (`app/routes/`) | HTTP handling, form validation, templates | Services, schemas/forms, policies |
 | **Services** (`app/services/`) | Business logic, orchestration | Repositories, models, other services |
 | **Repositories** (`app/repositories/`) | Data access | Models, `app.db` |
 | **Models** (`app/models/`) | SQLAlchemy definitions | `app.db` |
@@ -44,9 +44,9 @@ Vite builds assets from `resources/assets/` into `resources/static/`. Templates 
 - Monetary values are stored in **cents** (integer).
 - Service methods return `ServiceResult[T]` from `app.services.result`.
 - Repository methods extend `BaseRepository` for commits/rollbacks.
-- RBAC: protect admin routes with `require_perms(...)` from `app/routers/admin/_helpers.py`.
+- RBAC: protect admin routes with `require_perms(...)` from `app/routes/admin/_helpers.py`.
 - Admin forms use WTForms (`app/forms/`); auth/member forms use Pydantic (`app/schemas/forms.py`).
 - CSRF: session token via `get_csrf_token()`; verify on POST with `verify_csrf()`.
-- Testing: SQLite in-memory DB, FastAPI `TestClient` with `CSRFClient` wrapper, fixtures in `tests/conftest.py`. HTTP route tests live in `tests/routes/` and should only assert HTTP behaviour (status, redirect, flash, permissions) — business logic belongs in `tests/integration/`. Helpers in `tests/http_helpers.py`.
+- Testing: SQLite in-memory DB, FastAPI `TestClient` with `CSRFClient` wrapper, fixtures in `tests/conftest.py`. HTTP route tests live in `tests/feature/` and should only assert HTTP behaviour (status, redirect, flash, permissions) — business logic belongs in `tests/unit/`. Helpers in `tests/http_helpers.py`.
 - Config: Pydantic `Settings` in `app/core/config.py` (environments: `development`, `testing`, `production`).
 - Ruff is the linter/formatter (line length 160).

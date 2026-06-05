@@ -2,7 +2,8 @@
 name = "south-east-archers"
 version = "1.0.0"
 description = "South East Archers Club Website"
-requires-python = ">=3.14"
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
 dependencies = [
     "fastapi>=0.136.3",
     "uvicorn[standard]>=0.48.0",
@@ -43,17 +44,48 @@ dev = [
     "hypothesis>=6.130.0",
 ]
 
+[project.scripts]
+sea = "app.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.uv]
+package = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=app --cov-report=term-missing --cov-fail-under=90"
+
+[tool.mypy]
+python_version = "3.14"
+files = ["app"]
+explicit_package_bases = true
+namespace_packages = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+ignore_missing_imports = true
+
+
 [tool.coverage.run]
 omit = [
     "*/tests/*",
     "*/conftest.py",
     "*/.venv/*",
     "*/venv/*",
+    "app/cli.py",       # Interactive Typer CLI — tested manually
 ]
 
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
+fail_under = 90
 
 [tool.ruff]
 line-length = 160
@@ -74,4 +106,50 @@ ignore = [
 quote-style = "double"
 indent-style = "space"
 
+# ---------------------------------------------------------------------------
+# import-linter – enforces module boundaries
+# ---------------------------------------------------------------------------
 
+[tool.importlinter]
+root_packages = ["app"]
+include_external_packages = false
+
+[[tool.importlinter.contracts]]
+name = "Only repositories and dependencies may import app.db directly"
+type = "forbidden"
+source_modules = [
+    "app.cli",
+    "app.routes",
+    "app.services",
+    "app.policies",
+]
+forbidden_modules = ["app.db.models", "app.db.session", "app.db.base"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Routes must not import the database layer directly"
+type = "forbidden"
+source_modules = ["app.routes"]
+forbidden_modules = ["app.db"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Routes must not import repositories directly"
+type = "forbidden"
+source_modules = ["app.routes"]
+forbidden_modules = ["app.repositories"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Routes must not import policies directly"
+type = "forbidden"
+source_modules = ["app.routes"]
+forbidden_modules = ["app.policies"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Schemas must not import services or routes"
+type = "forbidden"
+source_modules = ["app.schemas"]
+forbidden_modules = ["app.services", "app.routes"]
+allow_indirect_imports = true

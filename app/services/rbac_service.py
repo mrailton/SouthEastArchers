@@ -13,6 +13,10 @@ class RBACService:
         return RBACRepository.list_roles()
 
     @staticmethod
+    def role_choices() -> list[tuple[int, str]]:
+        return [(role.id, role.name) for role in RBACRepository.list_roles()]
+
+    @staticmethod
     def list_permissions() -> list[Permission]:
         return RBACRepository.list_permissions()
 

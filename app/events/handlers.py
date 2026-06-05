@@ -1,16 +1,7 @@
-"""Event handlers that connect domain signals to side effects (e.g., email sending).
-
-All handlers are registered when :func:`connect_handlers` is called during app
-startup.  They keep side-effect logic out of the core services.
-"""
-
 from __future__ import annotations
 
-from typing import Any
-
 import logging
-
-logger = logging.getLogger(__name__)
+from typing import Any
 
 from app.enums import PaymentType
 from app.events import (
@@ -22,6 +13,8 @@ from app.events import (
     user_activated,
     user_registered,
 )
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Handler implementations

@@ -82,9 +82,7 @@ def _feature_flags(db: Session | None) -> dict[str, bool]:
     if db is None:
         return defaults
     try:
-        rows = db.execute(
-            text("SELECT `key`, value FROM setting WHERE `key` IN ('news_enabled', 'events_enabled')")
-        ).fetchall()
+        rows = db.execute(text("SELECT `key`, value FROM setting WHERE `key` IN ('news_enabled', 'events_enabled')")).fetchall()
         raw = {row[0]: row[1] for row in rows}
         return {
             "news_enabled": str(raw.get("news_enabled", "")).lower() in ("true", "1", "yes"),

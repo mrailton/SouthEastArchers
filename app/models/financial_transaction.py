@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Date, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
-"""Financial transaction model for tracking club income and expenses."""
 
-from app.db import Model, db
+from app.db import Model
 from app.utils.datetime_utils import utc_now
 
 EXPENSE_CATEGORIES = [

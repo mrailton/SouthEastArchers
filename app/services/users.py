@@ -145,12 +145,6 @@ def change_password(
 def get_user_payments_paginated(db: Session, user_id: int, *, page: int = 1, per_page: int = 5) -> SimplePagination:
     total = db.scalar(select(func.count()).select_from(Payment).where(Payment.user_id == user_id)) or 0
     items = list(
-        db.scalars(
-            select(Payment)
-            .where(Payment.user_id == user_id)
-            .order_by(Payment.created_at.desc())
-            .offset((page - 1) * per_page)
-            .limit(per_page)
-        ).all()
+        db.scalars(select(Payment).where(Payment.user_id == user_id).order_by(Payment.created_at.desc()).offset((page - 1) * per_page).limit(per_page)).all()
     )
     return SimplePagination(items, page=page, per_page=per_page, total=total)

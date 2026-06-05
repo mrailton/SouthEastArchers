@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Date, DateTime, Enum, ForeignKey, Integer, String, Table, Text
-from app.db import Model, db
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text
+
+from app.db import Model
 from app.enums import PaymentMethod, PaymentType
 from app.utils.datetime_utils import utc_now
 
@@ -12,7 +13,11 @@ class Payment(Model):
     amount_cents = Column(Integer, nullable=False)
     currency = Column(String(3), default="EUR")
     payment_type = Column(Enum(PaymentType, values_callable=lambda e: [m.value for m in e]), nullable=False)
-    payment_method = Column(Enum(PaymentMethod, values_callable=lambda e: [m.value for m in e]), nullable=False, default=PaymentMethod.ONLINE)
+    payment_method = Column(
+        Enum(PaymentMethod, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+        default=PaymentMethod.ONLINE,
+    )
     status = Column(
         Enum("pending", "completed", "failed", "cancelled"),
         default="pending",

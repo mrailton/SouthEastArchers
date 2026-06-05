@@ -1,15 +1,13 @@
 import logging
-
-logger = logging.getLogger(__name__)
-
 from datetime import date
-
 
 from app.events import credit_purchased, payment_completed
 from app.models import Credit, Membership
 from app.repositories import BaseRepository, CreditRepository, MembershipRepository, PaymentRepository, UserRepository
 from app.services.result import ServiceResult
 from app.services.settings_service import SettingsService
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentProcessingService:

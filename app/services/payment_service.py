@@ -1,17 +1,16 @@
 import logging
-
-logger = logging.getLogger(__name__)
-
+from datetime import date
 from typing import Any
 
-
 from app.enums import PaymentMethod, PaymentType
-from app.events import cash_payment_submitted
-from app.models import Payment, User
-from app.repositories import PaymentRepository
+from app.events import cash_payment_submitted, credit_purchased, payment_completed
+from app.models import Credit, Membership, Payment, User
+from app.repositories import CreditRepository, MembershipRepository, PaymentRepository, UserRepository
 from app.services.result import ServiceResult
 from app.services.settings_service import SettingsService
 from app.services.sumup_service import SumUpService
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentService:
@@ -176,3 +175,90 @@ class PaymentService:
                 "instructions": SettingsService.get("cash_payment_instructions"),
             }
         )
+
+    @staticmethod
+    def get_pending_cash_payment_rows() -> list[dict[str, Any]]:
+        payments = PaymentRepository.get_pending_cash()
+        return [{"payment": payment, "user": UserRepository.get_by_id(payment.user_id)} for payment in payments]
+
+    @staticmethod
+    def get_completed_membership_payment(user_id: int) -> Payment | None:
+        return PaymentRepository.get_completed_for_user(user_id, PaymentType.MEMBERSHIP)
+
+    @staticmethod
+    def approve_cash_payment(payment_id: int) -> ServiceResult[dict[str, Any]]:
+        payment = PaymentRepository.get_by_id(payment_id)
+        if not payment:
+            return ServiceResult.fail("Payment not found.")
+        if payment.status != "pending" or payment.payment_method != PaymentMethod.CASH:
+            return ServiceResult.fail("This payment cannot be approved.")
+
+        member = UserRepository.get_by_id(payment.user_id)
+        if not member:
+            return ServiceResult.fail("User not found.")
+
+        try:
+            payment.mark_completed(processor="cash")
+            if payment.payment_type == PaymentType.MEMBERSHIP:
+                if member.membership:
+                    if member.membership.status != "active":
+                        member.membership.activate()
+                    else:
+                        expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
+                        member.membership.renew(expiry_date=expiry_date)
+                else:
+                    expiry_date = SettingsService.calculate_membership_expiry(date.today()).date()
+                    membership = Membership(
+                        user_id=member.id,
+                        start_date=date.today(),
+                        expiry_date=expiry_date,
+                        initial_credits=SettingsService.get("membership_shoots_included"),
+                        purchased_credits=0,
+                        status="active",
+                    )
+                    MembershipRepository.add(membership)
+            elif payment.payment_type == PaymentType.CREDITS:
+                quantity = PaymentService._credit_quantity_from_description(payment.description)
+                if member.membership:
+                    member.membership.add_credits(quantity)
+                CreditRepository.add(Credit(user_id=member.id, amount=quantity, payment_id=payment.id))
+
+            PaymentRepository.save()
+            PaymentService._emit_payment_completed_events(payment, member)
+            return ServiceResult.ok(data={"member_name": member.name}, message=f"Payment approved for {member.name}!")
+        except Exception as exc:
+            logger.error("Error approving payment: %s", exc)
+            return ServiceResult.fail(f"Error approving payment: {exc}")
+
+    @staticmethod
+    def reject_cash_payment(payment_id: int) -> ServiceResult[dict[str, Any]]:
+        payment = PaymentRepository.get_by_id(payment_id)
+        if not payment:
+            return ServiceResult.fail("Payment not found.")
+        if payment.status != "pending" or payment.payment_method != PaymentMethod.CASH:
+            return ServiceResult.fail("This payment cannot be rejected.")
+        member = UserRepository.get_by_id(payment.user_id)
+        payment.status = "cancelled"
+        PaymentRepository.save()
+        member_name = member.name if member else "user"
+        return ServiceResult.ok(data={"member_name": member_name}, message=f"Payment rejected for {member_name}.")
+
+    @staticmethod
+    def _credit_quantity_from_description(description: str | None) -> int:
+        if description and "shooting credits" in description.lower():
+            try:
+                return int(description.split()[0])
+            except ValueError, IndexError:
+                return 1
+        return 1
+
+    @staticmethod
+    def _emit_payment_completed_events(payment: Payment, member: User) -> None:
+        try:
+            if payment.payment_type == PaymentType.CREDITS:
+                quantity = PaymentService._credit_quantity_from_description(payment.description)
+                credit_purchased.send(user_id=member.id, payment_id=payment.id, quantity=quantity)
+            else:
+                payment_completed.send(user_id=member.id, payment_id=payment.id, payment_type=payment.payment_type)
+        except Exception:
+            pass

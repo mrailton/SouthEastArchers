@@ -22,11 +22,13 @@ dev: ## Run development servers (FastAPI + Vite)
 	@echo ""
 	@trap 'kill 0' EXIT; \
 		npm run dev & \
-		uv run uvicorn asgi:app --reload --host 127.0.0.1 --port 8000 & \
+		uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 & \
 		wait
 
 clean: ## Remove cache and temporary files
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .hypothesis -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .import_linter_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	rm -rf .pytest_cache htmlcov .coverage
 

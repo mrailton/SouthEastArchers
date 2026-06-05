@@ -72,8 +72,8 @@ Run due scheduled jobs (membership expiry, low-credits reminders) via your sched
 
 ```
 ├── app/
-│   ├── main.py             # FastAPI application
-│   ├── routers/            # HTTP routes (admin, member, auth, payment, public)
+│   ├── main.py             # FastAPI application (ASGI entry: app.main:app)
+│   ├── routes/             # HTTP routes (admin, member, auth, payment, public)
 │   ├── services/           # Business logic
 │   ├── repositories/       # Data access
 │   ├── models/             # SQLAlchemy models
@@ -82,9 +82,8 @@ Run due scheduled jobs (membership expiry, low-credits reminders) via your sched
 │   ├── schemas/            # Pydantic forms (auth/member)
 │   ├── templates/          # Jinja2 templates
 │   └── scheduler/          # Scheduled jobs
-├── asgi.py                 # ASGI entry point
 ├── resources/              # Frontend assets
-├── tests/                  # Test suite (routes/, integration/, unit/)
+├── tests/                  # Test suite (feature/, unit/)
 └── migrations/             # Alembic migrations
 ```
 

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
-from app.db import Model, db
+
+from app.db import Model
 from app.utils.datetime_utils import utc_now
 
 

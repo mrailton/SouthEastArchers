@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Date, DateTime, Enum, ForeignKey, Integer, String, Table, Text
-from app.db import Model, db
+from sqlalchemy import Column, DateTime, String, Text
+
+from app.db import Model
 from app.utils.datetime_utils import utc_now
 
 

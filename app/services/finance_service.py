@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 import logging
-
-logger = logging.getLogger(__name__)
-
 from datetime import date
 
 from app.db import Pagination
-
 from app.enums import PaymentType
 from app.models import FinancialTransaction
 from app.repositories import FinancialTransactionRepository
 from app.services.result import ServiceResult
+
+logger = logging.getLogger(__name__)
 
 
 class FinanceService:
@@ -59,7 +57,7 @@ class FinanceService:
         1. Income for the full payment amount
         2. Expense for the SumUp processing fee (based on sumup_fee_percentage setting)
         """
-        
+
         from app.services.settings_service import SettingsService
 
         fee_pct = SettingsService.get("sumup_fee_percentage")

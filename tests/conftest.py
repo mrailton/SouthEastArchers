@@ -12,20 +12,19 @@ os.environ.setdefault("TEST_DATABASE_URL", "sqlite://")
 os.environ.setdefault("DATABASE_URL", "sqlite://")
 os.environ.setdefault("SECRET_KEY", "test-secret")
 
+from click.testing import CliRunner
+
 import app.core.config  # noqa: F401 - load settings
 import app.models  # noqa: F401 - register models with metadata
 from app import db
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.security import hash_password
-from app.db import init_db, reset_current_session, set_current_session
+from app.db import reset_current_session, set_current_session
+from app.events.handlers import connect_handlers
 from app.main import app as fastapi_app
 from app.models import Membership, Role, User
 from app.models.rbac import seed_rbac
-from click.testing import CliRunner
-
-from app.cli import cli
-from app.events.handlers import connect_handlers
 from tests.helpers import FakeMailer, FakeQueue
 from tests.http_helpers import CSRFClient, login
 
@@ -88,7 +87,6 @@ def app_instance():
 def app(app_instance):
     """Transaction-isolated database session for each test."""
     from sqlalchemy import event
-
     from sqlalchemy.orm import sessionmaker
 
     connection = db.engine.connect()
@@ -117,10 +115,8 @@ def pytest_collection_modifyitems(items):
         path = str(item.fspath)
         if "/unit/" in path:
             item.add_marker(pytest.mark.unit)
-        elif "/integration/" in path:
-            item.add_marker(pytest.mark.integration)
-        elif "/routes/" in path:
-            item.add_marker(pytest.mark.routes)
+        elif "/feature/" in path:
+            item.add_marker(pytest.mark.feature)
 
 
 def pytest_sessionfinish(session, exitstatus):

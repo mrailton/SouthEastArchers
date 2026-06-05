@@ -1,13 +1,13 @@
-from app.core.config import get_settings
 import logging
-
-logger = logging.getLogger(__name__)
-
 import uuid
 from typing import Any
 
 from sumup import APIError, Sumup
 from sumup.checkouts import CreateCheckoutBody
+
+from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class SumUpService:

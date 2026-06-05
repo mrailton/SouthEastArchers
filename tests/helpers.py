@@ -1,5 +1,4 @@
 from collections.abc import Callable, Sequence
-from types import SimpleNamespace
 from typing import Any
 
 
@@ -85,7 +84,10 @@ def create_payment_for_user(db, user, **kwargs):
         "status": kwargs.get("status", "completed"),
         "description": kwargs.get("description", None),
     }
-    all_fields = {**defaults, **{k: v for k, v in kwargs.items() if k in ("id", "created_at", "external_transaction_id", "payment_processor")}}
+    all_fields = {
+        **defaults,
+        **{k: v for k, v in kwargs.items() if k in ("id", "created_at", "external_transaction_id", "payment_processor")},
+    }
     payment = Payment(**all_fields)
     db.session.add(payment)
     db.session.commit()

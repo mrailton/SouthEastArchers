@@ -4,7 +4,7 @@ import pytest
 
 from app import db
 from app.models import Membership, Payment, User
-from app.services.membership_service import MembershipService
+from app.services import memberships
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def user_with_cash_payment(app):
 # Activate membership tests
 def test_activate_pending_membership(app, user_with_pending_membership):
     """Test activating a pending membership"""
-    result = MembershipService.activate_membership(user_with_pending_membership)
+    result = memberships.activate_membership(user_with_pending_membership)
 
     assert result.success is True
     assert "activated successfully" in result.message
@@ -72,7 +72,7 @@ def test_activate_pending_membership(app, user_with_pending_membership):
 
 def test_activate_with_pending_cash_payment(app, user_with_cash_payment):
     """Test activating membership also marks cash payment as completed"""
-    result = MembershipService.activate_membership(user_with_cash_payment)
+    result = memberships.activate_membership(user_with_cash_payment)
 
     assert result.success is True
     payment = Payment.query.filter_by(user_id=user_with_cash_payment.id, payment_type="membership", payment_method="cash").first()
@@ -83,7 +83,7 @@ def test_activate_already_active_membership(app, test_user):
     """Test activating an already active membership fails"""
     assert test_user.membership.status == "active"
 
-    result = MembershipService.activate_membership(test_user)
+    result = memberships.activate_membership(test_user)
 
     assert result.success is False
     assert "already active" in result.message
@@ -96,7 +96,7 @@ def test_activate_user_without_membership(app):
     db.session.add(user)
     db.session.commit()
 
-    result = MembershipService.activate_membership(user)
+    result = memberships.activate_membership(user)
 
     assert result.success is False
     assert "No membership found" in result.message
@@ -105,7 +105,7 @@ def test_activate_user_without_membership(app):
 # Renew membership tests
 def test_renew_active_membership(app, test_user):
     """Test renewing an active membership"""
-    result = MembershipService.renew_membership(test_user)
+    result = memberships.renew_membership(test_user)
 
     assert result.success is True
     assert "renewed successfully" in result.message
@@ -122,7 +122,7 @@ def test_renew_expired_membership(app, test_user):
     test_user.membership.status = "inactive"
     db.session.commit()
 
-    result = MembershipService.renew_membership(test_user)
+    result = memberships.renew_membership(test_user)
 
     assert result.success is True
     # Expiry is calculated based on membership year, not +365 days
@@ -138,7 +138,7 @@ def test_renew_user_without_membership(app):
     db.session.add(user)
     db.session.commit()
 
-    result = MembershipService.renew_membership(user)
+    result = memberships.renew_membership(user)
 
     assert result.success is False
     assert "No membership to renew" in result.message
@@ -149,7 +149,7 @@ def test_deactivate_active_membership(app, test_user):
     """Test deactivating an active membership"""
     assert test_user.membership.status == "active"
 
-    result = MembershipService.deactivate_membership(test_user)
+    result = memberships.deactivate_membership(test_user)
 
     assert result.success is True
     assert "deactivated successfully" in result.message
@@ -161,7 +161,7 @@ def test_deactivate_already_inactive_membership(app, test_user):
     test_user.membership.status = "inactive"
     db.session.commit()
 
-    result = MembershipService.deactivate_membership(test_user)
+    result = memberships.deactivate_membership(test_user)
 
     assert result.success is True
     assert test_user.membership.status == "inactive"
@@ -174,7 +174,7 @@ def test_deactivate_user_without_membership(app):
     db.session.add(user)
     db.session.commit()
 
-    result = MembershipService.deactivate_membership(user)
+    result = memberships.deactivate_membership(user)
 
     assert result.success is False
     assert "No membership found" in result.message
@@ -190,7 +190,7 @@ def test_create_membership_for_user_without(app):
 
     assert user.membership is None
 
-    result = MembershipService.create_membership(user)
+    result = memberships.create_membership(user)
 
     assert result.success is True
     assert "created successfully" in result.message.lower() or "created" in result.message.lower()
@@ -203,7 +203,7 @@ def test_create_membership_for_user_with_existing(app, test_user):
     """Test creating membership when user already has one fails"""
     assert test_user.membership is not None
 
-    result = MembershipService.create_membership(test_user)
+    result = memberships.create_membership(test_user)
 
     assert result.success is False
     assert "already has a membership" in result.message
@@ -236,7 +236,7 @@ def test_get_expired_memberships(app):
 
     db.session.commit()
 
-    result = MembershipService.get_expired_memberships()
+    result = memberships.get_expired_memberships()
 
     assert len(result) == 2
     emails = [m.user.email for m in result]
@@ -263,7 +263,7 @@ def test_get_expired_memberships_excludes_already_inactive(app):
     db.session.add(membership)
     db.session.commit()
 
-    result = MembershipService.get_expired_memberships()
+    result = memberships.get_expired_memberships()
 
     assert len(result) == 0
 
@@ -273,7 +273,7 @@ def test_activate_membership_exception(app, user_with_pending_membership):
     from unittest.mock import patch
 
     with patch("app.repositories.base.BaseRepository.save", side_effect=Exception("DB Error")):
-        result = MembershipService.activate_membership(user_with_pending_membership)
+        result = memberships.activate_membership(user_with_pending_membership)
         assert not result.success
         assert "Error activating membership" in result.message
 
@@ -282,9 +282,9 @@ def test_renew_membership_exception(app, test_user):
     from unittest.mock import patch
 
     # Patch calculate_membership_expiry which is called before commit
-    with patch("app.services.membership_service.SettingsService.calculate_membership_expiry", side_effect=Exception("DB Error")):
+    with patch("app.services.memberships.settings.calculate_membership_expiry", side_effect=Exception("DB Error")):
         try:
-            result = MembershipService.renew_membership(test_user)
+            result = memberships.renew_membership(test_user)
             assert not result.success
             assert "Error renewing membership" in result.message
         except Exception as e:
@@ -299,7 +299,7 @@ def test_deactivate_membership_exception(app, test_user):
     from unittest.mock import patch
 
     with patch("app.repositories.base.BaseRepository.save", side_effect=Exception("DB Error")):
-        result = MembershipService.deactivate_membership(test_user)
+        result = memberships.deactivate_membership(test_user)
         assert not result.success
         assert "Error deactivating membership" in result.message
 
@@ -333,7 +333,7 @@ def test_expire_memberships_for_year_end(app):
     db.session.add_all([m1, m2])
     db.session.commit()
 
-    count = MembershipService.expire_memberships_for_year_end()
+    count = memberships.expire_memberships_for_year_end()
     assert count >= 1
 
     db.session.refresh(m1)

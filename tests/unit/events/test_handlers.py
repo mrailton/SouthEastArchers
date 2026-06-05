@@ -15,94 +15,94 @@ from app.events import (
 
 def test_user_registered_triggers_new_member_notification(app):
     """user_registered signal triggers send_new_member_notification."""
-    with patch("app.services.mail_service.MailService.send_new_member_notification") as mock_notify:
+    with patch("app.services.mail.send_new_member_notification") as mock_notify:
         user_registered.send(user_id=42)
         mock_notify.assert_called_once_with(42)
 
 
 def test_user_activated_triggers_welcome_email(app):
     """user_activated signal triggers send_welcome_email."""
-    with patch("app.services.mail_service.MailService.send_welcome_email") as mock_welcome:
+    with patch("app.services.mail.send_welcome_email") as mock_welcome:
         user_activated.send(user_id=7)
         mock_welcome.assert_called_once_with(7)
 
 
 def test_payment_completed_triggers_receipt(app):
     """payment_completed signal triggers send_payment_receipt."""
-    with patch("app.services.mail_service.MailService.send_payment_receipt") as mock_receipt:
+    with patch("app.services.mail.send_payment_receipt") as mock_receipt:
         payment_completed.send(user_id=1, payment_id=99, payment_type="membership")
         mock_receipt.assert_called_once_with(1, 99)
 
 
 def test_credit_purchased_triggers_credit_receipt(app):
     """credit_purchased signal triggers send_credit_purchase_receipt."""
-    with patch("app.services.mail_service.MailService.send_credit_purchase_receipt") as mock_receipt:
+    with patch("app.services.mail.send_credit_purchase_receipt") as mock_receipt:
         credit_purchased.send(user_id=3, payment_id=55, quantity=5)
         mock_receipt.assert_called_once_with(3, 55, 5)
 
 
 def test_cash_payment_submitted_triggers_pending_email(app):
     """cash_payment_submitted signal triggers send_cash_payment_pending_email."""
-    with patch("app.services.mail_service.MailService.send_cash_payment_pending_email") as mock_pending:
+    with patch("app.services.mail.send_cash_payment_pending_email") as mock_pending:
         cash_payment_submitted.send(user_id=10, payment_id=20)
         mock_pending.assert_called_once_with(10, 20)
 
 
 def test_password_reset_requested_triggers_reset_email(app):
     """password_reset_requested signal triggers send_password_reset."""
-    with patch("app.services.mail_service.MailService.send_password_reset") as mock_reset:
+    with patch("app.services.mail.send_password_reset") as mock_reset:
         password_reset_requested.send(user_id=4, token="abc123")
         mock_reset.assert_called_once_with(4, "abc123")
 
 
 def test_membership_activated_with_payment_triggers_receipt(app):
     """membership_activated with a payment_id triggers send_payment_receipt."""
-    with patch("app.services.mail_service.MailService.send_payment_receipt") as mock_receipt:
+    with patch("app.services.mail.send_payment_receipt") as mock_receipt:
         membership_activated.send(user_id=2, payment_id=77)
         mock_receipt.assert_called_once_with(2, 77)
 
 
 def test_membership_activated_without_payment_does_not_send(app):
     """membership_activated without a payment_id does NOT trigger send_payment_receipt."""
-    with patch("app.services.mail_service.MailService.send_payment_receipt") as mock_receipt:
+    with patch("app.services.mail.send_payment_receipt") as mock_receipt:
         membership_activated.send(user_id=2)
         mock_receipt.assert_not_called()
 
 
 def test_handler_exception_is_caught(app):
     """Handler exceptions are caught and logged, not propagated."""
-    with patch("app.services.mail_service.MailService.send_new_member_notification", side_effect=Exception("boom")):
+    with patch("app.services.mail.send_new_member_notification", side_effect=Exception("boom")):
         user_registered.send(user_id=1)
 
 
 @pytest.mark.parametrize(
     "signal,method_path,send_kwargs",
     [
-        (user_registered, "app.services.mail_service.MailService.send_new_member_notification", {"user_id": 1}),
-        (user_activated, "app.services.mail_service.MailService.send_welcome_email", {"user_id": 1}),
+        (user_registered, "app.services.mail.send_new_member_notification", {"user_id": 1}),
+        (user_activated, "app.services.mail.send_welcome_email", {"user_id": 1}),
         (
             payment_completed,
-            "app.services.mail_service.MailService.send_payment_receipt",
+            "app.services.mail.send_payment_receipt",
             {"user_id": 1, "payment_id": 99, "payment_type": "membership"},
         ),
         (
             credit_purchased,
-            "app.services.mail_service.MailService.send_credit_purchase_receipt",
+            "app.services.mail.send_credit_purchase_receipt",
             {"user_id": 1, "payment_id": 55, "quantity": 5},
         ),
         (
             cash_payment_submitted,
-            "app.services.mail_service.MailService.send_cash_payment_pending_email",
+            "app.services.mail.send_cash_payment_pending_email",
             {"user_id": 1, "payment_id": 20},
         ),
         (
             password_reset_requested,
-            "app.services.mail_service.MailService.send_password_reset",
+            "app.services.mail.send_password_reset",
             {"user_id": 1, "token": "abc123"},
         ),
         (
             membership_activated,
-            "app.services.mail_service.MailService.send_payment_receipt",
+            "app.services.mail.send_payment_receipt",
             {"user_id": 1, "payment_id": 77},
         ),
     ],
@@ -155,7 +155,7 @@ def test_record_payment_financial_transactions_unsupported_processor(app):
             "Annual membership",
             1,
             "txn_123",
-            "app.services.finance_service.FinanceService.record_sumup_payment_transactions",
+            "app.services.finance.record_sumup_payment_transactions",
             {
                 "payment_amount_cents": 10000,
                 "payment_type": "membership",
@@ -171,7 +171,7 @@ def test_record_payment_financial_transactions_unsupported_processor(app):
             "Annual membership (Cash)",
             2,
             None,
-            "app.services.finance_service.FinanceService.record_cash_payment_transaction",
+            "app.services.finance.record_cash_payment_transaction",
             {
                 "payment_amount_cents": 10000,
                 "payment_type": "membership",
@@ -186,7 +186,7 @@ def test_record_payment_financial_transactions_unsupported_processor(app):
             "1 shooting credit",
             3,
             "txn_456",
-            "app.services.finance_service.FinanceService.record_sumup_payment_transactions",
+            "app.services.finance.record_sumup_payment_transactions",
             {
                 "payment_amount_cents": 500,
                 "payment_type": "credits",
@@ -202,7 +202,7 @@ def test_record_payment_financial_transactions_unsupported_processor(app):
             "1 shooting credit (Cash)",
             4,
             None,
-            "app.services.finance_service.FinanceService.record_cash_payment_transaction",
+            "app.services.finance.record_cash_payment_transaction",
             {
                 "payment_amount_cents": 500,
                 "payment_type": "credits",
@@ -216,11 +216,7 @@ def test_payment_signal_records_financial_transactions(
     app, signal, payment_processor, payment_amount, description, created_by_id, external_id, record_method, record_args
 ):
     """payment_completed/credit_purchased signals create financial transactions."""
-    receipt_method = (
-        "app.services.mail_service.MailService.send_payment_receipt"
-        if signal == payment_completed
-        else "app.services.mail_service.MailService.send_credit_purchase_receipt"
-    )
+    receipt_method = "app.services.mail.send_payment_receipt" if signal == payment_completed else "app.services.mail.send_credit_purchase_receipt"
 
     with patch(receipt_method):
         with patch("app.repositories.PaymentRepository") as mock_repo:

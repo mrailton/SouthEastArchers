@@ -100,11 +100,9 @@ def inject_fake_mailer(fake_mailer: FakeMailer) -> None:
     def _fake_send(subject: str, recipients: Sequence[str], text_body: str, html_body: str | None = None) -> None:
         fake_mailer.record(subject, recipients, text_body, html_body)
 
-    import app.services.mail_service as mail_service_mod
     import app.utils.mail as mail_mod
 
     mail_mod.send_email = _fake_send
-    mail_service_mod.send_email = _fake_send
 
 
 def assert_email_sent(fake_mailer, subject_contains=None, recipients=None, html_contains=None, body_contains=None):

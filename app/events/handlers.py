@@ -23,34 +23,34 @@ logger = logging.getLogger(__name__)
 
 def _on_user_registered(sender: Any, **kwargs: Any) -> None:
     """Notify admins that a new member has signed up."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
     user_id: int = kwargs["user_id"]
     try:
-        MailService.send_new_member_notification(user_id)
+        mail.send_new_member_notification(user_id)
     except Exception as e:
         logger.error(f"Event handler _on_user_registered failed: {e}")
 
 
 def _on_user_activated(sender: Any, **kwargs: Any) -> None:
     """Send a welcome email when a user account is activated."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
     user_id: int = kwargs["user_id"]
     try:
-        MailService.send_welcome_email(user_id)
+        mail.send_welcome_email(user_id)
     except Exception as e:
         logger.error(f"Event handler _on_user_activated failed: {e}")
 
 
 def _on_payment_completed(sender: Any, **kwargs: Any) -> None:
     """Send a payment receipt when a payment is completed."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
     user_id: int = kwargs["user_id"]
     payment_id: int = kwargs["payment_id"]
     try:
-        MailService.send_payment_receipt(user_id, payment_id)
+        mail.send_payment_receipt(user_id, payment_id)
     except Exception as e:
         logger.error(f"Event handler _on_payment_completed failed: {e}")
 
@@ -59,13 +59,13 @@ def _on_payment_completed(sender: Any, **kwargs: Any) -> None:
 
 def _on_credit_purchased(sender: Any, **kwargs: Any) -> None:
     """Send a credit purchase receipt."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
     user_id: int = kwargs["user_id"]
     payment_id: int = kwargs["payment_id"]
     quantity: int = kwargs["quantity"]
     try:
-        MailService.send_credit_purchase_receipt(user_id, payment_id, quantity)
+        mail.send_credit_purchase_receipt(user_id, payment_id, quantity)
     except Exception as e:
         logger.error(f"Event handler _on_credit_purchased failed: {e}")
 
@@ -74,37 +74,37 @@ def _on_credit_purchased(sender: Any, **kwargs: Any) -> None:
 
 def _on_cash_payment_submitted(sender: Any, **kwargs: Any) -> None:
     """Send a cash payment pending confirmation email."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
     user_id: int = kwargs["user_id"]
     payment_id: int = kwargs["payment_id"]
     try:
-        MailService.send_cash_payment_pending_email(user_id, payment_id)
+        mail.send_cash_payment_pending_email(user_id, payment_id)
     except Exception as e:
         logger.error(f"Event handler _on_cash_payment_submitted failed: {e}")
 
 
 def _on_password_reset_requested(sender: Any, **kwargs: Any) -> None:
     """Send a password reset email."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
     user_id: int = kwargs["user_id"]
     token: str = kwargs["token"]
     try:
-        MailService.send_password_reset(user_id, token)
+        mail.send_password_reset(user_id, token)
     except Exception as e:
         logger.error(f"Event handler _on_password_reset_requested failed: {e}")
 
 
 def _on_membership_activated(sender: Any, **kwargs: Any) -> None:
     """Send a payment receipt when a membership is activated (if a payment exists)."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
     user_id: int = kwargs["user_id"]
     payment_id: int | None = kwargs.get("payment_id")
     if payment_id is not None:
         try:
-            MailService.send_payment_receipt(user_id, payment_id)
+            mail.send_payment_receipt(user_id, payment_id)
         except Exception as e:
             logger.error(f"Event handler _on_membership_activated failed: {e}")
 
@@ -116,7 +116,7 @@ def _record_payment_financial_transactions(payment_id: int, payment_type: str) -
     For cash payments: creates income only.
     """
     from app.repositories import PaymentRepository
-    from app.services.finance_service import FinanceService
+    from app.services import finance
 
     try:
         payment = PaymentRepository.get_by_id(payment_id)
@@ -124,7 +124,7 @@ def _record_payment_financial_transactions(payment_id: int, payment_type: str) -
             return
 
         if payment.payment_processor == "sumup":
-            result = FinanceService.record_sumup_payment_transactions(
+            result = finance.record_sumup_payment_transactions(
                 payment_amount_cents=payment.amount_cents,
                 payment_type=payment_type,
                 description=payment.description or f"SumUp {payment_type} payment",
@@ -132,7 +132,7 @@ def _record_payment_financial_transactions(payment_id: int, payment_type: str) -
                 receipt_reference=payment.external_transaction_id,
             )
         elif payment.payment_processor == "cash":
-            result = FinanceService.record_cash_payment_transaction(
+            result = finance.record_cash_payment_transaction(
                 payment_amount_cents=payment.amount_cents,
                 payment_type=payment_type,
                 description=payment.description or f"Cash {payment_type} payment",

@@ -36,7 +36,7 @@ async def news_list(request: Request, db: DbSession, user: OptionalUser):
 async def news_detail(news_id: int, request: Request, db: DbSession, user: OptionalUser):
     if not get_setting(db, "news_enabled"):
         return render(request, "errors/404.html", user=user, db=db, status_code=404)
-    article = news_service.get_article_by_id(db, news_id)
+    article = news_service.get_article_by_id(news_id, db=db)
     if not article or not article.published:
         return render(request, "errors/404.html", user=user, db=db, status_code=404)
     return render(request, "public/news_detail.html", {"news": article}, user=user, db=db)

@@ -1,12 +1,12 @@
 from datetime import date
 
 from app.models import FinancialTransaction
-from app.services.finance_service import FinanceService
+from app.services import finance
 
 
 def test_create_expense(app, admin_user):
     """Test creating an expense transaction."""
-    result = FinanceService.create_transaction(
+    result = finance.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
         amount_cents=5000,
@@ -27,7 +27,7 @@ def test_create_expense(app, admin_user):
 
 def test_create_income(app, admin_user):
     """Test creating an income transaction."""
-    result = FinanceService.create_transaction(
+    result = finance.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 20),
         amount_cents=10000,
@@ -47,7 +47,7 @@ def test_create_income(app, admin_user):
 
 def test_update_transaction(app, admin_user):
     """Test updating a transaction."""
-    result = FinanceService.create_transaction(
+    result = finance.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
         amount_cents=5000,
@@ -57,7 +57,7 @@ def test_update_transaction(app, admin_user):
     )
     txn = result.data
 
-    result = FinanceService.update_transaction(
+    result = finance.update_transaction(
         transaction=txn,
         txn_date=date(2026, 1, 16),
         amount_cents=7550,
@@ -74,7 +74,7 @@ def test_update_transaction(app, admin_user):
 
 def test_delete_transaction(app, admin_user):
     """Test deleting a transaction."""
-    result = FinanceService.create_transaction(
+    result = finance.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
         amount_cents=5000,
@@ -84,15 +84,15 @@ def test_delete_transaction(app, admin_user):
     )
     txn_id = result.data.id
 
-    result = FinanceService.delete_transaction(txn_id)
+    result = finance.delete_transaction(txn_id)
 
     assert result.success is True
-    assert FinanceService.get_transaction_by_id(txn_id) is None
+    assert finance.get_transaction_by_id(txn_id) is None
 
 
 def test_delete_transaction_not_found(app):
     """Test deleting a non-existent transaction."""
-    result = FinanceService.delete_transaction(99999)
+    result = finance.delete_transaction(99999)
 
     assert result.success is False
     assert result.message == "Transaction not found"
@@ -100,7 +100,7 @@ def test_delete_transaction_not_found(app):
 
 def test_generate_statement(app, admin_user):
     """Test generating a financial statement for a date range."""
-    FinanceService.create_transaction(
+    finance.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 10),
         amount_cents=20000,
@@ -108,7 +108,7 @@ def test_generate_statement(app, admin_user):
         description="Membership fee",
         created_by_id=admin_user.id,
     )
-    FinanceService.create_transaction(
+    finance.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 20),
         amount_cents=15000,
@@ -116,7 +116,7 @@ def test_generate_statement(app, admin_user):
         description="Shoot fees collected",
         created_by_id=admin_user.id,
     )
-    FinanceService.create_transaction(
+    finance.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
         amount_cents=7500,
@@ -125,7 +125,7 @@ def test_generate_statement(app, admin_user):
         created_by_id=admin_user.id,
     )
     # Outside the range
-    FinanceService.create_transaction(
+    finance.create_transaction(
         txn_type="income",
         txn_date=date(2026, 2, 15),
         amount_cents=50000,
@@ -134,7 +134,7 @@ def test_generate_statement(app, admin_user):
         created_by_id=admin_user.id,
     )
 
-    statement = FinanceService.generate_statement(
+    statement = finance.generate_statement(
         start_date=date(2026, 1, 1),
         end_date=date(2026, 1, 31),
     )
@@ -150,7 +150,7 @@ def test_generate_statement(app, admin_user):
 
 def test_generate_statement_empty_range(app, admin_user):
     """Test generating a statement with no transactions in range."""
-    statement = FinanceService.generate_statement(
+    statement = finance.generate_statement(
         start_date=date(2026, 6, 1),
         end_date=date(2026, 6, 30),
     )
@@ -164,7 +164,7 @@ def test_generate_statement_empty_range(app, admin_user):
 
 def test_amount_property_rounding(app, admin_user):
     """Test that amount cents conversion handles rounding properly."""
-    result = FinanceService.create_transaction(
+    result = finance.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
         amount_cents=1999,
@@ -181,11 +181,11 @@ def test_record_sumup_payment_transactions_creates_income_and_expense(app, admin
     """Test that record_sumup_payment_transactions creates both income and fee expense."""
     from decimal import Decimal
 
-    from app.services.settings_service import SettingsService
+    from app.services import settings
 
-    SettingsService.set("sumup_fee_percentage", Decimal("2.50"))
+    settings.set("sumup_fee_percentage", Decimal("2.50"))
 
-    result = FinanceService.record_sumup_payment_transactions(
+    result = finance.record_sumup_payment_transactions(
         payment_amount_cents=10000,
         payment_type="membership",
         description="Annual membership - Test User",
@@ -215,11 +215,11 @@ def test_record_sumup_payment_transactions_credit_purchase(app, admin_user):
     """Test that credit purchases use shoot_fees category."""
     from decimal import Decimal
 
-    from app.services.settings_service import SettingsService
+    from app.services import settings
 
-    SettingsService.set("sumup_fee_percentage", Decimal("2.50"))
+    settings.set("sumup_fee_percentage", Decimal("2.50"))
 
-    result = FinanceService.record_sumup_payment_transactions(
+    result = finance.record_sumup_payment_transactions(
         payment_amount_cents=500,
         payment_type="credits",
         description="1 shooting credit",
@@ -236,7 +236,7 @@ def test_record_sumup_payment_transactions_skips_when_no_fee_configured(app, adm
     """Test that it gracefully skips when sumup_fee_percentage is not set."""
     # Default is None, so no need to set explicitly
 
-    result = FinanceService.record_sumup_payment_transactions(
+    result = finance.record_sumup_payment_transactions(
         payment_amount_cents=10000,
         payment_type="membership",
         description="Test",
@@ -250,7 +250,7 @@ def test_record_sumup_payment_transactions_skips_when_no_fee_configured(app, adm
 
 def test_record_cash_payment_transaction_creates_income(app, admin_user):
     """Test that record_cash_payment_transaction creates an income transaction."""
-    result = FinanceService.record_cash_payment_transaction(
+    result = finance.record_cash_payment_transaction(
         payment_amount_cents=10000,
         payment_type="membership",
         description="Annual membership (Cash)",
@@ -272,7 +272,7 @@ def test_record_cash_payment_transaction_creates_income(app, admin_user):
 
 def test_record_cash_payment_transaction_credit_purchase(app, admin_user):
     """Test that cash credit purchases use shoot_fees category."""
-    result = FinanceService.record_cash_payment_transaction(
+    result = finance.record_cash_payment_transaction(
         payment_amount_cents=500,
         payment_type="credits",
         description="1 shooting credit (Cash)",

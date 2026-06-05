@@ -11,7 +11,7 @@ from tests.http_helpers import set_session
 
 
 @patch("app.routes.payment.SumUpService")
-@patch("app.services.mail_service.MailService.send_payment_receipt")
+@patch("app.services.mail.send_payment_receipt")
 def test_complete_checkout_signup_payment(mock_email, mock_sumup_class, member_client, test_user):
     payment = Payment(
         user_id=test_user.id,
@@ -45,7 +45,7 @@ def test_complete_checkout_failed_status(mock_sumup_class, member_client):
 
 
 @patch("app.routes.payment.SumUpService")
-@patch("app.services.mail_service.MailService.send_payment_receipt")
+@patch("app.services.mail.send_payment_receipt")
 def test_complete_checkout_membership_renewal(mock_email, mock_sumup_class, member_client, test_user):
     payment = Payment(
         user_id=test_user.id,
@@ -118,7 +118,7 @@ def test_credits_purchase_rejects_invalid_quantity(member_client, path, quantity
     assert expected in response.content
 
 
-@patch("app.services.mail_service.MailService.send_cash_payment_pending_email")
+@patch("app.services.mail.send_cash_payment_pending_email")
 def test_membership_cash_payment_renders_pending_page(mock_send_email, member_client):
     response = member_client.post("/payment/membership/cash", follow_redirects=True)
     assert response.status_code == 200

@@ -78,7 +78,7 @@ async def profile_update(request: Request, db: DbSession, user: CurrentUser):
             status_code=422,
         )
 
-    result = user_service.update_profile(db, user, name=form.name, phone=form.phone or None)
+    result = user_service.update_profile(user, name=form.name, phone=form.phone or None, db=db)
     mark_for_commit(db)
     flash(request, "success" if result.success else "error", result.message)
     return RedirectResponse(url="/member/profile", status_code=303)
@@ -113,10 +113,10 @@ async def change_password_store(request: Request, db: DbSession, user: CurrentUs
         )
 
     result = user_service.change_password(
-        db,
         user,
         current_password=form.current_password,
         new_password=form.new_password,
+        db=db,
     )
     if not result.success:
         flash(request, "error", result.message)

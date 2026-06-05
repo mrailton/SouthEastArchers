@@ -4,12 +4,12 @@ from datetime import date, timedelta
 
 from app import db
 from app.models import Event, News
-from app.services.settings_service import SettingsService
+from app.services import settings
 
 
 def _enable_features() -> None:
-    SettingsService.set("news_enabled", True)
-    SettingsService.set("events_enabled", True)
+    settings.set("news_enabled", True)
+    settings.set("events_enabled", True)
 
 
 def test_homepage(client):

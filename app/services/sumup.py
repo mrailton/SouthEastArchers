@@ -69,3 +69,14 @@ class SumUpService:
         except Exception as exc:
             logger.error("Error getting SumUp checkout: %s", exc)
             return None
+
+    def verify_payment(self, checkout_id: str) -> bool:
+        try:
+            checkout = self.get_checkout(checkout_id)
+            if not checkout:
+                return False
+            status = checkout.status if hasattr(checkout, "status") else None
+            return status == "PAID"
+        except Exception as exc:
+            logger.error("Error verifying SumUp payment: %s", exc)
+            return False

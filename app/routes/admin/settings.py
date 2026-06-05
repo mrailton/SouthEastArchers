@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 from app.dependencies import CurrentUser, DbSession, require_perms, verify_csrf
 from app.forms.admin_forms import SettingsForm
 from app.routes.admin._helpers import flash_form_errors
-from app.services.settings_service import SettingsService
+from app.services import settings
 from app.templating import flash, render
 from app.utils.formdata import request_form_data
 
@@ -26,7 +26,7 @@ def _populate_settings_form(form: SettingsForm, all_settings: dict) -> None:
 
 @router.get("/settings", name="admin.settings", dependencies=[require_perms("settings.read")])
 async def settings_page(request: Request, db: DbSession, user: CurrentUser):
-    all_settings = SettingsService.get_all()
+    all_settings = settings.get_all()
     form = SettingsForm()
     _populate_settings_form(form, all_settings)
     return render(request, "admin/settings.html", {"form": form}, user=user, db=db)
@@ -39,7 +39,7 @@ async def settings_store(request: Request, db: DbSession, user: CurrentUser):
     form = SettingsForm(formdata=form_data)
     if form.validate():
         try:
-            SettingsService.save_many(
+            settings.save_many(
                 {
                     "membership_year_start_month": form.membership_year_start_month.data,
                     "membership_year_start_day": form.membership_year_start_day.data,

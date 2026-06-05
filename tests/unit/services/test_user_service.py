@@ -2,15 +2,14 @@ from datetime import date
 
 from app import db
 from app.models import Role, User
-from app.services.settings_service import SettingsService
-from app.services.user_service import UserService
+from app.services import settings, users
 
 # TestGetUserById
 
 
 def test_get_existing_user(app, test_user):
     """Test retrieving an existing user by ID"""
-    result = UserService.get_user_by_id(test_user.id)
+    result = users.get_user_by_id(test_user.id)
     assert result is not None
     assert result.id == test_user.id
     assert result.email == test_user.email
@@ -18,7 +17,7 @@ def test_get_existing_user(app, test_user):
 
 def test_get_nonexistent_user(app):
     """Test retrieving a nonexistent user returns None"""
-    result = UserService.get_user_by_id(99999)
+    result = users.get_user_by_id(99999)
     assert result is None
 
 
@@ -28,7 +27,7 @@ def test_get_nonexistent_user(app):
 def test_update_name_only(app, test_user):
     """Test updating only the name"""
     original_phone = test_user.phone
-    result = UserService.update_profile(test_user, name="New Name")
+    result = users.update_profile(test_user, name="New Name")
 
     assert result.success is True
     assert "successfully" in result.message
@@ -39,7 +38,7 @@ def test_update_name_only(app, test_user):
 def test_update_phone_only(app, test_user):
     """Test updating only the phone"""
     original_name = test_user.name
-    result = UserService.update_profile(test_user, phone="9876543210")
+    result = users.update_profile(test_user, phone="9876543210")
 
     assert result.success is True
     assert test_user.phone == "9876543210"
@@ -48,7 +47,7 @@ def test_update_phone_only(app, test_user):
 
 def test_update_both_name_and_phone(app, test_user):
     """Test updating both name and phone"""
-    result = UserService.update_profile(test_user, name="Updated Name", phone="5555555555")
+    result = users.update_profile(test_user, name="Updated Name", phone="5555555555")
 
     assert result.success is True
     assert test_user.name == "Updated Name"
@@ -57,7 +56,7 @@ def test_update_both_name_and_phone(app, test_user):
 
 def test_update_phone_to_empty_string(app, test_user):
     """Test clearing phone number"""
-    result = UserService.update_profile(test_user, phone="")
+    result = users.update_profile(test_user, phone="")
 
     assert result.success is True
     assert test_user.phone == ""
@@ -67,7 +66,7 @@ def test_update_with_no_changes(app, test_user):
     """Test calling update with no parameters"""
     original_name = test_user.name
     original_phone = test_user.phone
-    result = UserService.update_profile(test_user)
+    result = users.update_profile(test_user)
 
     assert result.success is True
     assert test_user.name == original_name
@@ -79,7 +78,7 @@ def test_update_with_no_changes(app, test_user):
 
 def test_change_password_success(app, test_user):
     """Test successfully changing password"""
-    result = UserService.change_password(test_user, "password123", "newpassword456")
+    result = users.change_password(test_user, current_password="password123", new_password="newpassword456")
 
     assert result.success is True
     assert "successfully" in result.message
@@ -89,7 +88,7 @@ def test_change_password_success(app, test_user):
 
 def test_change_password_wrong_current(app, test_user):
     """Test changing password with wrong current password"""
-    result = UserService.change_password(test_user, "wrongpassword", "newpassword456")
+    result = users.change_password(test_user, current_password="wrongpassword", new_password="newpassword456")
 
     assert result.success is False
     assert "incorrect" in result.message.lower()
@@ -98,7 +97,7 @@ def test_change_password_wrong_current(app, test_user):
 
 def test_change_password_too_short(app, test_user):
     """Test changing password to one that's too short"""
-    result = UserService.change_password(test_user, "password123", "short")
+    result = users.change_password(test_user, current_password="password123", new_password="short")
 
     assert result.success is False
     assert "8 characters" in result.message
@@ -107,7 +106,7 @@ def test_change_password_too_short(app, test_user):
 
 def test_change_password_exactly_8_characters(app, test_user):
     """Test changing password to exactly 8 characters"""
-    result = UserService.change_password(test_user, "password123", "12345678")
+    result = users.change_password(test_user, current_password="password123", new_password="12345678")
 
     assert result.success is True
     assert test_user.check_password("12345678")
@@ -118,7 +117,7 @@ def test_change_password_exactly_8_characters(app, test_user):
 
 def test_create_member_basic(app):
     """Test creating a basic member without membership"""
-    result = UserService.create_member(name="New Member", email="newmember@example.com")
+    result = users.create_member(name="New Member", email="newmember@example.com")
 
     assert result.success is True
     assert result.data is not None
@@ -130,7 +129,7 @@ def test_create_member_basic(app):
 
 def test_create_member_with_custom_password(app):
     """Test creating member with custom password"""
-    result = UserService.create_member(name="Custom Pass Member", email="custom@example.com", password="custompass123")
+    result = users.create_member(name="Custom Pass Member", email="custom@example.com", password="custompass123")
 
     assert result.success is True
     assert result.data.check_password("custompass123")
@@ -139,7 +138,7 @@ def test_create_member_with_custom_password(app):
 def test_create_member_as_admin(app):
     """Test creating member with admin privileges"""
     admin_role = Role.query.filter_by(name="Admin").first()
-    result = UserService.create_member(name="Admin Member", email="adminmember@example.com", role_ids=[admin_role.id] if admin_role else [])
+    result = users.create_member(name="Admin Member", email="adminmember@example.com", role_ids=[admin_role.id] if admin_role else [])
 
     assert result.success is True
     if admin_role:
@@ -148,7 +147,7 @@ def test_create_member_as_admin(app):
 
 def test_create_member_with_phone(app):
     """Test creating member with phone number"""
-    result = UserService.create_member(name="Phone Member", email="phone@example.com", phone="1234567890")
+    result = users.create_member(name="Phone Member", email="phone@example.com", phone="1234567890")
 
     assert result.success is True
     assert result.data.phone == "1234567890"
@@ -156,7 +155,7 @@ def test_create_member_with_phone(app):
 
 def test_create_member_with_membership(app):
     """Test creating member with active membership"""
-    result = UserService.create_member(
+    result = users.create_member(
         name="Member With Membership",
         email="withmembership@example.com",
         create_membership=True,
@@ -167,14 +166,14 @@ def test_create_member_with_membership(app):
     assert result.data.membership.status == "active"
     assert result.data.membership.initial_credits == 20
     assert result.data.membership.start_date == date.today()
-    expected_expiry = SettingsService.calculate_membership_expiry(date.today()).date()
+    expected_expiry = settings.calculate_membership_expiry(date.today()).date()
     assert result.data.membership.expiry_date == expected_expiry
     assert result.data.membership.expiry_date >= date.today()
 
 
 def test_create_member_starts_inactive(app):
     """Test new members start as inactive (must be activated by admin)"""
-    result = UserService.create_member(name="New Member", email="newemail@example.com")
+    result = users.create_member(name="New Member", email="newemail@example.com")
 
     assert result.success is True
     assert result.data is not None
@@ -183,7 +182,7 @@ def test_create_member_starts_inactive(app):
 
 def test_create_member_duplicate_email(app, test_user):
     """Test creating member with existing email"""
-    result = UserService.create_member(name="Duplicate Email", email=test_user.email)
+    result = users.create_member(name="Duplicate Email", email=test_user.email)
 
     assert result.data is None
     assert result.message == "Email already registered."
@@ -194,7 +193,7 @@ def test_create_member_duplicate_email(app, test_user):
 
 def test_update_member_basic_info(app, test_user):
     """Test updating member basic information"""
-    result = UserService.update_member(
+    result = users.update_member(
         user=test_user,
         name="Updated Name",
         email="updated@example.com",
@@ -212,7 +211,7 @@ def test_update_member_admin_status(app, test_user):
     """Test toggling admin status"""
     # Remove admin flag assertion (RBAC now)
     admin_role = Role.query.filter_by(name="Admin").first()
-    result = UserService.update_member(
+    result = users.update_member(
         user=test_user,
         name=test_user.name,
         email=test_user.email,
@@ -226,7 +225,7 @@ def test_update_member_admin_status(app, test_user):
 
 def test_update_member_active_status(app, test_user):
     """Test deactivating a member"""
-    result = UserService.update_member(
+    result = users.update_member(
         user=test_user,
         name=test_user.name,
         email=test_user.email,
@@ -239,7 +238,7 @@ def test_update_member_active_status(app, test_user):
 
 def test_update_member_password(app, test_user):
     """Test updating member password"""
-    result = UserService.update_member(
+    result = users.update_member(
         user=test_user,
         name=test_user.name,
         email=test_user.email,
@@ -255,7 +254,7 @@ def test_update_member_membership_dates(app, test_user):
     new_start = date(2024, 1, 1)
     new_expiry = date(2025, 1, 1)
 
-    result = UserService.update_member(
+    result = users.update_member(
         user=test_user,
         name=test_user.name,
         email=test_user.email,
@@ -270,7 +269,7 @@ def test_update_member_membership_dates(app, test_user):
 
 def test_update_member_credits(app, test_user):
     """Test updating membership credits"""
-    result = UserService.update_member(
+    result = users.update_member(
         user=test_user,
         name=test_user.name,
         email=test_user.email,
@@ -290,7 +289,7 @@ def test_update_member_without_membership(app):
     db.session.add(user)
     db.session.commit()
 
-    result = UserService.update_member(
+    result = users.update_member(
         user=user,
         name="Updated No Membership",
         email="nomem@example.com",
@@ -306,7 +305,7 @@ def test_update_member_without_membership(app):
 
 def test_create_user(app):
     """Test creating user with online payment method"""
-    result = UserService.create_user(
+    result = users.create_user(
         name="Online User",
         email="online@example.com",
         password="password123",
@@ -323,7 +322,7 @@ def test_create_user(app):
 
 def test_create_user_duplicate_email(app, test_user):
     """Test creating user with duplicate email"""
-    result = UserService.create_user(name="Duplicate", email=test_user.email, password="password123")
+    result = users.create_user(name="Duplicate", email=test_user.email, password="password123")
 
     assert result.data is None
     assert result.message == "Email already registered."
@@ -334,7 +333,7 @@ def test_create_user_duplicate_email(app, test_user):
 
 def test_authenticate_valid_credentials(app, test_user):
     """Test authentication with valid credentials"""
-    result = UserService.authenticate(test_user.email, "password123")
+    result = users.authenticate(test_user.email, "password123")
 
     assert result is not None
     assert result.id == test_user.id
@@ -342,14 +341,14 @@ def test_authenticate_valid_credentials(app, test_user):
 
 def test_authenticate_invalid_password(app, test_user):
     """Test authentication with invalid password"""
-    result = UserService.authenticate(test_user.email, "wrongpassword")
+    result = users.authenticate(test_user.email, "wrongpassword")
 
     assert result is None
 
 
 def test_authenticate_nonexistent_email(app):
     """Test authentication with nonexistent email"""
-    result = UserService.authenticate("nonexistent@example.com", "password123")
+    result = users.authenticate("nonexistent@example.com", "password123")
 
     assert result is None
 
@@ -359,7 +358,7 @@ def test_authenticate_nonexistent_email(app):
 
 def test_create_password_reset_token(app, test_user):
     """Test creating password reset token"""
-    token = UserService.create_password_reset_token(test_user)
+    token = users.create_password_reset_token(test_user)
 
     assert token is not None
     assert isinstance(token, str)
@@ -368,8 +367,8 @@ def test_create_password_reset_token(app, test_user):
 
 def test_reset_password_with_valid_token(app, test_user):
     """Test resetting password with valid token"""
-    token = UserService.create_password_reset_token(test_user)
-    result = UserService.reset_password(token, "newpassword123")
+    token = users.create_password_reset_token(test_user)
+    result = users.reset_password(token, "newpassword123")
 
     assert result.success is True
     assert "successfully" in result.message.lower()
@@ -378,7 +377,7 @@ def test_reset_password_with_valid_token(app, test_user):
 
 def test_reset_password_with_invalid_token(app):
     """Test resetting password with invalid token"""
-    result = UserService.reset_password("invalid_token", "newpassword123")
+    result = users.reset_password("invalid_token", "newpassword123")
 
     assert result.success is False
     assert "invalid" in result.message.lower() or "expired" in result.message.lower()
@@ -390,7 +389,7 @@ def test_reset_password_with_expired_token(app, test_user):
     token = test_user.generate_reset_token()
 
     # Simulate token expiration by trying to verify with negative max_age
-    result = UserService.reset_password(token, "newpassword123")
+    result = users.reset_password(token, "newpassword123")
 
     # Token should be valid if just created
     assert result.success is True
@@ -404,7 +403,7 @@ def test_update_profile_database_error(app, test_user):
     from unittest.mock import patch
 
     with patch("app.repositories.base.db.session.commit", side_effect=Exception("Database error")):
-        result = UserService.update_profile(test_user, name="New Name")
+        result = users.update_profile(test_user, name="New Name")
 
         assert result.success is False
         assert "error" in result.message.lower()
@@ -418,7 +417,7 @@ def test_change_password_database_error(app, test_user):
     from unittest.mock import patch
 
     with patch("app.repositories.base.db.session.commit", side_effect=Exception("Database error")):
-        result = UserService.change_password(test_user, "password123", "newpassword123")
+        result = users.change_password(test_user, current_password="password123", new_password="newpassword123")
 
         assert result.success is False
         assert "error" in result.message.lower()
@@ -432,7 +431,7 @@ def test_create_member_database_error(app):
     from unittest.mock import patch
 
     with patch("app.repositories.base.db.session.commit", side_effect=Exception("Database error")):
-        result = UserService.create_member(name="New Member", email="new@example.com")
+        result = users.create_member(name="New Member", email="new@example.com")
 
         assert result.data is None
         assert result.message is not None
@@ -447,7 +446,7 @@ def test_update_member_database_error(app, test_user):
     from unittest.mock import patch
 
     with patch("app.repositories.base.db.session.commit", side_effect=Exception("Database error")):
-        result = UserService.update_member(
+        result = users.update_member(
             user=test_user,
             name="Updated Name",
             email=test_user.email,
@@ -465,7 +464,7 @@ def test_create_user_database_error(app):
     from unittest.mock import patch
 
     with patch("app.repositories.base.db.session.commit", side_effect=Exception("Database error")):
-        result = UserService.create_user(
+        result = users.create_user(
             name="New User",
             email="newuser@example.com",
             password="password123",

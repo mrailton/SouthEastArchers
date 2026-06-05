@@ -12,30 +12,28 @@ from app.scheduler.jobs import expire_memberships, send_low_credits_reminder
 
 def test_expire_memberships_on_start_date(app):
     """Test that memberships are expired on the year start date"""
-    from app.services.membership_service import MembershipService
-    from app.services.settings_service import SettingsService
+    from app.services import settings
 
     with app.app_context():
         today = date.today()
-        SettingsService.set("membership_year_start_month", today.month)
-        SettingsService.set("membership_year_start_day", today.day)
+        settings.set("membership_year_start_month", today.month)
+        settings.set("membership_year_start_day", today.day)
 
-        with patch.object(MembershipService, "expire_memberships_for_year_end", return_value=5) as mock_expire:
+        with patch("app.services.memberships.expire_memberships_for_year_end", return_value=5) as mock_expire:
             expire_memberships()
             assert mock_expire.called
 
 
 def test_expire_memberships_skipped_on_other_dates(app):
     """Test that memberships are not expired on other dates"""
-    from app.services.membership_service import MembershipService
-    from app.services.settings_service import SettingsService
+    from app.services import settings
 
     with app.app_context():
         tomorrow = date.today() + timedelta(days=1)
-        SettingsService.set("membership_year_start_month", tomorrow.month)
-        SettingsService.set("membership_year_start_day", tomorrow.day)
+        settings.set("membership_year_start_month", tomorrow.month)
+        settings.set("membership_year_start_day", tomorrow.day)
 
-        with patch.object(MembershipService, "expire_memberships_for_year_end") as mock_expire:
+        with patch("app.services.memberships.expire_memberships_for_year_end") as mock_expire:
             expire_memberships()
             assert not mock_expire.called
 

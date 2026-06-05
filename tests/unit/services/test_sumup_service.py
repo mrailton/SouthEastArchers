@@ -1,7 +1,7 @@
 from unittest.mock import Mock, patch
 
 from app.core.config import get_settings
-from app.services.sumup_service import SumUpService
+from app.services.sumup import SumUpService
 
 
 class MockAPIError(Exception):
@@ -20,7 +20,7 @@ def test_init_without_api_key_uses_config(monkeypatch):
     assert service.api_key == "config_key"
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_create_checkout_success(mock_sumup_class, monkeypatch):
     monkeypatch.setenv("SUMUP_MERCHANT_CODE", "TEST_MERCHANT")
     get_settings.cache_clear()
@@ -48,7 +48,7 @@ def test_create_checkout_success(mock_sumup_class, monkeypatch):
     assert result["status"] == "PENDING"
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_create_checkout_auto_generates_reference(mock_sumup_class, monkeypatch):
     monkeypatch.setenv("SUMUP_MERCHANT_CODE", "TEST_MERCHANT")
     get_settings.cache_clear()
@@ -69,7 +69,7 @@ def test_create_checkout_auto_generates_reference(mock_sumup_class, monkeypatch)
     assert result["id"] == "checkout_123"
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_create_checkout_uses_merchant_code_from_config(mock_sumup_class, monkeypatch):
     monkeypatch.setenv("SUMUP_MERCHANT_CODE", "CONFIG_MERCHANT")
     get_settings.cache_clear()
@@ -88,7 +88,7 @@ def test_create_checkout_uses_merchant_code_from_config(mock_sumup_class, monkey
     assert result is not None
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_create_checkout_no_merchant_code_raises_error(mock_sumup_class, monkeypatch):
     monkeypatch.setenv("SUMUP_MERCHANT_CODE", "")
     get_settings.cache_clear()
@@ -100,8 +100,8 @@ def test_create_checkout_no_merchant_code_raises_error(mock_sumup_class, monkeyp
     assert result is None
 
 
-@patch("app.services.sumup_service.APIError", MockAPIError)
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.APIError", MockAPIError)
+@patch("app.services.sumup.Sumup")
 def test_create_checkout_api_error(mock_sumup_class, monkeypatch):
     monkeypatch.setenv("SUMUP_MERCHANT_CODE", "TEST_MERCHANT")
     get_settings.cache_clear()
@@ -116,7 +116,7 @@ def test_create_checkout_api_error(mock_sumup_class, monkeypatch):
     assert result is None
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_create_checkout_response_without_id(mock_sumup_class, monkeypatch):
     monkeypatch.setenv("SUMUP_MERCHANT_CODE", "TEST_MERCHANT")
     get_settings.cache_clear()
@@ -132,7 +132,7 @@ def test_create_checkout_response_without_id(mock_sumup_class, monkeypatch):
     assert result is None
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_create_checkout_generic_exception(mock_sumup_class, monkeypatch):
     monkeypatch.setenv("SUMUP_MERCHANT_CODE", "TEST_MERCHANT")
     get_settings.cache_clear()
@@ -147,7 +147,7 @@ def test_create_checkout_generic_exception(mock_sumup_class, monkeypatch):
     assert result is None
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_get_checkout_success(mock_sumup_class):
     mock_checkout = Mock()
     mock_checkout.id = "checkout_123"
@@ -165,8 +165,8 @@ def test_get_checkout_success(mock_sumup_class):
     assert result.status == "PAID"
 
 
-@patch("app.services.sumup_service.APIError", MockAPIError)
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.APIError", MockAPIError)
+@patch("app.services.sumup.Sumup")
 def test_get_checkout_api_error(mock_sumup_class):
     mock_client = Mock()
     mock_client.checkouts.get.side_effect = MockAPIError("Not found")
@@ -178,7 +178,7 @@ def test_get_checkout_api_error(mock_sumup_class):
     assert result is None
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_get_checkout_generic_exception(mock_sumup_class):
     mock_client = Mock()
     mock_client.checkouts.get.side_effect = Exception("Network error")
@@ -190,7 +190,7 @@ def test_get_checkout_generic_exception(mock_sumup_class):
     assert result is None
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_verify_payment_success_paid(mock_sumup_class):
     mock_checkout = Mock()
     mock_checkout.status = "PAID"
@@ -205,7 +205,7 @@ def test_verify_payment_success_paid(mock_sumup_class):
     assert result is True
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_verify_payment_not_paid(mock_sumup_class):
     mock_checkout = Mock()
     mock_checkout.status = "PENDING"
@@ -220,7 +220,7 @@ def test_verify_payment_not_paid(mock_sumup_class):
     assert result is False
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_verify_payment_checkout_not_found(mock_sumup_class):
     mock_client = Mock()
     mock_client.checkouts.get.return_value = None
@@ -232,7 +232,7 @@ def test_verify_payment_checkout_not_found(mock_sumup_class):
     assert result is False
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_verify_payment_no_status_attribute(mock_sumup_class):
     mock_checkout = Mock(spec=[])
 
@@ -246,7 +246,7 @@ def test_verify_payment_no_status_attribute(mock_sumup_class):
     assert result is False
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_verify_payment_exception(mock_sumup_class):
     mock_client = Mock()
     mock_client.checkouts.get.side_effect = Exception("Error")
@@ -258,7 +258,7 @@ def test_verify_payment_exception(mock_sumup_class):
     assert result is False
 
 
-@patch("app.services.sumup_service.Sumup")
+@patch("app.services.sumup.Sumup")
 def test_verify_payment_exception_during_check(mock_sumup_class):
     mock_checkout = Mock()
     mock_checkout.status = property(lambda self: (_ for _ in ()).throw(Exception("Status check error")))

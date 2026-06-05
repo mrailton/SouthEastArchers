@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from app import db
 from app.models import Membership, User
-from app.services.shoot_service import ShootService
+from app.services import shoots
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -38,7 +38,7 @@ def test_zero_credits_goes_negative(app):
     """Attendee with 0 credits goes to -1 and a warning is emitted."""
     user = _create_member(name="Zero Credits", email="zero@test.com", initial_credits=0)
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[user.id],
@@ -55,7 +55,7 @@ def test_already_negative_goes_more_negative(app):
     """Attendee starting at -3 credits drops to -4."""
     user = _create_member(name="Deep Negative", email="deep@test.com", initial_credits=-3)
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[user.id],
@@ -71,7 +71,7 @@ def test_multiple_attendees_mixed_credits(app):
     rich = _create_member(name="Rich User", email="rich@test.com", initial_credits=10)
     broke = _create_member(name="Broke User", email="broke@test.com", initial_credits=0)
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="MEADOW",
         attendee_ids=[rich.id, broke.id],
@@ -94,7 +94,7 @@ def test_inactive_membership_cannot_go_negative(app):
         status="pending",
     )
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[user.id],
@@ -116,7 +116,7 @@ def test_expired_membership_cannot_go_negative(app):
         expiry_offset_days=-1,  # expired yesterday
     )
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[user.id],
@@ -132,7 +132,7 @@ def test_last_credit_no_warning(app):
     """Using the last credit (1 → 0) succeeds with no warning (not negative)."""
     user = _create_member(name="Last Credit", email="last@test.com", initial_credits=1)
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="WOODS",
         attendee_ids=[user.id],
@@ -147,7 +147,7 @@ def test_all_attendees_zero_credits(app):
     """Multiple attendees all with zero credits — each gets a warning."""
     users = [_create_member(name=f"User {i}", email=f"user{i}@test.com", initial_credits=0) for i in range(3)]
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[u.id for u in users],
@@ -169,7 +169,7 @@ def test_purchased_credits_used_before_going_negative(app):
         purchased_credits=1,
     )
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[user.id],
@@ -190,14 +190,14 @@ def test_add_zero_credit_attendee(app):
     """Adding a zero-credit attendee via update goes negative with warning."""
     user = _create_member(name="Zero Update", email="zeroup@test.com", initial_credits=0)
 
-    create_result = ShootService.create_shoot(
+    create_result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         description="Empty shoot",
     )
     shoot = create_result.data
 
-    result = ShootService.update_shoot(
+    result = shoots.update_shoot(
         shoot=shoot,
         shoot_date=date.today(),
         location="HALL",
@@ -214,13 +214,13 @@ def test_add_already_negative_attendee(app):
     """Adding attendee who is already at -2 credits drops them to -3."""
     user = _create_member(name="Neg Update", email="negup@test.com", initial_credits=-2)
 
-    create_result = ShootService.create_shoot(
+    create_result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
     )
     shoot = create_result.data
 
-    result = ShootService.update_shoot(
+    result = shoots.update_shoot(
         shoot=shoot,
         shoot_date=date.today(),
         location="HALL",
@@ -237,7 +237,7 @@ def test_remove_negative_attendee_refunds_credit(app):
     user = _create_member(name="Refund User", email="refund@test.com", initial_credits=0)
 
     # Create shoot with user (goes to -1)
-    create_result = ShootService.create_shoot(
+    create_result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[user.id],
@@ -246,7 +246,7 @@ def test_remove_negative_attendee_refunds_credit(app):
     assert user.membership.credits_remaining() == -1
 
     # Remove the user from the shoot
-    result = ShootService.update_shoot(
+    result = shoots.update_shoot(
         shoot=shoot,
         shoot_date=date.today(),
         location="HALL",
@@ -265,7 +265,7 @@ def test_swap_attendees_one_negative(app):
     rich = _create_member(name="Rich Swap", email="richswap@test.com", initial_credits=5)
     broke = _create_member(name="Broke Swap", email="brokeswap@test.com", initial_credits=0)
 
-    create_result = ShootService.create_shoot(
+    create_result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[rich.id],
@@ -273,7 +273,7 @@ def test_swap_attendees_one_negative(app):
     shoot = create_result.data
     assert rich.membership.credits_remaining() == 4
 
-    result = ShootService.update_shoot(
+    result = shoots.update_shoot(
         shoot=shoot,
         shoot_date=date.today(),
         location="HALL",
@@ -298,13 +298,13 @@ def test_inactive_membership_refused_on_update(app):
         status="pending",
     )
 
-    create_result = ShootService.create_shoot(
+    create_result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
     )
     shoot = create_result.data
 
-    result = ShootService.update_shoot(
+    result = shoots.update_shoot(
         shoot=shoot,
         shoot_date=date.today(),
         location="HALL",
@@ -326,13 +326,13 @@ def test_expired_membership_refused_on_update(app):
         expiry_offset_days=-10,
     )
 
-    create_result = ShootService.create_shoot(
+    create_result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
     )
     shoot = create_result.data
 
-    result = ShootService.update_shoot(
+    result = shoots.update_shoot(
         shoot=shoot,
         shoot_date=date.today(),
         location="HALL",
@@ -352,7 +352,7 @@ def test_expired_membership_refused_on_update(app):
 def test_warning_includes_user_name(app):
     user = _create_member(name="Alice Archer", email="alice@test.com", initial_credits=0)
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[user.id],
@@ -364,7 +364,7 @@ def test_warning_includes_user_name(app):
 def test_warning_includes_credit_count(app):
     user = _create_member(name="Bob Bowman", email="bob@test.com", initial_credits=0)
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[user.id],
@@ -377,7 +377,7 @@ def test_deeply_negative_warning(app):
     """User at -9 going to -10 — warning shows correct count."""
     user = _create_member(name="Deep Debt", email="debt@test.com", initial_credits=-9)
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[user.id],
@@ -394,7 +394,7 @@ def test_inactive_warning_message(app):
         status="pending",
     )
 
-    result = ShootService.create_shoot(
+    result = shoots.create_shoot(
         shoot_date=date.today(),
         location="HALL",
         attendee_ids=[user.id],

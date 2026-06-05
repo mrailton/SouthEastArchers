@@ -12,7 +12,7 @@ def test_activate_membership_not_found(admin_client):
 
 def test_activate_membership_service_failure_shows_flash(admin_client, test_user):
     with patch(
-        "app.routes.admin.members.MembershipService.activate_membership",
+        "app.routes.admin.members.memberships.activate_membership",
         return_value=ServiceResult.fail("Error reason"),
     ):
         response = admin_client.post(

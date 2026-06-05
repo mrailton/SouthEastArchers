@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.services.settings_service import SETTING_DEFINITIONS, _deserialize
+from app.services.settings import SETTING_DEFINITIONS, _deserialize
 
 
 def get_setting(db: Session | None, key: str):

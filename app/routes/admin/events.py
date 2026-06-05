@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 from app.dependencies import CurrentUser, DbSession, require_perms, verify_csrf
 from app.forms.admin_forms import EventForm
 from app.routes.admin._helpers import flash_form_errors
-from app.services.event_service import EventService
+from app.services import events
 from app.templating import flash, render
 from app.utils.formdata import request_form_data
 
@@ -13,8 +13,8 @@ router = APIRouter(tags=["admin.events"])
 
 @router.get("/events", name="admin.events", dependencies=[require_perms("events.read")])
 async def events_index(request: Request, db: DbSession, user: CurrentUser):
-    events = EventService.get_all_events()
-    return render(request, "admin/events.html", {"events": events}, user=user, db=db)
+    event_list = events.get_all_events()
+    return render(request, "admin/events.html", {"events": event_list}, user=user, db=db)
 
 
 @router.get("/events/create", name="admin.create_event", dependencies=[require_perms("events.create")])
@@ -29,7 +29,7 @@ async def create_event_store(request: Request, db: DbSession, user: CurrentUser)
     verify_csrf(request, form_data.get("csrf_token"))
     form = EventForm(formdata=form_data)
     if form.validate():
-        result = EventService.create_event(
+        result = events.create_event(
             title=form.title.data,
             start_date=form.start_date.data,
             description=form.description.data,
@@ -46,7 +46,7 @@ async def create_event_store(request: Request, db: DbSession, user: CurrentUser)
 
 @router.get("/events/{event_id}/edit", name="admin.edit_event", dependencies=[require_perms("events.update")])
 async def edit_event_page(event_id: int, request: Request, db: DbSession, user: CurrentUser):
-    event = EventService.get_event_by_id(event_id)
+    event = events.get_event_by_id(event_id)
     if not event:
         return render(request, "errors/404.html", user=user, db=db, status_code=404)
     form = EventForm(obj=event)
@@ -57,12 +57,12 @@ async def edit_event_page(event_id: int, request: Request, db: DbSession, user: 
 async def edit_event_store(event_id: int, request: Request, db: DbSession, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
-    event = EventService.get_event_by_id(event_id)
+    event = events.get_event_by_id(event_id)
     if not event:
         return render(request, "errors/404.html", user=user, db=db, status_code=404)
     form = EventForm(formdata=form_data, obj=event)
     if form.validate():
-        result = EventService.update_event(
+        result = events.update_event(
             event,
             title=form.title.data,
             start_date=form.start_date.data,

@@ -9,8 +9,7 @@ kwargs that were delivered.
 from app import db
 from app.enums import PaymentType
 from app.events import cash_payment_submitted, credit_purchased, payment_completed
-from app.services.payment_processing_service import PaymentProcessingService
-from app.services.payment_service import PaymentService
+from app.services import payment_processing, payments
 from tests.helpers import create_payment_for_user
 
 # ---------------------------------------------------------------------------
@@ -27,7 +26,7 @@ def test_signup_emits_payment_completed_with_correct_kwargs(app, test_user, fake
     received: list[dict] = []
 
     with payment_completed.connected_to(lambda sender, **kw: received.append(kw)):
-        PaymentProcessingService.handle_signup_payment(test_user.id, payment.id, "txn_contract_1")
+        payment_processing.handle_signup_payment(test_user.id, payment.id, "txn_contract_1")
 
     assert len(received) == 1
     assert received[0]["user_id"] == test_user.id
@@ -42,7 +41,7 @@ def test_membership_renewal_emits_payment_completed(app, test_user, fake_mailer)
     received: list[dict] = []
 
     with payment_completed.connected_to(lambda sender, **kw: received.append(kw)):
-        PaymentProcessingService.handle_membership_renewal(test_user.id, payment.id, "txn_contract_2")
+        payment_processing.handle_membership_renewal(test_user.id, payment.id, "txn_contract_2")
 
     assert len(received) == 1
     assert received[0]["user_id"] == test_user.id
@@ -63,7 +62,7 @@ def test_credit_purchase_emits_credit_purchased_with_correct_kwargs(app, test_us
     received: list[dict] = []
 
     with credit_purchased.connected_to(lambda sender, **kw: received.append(kw)):
-        PaymentProcessingService.handle_credit_purchase(test_user.id, payment.id, quantity, "txn_contract_3")
+        payment_processing.handle_credit_purchase(test_user.id, payment.id, quantity, "txn_contract_3")
 
     assert len(received) == 1
     assert received[0]["user_id"] == test_user.id
@@ -81,7 +80,7 @@ def test_cash_membership_emits_cash_payment_submitted(app, test_user, fake_maile
     received: list[dict] = []
 
     with cash_payment_submitted.connected_to(lambda sender, **kw: received.append(kw)):
-        PaymentService.initiate_cash_membership_payment(test_user)
+        payments.initiate_cash_membership_payment(db.session, test_user)
 
     assert len(received) == 1
     assert received[0]["user_id"] == test_user.id
@@ -94,7 +93,7 @@ def test_cash_credit_purchase_emits_cash_payment_submitted(app, test_user, fake_
     received: list[dict] = []
 
     with cash_payment_submitted.connected_to(lambda sender, **kw: received.append(kw)):
-        PaymentService.initiate_cash_credit_purchase(test_user, quantity=3)
+        payments.initiate_cash_credit_purchase(db.session, test_user, quantity=3)
 
     assert len(received) == 1
     assert received[0]["user_id"] == test_user.id
@@ -114,7 +113,7 @@ def test_signup_does_not_emit_when_user_not_found(app, test_user, fake_mailer):
     received: list[dict] = []
 
     with payment_completed.connected_to(lambda sender, **kw: received.append(kw)):
-        PaymentProcessingService.handle_signup_payment(user_id=99999, payment_id=payment.id, transaction_id="txn_nope")
+        payment_processing.handle_signup_payment(user_id=99999, payment_id=payment.id, transaction_id="txn_nope")
 
     assert len(received) == 0
 
@@ -124,6 +123,6 @@ def test_credit_purchase_does_not_emit_when_payment_not_found(app, fake_mailer):
     received: list[dict] = []
 
     with credit_purchased.connected_to(lambda sender, **kw: received.append(kw)):
-        PaymentProcessingService.handle_credit_purchase(user_id=1, payment_id=99999, quantity=5, transaction_id="txn_nope")
+        payment_processing.handle_credit_purchase(user_id=1, payment_id=99999, quantity=5, transaction_id="txn_nope")
 
     assert len(received) == 0

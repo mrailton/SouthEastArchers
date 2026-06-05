@@ -94,7 +94,7 @@ def test_member_detail_not_found(admin_client):
 
 
 def test_activate_user_success_flash(admin_client, test_user, mocker):
-    mocker.patch("app.services.mail_service.MailService.send_welcome_email")
+    mocker.patch("app.services.mail.send_welcome_email")
     test_user.is_active = False
     db.session.commit()
 

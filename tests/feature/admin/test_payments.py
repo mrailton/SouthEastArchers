@@ -25,7 +25,7 @@ def test_pending_payments_lists_cash_payments(admin_client, test_user):
     assert test_user.name.encode() in response.content
 
 
-@patch("app.services.mail_service.MailService.send_payment_receipt")
+@patch("app.services.mail.send_payment_receipt")
 def test_approve_payment_success_flash(mock_send_receipt, admin_client, test_user):
     payment = create_payment_for_user(
         db,

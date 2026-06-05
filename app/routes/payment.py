@@ -187,15 +187,14 @@ async def complete_checkout(checkout_id: str, request: Request, db: DbSession, u
 
         signup_payment_id = request.session.get("signup_payment_id")
         if request.session.get("signup_user_id") and signup_payment_id:
-            result = payment_processing.handle_signup_payment(db, user_id, signup_payment_id, txn_id)
+            result = payment_processing.handle_signup_payment(user_id, signup_payment_id, txn_id)
             clear_session_keys(request, "signup_user_id", "signup_payment_id", "checkout_amount", "checkout_description")
-            mark_for_commit(db)
             flash(request, "success" if result.success else "error", result.message)
             return RedirectResponse(url="/auth/login", status_code=303)
 
         renewal_payment_id = request.session.get("membership_renewal_payment_id")
         if request.session.get("membership_renewal_user_id") and renewal_payment_id:
-            result = payment_processing.handle_membership_renewal(db, user_id, renewal_payment_id, txn_id)
+            result = payment_processing.handle_membership_renewal(user_id, renewal_payment_id, txn_id)
             clear_session_keys(
                 request,
                 "membership_renewal_user_id",
@@ -203,14 +202,13 @@ async def complete_checkout(checkout_id: str, request: Request, db: DbSession, u
                 "checkout_amount",
                 "checkout_description",
             )
-            mark_for_commit(db)
             flash(request, "success" if result.success else "error", result.message)
             return RedirectResponse(url="/member/dashboard", status_code=303)
 
         credit_payment_id = request.session.get("credit_purchase_payment_id")
         if request.session.get("credit_purchase_user_id") and credit_payment_id:
             quantity = request.session.get("credit_purchase_quantity", 1)
-            result = payment_processing.handle_credit_purchase(db, user_id, credit_payment_id, quantity, txn_id)
+            result = payment_processing.handle_credit_purchase(user_id, credit_payment_id, quantity, txn_id)
             clear_session_keys(
                 request,
                 "credit_purchase_user_id",
@@ -219,7 +217,6 @@ async def complete_checkout(checkout_id: str, request: Request, db: DbSession, u
                 "checkout_amount",
                 "checkout_description",
             )
-            mark_for_commit(db)
             flash(request, "success" if result.success else "error", result.message)
             return RedirectResponse(url="/member/dashboard", status_code=303)
 

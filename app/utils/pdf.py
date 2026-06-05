@@ -7,7 +7,7 @@ def generate_statement_pdf(statement: dict) -> bytes:
     """Render a financial *statement* dict as a PDF and return the raw bytes.
 
     The *statement* is the dict produced by
-    ``FinanceService.generate_statement()`` and must contain at least:
+    ``finance.generate_statement()`` and must contain at least:
 
     - ``start_date``, ``end_date``
     - ``total_income``, ``total_expenses``, ``net``

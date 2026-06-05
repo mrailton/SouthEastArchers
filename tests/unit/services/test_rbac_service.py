@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from app import db
 from app.models import Permission, Role
-from app.services.rbac_service import RBACService
+from app.services import rbac
 
 
 def test_list_roles(app):
@@ -12,7 +12,7 @@ def test_list_roles(app):
         db.session.add_all([r1, r2])
         db.session.commit()
 
-        roles = RBACService.list_roles()
+        roles = rbac.list_roles()
         assert len(roles) >= 2
         names = [r.name for r in roles]
         assert "A" in names
@@ -26,7 +26,7 @@ def test_list_permissions(app):
         db.session.add_all([p1, p2])
         db.session.commit()
 
-        perms = RBACService.list_permissions()
+        perms = rbac.list_permissions()
         assert len(perms) >= 2
         names = [p.name for p in perms]
         assert "P1" in names
@@ -36,8 +36,8 @@ def test_list_permissions(app):
 def test_create_role_duplicate(app):
     with app.app_context():
         Role.query.filter_by(name="duplicate").delete()
-        RBACService.create_role("duplicate", "desc", [])
-        result = RBACService.create_role("duplicate", "desc", [])
+        rbac.create_role("duplicate", "desc", [])
+        result = rbac.create_role("duplicate", "desc", [])
         assert result.data is None
         assert "already exists" in result.message
 
@@ -45,7 +45,7 @@ def test_create_role_duplicate(app):
 def test_create_role_exception(app):
     with app.app_context():
         with patch("app.repositories.base.db.session.add", side_effect=Exception("DB Error")):
-            result = RBACService.create_role("exception_role", "desc", [])
+            result = rbac.create_role("exception_role", "desc", [])
             assert result.data is None
             assert "Error creating role" in result.message
 
@@ -57,7 +57,7 @@ def test_update_role_duplicate(app):
         db.session.add_all([r1, r2])
         db.session.commit()
 
-        result = RBACService.update_role(r1, "r2", "desc", [])
+        result = rbac.update_role(r1, "r2", "desc", [])
         assert not result.success
         assert "already exists" in result.message
 
@@ -69,7 +69,7 @@ def test_update_role_exception(app):
         db.session.commit()
 
         with patch("app.repositories.base.db.session.commit", side_effect=Exception("DB Error")):
-            result = RBACService.update_role(role, "new_name", "desc", [])
+            result = rbac.update_role(role, "new_name", "desc", [])
             assert not result.success
             assert "Error updating role" in result.message
 
@@ -81,6 +81,6 @@ def test_delete_role_exception(app):
         db.session.commit()
 
         with patch("app.repositories.base.db.session.commit", side_effect=Exception("DB Error")):
-            result = RBACService.delete_role(role)
+            result = rbac.delete_role(role)
             assert not result.success
             assert "Error deleting role" in result.message

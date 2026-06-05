@@ -4,8 +4,7 @@ from fastapi.responses import RedirectResponse
 from app.dependencies import CurrentUser, DbSession, require_perms, verify_csrf
 from app.forms.admin_forms import ShootForm
 from app.routes.admin._helpers import flash_form_errors, flash_service_warnings
-from app.services.settings_service import SettingsService
-from app.services.shoot_service import ShootService
+from app.services import settings, shoots
 from app.templating import flash, render
 from app.utils.formdata import parse_visitors_from_form, request_form_data
 
@@ -18,7 +17,7 @@ async def shoots_index(request: Request, db: DbSession, user: CurrentUser):
     per_page = int(request.query_params.get("per_page", 10))
     if per_page not in (5, 10, 20, 50, 100):
         per_page = 10
-    pagination = ShootService.get_all_shoots_paginated(page=page, per_page=per_page)
+    pagination = shoots.get_all_shoots_paginated(page=page, per_page=per_page)
     return render(
         request,
         "admin/shoots.html",
@@ -31,9 +30,9 @@ async def shoots_index(request: Request, db: DbSession, user: CurrentUser):
 @router.get("/shoots/create", name="admin.create_shoot", dependencies=[require_perms("shoots.create")])
 async def create_shoot_page(request: Request, db: DbSession, user: CurrentUser):
     form = ShootForm()
-    form.attendees.choices = ShootService.get_active_members_with_credits()
-    active_members = ShootService.get_active_members_with_credits()
-    visitor_fee = SettingsService.get("visitor_shoot_fee") / 100.0
+    form.attendees.choices = shoots.get_active_members_with_credits()
+    active_members = shoots.get_active_members_with_credits()
+    visitor_fee = settings.get("visitor_shoot_fee") / 100.0
     return render(
         request,
         "admin/create_shoot.html",
@@ -48,10 +47,10 @@ async def create_shoot_store(request: Request, db: DbSession, user: CurrentUser)
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
     form = ShootForm(formdata=form_data)
-    form.attendees.choices = ShootService.get_active_members_with_credits()
+    form.attendees.choices = shoots.get_active_members_with_credits()
     if form.validate():
         visitors = parse_visitors_from_form(form_data)
-        result = ShootService.create_shoot(
+        result = shoots.create_shoot(
             shoot_date=form.date.data,
             location=form.location.data,
             description=form.description.data,
@@ -69,8 +68,8 @@ async def create_shoot_store(request: Request, db: DbSession, user: CurrentUser)
             return RedirectResponse(url="/admin/shoots", status_code=303)
         flash(request, "error", result.message)
     flash_form_errors(request, form)
-    active_members = ShootService.get_active_members_with_credits()
-    visitor_fee = SettingsService.get("visitor_shoot_fee") / 100.0
+    active_members = shoots.get_active_members_with_credits()
+    visitor_fee = settings.get("visitor_shoot_fee") / 100.0
     return render(
         request,
         "admin/create_shoot.html",
@@ -83,14 +82,14 @@ async def create_shoot_store(request: Request, db: DbSession, user: CurrentUser)
 
 @router.get("/shoots/{shoot_id}/edit", name="admin.edit_shoot", dependencies=[require_perms("shoots.update")])
 async def edit_shoot_page(shoot_id: int, request: Request, db: DbSession, user: CurrentUser):
-    shoot = ShootService.get_shoot_by_id(shoot_id)
+    shoot = shoots.get_shoot_by_id(shoot_id)
     if not shoot:
         return render(request, "errors/404.html", user=user, db=db, status_code=404)
     form = ShootForm(obj=shoot)
-    form.attendees.choices = ShootService.get_active_members_with_credits()
+    form.attendees.choices = shoots.get_active_members_with_credits()
     form.attendees.data = [u.id for u in shoot.users]
-    active_members = ShootService.get_active_members_with_credits()
-    visitor_fee = SettingsService.get("visitor_shoot_fee") / 100.0
+    active_members = shoots.get_active_members_with_credits()
+    visitor_fee = settings.get("visitor_shoot_fee") / 100.0
     return render(
         request,
         "admin/edit_shoot.html",
@@ -104,14 +103,14 @@ async def edit_shoot_page(shoot_id: int, request: Request, db: DbSession, user: 
 async def edit_shoot_store(shoot_id: int, request: Request, db: DbSession, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
-    shoot = ShootService.get_shoot_by_id(shoot_id)
+    shoot = shoots.get_shoot_by_id(shoot_id)
     if not shoot:
         return render(request, "errors/404.html", user=user, db=db, status_code=404)
     form = ShootForm(formdata=form_data, obj=shoot)
-    form.attendees.choices = ShootService.get_active_members_with_credits()
+    form.attendees.choices = shoots.get_active_members_with_credits()
     if form.validate():
         visitors = parse_visitors_from_form(form_data)
-        result = ShootService.update_shoot(
+        result = shoots.update_shoot(
             shoot,
             shoot_date=form.date.data,
             location=form.location.data,
@@ -126,8 +125,8 @@ async def edit_shoot_store(shoot_id: int, request: Request, db: DbSession, user:
             return RedirectResponse(url="/admin/shoots", status_code=303)
         flash(request, "error", result.message)
     flash_form_errors(request, form)
-    active_members = ShootService.get_active_members_with_credits()
-    visitor_fee = SettingsService.get("visitor_shoot_fee") / 100.0
+    active_members = shoots.get_active_members_with_credits()
+    visitor_fee = settings.get("visitor_shoot_fee") / 100.0
     return render(
         request,
         "admin/edit_shoot.html",

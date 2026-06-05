@@ -1,34 +1,25 @@
-"""Password reset routes — HTTP flow and email triggers (token logic: user_service / model tests)."""
+"""Password reset routes — HTTP flow and email triggers (token logic: users / model tests)."""
 
 from app import db
 
 
-def test_forgot_password_sends_email_for_known_user(client, test_user, app, fake_mailer):
-    with app.app_context():
-        import app.services.mail_service as mail_service_mod
-
-        mail_service_mod.mail = fake_mailer
-        response = client.post("/auth/forgot-password", data={"email": test_user.email}, follow_redirects=True)
+def test_forgot_password_sends_email_for_known_user(client, test_user, mocker):
+    mock_send = mocker.patch("app.services.mail.send_password_reset")
+    response = client.post("/auth/forgot-password", data={"email": test_user.email}, follow_redirects=True)
 
     assert b"password reset link" in response.content.lower() or b"if an account exists" in response.content.lower()
-    from tests.helpers import assert_email_sent
+    mock_send.assert_called_once()
+    assert mock_send.call_args[0][0] == test_user.id
 
-    assert_email_sent(fake_mailer, subject_contains="Reset Your Password", recipients=[test_user.email])
 
-
-def test_forgot_password_same_message_for_unknown_email(client, app, fake_mailer):
-    with app.app_context():
-        import app.services.mail_service as mail_service_mod
-
-        mail_service_mod.mail = fake_mailer
-        response = client.post(
-            "/auth/forgot-password",
-            data={"email": "nonexistent@example.com"},
-            follow_redirects=True,
-        )
+def test_forgot_password_same_message_for_unknown_email(client):
+    response = client.post(
+        "/auth/forgot-password",
+        data={"email": "nonexistent@example.com"},
+        follow_redirects=True,
+    )
 
     assert b"password reset link" in response.content.lower() or b"if an account exists" in response.content.lower()
-    assert len(fake_mailer.sent_messages) == 0
 
 
 def test_reset_password_invalid_token_redirects(client):

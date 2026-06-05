@@ -1,12 +1,12 @@
 from datetime import date
 
-from app.services.finance_service import FinanceService
+from app.services import finance
 from app.utils.pdf import generate_statement_pdf
 
 
 def test_generate_statement_pdf(app, admin_user):
     """Test generating a PDF from a financial statement."""
-    FinanceService.create_transaction(
+    finance.create_transaction(
         txn_type="income",
         txn_date=date(2026, 1, 10),
         amount_cents=20000,
@@ -14,7 +14,7 @@ def test_generate_statement_pdf(app, admin_user):
         description="Membership fee",
         created_by_id=admin_user.id,
     )
-    FinanceService.create_transaction(
+    finance.create_transaction(
         txn_type="expense",
         txn_date=date(2026, 1, 15),
         amount_cents=7500,
@@ -23,7 +23,7 @@ def test_generate_statement_pdf(app, admin_user):
         created_by_id=admin_user.id,
     )
 
-    statement = FinanceService.generate_statement(
+    statement = finance.generate_statement(
         start_date=date(2026, 1, 1),
         end_date=date(2026, 1, 31),
     )
@@ -37,7 +37,7 @@ def test_generate_statement_pdf(app, admin_user):
 
 def test_generate_statement_pdf_empty(app, admin_user):
     """Test generating a PDF with no transactions."""
-    statement = FinanceService.generate_statement(
+    statement = finance.generate_statement(
         start_date=date(2026, 6, 1),
         end_date=date(2026, 6, 30),
     )

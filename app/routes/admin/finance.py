@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse, Response
 from app.dependencies import CurrentUser, DbSession, require_perms, verify_csrf
 from app.forms.admin_forms import ExpenseForm, FinancialStatementForm, IncomeForm
 from app.routes.admin._helpers import flash_form_errors
-from app.services.finance_service import FinanceService
+from app.services import finance
 from app.templating import flash, render
 from app.utils.formdata import request_form_data
 from app.utils.pdf import generate_statement_pdf
@@ -20,7 +20,7 @@ async def finance_index(request: Request, db: DbSession, user: CurrentUser):
     per_page = int(request.query_params.get("per_page", 20))
     if per_page not in (5, 10, 20, 50, 100):
         per_page = 20
-    pagination = FinanceService.get_all_transactions_paginated(page=page, per_page=per_page)
+    pagination = finance.get_all_transactions_paginated(page=page, per_page=per_page)
     return render(
         request,
         "admin/finance.html",
@@ -42,7 +42,7 @@ async def create_expense_store(request: Request, db: DbSession, user: CurrentUse
     verify_csrf(request, form_data.get("csrf_token"))
     form = ExpenseForm(formdata=form_data)
     if form.validate():
-        result = FinanceService.create_transaction(
+        result = finance.create_transaction(
             txn_type="expense",
             txn_date=form.date.data,
             amount_cents=int(round(float(form.amount.data) * 100)),
@@ -71,7 +71,7 @@ async def create_income_store(request: Request, db: DbSession, user: CurrentUser
     verify_csrf(request, form_data.get("csrf_token"))
     form = IncomeForm(formdata=form_data)
     if form.validate():
-        result = FinanceService.create_transaction(
+        result = finance.create_transaction(
             txn_type="income",
             txn_date=form.date.data,
             amount_cents=int(round(float(form.amount.data) * 100)),
@@ -109,7 +109,7 @@ async def financial_statement_store(request: Request, db: DbSession, user: Curre
             flash(request, "error", "End date must be after start date.")
             return render(request, "admin/financial_statement.html", {"form": form, "statement": None}, user=user, db=db)
         else:
-            statement = FinanceService.generate_statement(form.start_date.data, form.end_date.data)
+            statement = finance.generate_statement(form.start_date.data, form.end_date.data)
             return render(request, "admin/financial_statement.html", {"form": form, "statement": statement}, user=user, db=db)
     flash_form_errors(request, form)
     return render(request, "admin/financial_statement.html", {"form": form, "statement": None}, user=user, db=db, status_code=422)
@@ -131,7 +131,7 @@ async def financial_statement_pdf(request: Request, db: DbSession, user: Current
     if end_date < start_date:
         flash(request, "error", "End date must be after start date.")
         return RedirectResponse(url="/admin/finance/statement", status_code=303)
-    statement = FinanceService.generate_statement(start_date, end_date)
+    statement = finance.generate_statement(start_date, end_date)
     pdf_bytes = bytes(generate_statement_pdf(statement))
     filename = f"financial_statement_{start_date_str}_to_{end_date_str}.pdf"
     return Response(pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
@@ -139,7 +139,7 @@ async def financial_statement_pdf(request: Request, db: DbSession, user: Current
 
 @router.get("/finance/{transaction_id}/edit", name="admin.edit_transaction", dependencies=[require_perms("finance.update")])
 async def edit_transaction_page(transaction_id: int, request: Request, db: DbSession, user: CurrentUser):
-    transaction = FinanceService.get_transaction_by_id(transaction_id)
+    transaction = finance.get_transaction_by_id(transaction_id)
     if not transaction:
         return render(request, "errors/404.html", user=user, db=db, status_code=404)
     form = ExpenseForm(obj=transaction) if transaction.type == "expense" else IncomeForm(obj=transaction)
@@ -151,7 +151,7 @@ async def edit_transaction_page(transaction_id: int, request: Request, db: DbSes
 async def edit_transaction_store(transaction_id: int, request: Request, db: DbSession, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
-    transaction = FinanceService.get_transaction_by_id(transaction_id)
+    transaction = finance.get_transaction_by_id(transaction_id)
     if not transaction:
         return render(request, "errors/404.html", user=user, db=db, status_code=404)
     form = ExpenseForm(formdata=form_data, obj=transaction) if transaction.type == "expense" else IncomeForm(formdata=form_data, obj=transaction)
@@ -167,7 +167,7 @@ async def edit_transaction_store(transaction_id: int, request: Request, db: DbSe
             kwargs["receipt_reference"] = form.receipt_reference.data or None
         else:
             kwargs["source"] = form.source.data or None
-        result = FinanceService.update_transaction(**kwargs)
+        result = finance.update_transaction(**kwargs)
         if result.success:
             flash(request, "success", "Transaction updated successfully!")
             return RedirectResponse(url="/admin/finance", status_code=303)
@@ -187,7 +187,7 @@ async def edit_transaction_store(transaction_id: int, request: Request, db: DbSe
 async def delete_transaction(transaction_id: int, request: Request, db: DbSession, user: CurrentUser):
     form_data = await request_form_data(request)
     verify_csrf(request, form_data.get("csrf_token"))
-    result = FinanceService.delete_transaction(transaction_id)
+    result = finance.delete_transaction(transaction_id)
     flash(
         request,
         "success" if result.success else "error",

@@ -54,7 +54,7 @@ async def login_store(
         _flash_validation_errors(request, exc)
         return render(request, "auth/login.html", status_code=422)
 
-    user = user_service.authenticate(db, str(form.email), form.password)
+    user = user_service.authenticate(str(form.email), form.password, db=db)
     if user is None:
         flash(request, "error", "Invalid username or password.")
         return render(request, "auth/login.html", status_code=422)
@@ -120,7 +120,7 @@ async def signup_store(request: Request, db: DbSession):
         )
 
     result = user_service.create_user(
-        db,
+        db=db,
         name=form.name,
         email=str(form.email),
         password=form.password,
@@ -220,7 +220,7 @@ async def reset_password_store(token: str, request: Request, db: DbSession):
             status_code=422,
         )
 
-    result = user_service.reset_password(db, token, form.password)
+    result = user_service.reset_password(token, form.password, db=db)
     if not result.success:
         flash(request, "error", result.message)
         return RedirectResponse(url="/auth/forgot-password", status_code=303)

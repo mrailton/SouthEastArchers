@@ -1,14 +1,14 @@
 @import "tailwindcss";
 @import "./_dark-overrides.css";
 @custom-variant dark (&:where(.dark, .dark *));
-@source "../../../app/templates/base.html";
-@source "../../../app/templates/auth/**/*.html";
-@source "../../../app/templates/email/**/*.html";
-@source "../../../app/templates/errors/**/*.html";
-@source "../../../app/templates/member/**/*.html";
-@source "../../../app/templates/partials/**/*.html";
-@source "../../../app/templates/payment/**/*.html";
-@source "../../../app/templates/public/**/*.html";
+@source "../../templates/base.html";
+@source "../../templates/auth/**/*.html";
+@source "../../templates/email/**/*.html";
+@source "../../templates/errors/**/*.html";
+@source "../../templates/member/**/*.html";
+@source "../../templates/partials/**/*.html";
+@source "../../templates/payment/**/*.html";
+@source "../../templates/public/**/*.html";
 
 /* ============================================
    SOUTH EAST ARCHERS DESIGN SYSTEM

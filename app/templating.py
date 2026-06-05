@@ -10,11 +10,10 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.vite import vite_asset, vite_hmr_client
 from app.dependencies import get_csrf_token
 from app.routes_map import FALLBACK_ROUTES
 
-TEMPLATES_DIR = Path(__file__).parent / "templates"
+TEMPLATES_DIR = Path(__file__).parent / "resources" / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 _route_names: dict[str, str] = dict(FALLBACK_ROUTES)
@@ -109,8 +108,6 @@ def setup_template_globals() -> None:
         {
             "url_for": url_for,
             "get_flashed_messages": get_flashed_messages,
-            "vite_hmr_client": vite_hmr_client,
-            "vite_asset": vite_asset,
             "endpoint_is": endpoint_is,
         }
     )

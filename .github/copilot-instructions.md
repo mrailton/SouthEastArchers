@@ -37,7 +37,7 @@ Side effects (emails, financial transactions) are decoupled via blinker signals.
 
 ### Frontend
 
-Vite builds assets from `resources/assets/` into `resources/static/`. Templates use Jinja2 with helpers in `app/templating.py` and `app/core/vite.py`. Styling is Tailwind CSS 4; interactivity uses Alpine.js.
+Vite builds `app/resources/static/js/{site,admin}.js` into `app/resources/static/dist/assets/`. Layout templates load `/static/assets/site.css` and `/static/assets/site.js` (or `admin.*` for admin pages). Raw static files (e.g. images) are served from `app/resources/static/`. Templates live in `app/resources/templates/` and are rendered via `app/templating.py`. Styling is Tailwind CSS 4; interactivity uses Alpine.js.
 
 ## Key Conventions
 

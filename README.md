@@ -80,9 +80,10 @@ Run due scheduled jobs (membership expiry, low-credits reminders) via your sched
 │   ├── db/                 # Database session layer
 │   ├── forms/              # WTForms (admin)
 │   ├── schemas/            # Pydantic forms (auth/member)
-│   ├── templates/          # Jinja2 templates
+│   ├── resources/          # Templates and frontend assets
+│   │   ├── templates/      # Jinja2 templates
+│   │   └── static/         # CSS/JS source; dist/ holds Vite build output
 │   └── scheduler/          # Scheduled jobs
-├── resources/              # Frontend assets
 ├── tests/                  # Test suite (feature/, unit/)
 └── migrations/             # Alembic migrations
 ```
@@ -92,7 +93,8 @@ Run due scheduled jobs (membership expiry, low-credits reminders) via your sched
 | Command | Description |
 |---------|-------------|
 | `make install` | Install Python and Node dependencies |
-| `make dev` | Run FastAPI + Vite dev servers |
+| `make dev` | Run FastAPI with reload and watch-built assets |
+| `make setup` | Install dependencies and build assets |
 | `make test` | Run the test suite |
 | `make test-coverage` | Run tests with coverage report |
 | `make lint` | Run Ruff checks |

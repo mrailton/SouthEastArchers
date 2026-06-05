@@ -17,7 +17,9 @@ from app.templating import register_route_names, render, setup_template_globals
 settings = get_settings()
 init_db(settings)
 
-STATIC_DIR = Path(__file__).resolve().parent.parent / "resources" / "static"
+APP_DIR = Path(__file__).resolve().parent
+STATIC_DIR = APP_DIR / "resources" / "static"
+BUILT_ASSETS_DIR = STATIC_DIR / "dist" / "assets"
 
 
 @asynccontextmanager
@@ -37,6 +39,9 @@ app.add_middleware(
     https_only=settings.session_secure_cookie,
 )
 
+# Built bundle first (more specific path), then raw files (images, etc.)
+if BUILT_ASSETS_DIR.is_dir():
+    app.mount("/static/assets", StaticFiles(directory=str(BUILT_ASSETS_DIR)), name="static-built")
 if STATIC_DIR.is_dir():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 

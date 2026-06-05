@@ -1,44 +1,25 @@
-import { defineConfig } from 'vite'
-import { resolve } from 'path'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  root: 'resources/assets',
-  base: '/static/',
-  plugins: [
-    tailwindcss(),
-  ],
+  plugins: [tailwindcss()],
   build: {
-    outDir: '../static',
+    outDir: "app/resources/static/dist",
     emptyOutDir: true,
-    manifest: true,
     rollupOptions: {
       input: {
-        site: resolve(__dirname, 'resources/assets/js/site.js'),
-        admin: resolve(__dirname, 'resources/assets/js/admin.js'),
-        logo: resolve(__dirname, 'resources/assets/images/logo.png'),
+        site: path.resolve(__dirname, "app/resources/static/js/site.js"),
+        admin: path.resolve(__dirname, "app/resources/static/js/admin.js"),
       },
       output: {
-        entryFileNames: 'js/[name].min.js',
-        chunkFileNames: 'js/[name]-[hash].js',
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name.endsWith('.css')) {
-            return 'css/[name].min[extname]'
-          }
-          if (assetInfo.name.match(/\.(jpg|jpeg|png|gif|svg)$/)) {
-            return 'images/[name][extname]'
-          }
-          return 'assets/[name]-[hash][extname]'
-        },
+        entryFileNames: "assets/[name].js",
+        chunkFileNames: "assets/[name].js",
+        assetFileNames: "assets/[name][extname]",
       },
     },
   },
-  server: {
-    port: 5173,
-    strictPort: false,
-    origin: 'http://localhost:5173',
-  },
-  css: {
-    transformer: 'lightningcss',
-  },
-})
+});

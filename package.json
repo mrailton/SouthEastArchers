@@ -4,9 +4,8 @@
   "description": "South East Archers Club Website",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "dev": "vite build --watch"
   },
   "devDependencies": {
     "@alpinejs/csp": "^3.15.8",

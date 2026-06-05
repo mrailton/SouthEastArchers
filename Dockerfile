@@ -16,9 +16,10 @@ COPY package*.json ./
 RUN npm ci
 
 # Copy source files needed for build
-COPY resources ./resources
 COPY vite.config.js ./
-COPY app/templates ./app/templates
+COPY app/resources/static/css ./app/resources/static/css
+COPY app/resources/static/js ./app/resources/static/js
+COPY app/resources/templates ./app/resources/templates
 
 # Build assets
 RUN npm run build
@@ -44,8 +45,8 @@ RUN uv pip install --system --no-cache -r pyproject.toml
 # Copy application code
 COPY . .
 
-# Copy built assets from builder stage (overwrites empty static folder)
-COPY --from=builder /app/resources/static ./resources/static
+# Copy built assets from builder stage
+COPY --from=builder /app/app/resources/static/dist ./app/resources/static/dist
 
 # Copy and set entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/

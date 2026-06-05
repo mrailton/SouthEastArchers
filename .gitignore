@@ -54,7 +54,7 @@ htmlcov/
 .tox/
 .import_linter_cache/
 # Asset pipeline
-resources/static
+app/resources/static/dist/
 
 # Node modules
 node_modules/

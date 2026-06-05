@@ -1,9 +1,15 @@
 import Alpine from '@alpinejs/csp'
-import { registerDarkMode } from './dark-mode.js'
 import '../css/admin.css'
 
 // === Dark mode ===
-registerDarkMode(Alpine)
+Alpine.data('darkMode', () => ({
+    dark: document.documentElement.classList.contains('dark'),
+    toggle() {
+        this.dark = !this.dark
+        document.documentElement.classList.toggle('dark', this.dark)
+        localStorage.setItem('theme', this.dark ? 'dark' : 'light')
+    },
+}))
 
 // === Admin-only Alpine components ===
 

@@ -45,8 +45,6 @@ class Settings(BaseSettings):
     recaptcha_public_key: str | None = Field(default=None, validation_alias="RECAPTCHA_PUBLIC_KEY")
     recaptcha_private_key: str | None = Field(default=None, validation_alias="RECAPTCHA_PRIVATE_KEY")
 
-    vite_dev_server_url: str = "http://localhost:5173"
-
     def model_post_init(self, __context: object) -> None:
         if self.is_development:
             object.__setattr__(self, "app_debug", True)

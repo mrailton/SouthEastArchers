@@ -1,4 +1,4 @@
-.PHONY: help install dev clean test test-parallel test-verbose test-file test-coverage test-k \
+.PHONY: help install setup dev server clean test test-parallel test-verbose test-file test-coverage test-k \
        lint lint-fix lint-check format format-check typecheck lint-imports \
        assets assets-watch
 
@@ -11,21 +11,18 @@ install: ## Install all dependencies (Python + Node)
 	uv sync
 	npm ci
 
-dev: ## Run development servers (FastAPI + Vite)
-	@mkdir -p resources/static
-	@if [ ! -e resources/static/images ]; then ln -s ../assets/images resources/static/images; fi
-	@echo "Starting development servers..."
-	@echo "  - Vite dev server (asset hot reloading)"
-	@echo "  - FastAPI dev server (uvicorn)"
-	@echo ""
-	@echo "Press Ctrl+C to stop"
-	@echo ""
-	@trap 'kill 0' EXIT; \
-		npm run dev & \
-		uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 & \
-		wait
+setup: ## First-time setup: install deps and build assets
+	$(MAKE) install
+	$(MAKE) assets
+
+dev: ## Run dev server and watch assets (parallel)
+	@$(MAKE) -j2 server assets-watch
+
+server: ## Run FastAPI with reload
+	uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 clean: ## Remove cache and temporary files
+	rm -rf app/resources/static/dist
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .mypy_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .ruff_cache -exec rm -rf {} + 2>/dev/null || true

@@ -15,11 +15,8 @@
         })();
     </script>
 
-    <!-- Vite HMR Client (dev only) -->
-    {{ vite_hmr_client()|safe }}
-
-    <!-- Vite-managed CSS + JS (module scripts are deferred by default) -->
-    {{ vite_asset('js/site.js')|safe }}
+    <link rel="stylesheet" href="/static/assets/site.css">
+    <script type="module" src="/static/assets/site.js"></script>
 
     {% block extra_css %}{% endblock %}
     

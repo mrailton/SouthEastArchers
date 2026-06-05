@@ -8,7 +8,7 @@ from app.enums import PaymentType
 from app.models import FinancialTransaction
 from app.repositories import BaseRepository, FinancialTransactionRepository
 from app.services import settings
-from app.services.result import ServiceResult
+from app.services.result import ErrorCode, ServiceResult
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +73,20 @@ def create_transaction(
         return ServiceResult.fail(f"Error creating transaction: {exc}")
 
 
+def _cash_receipt_reference(payment_id: int) -> str:
+    return f"cash-payment-{payment_id}"
+
+
+def _sumup_already_recorded(receipt_reference: str | None, category: str) -> bool:
+    if not receipt_reference:
+        return False
+    return FinancialTransactionRepository.exists_for_receipt(receipt_reference, category, "income")
+
+
+def _cash_already_recorded(payment_id: int, category: str) -> bool:
+    return FinancialTransactionRepository.exists_for_receipt(_cash_receipt_reference(payment_id), category, "income")
+
+
 def record_sumup_payment_transactions(
     payment_amount_cents: int,
     payment_type: str,
@@ -89,6 +103,9 @@ def record_sumup_payment_transactions(
     today = date.today()
     fee_amount_cents = int(round(payment_amount_cents * fee_pct / 100.0))
     category = "membership_fees" if payment_type == PaymentType.MEMBERSHIP else "shoot_fees"
+
+    if _sumup_already_recorded(receipt_reference, category):
+        return ServiceResult.ok(message="Financial transactions already recorded.")
 
     try:
         with BaseRepository.transaction():
@@ -123,15 +140,48 @@ def record_sumup_payment_transactions(
         return ServiceResult.fail(f"Error recording SumUp payment transactions: {exc}")
 
 
+def record_payment_transactions_for_completed_payment(payment_id: int, payment_type: str) -> ServiceResult[None]:
+    """Record ledger entries for a completed payment (used by event handlers)."""
+    from app.repositories import PaymentRepository
+
+    payment = PaymentRepository.get_by_id_with_user(payment_id)
+    if not payment:
+        return ServiceResult.fail("Payment not found.", error_code=ErrorCode.NOT_FOUND)
+
+    if payment.payment_processor == "sumup":
+        return record_sumup_payment_transactions(
+            payment_amount_cents=payment.amount_cents,
+            payment_type=payment_type,
+            description=payment.description or f"SumUp {payment_type} payment",
+            created_by_id=payment.user_id,
+            receipt_reference=payment.external_transaction_id,
+        )
+    if payment.payment_processor == "cash":
+        return record_cash_payment_transaction(
+            payment_amount_cents=payment.amount_cents,
+            payment_type=payment_type,
+            description=payment.description or f"Cash {payment_type} payment",
+            created_by_id=payment.user_id,
+            payment_id=payment.id,
+        )
+    return ServiceResult.ok()
+
+
 def record_cash_payment_transaction(
     payment_amount_cents: int,
     payment_type: str,
     description: str,
     created_by_id: int,
+    *,
+    payment_id: int | None = None,
 ) -> ServiceResult[None]:
     today = date.today()
     category = "membership_fees" if payment_type == PaymentType.MEMBERSHIP else "shoot_fees"
 
+    if payment_id is not None and _cash_already_recorded(payment_id, category):
+        return ServiceResult.ok(message="Financial transactions already recorded.")
+
+    receipt_reference = _cash_receipt_reference(payment_id) if payment_id is not None else None
     result = create_transaction(
         txn_type="income",
         txn_date=today,
@@ -140,6 +190,7 @@ def record_cash_payment_transaction(
         description=description,
         created_by_id=created_by_id,
         source="Cash",
+        receipt_reference=receipt_reference,
     )
     if not result.success:
         return ServiceResult.fail(f"Error recording income: {result.message}")
@@ -173,7 +224,7 @@ def update_transaction(
 def delete_transaction(transaction_id: int) -> ServiceResult[None]:
     transaction = FinancialTransactionRepository.get_by_id(transaction_id)
     if not transaction:
-        return ServiceResult.fail("Transaction not found")
+        return ServiceResult.fail("Transaction not found", error_code=ErrorCode.NOT_FOUND)
 
     try:
         FinancialTransactionRepository.delete(transaction)

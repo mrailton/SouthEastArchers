@@ -3,7 +3,7 @@ import httpx
 from app.core.config import get_settings
 
 
-async def verify_recaptcha(token: str) -> bool:
+def verify_recaptcha(token: str) -> bool:
     settings = get_settings()
     if settings.is_testing:
         return True
@@ -11,8 +11,8 @@ async def verify_recaptcha(token: str) -> bool:
         return settings.app_debug
     if not token:
         return False
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
+    with httpx.Client() as client:
+        response = client.post(
             "https://www.google.com/recaptcha/api/siteverify",
             data={"secret": settings.recaptcha_private_key, "response": token},
             timeout=10,

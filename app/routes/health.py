@@ -7,7 +7,7 @@ router = APIRouter(tags=["health"])
 
 
 @router.get("/health", name="health", response_model=None)
-async def health() -> Response | dict[str, str]:
+def health() -> Response | dict[str, str]:
     if health_service.check_database():
         return {"status": "ok"}
     return JSONResponse({"status": "error"}, status_code=500)

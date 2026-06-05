@@ -1,5 +1,4 @@
 import os
-import shutil
 from contextlib import contextmanager
 from datetime import date, timedelta
 
@@ -46,6 +45,10 @@ class _TestApp:
         yield
 
 
+def _test_database_url() -> str:
+    return os.environ.get("TEST_DATABASE_URL") or "sqlite://"
+
+
 @pytest.fixture(scope="session")
 def app_instance():
     """Create database schema and seed RBAC once per test run."""
@@ -55,11 +58,15 @@ def app_instance():
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
-    db.engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    db_url = _test_database_url()
+    if db_url.startswith("sqlite"):
+        db.engine = create_engine(
+            db_url,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+    else:
+        db.engine = create_engine(db_url, pool_pre_ping=True)
     db._session_factory = sessionmaker(bind=db.engine, autoflush=False, autocommit=False)
     db.create_all()
     session = db.create_session()
@@ -117,10 +124,10 @@ def _reset_request_scoped_state():
     from app.utils import rate_limit
 
     take_deferred_handlers()
-    rate_limit._buckets.clear()
+    rate_limit.clear_rate_limits()
     yield
     take_deferred_handlers()
-    rate_limit._buckets.clear()
+    rate_limit.clear_rate_limits()
 
 
 def pytest_collection_modifyitems(items):
@@ -130,15 +137,6 @@ def pytest_collection_modifyitems(items):
             item.add_marker(pytest.mark.unit)
         elif "/feature/" in path:
             item.add_marker(pytest.mark.feature)
-
-
-def pytest_sessionfinish(session, exitstatus):
-    if os.path.exists(".coverage"):
-        os.remove(".coverage")
-    if os.path.exists("htmlcov"):
-        shutil.rmtree("htmlcov")
-    if os.path.exists("coverage.db"):
-        os.remove("coverage.db")
 
 
 @pytest.fixture

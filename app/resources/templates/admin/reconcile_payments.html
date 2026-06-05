@@ -1,0 +1,88 @@
+{% extends "admin/base.html" %}
+{% block title %}Reconcile Online Payments - Admin{% endblock %}
+{% block admin_content %}
+<div class="w-full">
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Reconcile Online Payments</h1>
+            <a href="{{ url_for('admin.pending_payments') }}" class="text-blue-600 hover:underline text-sm">Cash payments →</a>
+        </div>
+
+        <p class="text-sm text-gray-600 mb-6">
+            Use this page when SumUp shows a payment as paid but the member's account was not updated
+            (for example, if their browser session was lost after checkout).
+        </p>
+
+        {% if payment_data %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Member</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Checkout ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in payment_data %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if item.user %}
+                            <a href="{{ url_for('admin.member_detail', user_id=item.user.id) }}" class="text-blue-600 hover:underline">
+                                {{ item.user.name }}
+                            </a>
+                            <div class="text-gray-500">{{ item.user.email }}</div>
+                            {% else %}
+                            Unknown
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.payment.payment_type|capitalize }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">€{{ "%.2f"|format(item.payment.amount) }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{{ item.payment.sumup_checkout_id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.payment.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <form method="POST" action="{{ url_for('admin.reconcile_payment', payment_id=item.payment.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                                <input type="hidden" name="redirect_to" value="/admin/payments/reconcile"/>
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                                    Verify &amp; fulfill
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No unfulfilled online payments</h3>
+            <p class="mt-1 text-sm text-gray-500">All SumUp checkouts have been processed.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="bg-gray-50 border border-gray-300 rounded p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Replay side effects</h3>
+        <p class="text-sm text-gray-600 mb-4">
+            If a completed payment is missing its receipt email or ledger entry (for example after a deferred handler failure),
+            enter the payment ID to re-run mail and finance recording. Ledger entries are idempotent.
+        </p>
+        <form method="POST" action="{{ url_for('admin.replay_payment_side_effects') }}" class="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+            <input type="hidden" name="redirect_to" value="/admin/payments/reconcile"/>
+            <div>
+                <label for="replay_payment_id" class="block text-sm font-medium text-gray-700 mb-1">Payment ID</label>
+                <input type="number" id="replay_payment_id" name="payment_id" min="1" required
+                       class="border border-gray-300 rounded px-3 py-2 text-sm w-32"/>
+            </div>
+            <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded text-sm">
+                Replay mail &amp; ledger
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock admin_content %}

@@ -2,34 +2,32 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 
 from app.core.config import get_settings
-from app.dependencies import CurrentUser, require_guest, verify_csrf
+from app.dependencies import CsrfFormData, CurrentUser, require_guest
 from app.schemas.form_helpers import parse_form, single_field_errors
 from app.schemas.forms import ForgotPasswordForm, LoginForm, ResetPasswordForm, SignupForm
 from app.services import recaptcha as recaptcha_service
 from app.services import users
 from app.templating import flash, flash_field_errors, render
-from app.utils.formdata import request_form_data
 from app.utils.rate_limit import check_rate_limit
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.get("/login", name="auth.login", dependencies=[Depends(require_guest)])
-async def login_page(request: Request):
+def login_page(request: Request):
     return render(request, "auth/login.html")
 
 
 @router.post("/login", name="auth.login_post", dependencies=[Depends(require_guest)])
-async def login_store(
+def login_store(
     request: Request,
+    form_data: CsrfFormData,
     next_url: str | None = Query(None, alias="next"),
 ):
     if check_rate_limit(request, "auth:login"):
         flash(request, "error", "Too many login attempts. Please try again later.")
         return render(request, "auth/login.html", status_code=429)
 
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
     form, errors, _values = parse_form(LoginForm, form_data)
     if errors:
         flash_field_errors(request, errors)
@@ -55,15 +53,18 @@ async def login_store(
 
 
 @router.get("/signup", name="auth.signup", dependencies=[Depends(require_guest)])
-async def signup_page(request: Request):
+def signup_page(request: Request):
     settings = get_settings()
     return render(request, "auth/signup.html", {"recaptcha_site_key": settings.recaptcha_public_key})
 
 
 @router.post("/signup", name="auth.signup_post", dependencies=[Depends(require_guest)])
-async def signup_store(request: Request):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def signup_store(request: Request, form_data: CsrfFormData):
+    if check_rate_limit(request, "auth:signup"):
+        flash(request, "error", "Too many signup attempts. Please try again later.")
+        settings = get_settings()
+        return render(request, "auth/signup.html", {"recaptcha_site_key": settings.recaptcha_public_key}, status_code=429)
+
     settings = get_settings()
     form, errors, form_values = parse_form(SignupForm, form_data)
     if errors:
@@ -80,7 +81,7 @@ async def signup_store(request: Request):
         )
 
     assert form is not None
-    if not await recaptcha_service.verify_recaptcha(form.g_recaptcha_response):
+    if not recaptcha_service.verify_recaptcha(form.g_recaptcha_response):
         flash(request, "error", "reCAPTCHA verification failed.")
         return render(
             request,
@@ -115,25 +116,23 @@ async def signup_store(request: Request):
 
 
 @router.get("/logout", name="auth.logout")
-async def logout(request: Request, _user: CurrentUser):
+def logout(request: Request, _user: CurrentUser):
     request.session.clear()
     flash(request, "success", "Logged out successfully!")
     return RedirectResponse(url="/", status_code=303)
 
 
 @router.get("/forgot-password", name="auth.forgot_password", dependencies=[Depends(require_guest)])
-async def forgot_password_page(request: Request):
+def forgot_password_page(request: Request):
     return render(request, "auth/forgot_password.html")
 
 
 @router.post("/forgot-password", name="auth.forgot_password_post", dependencies=[Depends(require_guest)])
-async def forgot_password_store(request: Request):
+def forgot_password_store(request: Request, form_data: CsrfFormData):
     if check_rate_limit(request, "auth:forgot-password"):
         flash(request, "error", "Too many reset requests. Please try again later.")
         return render(request, "auth/forgot_password.html", status_code=429)
 
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
     form, errors, _values = parse_form(ForgotPasswordForm, form_data)
     if errors:
         flash_field_errors(request, errors)
@@ -150,14 +149,16 @@ async def forgot_password_store(request: Request):
 
 
 @router.get("/reset-password/{token}", name="auth.reset_password", dependencies=[Depends(require_guest)])
-async def reset_password_page(token: str, request: Request):
+def reset_password_page(token: str, request: Request):
     return render(request, "auth/reset_password.html", {"token": token})
 
 
 @router.post("/reset-password/{token}", name="auth.reset_password_post", dependencies=[Depends(require_guest)])
-async def reset_password_store(token: str, request: Request):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def reset_password_store(token: str, request: Request, form_data: CsrfFormData):
+    if check_rate_limit(request, "auth:reset-password"):
+        flash(request, "error", "Too many reset attempts. Please try again later.")
+        return render(request, "auth/reset_password.html", {"token": token}, status_code=429)
+
     user = users.verify_reset_token(token)
     if not user:
         flash(request, "error", "Invalid or expired reset link.")

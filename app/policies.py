@@ -19,6 +19,7 @@ def has_any_permission(user: User | None, *permission_names: str) -> bool:
 
 
 def require_permission(user: User | None, *permission_names: str) -> None:
+    """Require the user to have at least one of the given permissions."""
     if user is None:
         raise LoginRequired()
     if permission_names and not user.has_any_permission(*permission_names):

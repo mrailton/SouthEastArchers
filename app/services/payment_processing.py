@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import date
 from typing import Any
 
-from app.events import credit_purchased, payment_completed
-from app.models import Credit, Membership
-from app.repositories import BaseRepository, CreditRepository, MembershipRepository, PaymentRepository, UserRepository
-from app.services import settings
-from app.services.result import ServiceResult
+from app.enums import PaymentType
+from app.models import Payment
+from app.repositories import PaymentRepository, UserRepository
+from app.services.payment_fulfillment import credit_quantity_from_description, fulfill_payment
+from app.services.payment_side_effects import emit_payment_side_effects
+from app.services.result import ErrorCode, ServiceResult
 from app.services.sumup import SumUpService
 
 logger = logging.getLogger(__name__)
@@ -57,22 +57,20 @@ def handle_signup_payment(user_id: int, payment_id: int, transaction_id: str) ->
     user = UserRepository.get_by_id(user_id)
 
     if not payment or not user:
-        return ServiceResult.fail("Payment or user not found.")
+        return ServiceResult.fail("Payment or user not found.", error_code=ErrorCode.NOT_FOUND)
 
-    try:
-        with BaseRepository.transaction():
-            payment.mark_completed(transaction_id, processor="sumup")
-            if user.membership:
-                user.membership.activate()
-    except Exception as exc:
-        logger.error("Signup payment commit failed: %s", exc)
-        return ServiceResult.fail("Payment could not be processed. Please try again.")
+    result = fulfill_payment(
+        payment,
+        user,
+        processor="sumup",
+        transaction_id=transaction_id,
+        membership_mode="activate_only",
+    )
+    if not result.success:
+        return ServiceResult.fail(result.message, error_code=result.error_code)
 
-    try:
-        payment_completed.send(user_id=user.id, payment_id=payment.id, payment_type=payment.payment_type)
-    except Exception as exc:
-        logger.error("Failed to emit payment_completed event: %s", exc)
-
+    assert result.data is not None
+    emit_payment_side_effects(payment, user, already_completed=result.data.already_completed)
     return ServiceResult.ok(message="Payment successful! Your membership is now active. A receipt has been sent to your email.")
 
 
@@ -81,33 +79,20 @@ def handle_membership_renewal(user_id: int, payment_id: int, transaction_id: str
     user = UserRepository.get_by_id(user_id)
 
     if not payment or not user:
-        return ServiceResult.fail("Payment or user not found.")
+        return ServiceResult.fail("Payment or user not found.", error_code=ErrorCode.NOT_FOUND)
 
-    try:
-        with BaseRepository.transaction():
-            payment.mark_completed(transaction_id, processor="sumup")
+    result = fulfill_payment(
+        payment,
+        user,
+        processor="sumup",
+        transaction_id=transaction_id,
+        membership_mode="renew_or_create",
+    )
+    if not result.success:
+        return ServiceResult.fail(result.message, error_code=result.error_code)
 
-            if user.membership:
-                expiry_date = settings.calculate_membership_expiry(date.today()).date()
-                user.membership.renew(expiry_date=expiry_date)
-            else:
-                start_date = date.today()
-                membership = Membership(
-                    user_id=user.id,
-                    start_date=start_date,
-                    expiry_date=settings.calculate_membership_expiry(start_date).date(),
-                    status="active",
-                )
-                MembershipRepository.add(membership)
-    except Exception as exc:
-        logger.error("Membership renewal commit failed: %s", exc)
-        return ServiceResult.fail("Renewal could not be processed. Please try again.")
-
-    try:
-        payment_completed.send(user_id=user.id, payment_id=payment.id, payment_type=payment.payment_type)
-    except Exception as exc:
-        logger.error("Failed to emit payment_completed event: %s", exc)
-
+    assert result.data is not None
+    emit_payment_side_effects(payment, user, already_completed=result.data.already_completed)
     return ServiceResult.ok(message="Membership renewed successfully! A receipt has been sent to your email.")
 
 
@@ -116,27 +101,71 @@ def handle_credit_purchase(user_id: int, payment_id: int, quantity: int, transac
     user = UserRepository.get_by_id(user_id)
 
     if not payment or not user:
-        return ServiceResult.fail("Payment or user not found.")
+        return ServiceResult.fail("Payment or user not found.", error_code=ErrorCode.NOT_FOUND)
 
-    try:
-        with BaseRepository.transaction():
-            payment.mark_completed(transaction_id, processor="sumup")
+    result = fulfill_payment(
+        payment,
+        user,
+        processor="sumup",
+        transaction_id=transaction_id,
+        quantity=quantity,
+    )
+    if not result.success:
+        return ServiceResult.fail(result.message, error_code=result.error_code)
 
-            if user.membership:
-                user.membership.add_credits(quantity)
-
-            credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
-            CreditRepository.add(credit)
-    except Exception as exc:
-        logger.error("Credit purchase commit failed: %s", exc)
-        return ServiceResult.fail("Credit purchase could not be processed. Please try again.")
-
-    try:
-        credit_purchased.send(user_id=user_id, payment_id=payment.id, quantity=quantity)
-    except Exception as exc:
-        logger.error("Failed to emit credit_purchased event: %s", exc)
-
+    assert result.data is not None
+    emit_payment_side_effects(
+        payment,
+        user,
+        quantity=result.data.quantity or quantity,
+        already_completed=result.data.already_completed,
+    )
     return ServiceResult.ok(message=f"Successfully purchased {quantity} credits! A receipt has been sent to your email.")
+
+
+def _fulfill_pending_online_payment(
+    payment: Payment,
+    transaction_id: str,
+    *,
+    quantity: int | None = None,
+) -> ServiceResult[None]:
+    user = UserRepository.get_by_id(payment.user_id)
+    if not user:
+        return ServiceResult.fail("User not found.", error_code=ErrorCode.NOT_FOUND)
+
+    if payment.payment_type == PaymentType.CREDITS:
+        resolved_quantity = quantity or credit_quantity_from_description(payment.description)
+        return handle_credit_purchase(user.id, payment.id, resolved_quantity, transaction_id)
+
+    if not user.is_active:
+        return handle_signup_payment(user.id, payment.id, transaction_id)
+
+    return handle_membership_renewal(user.id, payment.id, transaction_id)
+
+
+def reconcile_sumup_payment(
+    payment_id: int,
+    *,
+    sumup: SumUpService | None = None,
+) -> ServiceResult[None]:
+    """Verify a pending online payment with SumUp and fulfill it (admin recovery)."""
+    payment = PaymentRepository.get_by_id(payment_id)
+    if not payment:
+        return ServiceResult.fail("Payment not found.", error_code=ErrorCode.NOT_FOUND)
+    if payment.status != "pending" or payment.payment_method != "online":
+        return ServiceResult.fail("This payment cannot be reconciled.", error_code=ErrorCode.INVALID_STATE)
+    if not payment.sumup_checkout_id:
+        return ServiceResult.fail("No SumUp checkout is linked to this payment.")
+
+    sumup_service = sumup or SumUpService()
+    checkout = sumup_service.get_checkout(payment.sumup_checkout_id)
+    if not checkout:
+        return ServiceResult.fail("Could not verify payment status with SumUp.")
+    if getattr(checkout, "status", None) != "PAID":
+        return ServiceResult.fail("SumUp reports this checkout is not paid.")
+
+    txn_id = getattr(checkout, "transaction_code", None) or getattr(checkout, "transaction_id", None) or payment.sumup_checkout_id
+    return _fulfill_pending_online_payment(payment, txn_id)
 
 
 def _detect_checkout_flow(session: Mapping[str, Any]) -> str | None:
@@ -198,11 +227,27 @@ def fulfill_checkout(
         txn_id = getattr(checkout, "transaction_code", None) or getattr(checkout, "transaction_id", None) or checkout_id
         flow_name = _detect_checkout_flow(session)
         if flow_name is None:
+            payment = PaymentRepository.get_pending_by_sumup_checkout_id(checkout_id)
+            if payment is None or payment.user_id != user_id:
+                return ServiceResult.ok(
+                    data=CheckoutFulfillment(
+                        redirect_url="/member/dashboard",
+                        flash_category="warning",
+                        flash_message="Payment received but could not be matched to your account. Please contact us.",
+                        session_keys_to_clear=(),
+                    )
+                )
+            quantity = session.get("credit_purchase_quantity")
+            if quantity is not None and not isinstance(quantity, int):
+                quantity = int(quantity)
+            result = _fulfill_pending_online_payment(payment, txn_id, quantity=quantity)
+            user = UserRepository.get_by_id(user_id)
+            redirect_url = "/auth/login" if user and not user.is_active else "/member/dashboard"
             return ServiceResult.ok(
                 data=CheckoutFulfillment(
-                    redirect_url="/member/dashboard",
-                    flash_category="success",
-                    flash_message="Payment processed successfully!",
+                    redirect_url=redirect_url,
+                    flash_category="success" if result.success else "error",
+                    flash_message=result.message,
                     session_keys_to_clear=(),
                 )
             )

@@ -17,6 +17,19 @@ class FinancialTransactionRepository(BaseRepository):
         return db.session.get(FinancialTransaction, transaction_id)
 
     @staticmethod
+    def exists_for_receipt(
+        receipt_reference: str,
+        category: str,
+        txn_type: str,
+    ) -> bool:
+        stmt = select(FinancialTransaction.id).where(
+            FinancialTransaction.receipt_reference == receipt_reference,
+            FinancialTransaction.category == category,
+            FinancialTransaction.type == txn_type,
+        )
+        return db.session.scalar(stmt) is not None
+
+    @staticmethod
     def get_all_paginated(page: int = 1, per_page: int = 20) -> Pagination:
         stmt = select(FinancialTransaction).order_by(
             FinancialTransaction.date.desc(),

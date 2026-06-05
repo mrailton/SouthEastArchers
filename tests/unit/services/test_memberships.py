@@ -72,11 +72,21 @@ def test_activate_pending_membership(app, user_with_pending_membership):
 
 def test_activate_with_pending_cash_payment(app, user_with_cash_payment):
     """Test activating membership also marks cash payment as completed"""
+    from app.events.background import flush_deferred_handlers
+    from app.models import FinancialTransaction
+
     result = memberships.activate_membership(user_with_cash_payment)
 
     assert result.success is True
     payment = Payment.query.filter_by(user_id=user_with_cash_payment.id, payment_type="membership", payment_method="cash").first()
     assert payment.status == "completed"
+    assert result.data is not None
+    assert result.data["payment_event_emitted"] is True
+
+    flush_deferred_handlers()
+    txns = FinancialTransaction.query.filter_by(category="membership_fees", type="income").all()
+    assert len(txns) == 1
+    assert txns[0].receipt_reference == f"cash-payment-{payment.id}"
 
 
 def test_activate_already_active_membership(app, test_user):

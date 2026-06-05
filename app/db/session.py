@@ -86,6 +86,10 @@ def init_db(settings: Settings | None = None) -> None:
         db.init(settings)
 
 
+def has_current_session() -> bool:
+    return _current_session.get() is not None
+
+
 def get_current_session() -> Session:
     session = _current_session.get()
     if session is None:

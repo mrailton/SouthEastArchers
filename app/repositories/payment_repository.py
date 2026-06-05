@@ -18,6 +18,11 @@ class PaymentRepository(BaseRepository):
         return db.session.get(Payment, payment_id)
 
     @staticmethod
+    def get_by_id_with_user(payment_id: int) -> Payment | None:
+        stmt = select(Payment).options(joinedload(Payment.user)).where(Payment.id == payment_id)
+        return db.session.scalars(stmt).unique().first()
+
+    @staticmethod
     def get_by_user(user_id: int) -> list[Payment]:
         stmt = select(Payment).where(Payment.user_id == user_id).order_by(Payment.created_at.desc())
         return list(db.session.scalars(stmt).unique().all())
@@ -68,6 +73,30 @@ class PaymentRepository(BaseRepository):
             .where(Payment.payment_method == PaymentMethod.CASH, Payment.status == "pending")
             .order_by(Payment.created_at.desc())
             .limit(limit)
+        )
+        payments = db.session.scalars(stmt).unique().all()
+        return [{"payment": payment, "user": payment.user} for payment in payments]
+
+    @staticmethod
+    def get_pending_by_sumup_checkout_id(checkout_id: str) -> Payment | None:
+        stmt = select(Payment).where(
+            Payment.sumup_checkout_id == checkout_id,
+            Payment.status == "pending",
+            Payment.payment_method == PaymentMethod.ONLINE,
+        )
+        return db.session.scalars(stmt).first()
+
+    @staticmethod
+    def get_pending_online_with_users() -> list[dict]:
+        stmt = (
+            select(Payment)
+            .options(joinedload(Payment.user))
+            .where(
+                Payment.payment_method == PaymentMethod.ONLINE,
+                Payment.status == "pending",
+                Payment.sumup_checkout_id.is_not(None),
+            )
+            .order_by(Payment.created_at.desc())
         )
         payments = db.session.scalars(stmt).unique().all()
         return [{"payment": payment, "user": payment.user} for payment in payments]

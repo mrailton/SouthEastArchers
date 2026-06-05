@@ -22,6 +22,10 @@ def get_user_by_id(user_id: int) -> User | None:
     return UserRepository.get_by_id(user_id)
 
 
+def get_session_user_by_id(user_id: int) -> User | None:
+    return UserRepository.get_by_id_with_permissions(user_id)
+
+
 def get_user_by_email(email: str) -> User | None:
     return UserRepository.get_by_email(email)
 
@@ -292,14 +296,18 @@ def adjust_member_credits(
         signed_amount = quantity
         verb = "Added"
         preposition = "to"
-    CreditRepository.add(
-        Credit(
-            user_id=member.id,
-            amount=signed_amount,
-            payment_id=None,
-            reason=reason,
-            adjusted_by_id=admin_user_id,
-        )
-    )
-    CreditRepository.save()
-    return ServiceResult.ok(message=f"{verb} {quantity} credit(s) {preposition} {member.name}'s account.")
+    try:
+        with BaseRepository.transaction():
+            CreditRepository.add(
+                Credit(
+                    user_id=member.id,
+                    amount=signed_amount,
+                    payment_id=None,
+                    reason=reason,
+                    adjusted_by_id=admin_user_id,
+                )
+            )
+        return ServiceResult.ok(message=f"{verb} {quantity} credit(s) {preposition} {member.name}'s account.")
+    except Exception as exc:
+        logger.error("Error adjusting member credits: %s", exc)
+        return ServiceResult.fail("An error occurred while adjusting credits.")

@@ -1,7 +1,6 @@
 import pytest
 
-from app.dependencies import LoginRequired
-from app.exceptions import AuthorizationError
+from app.exceptions import AuthorizationError, LoginRequired
 from app.policies import has_any_permission, has_permission, require_all_permissions, require_permission
 
 

@@ -7,6 +7,7 @@ from typing import Literal
 
 from pydantic import EmailStr, Field, field_validator
 
+from app.models.financial_transaction import EXPENSE_CATEGORIES, INCOME_CATEGORIES
 from app.schemas.form_helpers import (
     coerce_bool,
     coerce_datetime,
@@ -29,29 +30,10 @@ QUALIFICATION_CHOICES: list[tuple[str, str]] = [
     ("ifaf", "Irish Field Archery Federation Member"),
 ]
 
-EXPENSE_CATEGORY_CHOICES: list[tuple[str, str]] = [
-    ("equipment", "Equipment"),
-    ("venue_hire", "Venue Hire"),
-    ("insurance", "Insurance"),
-    ("supplies", "Supplies"),
-    ("maintenance", "Maintenance"),
-    ("travel", "Travel"),
-    ("affiliation_fees", "Affiliation Fees"),
-    ("coaching", "Coaching"),
-    ("payment_processing_fees", "Payment Processing Fees"),
-    ("other", "Other"),
-]
-
-INCOME_CATEGORY_CHOICES: list[tuple[str, str]] = [
-    ("membership_fees", "Membership Fees"),
-    ("shoot_fees", "Shoot Fees"),
-    ("equipment_sales", "Equipment Sales"),
-    ("donations", "Donations"),
-    ("sponsorship", "Sponsorship"),
-    ("grants", "Grants"),
-    ("fundraising", "Fundraising"),
-    ("other", "Other"),
-]
+EXPENSE_CATEGORY_CHOICES = EXPENSE_CATEGORIES
+INCOME_CATEGORY_CHOICES = INCOME_CATEGORIES
+_EXPENSE_CATEGORY_KEYS = {key for key, _ in EXPENSE_CATEGORIES}
+_INCOME_CATEGORY_KEYS = {key for key, _ in INCOME_CATEGORIES}
 
 SETTINGS_FIELD_DESCRIPTIONS: dict[str, str] = {
     "membership_year_start_month": "Month when membership year starts (1-12)",
@@ -216,6 +198,13 @@ class ExpenseForm(CsrfForm):
     description: str = Field(min_length=3)
     receipt_reference: str = ""
 
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, value: str) -> str:
+        if value not in _EXPENSE_CATEGORY_KEYS:
+            raise ValueError("Invalid expense category.")
+        return value
+
     @field_validator("date", mode="before")
     @classmethod
     def parse_date(cls, value: object) -> Date:
@@ -239,6 +228,13 @@ class IncomeForm(CsrfForm):
     category: str
     description: str = Field(min_length=3)
     source: str = ""
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, value: str) -> str:
+        if value not in _INCOME_CATEGORY_KEYS:
+            raise ValueError("Invalid income category.")
+        return value
 
     @field_validator("date", mode="before")
     @classmethod

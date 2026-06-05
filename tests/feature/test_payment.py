@@ -253,10 +253,11 @@ def test_complete_checkout_generic_failure_status(mock_sumup_class, member_clien
 
 
 @patch("app.services.payment_processing.SumUpService")
-def test_complete_checkout_missing_user_session(mock_sumup_class, member_client):
+def test_complete_checkout_paid_without_checkout_context(mock_sumup_class, member_client):
     mock_sumup_class.return_value.get_checkout.return_value = Mock(status="PAID", transaction_code="TXN", transaction_id="txn")
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
-    assert b"session not found" in response.content.lower() or b"Payment processed successfully" in response.content
+    content = response.content.lower()
+    assert b"could not be matched" in content or b"session not found" in content
 
 
 @patch("app.services.payment_processing.SumUpService", side_effect=RuntimeError("boom"))

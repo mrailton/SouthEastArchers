@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
-from app.dependencies import CurrentUser, require_perms, verify_csrf
+from app.dependencies import CsrfFormData, CurrentUser, require_perms
 from app.routes.admin._helpers import flash_form_errors
 from app.schemas.admin_forms import QUALIFICATION_CHOICES, CreateMemberForm, EditMemberForm
 from app.schemas.form_helpers import FormView, parse_form
 from app.services import memberships, rbac, users
 from app.templating import flash, render
-from app.utils.formdata import request_form_data
 
 router = APIRouter(tags=["admin.members"])
 
@@ -39,7 +38,7 @@ def _member_form_view(member, *, errors: dict | None = None) -> FormView:
 
 
 @router.get("/members", name="admin.members", dependencies=[require_perms("members.read")])
-async def members_index(request: Request, user: CurrentUser):
+def members_index(request: Request, user: CurrentUser):
     page = int(request.query_params.get("page", 1))
     per_page = int(request.query_params.get("per_page", 20))
     if per_page not in (5, 10, 20, 50, 100):
@@ -64,15 +63,13 @@ async def members_index(request: Request, user: CurrentUser):
 
 
 @router.get("/members/create", name="admin.create_member", dependencies=[require_perms("members.create")])
-async def create_member_page(request: Request, user: CurrentUser):
+def create_member_page(request: Request, user: CurrentUser):
     form = FormView(choices={"roles": _role_choices()})
     return render(request, "admin/create_member.html", {"form": form}, user=user)
 
 
 @router.post("/members/create", name="admin.create_member_post", dependencies=[require_perms("members.create")])
-async def create_member_store(request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def create_member_store(request: Request, user: CurrentUser, form_data: CsrfFormData):
     parsed, errors, values = parse_form(CreateMemberForm, form_data)
     form = FormView(values=values, errors=errors, choices={"roles": _role_choices()})
     if parsed:
@@ -97,7 +94,7 @@ async def create_member_store(request: Request, user: CurrentUser):
 
 
 @router.get("/members/{user_id}", name="admin.member_detail", dependencies=[require_perms("members.read")])
-async def member_detail(user_id: int, request: Request, user: CurrentUser):
+def member_detail(user_id: int, request: Request, user: CurrentUser):
     member = users.get_user_by_id(user_id)
     if not member:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -105,7 +102,7 @@ async def member_detail(user_id: int, request: Request, user: CurrentUser):
 
 
 @router.get("/members/{user_id}/edit", name="admin.edit_member", dependencies=[require_perms("members.update")])
-async def edit_member_page(user_id: int, request: Request, user: CurrentUser):
+def edit_member_page(user_id: int, request: Request, user: CurrentUser):
     member = users.get_user_by_id(user_id)
     if not member:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -113,9 +110,7 @@ async def edit_member_page(user_id: int, request: Request, user: CurrentUser):
 
 
 @router.post("/members/{user_id}/edit", name="admin.edit_member_post", dependencies=[require_perms("members.update")])
-async def edit_member_store(user_id: int, request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def edit_member_store(user_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     member = users.get_user_by_id(user_id)
     if not member:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -145,9 +140,7 @@ async def edit_member_store(user_id: int, request: Request, user: CurrentUser):
 
 
 @router.post("/members/{user_id}/activate", name="admin.activate_user", dependencies=[require_perms("members.activate_account")])
-async def activate_user(user_id: int, request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def activate_user(user_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     member = users.get_user_by_id(user_id)
     if not member:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -161,9 +154,7 @@ async def activate_user(user_id: int, request: Request, user: CurrentUser):
     name="admin.renew_membership",
     dependencies=[require_perms("members.manage_membership")],
 )
-async def renew_membership(user_id: int, request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def renew_membership(user_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     member = users.get_user_by_id(user_id)
     if not member:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -177,9 +168,7 @@ async def renew_membership(user_id: int, request: Request, user: CurrentUser):
     name="admin.create_membership",
     dependencies=[require_perms("members.manage_membership")],
 )
-async def create_membership(user_id: int, request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def create_membership(user_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     member = users.get_user_by_id(user_id)
     if not member:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -193,9 +182,7 @@ async def create_membership(user_id: int, request: Request, user: CurrentUser):
     name="admin.activate_membership",
     dependencies=[require_perms("members.manage_membership")],
 )
-async def activate_membership(user_id: int, request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def activate_membership(user_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     member = users.get_user_by_id(user_id)
     if not member:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -209,9 +196,7 @@ async def activate_membership(user_id: int, request: Request, user: CurrentUser)
     name="admin.adjust_credits",
     dependencies=[require_perms("members.manage_membership")],
 )
-async def adjust_credits(user_id: int, request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def adjust_credits(user_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     member = users.get_user_by_id(user_id)
     if not member:
         return render(request, "errors/404.html", user=user, status_code=404)

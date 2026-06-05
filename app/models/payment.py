@@ -37,6 +37,7 @@ class Payment(Model):
     )
     description: Mapped[str | None] = mapped_column(Text)
     payment_processor: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    sumup_checkout_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     external_transaction_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)

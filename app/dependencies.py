@@ -3,20 +3,21 @@ from __future__ import annotations
 import secrets
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request
 from starlette.datastructures import UploadFile
 
-from app.exceptions import LoginRequired
+from app.exceptions import AlreadyAuthenticated, CsrfError, LoginRequired
 from app.models.user import User
+from app.utils.formdata import MultiDict, request_form_data
 
 
 async def get_session_user(request: Request) -> User | None:
     user_id = request.session.get("user_id")
     if not user_id:
         return None
-    from app.repositories import UserRepository
+    from app.services import users
 
-    return UserRepository.get_by_id_with_permissions(int(user_id))
+    return users.get_session_user_by_id(int(user_id))
 
 
 async def require_auth(user: User | None = Depends(get_session_user)) -> User:
@@ -27,7 +28,7 @@ async def require_auth(user: User | None = Depends(get_session_user)) -> User:
 
 async def require_guest(user: User | None = Depends(get_session_user)) -> None:
     if user is not None:
-        raise HTTPException(status_code=status.HTTP_303_SEE_OTHER, headers={"Location": "/member/dashboard"})
+        raise AlreadyAuthenticated()
 
 
 CurrentUser = Annotated[User, Depends(require_auth)]
@@ -57,4 +58,16 @@ def verify_csrf(request: Request, token: str | UploadFile | None) -> None:
         token = None
     session_token = request.session.get("csrf_token")
     if not session_token or not token or not secrets.compare_digest(session_token, token):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token mismatch")
+        raise CsrfError()
+
+
+async def read_form_data(request: Request) -> MultiDict:
+    return await request_form_data(request)
+
+
+async def verify_csrf_form(request: Request, form_data: MultiDict = Depends(read_form_data)) -> MultiDict:
+    verify_csrf(request, form_data.get("csrf_token"))
+    return form_data
+
+
+CsrfFormData = Annotated[MultiDict, Depends(verify_csrf_form)]

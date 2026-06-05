@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import quote
@@ -6,14 +7,16 @@ from urllib.parse import quote
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import get_settings
 from app.db import init_db
-from app.exceptions import AuthorizationError, LoginRequired
+from app.exceptions import AlreadyAuthenticated, AuthorizationError, CsrfError, LoginRequired
 from app.routes import api_router
 from app.templating import register_route_names, render, setup_template_globals
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 init_db(settings)
 
@@ -37,6 +40,7 @@ app.add_middleware(
     secret_key=settings.secret_key,
     max_age=settings.session_max_age_seconds,
     https_only=settings.session_secure_cookie,
+    same_site=settings.session_same_site,
 )
 
 # Built bundle first (more specific path), then raw files (images, etc.)
@@ -64,6 +68,15 @@ async def run_deferred_event_handlers(request: Request, call_next):
     return response
 
 
+def _session_user(request: Request):
+    from app.services import users
+
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return None
+    return users.get_session_user_by_id(int(user_id))
+
+
 @app.exception_handler(LoginRequired)
 async def login_required_handler(request: Request, _exc: LoginRequired):
     next_url = request.url.path
@@ -72,9 +85,34 @@ async def login_required_handler(request: Request, _exc: LoginRequired):
     return RedirectResponse(url=f"/auth/login?next={quote(next_url)}", status_code=303)
 
 
+@app.exception_handler(AlreadyAuthenticated)
+async def already_authenticated_handler(request: Request, _exc: AlreadyAuthenticated):
+    return RedirectResponse(url="/member/dashboard", status_code=303)
+
+
 @app.exception_handler(AuthorizationError)
 async def authorization_error_handler(request: Request, _exc: AuthorizationError):
-    return render(request, "errors/403.html", status_code=403)
+    user = _session_user(request)
+    return render(request, "errors/403.html", status_code=403, user=user)
+
+
+@app.exception_handler(CsrfError)
+async def csrf_error_handler(request: Request, _exc: CsrfError):
+    user = _session_user(request)
+    return render(request, "errors/csrf.html", status_code=403, user=user)
+
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, _exc: StarletteHTTPException):
+    user = _session_user(request)
+    return render(request, "errors/404.html", status_code=404, user=user)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error processing %s", request.url.path)
+    user = _session_user(request)
+    return render(request, "errors/500.html", status_code=500, user=user)
 
 
 if settings.is_testing:

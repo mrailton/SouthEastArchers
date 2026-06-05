@@ -1,18 +1,17 @@
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import RedirectResponse
 
-from app.dependencies import CurrentUser, verify_csrf
+from app.dependencies import CsrfFormData, CurrentUser
 from app.schemas.form_helpers import parse_form, single_field_errors
 from app.schemas.forms import ChangePasswordForm, ProfileForm
 from app.services import credits, users
 from app.templating import flash, flash_field_errors, render
-from app.utils.formdata import request_form_data
 
 router = APIRouter(prefix="/member", tags=["member"])
 
 
 @router.get("/dashboard", name="member.dashboard")
-async def dashboard(
+def dashboard(
     request: Request,
     user: CurrentUser,
     page: int = Query(1, ge=1),
@@ -31,26 +30,24 @@ async def dashboard(
 
 
 @router.get("/shoots", name="member.shoots")
-async def shoots(request: Request, user: CurrentUser):
+def shoots(request: Request, user: CurrentUser):
     user_shoots = users.get_user_shoots(user)
     return render(request, "member/shoots.html", {"shoots": user_shoots}, user=user)
 
 
 @router.get("/credits", name="member.credits")
-async def credits_page(request: Request, user: CurrentUser):
+def credits_page(request: Request, user: CurrentUser):
     user_credits = credits.get_user_credits(user.id)
     return render(request, "member/credits.html", {"credits": user_credits}, user=user)
 
 
 @router.get("/profile", name="member.profile")
-async def profile(request: Request, user: CurrentUser):
+def profile(request: Request, user: CurrentUser):
     return render(request, "member/profile.html", user=user)
 
 
 @router.post("/profile", name="member.profile_post")
-async def profile_update(request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def profile_update(request: Request, user: CurrentUser, form_data: CsrfFormData):
     form, errors, _values = parse_form(ProfileForm, form_data)
     if errors:
         return render(
@@ -68,14 +65,12 @@ async def profile_update(request: Request, user: CurrentUser):
 
 
 @router.get("/change-password", name="member.change_password")
-async def change_password_page(request: Request, user: CurrentUser):
+def change_password_page(request: Request, user: CurrentUser):
     return render(request, "member/change_password.html", user=user)
 
 
 @router.post("/change-password", name="member.change_password_post")
-async def change_password_store(request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def change_password_store(request: Request, user: CurrentUser, form_data: CsrfFormData):
     form, errors, _values = parse_form(ChangePasswordForm, form_data)
     if errors:
         flash_field_errors(request, errors)

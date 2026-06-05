@@ -1,4 +1,4 @@
-.PHONY: help install setup dev server clean test test-parallel test-verbose test-file test-coverage test-k \
+.PHONY: help install setup dev server clean test test-parallel test-verbose test-file test-coverage test-k test-migrations \
        lint lint-fix lint-check format format-check typecheck lint-imports \
        assets assets-watch db-upgrade rbac-seed
 
@@ -44,11 +44,14 @@ test-verbose: ## Run test suite with verbose output
 test-file: ## Run a single test file (FILE=tests/path/to/test.py)
 	uv run pytest $(FILE)
 
-test-coverage: ## Run tests with coverage report
-	uv run pytest --cov=app --cov-report=term-missing --cov-report=html --no-cov-on-fail
+test-coverage: ## Run tests with coverage report (HTML + 95% gate)
+	uv run pytest --cov-report=html --no-cov-on-fail
 
 test-k: ## Run tests matching keyword (K="test_something")
 	uv run pytest -k "$(K)"
+
+test-migrations: ## Run Alembic migration smoke tests (requires MySQL DATABASE_URL)
+	uv run pytest tests/integration/ -v
 
 # ── Linting ──────────────────────────────────────────────────────────────────
 

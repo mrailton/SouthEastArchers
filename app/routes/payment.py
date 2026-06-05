@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
-from app.dependencies import CurrentUser, verify_csrf
+from app.dependencies import CsrfFormData, CurrentUser
 from app.enums import PaymentType
 from app.schemas.form_helpers import parse_form, single_field_errors
 from app.schemas.forms import CreditsForm, CsrfForm
@@ -14,20 +14,17 @@ from app.utils.checkout_session import (
     set_credit_purchase_checkout,
     set_membership_renewal_checkout,
 )
-from app.utils.formdata import request_form_data
 
 router = APIRouter(prefix="/payment", tags=["payment"])
 
 
 @router.get("/membership", name="payment.membership_payment")
-async def membership_payment_page(request: Request, user: CurrentUser):
+def membership_payment_page(request: Request, user: CurrentUser):
     return render(request, "payment/membership.html", user=user)
 
 
 @router.post("/membership", name="payment.membership_payment_post")
-async def membership_payment_store(request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def membership_payment_store(request: Request, user: CurrentUser, form_data: CsrfFormData):
     result = payment_service.initiate_membership_payment(user)
     if result.success:
         data = result.data
@@ -40,9 +37,7 @@ async def membership_payment_store(request: Request, user: CurrentUser):
 
 
 @router.post("/membership/cash", name="payment.membership_cash_payment")
-async def membership_cash_payment(request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def membership_cash_payment(request: Request, user: CurrentUser, form_data: CsrfFormData):
     _parsed, errors, _values = parse_form(CsrfForm, form_data)
     if errors:
         flash_field_errors(request, errors)
@@ -68,7 +63,7 @@ async def membership_cash_payment(request: Request, user: CurrentUser):
 
 
 @router.get("/credits", name="payment.credits")
-async def credits_payment_page(request: Request, user: CurrentUser):
+def credits_payment_page(request: Request, user: CurrentUser):
     if not user.membership:
         flash(request, "error", "You must have an active membership to purchase credits.")
         return RedirectResponse(url="/payment/membership", status_code=303)
@@ -76,9 +71,7 @@ async def credits_payment_page(request: Request, user: CurrentUser):
 
 
 @router.post("/credits", name="payment.credits_post")
-async def credits_payment_store(request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def credits_payment_store(request: Request, user: CurrentUser, form_data: CsrfFormData):
     form, errors, _values = parse_form(CreditsForm, form_data)
     if errors:
         flash_field_errors(request, errors)
@@ -103,9 +96,7 @@ async def credits_payment_store(request: Request, user: CurrentUser):
 
 
 @router.post("/credits/cash", name="payment.credits_cash_payment")
-async def credits_cash_payment(request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def credits_cash_payment(request: Request, user: CurrentUser, form_data: CsrfFormData):
     form, errors, _values = parse_form(CreditsForm, form_data)
     if errors:
         flash_field_errors(request, errors)
@@ -133,7 +124,7 @@ async def credits_cash_payment(request: Request, user: CurrentUser):
 
 
 @router.get("/checkout/{checkout_id}", name="payment.show_checkout")
-async def show_checkout(checkout_id: str, request: Request, user: CurrentUser):
+def show_checkout(checkout_id: str, request: Request, user: CurrentUser):
     amount = request.session.get("checkout_amount", 100.00)
     description = request.session.get("checkout_description", "Payment")
     return render(
@@ -145,9 +136,7 @@ async def show_checkout(checkout_id: str, request: Request, user: CurrentUser):
 
 
 @router.post("/checkout/{checkout_id}/complete", name="payment.complete_checkout")
-async def complete_checkout(checkout_id: str, request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def complete_checkout(checkout_id: str, request: Request, user: CurrentUser, form_data: CsrfFormData):
     result = payment_processing.fulfill_checkout(
         checkout_id=checkout_id,
         session=request.session,
@@ -166,6 +155,6 @@ async def complete_checkout(checkout_id: str, request: Request, user: CurrentUse
 
 
 @router.get("/history", name="payment.history")
-async def payment_history(request: Request, user: CurrentUser):
+def payment_history(request: Request, user: CurrentUser):
     payments = payment_service.get_user_payments(user.id)
     return render(request, "payment/history.html", {"payments": payments}, user=user)

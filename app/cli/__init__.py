@@ -8,7 +8,10 @@ import click
 from sqlalchemy.orm import Session
 
 import app.core.config  # noqa: F401 - load .env
+from app.core.config import PROJECT_ROOT
 from app.db import db, init_db, reset_current_session, set_current_session
+
+ALEMBIC_INI = PROJECT_ROOT / "migrations" / "alembic.ini"
 
 SCHEDULED_JOBS: tuple[str, ...] = (
     "expire-memberships",
@@ -67,7 +70,7 @@ def db_upgrade() -> None:
     from alembic import command
     from alembic.config import Config
 
-    alembic_cfg = Config("migrations/alembic.ini")
+    alembic_cfg = Config(str(ALEMBIC_INI))
     command.upgrade(alembic_cfg, "head")
     click.echo("✓ Database upgraded.")
 
@@ -78,8 +81,31 @@ def db_current() -> None:
     from alembic import command
     from alembic.config import Config
 
-    alembic_cfg = Config("migrations/alembic.ini")
+    alembic_cfg = Config(str(ALEMBIC_INI))
     command.current(alembic_cfg)
+
+
+@cli.group("payments")
+def payments_cli() -> None:
+    """Payment maintenance commands."""
+
+
+@payments_cli.command("replay-side-effects")
+@click.argument("payment_id", type=int)
+@click.option("--no-mail", is_flag=True, help="Replay ledger only; skip receipt email.")
+def payments_replay_side_effects(payment_id: int, no_mail: bool) -> None:
+    """Re-run receipt email and ledger recording for a completed payment."""
+    from app.services import payments
+
+    session, token = _open_cli_session()
+    try:
+        result = payments.replay_completed_payment_side_effects(payment_id, send_mail=not no_mail)
+        if not result.success:
+            click.echo(f"✗ {result.message}", err=True)
+            raise SystemExit(1)
+        click.echo(f"✓ {result.message}")
+    finally:
+        _close_cli_session(session, token)
 
 
 @cli.group("rbac")

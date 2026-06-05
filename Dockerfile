@@ -36,14 +36,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir uv
 
-# Copy dependency files
-COPY pyproject.toml .
-
-# Install Python dependencies (production only)
-RUN uv pip install --system --no-cache -r pyproject.toml
+# Copy dependency files and install Python dependencies (production only)
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
 # Copy application code
 COPY . .
+RUN uv sync --frozen --no-dev
 
 # Copy built assets from builder stage
 COPY --from=builder /app/app/resources/static/dist ./app/resources/static/dist
@@ -56,8 +55,13 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
+ENV PATH="/app/.venv/bin:$PATH"
+
 # Expose port
 EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD wget -qO- http://127.0.0.1:5000/health || exit 1
 
 # Set entrypoint to run migrations
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

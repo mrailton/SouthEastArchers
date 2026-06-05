@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
 from typing import Any, Protocol
 
 from app.enums import PaymentMethod, PaymentType
-from app.events import cash_payment_submitted, credit_purchased, payment_completed
-from app.models.credit import Credit
-from app.models.membership import Membership
+from app.events import cash_payment_submitted
 from app.models.payment import Payment
 from app.models.user import User
-from app.repositories import BaseRepository, CreditRepository, MembershipRepository, PaymentRepository, UserRepository
+from app.repositories import BaseRepository, PaymentRepository, UserRepository
 from app.services import settings
-from app.services.result import ServiceResult
+from app.services.payment_fulfillment import fulfill_payment
+from app.services.payment_side_effects import emit_payment_side_effects, replay_payment_side_effects
+from app.services.result import ErrorCode, ServiceResult
 from app.services.sumup import SumUpService
 
 logger = logging.getLogger(__name__)
@@ -60,6 +59,7 @@ def initiate_membership_payment(
 
     checkout = processor.create_checkout(amount=amount_cents, currency="EUR", description=description)
     if checkout:
+        payment.sumup_checkout_id = checkout.get("id")
         PaymentRepository.save()
         return ServiceResult.ok(
             data={
@@ -100,6 +100,7 @@ def initiate_credit_purchase(
 
     checkout = processor.create_checkout(amount=amount_cents, currency="EUR", description=description)
     if checkout:
+        payment.sumup_checkout_id = checkout.get("id")
         PaymentRepository.save()
         return ServiceResult.ok(
             data={
@@ -128,15 +129,19 @@ def initiate_cash_membership_payment(user: User) -> ServiceResult[dict]:
         description=f"Annual Membership (Cash) - {user.name}",
         status="pending",
     )
-    PaymentRepository.add(payment)
-    PaymentRepository.flush()
+    try:
+        with BaseRepository.transaction():
+            PaymentRepository.add(payment)
+            PaymentRepository.flush()
+    except Exception as exc:
+        logger.error("Error creating cash membership payment: %s", exc)
+        return ServiceResult.fail("Error creating payment. Please try again.")
 
     try:
         cash_payment_submitted.send(user_id=user.id, payment_id=payment.id)
     except Exception:
         logger.exception("Failed to emit cash_payment_submitted event")
 
-    PaymentRepository.save()
     return ServiceResult.ok(
         data={
             "payment_id": payment.id,
@@ -157,15 +162,19 @@ def initiate_cash_credit_purchase(user: User, quantity: int) -> ServiceResult[di
         description=f"{quantity} shooting credits (Cash)",
         status="pending",
     )
-    PaymentRepository.add(payment)
-    PaymentRepository.flush()
+    try:
+        with BaseRepository.transaction():
+            PaymentRepository.add(payment)
+            PaymentRepository.flush()
+    except Exception as exc:
+        logger.error("Error creating cash credit payment: %s", exc)
+        return ServiceResult.fail("Error creating payment. Please try again.")
 
     try:
         cash_payment_submitted.send(user_id=user.id, payment_id=payment.id)
     except Exception:
         logger.exception("Failed to emit cash_payment_submitted event")
 
-    PaymentRepository.save()
     return ServiceResult.ok(
         data={
             "payment_id": payment.id,
@@ -174,6 +183,10 @@ def initiate_cash_credit_purchase(user: User, quantity: int) -> ServiceResult[di
             "instructions": settings.get("cash_payment_instructions"),
         }
     )
+
+
+def get_unfulfilled_online_payment_rows() -> list[dict[str, Any]]:
+    return PaymentRepository.get_pending_online_with_users()
 
 
 def validate_credit_quantity(quantity: int) -> ServiceResult[int]:
@@ -193,52 +206,36 @@ def get_completed_membership_payment(user_id: int) -> Payment | None:
 def approve_cash_payment(payment_id: int) -> ServiceResult[dict[str, Any]]:
     payment = PaymentRepository.get_by_id(payment_id)
     if not payment:
-        return ServiceResult.fail("Payment not found.")
-    if payment.status != "pending" or payment.payment_method != PaymentMethod.CASH:
-        return ServiceResult.fail("This payment cannot be approved.")
+        return ServiceResult.fail("Payment not found.", error_code=ErrorCode.NOT_FOUND)
+    if payment.payment_method != PaymentMethod.CASH:
+        return ServiceResult.fail("This payment cannot be approved.", error_code=ErrorCode.INVALID_STATE)
+    if payment.status not in ("pending", "completed"):
+        return ServiceResult.fail("This payment cannot be approved.", error_code=ErrorCode.INVALID_STATE)
 
     member = UserRepository.get_by_id(payment.user_id)
     if not member:
-        return ServiceResult.fail("User not found.")
+        return ServiceResult.fail("User not found.", error_code=ErrorCode.NOT_FOUND)
 
-    try:
-        with BaseRepository.transaction():
-            payment.mark_completed(processor="cash")
-            if payment.payment_type == PaymentType.MEMBERSHIP:
-                if member.membership:
-                    if member.membership.status != "active":
-                        member.membership.activate()
-                    else:
-                        expiry_date = settings.calculate_membership_expiry(date.today()).date()
-                        member.membership.renew(expiry_date=expiry_date)
-                else:
-                    expiry_date = settings.calculate_membership_expiry(date.today()).date()
-                    membership = Membership(
-                        user_id=member.id,
-                        start_date=date.today(),
-                        expiry_date=expiry_date,
-                        initial_credits=settings.get("membership_shoots_included"),
-                        purchased_credits=0,
-                        status="active",
-                    )
-                    MembershipRepository.add(membership)
-            elif payment.payment_type == PaymentType.CREDITS:
-                quantity = _credit_quantity_from_description(payment.description)
-                if member.membership:
-                    member.membership.add_credits(quantity)
-                CreditRepository.add(Credit(user_id=member.id, amount=quantity, payment_id=payment.id))
+    result = fulfill_payment(
+        payment,
+        member,
+        processor="cash",
+        membership_mode="activate_or_renew",
+    )
+    if not result.success:
+        logger.error("Error approving payment: %s", result.message)
+        return ServiceResult.fail("Error approving payment. Please try again.", error_code=result.error_code)
 
-        _emit_payment_completed_events(payment, member)
-        return ServiceResult.ok(data={"member_name": member.name}, message=f"Payment approved for {member.name}!")
-    except Exception as exc:
-        logger.error("Error approving payment: %s", exc)
-        return ServiceResult.fail(f"Error approving payment: {exc}")
+    assert result.data is not None
+    if not result.data.already_completed:
+        emit_payment_side_effects(payment, member)
+    return ServiceResult.ok(data={"member_name": member.name}, message=f"Payment approved for {member.name}!")
 
 
 def reject_cash_payment(payment_id: int) -> ServiceResult[dict[str, Any]]:
     payment = PaymentRepository.get_by_id(payment_id)
     if not payment:
-        return ServiceResult.fail("Payment not found.")
+        return ServiceResult.fail("Payment not found.", error_code=ErrorCode.NOT_FOUND)
     if payment.status != "pending" or payment.payment_method != PaymentMethod.CASH:
         return ServiceResult.fail("This payment cannot be rejected.")
     member = UserRepository.get_by_id(payment.user_id)
@@ -248,21 +245,6 @@ def reject_cash_payment(payment_id: int) -> ServiceResult[dict[str, Any]]:
     return ServiceResult.ok(data={"member_name": member_name}, message=f"Payment rejected for {member_name}.")
 
 
-def _credit_quantity_from_description(description: str | None) -> int:
-    if description and "shooting credits" in description.lower():
-        try:
-            return int(description.split()[0])
-        except ValueError, IndexError:
-            return 1
-    return 1
-
-
-def _emit_payment_completed_events(payment: Payment, member: User) -> None:
-    try:
-        if payment.payment_type == PaymentType.CREDITS:
-            quantity = _credit_quantity_from_description(payment.description)
-            credit_purchased.send(user_id=member.id, payment_id=payment.id, quantity=quantity)
-        else:
-            payment_completed.send(user_id=member.id, payment_id=payment.id, payment_type=payment.payment_type)
-    except Exception:
-        pass
+def replay_completed_payment_side_effects(payment_id: int, *, send_mail: bool = True) -> ServiceResult[dict[str, Any]]:
+    """Re-run receipt email and ledger entries for a completed payment."""
+    return replay_payment_side_effects(payment_id, send_mail=send_mail)

@@ -7,3 +7,11 @@ class LoginRequired(Exception):
 
 class AuthorizationError(Exception):
     pass
+
+
+class CsrfError(Exception):
+    pass
+
+
+class AlreadyAuthenticated(Exception):
+    pass

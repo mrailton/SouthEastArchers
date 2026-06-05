@@ -3,7 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, Response
 
-from app.dependencies import CurrentUser, require_perms, verify_csrf
+from app.dependencies import CsrfFormData, CurrentUser, require_perms
 from app.routes.admin._helpers import flash_form_errors
 from app.schemas.admin_forms import (
     EXPENSE_CATEGORY_CHOICES,
@@ -15,7 +15,6 @@ from app.schemas.admin_forms import (
 from app.schemas.form_helpers import FormView, parse_form
 from app.services import finance
 from app.templating import flash, render
-from app.utils.formdata import request_form_data
 from app.utils.pdf import generate_statement_pdf
 
 router = APIRouter(tags=["admin.finance"])
@@ -39,7 +38,7 @@ def _transaction_form_view(transaction, *, values: dict | None = None, errors: d
 
 
 @router.get("/finance", name="admin.finance", dependencies=[require_perms("finance.read")])
-async def finance_index(request: Request, user: CurrentUser):
+def finance_index(request: Request, user: CurrentUser):
     page = int(request.query_params.get("page", 1))
     per_page = int(request.query_params.get("per_page", 20))
     if per_page not in (5, 10, 20, 50, 100):
@@ -54,15 +53,13 @@ async def finance_index(request: Request, user: CurrentUser):
 
 
 @router.get("/finance/expense/create", name="admin.create_expense", dependencies=[require_perms("finance.create")])
-async def create_expense_page(request: Request, user: CurrentUser):
+def create_expense_page(request: Request, user: CurrentUser):
     form = _expense_form_view()
     return render(request, "admin/create_expense.html", {"form": form}, user=user)
 
 
 @router.post("/finance/expense/create", name="admin.create_expense_post", dependencies=[require_perms("finance.create")])
-async def create_expense_store(request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def create_expense_store(request: Request, user: CurrentUser, form_data: CsrfFormData):
     parsed, errors, values = parse_form(ExpenseForm, form_data)
     form = _expense_form_view(values=values, errors=errors)
     if parsed:
@@ -84,15 +81,13 @@ async def create_expense_store(request: Request, user: CurrentUser):
 
 
 @router.get("/finance/income/create", name="admin.create_income", dependencies=[require_perms("finance.create")])
-async def create_income_page(request: Request, user: CurrentUser):
+def create_income_page(request: Request, user: CurrentUser):
     form = _income_form_view()
     return render(request, "admin/create_income.html", {"form": form}, user=user)
 
 
 @router.post("/finance/income/create", name="admin.create_income_post", dependencies=[require_perms("finance.create")])
-async def create_income_store(request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def create_income_store(request: Request, user: CurrentUser, form_data: CsrfFormData):
     parsed, errors, values = parse_form(IncomeForm, form_data)
     form = _income_form_view(values=values, errors=errors)
     if parsed:
@@ -114,7 +109,7 @@ async def create_income_store(request: Request, user: CurrentUser):
 
 
 @router.get("/finance/statement", name="admin.financial_statement", dependencies=[require_perms("finance.report")])
-async def financial_statement_page(request: Request, user: CurrentUser):
+def financial_statement_page(request: Request, user: CurrentUser):
     today = date.today()
     current_year = today.year
     start_date = date(current_year, 3, 1) if today.month >= 3 else date(current_year - 1, 3, 1)
@@ -123,9 +118,7 @@ async def financial_statement_page(request: Request, user: CurrentUser):
 
 
 @router.post("/finance/statement", name="admin.financial_statement_post", dependencies=[require_perms("finance.report")])
-async def financial_statement_store(request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def financial_statement_store(request: Request, user: CurrentUser, form_data: CsrfFormData):
     parsed, errors, values = parse_form(FinancialStatementForm, form_data)
     form = _statement_form_view(values=values, errors=errors)
     if parsed:
@@ -139,7 +132,7 @@ async def financial_statement_store(request: Request, user: CurrentUser):
 
 
 @router.get("/finance/statement/pdf", name="admin.financial_statement_pdf", dependencies=[require_perms("finance.report")])
-async def financial_statement_pdf(request: Request, user: CurrentUser):
+def financial_statement_pdf(request: Request, user: CurrentUser):
     start_date_str = request.query_params.get("start_date")
     end_date_str = request.query_params.get("end_date")
     if not start_date_str or not end_date_str:
@@ -161,7 +154,7 @@ async def financial_statement_pdf(request: Request, user: CurrentUser):
 
 
 @router.get("/finance/{transaction_id}/edit", name="admin.edit_transaction", dependencies=[require_perms("finance.update")])
-async def edit_transaction_page(transaction_id: int, request: Request, user: CurrentUser):
+def edit_transaction_page(transaction_id: int, request: Request, user: CurrentUser):
     transaction = finance.get_transaction_by_id(transaction_id)
     if not transaction:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -170,9 +163,7 @@ async def edit_transaction_page(transaction_id: int, request: Request, user: Cur
 
 
 @router.post("/finance/{transaction_id}/edit", name="admin.edit_transaction_post", dependencies=[require_perms("finance.update")])
-async def edit_transaction_store(transaction_id: int, request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def edit_transaction_store(transaction_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     transaction = finance.get_transaction_by_id(transaction_id)
     if not transaction:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -219,9 +210,7 @@ async def edit_transaction_store(transaction_id: int, request: Request, user: Cu
 
 
 @router.post("/finance/{transaction_id}/delete", name="admin.delete_transaction", dependencies=[require_perms("finance.delete")])
-async def delete_transaction(transaction_id: int, request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def delete_transaction(transaction_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     result = finance.delete_transaction(transaction_id)
     flash(
         request,

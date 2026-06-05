@@ -17,7 +17,14 @@ class UserRepository(BaseRepository):
 
     @staticmethod
     def get_by_id_with_permissions(user_id: int) -> User | None:
-        stmt = select(User).options(joinedload(User.roles).joinedload(Role.permissions)).where(User.id == user_id)
+        stmt = (
+            select(User)
+            .options(
+                joinedload(User.membership),
+                joinedload(User.roles).joinedload(Role.permissions),
+            )
+            .where(User.id == user_id)
+        )
         return db.session.scalars(stmt).unique().first()
 
     @staticmethod

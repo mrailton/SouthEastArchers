@@ -1,11 +1,14 @@
 import logging
 from datetime import date
+from typing import Any
 
 from app.enums import PaymentType
 from app.events import membership_activated
 from app.models import Membership, User
 from app.repositories import BaseRepository, MembershipRepository, PaymentRepository
 from app.services import payments, settings
+from app.services.payment_fulfillment import fulfill_payment
+from app.services.payment_side_effects import emit_payment_side_effects
 from app.services.result import ServiceResult
 
 logger = logging.getLogger(__name__)
@@ -32,20 +35,35 @@ def create_membership(user: User) -> ServiceResult[None]:
         return ServiceResult.fail(f"Error creating membership: {exc}")
 
 
-def activate_membership(user: User) -> ServiceResult[None]:
+def activate_membership(user: User) -> ServiceResult[dict[str, Any]]:
     if not user.membership:
         return ServiceResult.fail("No membership found.")
 
     if user.membership.status == "active":
         return ServiceResult.fail("Membership is already active.")
 
+    payment_event_emitted = False
     try:
-        with BaseRepository.transaction():
-            pending_payment = PaymentRepository.get_pending_cash_for_user(user.id, PaymentType.MEMBERSHIP)
-            if pending_payment:
-                pending_payment.mark_completed(processor="cash")
-            user.membership.activate()
-        return ServiceResult.ok(message="Membership activated successfully.")
+        pending_payment = PaymentRepository.get_pending_cash_for_user(user.id, PaymentType.MEMBERSHIP)
+        if pending_payment:
+            result = fulfill_payment(
+                pending_payment,
+                user,
+                processor="cash",
+                membership_mode="activate_or_renew",
+            )
+            if not result.success:
+                return ServiceResult.fail(f"Error activating membership: {result.message}")
+            if result.data and not result.data.already_completed:
+                emit_payment_side_effects(pending_payment, user)
+                payment_event_emitted = True
+        else:
+            with BaseRepository.transaction():
+                user.membership.activate()
+        return ServiceResult.ok(
+            message="Membership activated successfully.",
+            data={"payment_event_emitted": payment_event_emitted},
+        )
     except Exception as exc:
         return ServiceResult.fail(f"Error activating membership: {exc}")
 
@@ -54,11 +72,12 @@ def activate_membership_for_admin(user: User) -> ServiceResult[None]:
     """Activate membership and send a receipt email when a completed payment exists."""
     result = activate_membership(user)
     if not result.success:
-        return result
+        return ServiceResult.fail(result.message)
 
+    payment_event_emitted = bool(result.data and result.data.get("payment_event_emitted"))
     payment = payments.get_completed_membership_payment(user.id)
     message = f"Membership activated for {user.name}!"
-    if payment:
+    if payment and not payment_event_emitted:
         try:
             membership_activated.send(user_id=user.id, payment_id=payment.id)
             message = f"{message} Receipt email sent."

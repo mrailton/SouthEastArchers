@@ -121,7 +121,6 @@ def render(
 ):
     current_user = user if user is not None else AnonymousUser()
     flashes = _pop_flashes(request)
-    templates.env.globals["get_flashed_messages"] = lambda with_categories=False: flashes
 
     ctx: dict = {
         "request": request,
@@ -131,6 +130,7 @@ def render(
         "errors": {},
         "now": datetime.now(UTC),
         "endpoint_is": endpoint_is,
+        "get_flashed_messages": lambda with_categories=False: flashes,
         **_feature_flags(),
     }
     if "validation_errors" in request.session:

@@ -428,6 +428,42 @@ def test_create_shoot_with_cash_visitor(app, admin_user):
     assert "Visitor One" in income.description
 
 
+def test_create_shoot_rolls_back_finance_on_visitor_fee_failure(app, admin_user, mocker):
+    from app.models import FinancialTransaction, Shoot
+    from app.services import settings
+    from app.services.result import ServiceResult
+
+    settings.set("sumup_fee_percentage", "2.5")
+    call_count = 0
+
+    def add_transaction_side_effect(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return ServiceResult.ok(data=object())
+        return ServiceResult.fail("Fee recording failed")
+
+    mocker.patch("app.services.finance.add_transaction", side_effect=add_transaction_side_effect)
+
+    result = shoots.create_shoot(
+        shoot_date=date.today(),
+        location="MEADOW",
+        visitors=[
+            {
+                "name": "Rollback Guest",
+                "club": "Guest Club",
+                "affiliation": "IFAF",
+                "payment_method": "sumup",
+            }
+        ],
+        created_by_id=admin_user.id,
+    )
+
+    assert result.success is False
+    assert FinancialTransaction.query.count() == 0
+    assert Shoot.query.count() == 0
+
+
 def test_create_shoot_with_sumup_visitor_records_fee(app, admin_user):
     from app.services import settings
 

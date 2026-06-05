@@ -32,9 +32,32 @@ def take_deferred_handlers() -> _Queue:
     return handlers or []
 
 
-def run_handler_safe(handler: _Handler, *args: Any, **kwargs: Any) -> None:
+def run_handler_with_session(handler: _Handler, *args: Any, **kwargs: Any) -> None:
+    """Run a handler with its own database session (for post-response execution)."""
+    from app.db import db as database
+    from app.db import reset_current_session, set_current_session
+
+    session = database.create_session()
+    token = set_current_session(session)
     try:
         handler(*args, **kwargs)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        reset_current_session(token)
+
+
+def run_handler_safe(handler: _Handler, *args: Any, **kwargs: Any) -> None:
+    try:
+        from app.db.session import has_current_session
+
+        if has_current_session():
+            handler(*args, **kwargs)
+        else:
+            run_handler_with_session(handler, *args, **kwargs)
     except Exception:
         logger.exception("Deferred event handler %s failed", handler.__name__)
 

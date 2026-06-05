@@ -112,41 +112,15 @@ def _on_membership_activated(sender: Any, **kwargs: Any) -> None:
 
 
 def _record_payment_financial_transactions(payment_id: int, payment_type: str) -> None:
-    """Record financial transactions for completed payments.
-
-    For SumUp payments: creates income + processing fee expense.
-    For cash payments: creates income only.
-    """
-    from app.repositories import PaymentRepository
+    """Record financial transactions for completed payments."""
     from app.services import finance
 
     try:
-        payment = PaymentRepository.get_by_id(payment_id)
-        if not payment:
-            return
-
-        if payment.payment_processor == "sumup":
-            result = finance.record_sumup_payment_transactions(
-                payment_amount_cents=payment.amount_cents,
-                payment_type=payment_type,
-                description=payment.description or f"SumUp {payment_type} payment",
-                created_by_id=payment.user_id,
-                receipt_reference=payment.external_transaction_id,
-            )
-        elif payment.payment_processor == "cash":
-            result = finance.record_cash_payment_transaction(
-                payment_amount_cents=payment.amount_cents,
-                payment_type=payment_type,
-                description=payment.description or f"Cash {payment_type} payment",
-                created_by_id=payment.user_id,
-            )
-        else:
-            return
-
+        result = finance.record_payment_transactions_for_completed_payment(payment_id, payment_type)
         if not result.success:
-            logger.warning(f"Auto-record financial transactions skipped for payment {payment_id}: {result.message}")
+            logger.warning("Auto-record financial transactions skipped for payment %s: %s", payment_id, result.message)
     except Exception as e:
-        logger.error(f"Failed to record financial transactions for payment {payment_id}: {e}")
+        logger.error("Failed to record financial transactions for payment %s: %s", payment_id, e)
 
 
 def _make_deferred_receiver(handler) -> Callable[..., None]:

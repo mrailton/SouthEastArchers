@@ -39,6 +39,7 @@ def test_initiate_membership_payment_success(app, test_user):
     assert result.data["amount"] == settings.get("annual_membership_cost") / 100.0
     payment = Payment.query.filter_by(user_id=test_user.id, payment_type="membership", status="pending").first()
     assert payment is not None
+    assert payment.sumup_checkout_id == "checkout_123"
 
 
 def test_initiate_membership_payment_checkout_fails(app, test_user):
@@ -467,12 +468,14 @@ def test_reject_cash_payment_cannot_reject_completed(app, test_user):
 
 
 def test_credit_quantity_from_description_edge_cases(app):
-    assert payments._credit_quantity_from_description("5 shooting credits") == 5
-    assert payments._credit_quantity_from_description("bad shooting credits") == 1
-    assert payments._credit_quantity_from_description(None) == 1
+    from app.services.payment_fulfillment import credit_quantity_from_description
+
+    assert credit_quantity_from_description("5 shooting credits") == 5
+    assert credit_quantity_from_description("bad shooting credits") == 1
+    assert credit_quantity_from_description(None) == 1
 
 
-@patch("app.services.payments._emit_payment_completed_events")
+@patch("app.services.payments.emit_payment_side_effects")
 def test_approve_cash_payment_renews_active_membership(mock_emit, app, test_user):
     payment = create_payment_for_user(
         db,
@@ -512,6 +515,34 @@ def test_approve_cash_payment_creates_membership(app, admin_user):
 def test_initiate_cash_membership_event_failure_still_succeeds(mock_send, app, test_user):
     result = payments.initiate_cash_membership_payment(test_user)
     assert result.success is True
+
+
+def test_initiate_cash_membership_payment_db_failure(app, test_user):
+    with patch("app.repositories.base.BaseRepository.transaction", side_effect=RuntimeError("db")):
+        result = payments.initiate_cash_membership_payment(test_user)
+    assert result.success is False
+    assert "Error creating payment" in result.message
+
+
+def test_initiate_cash_credit_purchase_db_failure(app, test_user):
+    with patch("app.repositories.base.BaseRepository.transaction", side_effect=RuntimeError("db")):
+        result = payments.initiate_cash_credit_purchase(test_user, 2)
+    assert result.success is False
+    assert "Error creating payment" in result.message
+
+
+def test_get_unfulfilled_online_payment_rows(app, test_user):
+    from tests.helpers import create_payment_for_user
+
+    create_payment_for_user(
+        db,
+        test_user,
+        payment_method="online",
+        status="pending",
+        sumup_checkout_id="chk_rows",
+    )
+    rows = payments.get_unfulfilled_online_payment_rows()
+    assert any(item["payment"].sumup_checkout_id == "chk_rows" for item in rows)
 
 
 def test_approve_cash_payment_user_not_found(app):

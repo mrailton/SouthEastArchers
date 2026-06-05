@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from dotenv import load_dotenv
 from pydantic import Field
@@ -28,6 +29,7 @@ class Settings(BaseSettings):
 
     session_max_age_seconds: int = 7 * 24 * 60 * 60
     session_secure_cookie: bool = True
+    session_same_site: Literal["lax", "strict", "none"] = "lax"
 
     mail_server: str = "localhost"
     mail_port: int = 587
@@ -44,6 +46,8 @@ class Settings(BaseSettings):
 
     recaptcha_public_key: str | None = Field(default=None, validation_alias="RECAPTCHA_PUBLIC_KEY")
     recaptcha_private_key: str | None = Field(default=None, validation_alias="RECAPTCHA_PRIVATE_KEY")
+
+    redis_url: str | None = Field(default=None, validation_alias="REDIS_URL")
 
     def model_post_init(self, __context: object) -> None:
         if self.is_development:
@@ -80,6 +84,8 @@ def get_settings() -> Settings:
             missing.append("MAIL_SERVER")
         if not settings.is_mysql:
             missing.append("DATABASE_URL")
+        if not settings.redis_url:
+            missing.append("REDIS_URL")
         if missing:
             raise RuntimeError(f"Required configuration missing for production: {', '.join(missing)}")
     return settings

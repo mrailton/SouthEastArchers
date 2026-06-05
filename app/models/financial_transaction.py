@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Model
@@ -39,6 +39,14 @@ INCOME_CATEGORIES = [
 
 class FinancialTransaction(Model):
     __tablename__ = "financial_transactions"
+    __table_args__ = (
+        UniqueConstraint(
+            "receipt_reference",
+            "category",
+            "type",
+            name="uq_financial_txn_receipt_category_type",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     type: Mapped[str] = mapped_column(Enum("income", "expense"), nullable=False, index=True)

@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
-from app.dependencies import CurrentUser, require_perms, verify_csrf
+from app.dependencies import CsrfFormData, CurrentUser, require_perms
 from app.routes.admin._helpers import flash_form_errors, flash_service_warnings
 from app.schemas.admin_forms import ShootForm
 from app.schemas.form_helpers import parse_form
 from app.services import settings, shoots
 from app.templating import flash, render
-from app.utils.formdata import parse_visitors_from_form, request_form_data
+from app.utils.formdata import parse_visitors_from_form
 
 router = APIRouter(tags=["admin.shoots"])
 
@@ -19,7 +19,7 @@ def _shoot_page_context():
 
 
 @router.get("/shoots", name="admin.shoots", dependencies=[require_perms("shoots.read")])
-async def shoots_index(request: Request, user: CurrentUser):
+def shoots_index(request: Request, user: CurrentUser):
     page = int(request.query_params.get("page", 1))
     per_page = int(request.query_params.get("per_page", 10))
     if per_page not in (5, 10, 20, 50, 100):
@@ -34,14 +34,12 @@ async def shoots_index(request: Request, user: CurrentUser):
 
 
 @router.get("/shoots/create", name="admin.create_shoot", dependencies=[require_perms("shoots.create")])
-async def create_shoot_page(request: Request, user: CurrentUser):
+def create_shoot_page(request: Request, user: CurrentUser):
     return render(request, "admin/create_shoot.html", _shoot_page_context(), user=user)
 
 
 @router.post("/shoots/create", name="admin.create_shoot_post", dependencies=[require_perms("shoots.create")])
-async def create_shoot_store(request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def create_shoot_store(request: Request, user: CurrentUser, form_data: CsrfFormData):
     parsed, errors, _values = parse_form(ShootForm, form_data)
     if parsed:
         visitors = parse_visitors_from_form(form_data)
@@ -68,7 +66,7 @@ async def create_shoot_store(request: Request, user: CurrentUser):
 
 
 @router.get("/shoots/{shoot_id}/edit", name="admin.edit_shoot", dependencies=[require_perms("shoots.update")])
-async def edit_shoot_page(shoot_id: int, request: Request, user: CurrentUser):
+def edit_shoot_page(shoot_id: int, request: Request, user: CurrentUser):
     shoot = shoots.get_shoot_by_id(shoot_id)
     if not shoot:
         return render(request, "errors/404.html", user=user, status_code=404)
@@ -78,9 +76,7 @@ async def edit_shoot_page(shoot_id: int, request: Request, user: CurrentUser):
 
 
 @router.post("/shoots/{shoot_id}/edit", name="admin.edit_shoot_post", dependencies=[require_perms("shoots.update")])
-async def edit_shoot_store(shoot_id: int, request: Request, user: CurrentUser):
-    form_data = await request_form_data(request)
-    verify_csrf(request, form_data.get("csrf_token"))
+def edit_shoot_store(shoot_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     shoot = shoots.get_shoot_by_id(shoot_id)
     if not shoot:
         return render(request, "errors/404.html", user=user, status_code=404)

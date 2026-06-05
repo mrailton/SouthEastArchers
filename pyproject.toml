@@ -24,6 +24,7 @@ dependencies = [
     "gunicorn==26.0.0",
     "sumup==0.0.13",
     "fpdf2>=2.8.6",
+    "redis>=5.0.0",
 ]
 
 [dependency-groups]
@@ -52,7 +53,30 @@ package = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=app --cov-report=term-missing --cov-fail-under=95"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "--disable-warnings",
+    "-p", "no:warnings",
+    "-ra",
+    "--cov=app",
+    "--cov-report=term-missing",
+    "--cov-fail-under=95",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::sqlalchemy.exc.SAWarning",
+    "ignore::ResourceWarning",
+]
+markers = [
+    "slow: marks tests as slow",
+    "unit: marks tests as unit tests (models, services, repositories, events, CLI)",
+    "feature: marks tests as feature tests (HTTP client against FastAPI app)",
+]
 
 [tool.mypy]
 python_version = "3.14"
@@ -79,7 +103,7 @@ omit = [
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
-fail_under = 90
+fail_under = 95
 
 [tool.ruff]
 line-length = 160
@@ -148,4 +172,11 @@ name = "Schemas must not import services, routes, or presentation"
 type = "forbidden"
 source_modules = ["app.schemas"]
 forbidden_modules = ["app.services", "app.routes", "app.templating"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Event handlers must not import repositories directly"
+type = "forbidden"
+source_modules = ["app.events.handlers"]
+forbidden_modules = ["app.repositories"]
 allow_indirect_imports = true

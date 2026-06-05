@@ -86,7 +86,7 @@ def create_payment_for_user(db, user, **kwargs):
     }
     all_fields = {
         **defaults,
-        **{k: v for k, v in kwargs.items() if k in ("id", "created_at", "external_transaction_id", "payment_processor")},
+        **{k: v for k, v in kwargs.items() if k in ("id", "created_at", "external_transaction_id", "payment_processor", "sumup_checkout_id")},
     }
     payment = Payment(**all_fields)
     db.session.add(payment)
@@ -100,9 +100,15 @@ def inject_fake_mailer(fake_mailer: FakeMailer) -> None:
     def _fake_send(subject: str, recipients: Sequence[str], text_body: str, html_body: str | None = None) -> None:
         fake_mailer.record(subject, recipients, text_body, html_body)
 
+    import sys
+
     import app.utils.mail as mail_mod
 
     mail_mod.send_email = _fake_send
+
+    services_mail = sys.modules.get("app.services.mail")
+    if services_mail is not None:
+        services_mail.send_email = _fake_send
 
 
 def assert_email_sent(fake_mailer, subject_contains=None, recipients=None, html_contains=None, body_contains=None):

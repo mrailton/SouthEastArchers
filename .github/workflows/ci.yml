@@ -78,9 +78,6 @@ jobs:
       - name: Run database migrations
         run: make db-upgrade
 
-      - name: Run migration smoke tests
-        run: uv run pytest tests/integration/ -v
-
       - name: Run tests with coverage
         run: make test-coverage
 

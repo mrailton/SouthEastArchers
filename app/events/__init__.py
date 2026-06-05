@@ -1,7 +1,8 @@
 """Domain events for the application.
 
-Signals are used to decouple business logic from side effects (e.g., sending
-emails) so that services emit events and handlers react without direct imports.
+Signals decouple business logic from side effects (e.g. sending emails).
+Services emit via typed helpers in ``app.events.payloads``; handlers subscribe
+in ``app.events.handlers``.
 """
 
 from blinker import signal

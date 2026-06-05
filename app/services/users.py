@@ -7,7 +7,7 @@ from itsdangerous import URLSafeTimedSerializer
 
 from app.core.config import get_settings
 from app.db import Pagination
-from app.events import password_reset_requested, user_activated, user_registered
+from app.events.payloads import emit_password_reset_requested, emit_user_activated, emit_user_registered
 from app.models.credit import Credit
 from app.models.membership import Membership
 from app.models.user import User
@@ -63,7 +63,7 @@ def create_user(
         with BaseRepository.transaction():
             UserRepository.add(user)
         try:
-            user_registered.send(user_id=user.id)
+            emit_user_registered(user.id)
         except Exception:
             logger.exception("Failed to dispatch user_registered event")
         return ServiceResult.ok(data=user)
@@ -78,7 +78,7 @@ def request_password_reset(email: str) -> ServiceResult[None]:
     if user:
         token = generate_reset_token(user.email)
         try:
-            password_reset_requested.send(user_id=user.id, token=token)
+            emit_password_reset_requested(user.id, token)
         except Exception:
             logger.exception("Failed to send password reset email to %s", user.email)
             return ServiceResult.fail("An error occurred sending the email. Please try again later.")
@@ -268,7 +268,7 @@ def activate_account(user_id: int) -> ServiceResult[User]:
     member.is_active = True
     UserRepository.save()
     try:
-        user_activated.send(user_id=user_id)
+        emit_user_activated(user_id)
     except Exception:
         pass
     return ServiceResult.ok(data=member, message=f"Account activated for {member.name}! Welcome email sent.")

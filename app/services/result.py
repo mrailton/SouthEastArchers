@@ -6,6 +6,7 @@ class ErrorCode:
     INVALID_STATE = "invalid_state"
     CONFLICT = "conflict"
     VALIDATION = "validation"
+    FORBIDDEN = "forbidden"
 
 
 @dataclass(frozen=True, slots=True)

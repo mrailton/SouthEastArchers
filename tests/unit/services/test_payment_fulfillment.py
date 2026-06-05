@@ -31,7 +31,7 @@ def test_fulfill_payment_is_idempotent(app, test_user):
 
 def test_handle_signup_payment_twice_does_not_duplicate_events(app, test_user, mocker):
     payment = create_payment_for_user(db, test_user, payment_type="membership", status="pending")
-    send = mocker.patch("app.services.payment_side_effects.payment_completed.send")
+    send = mocker.patch("app.services.payment_side_effects.emit_payment_completed")
 
     payment_processing.handle_signup_payment(test_user.id, payment.id, "txn_dup")
     payment_processing.handle_signup_payment(test_user.id, payment.id, "txn_dup")

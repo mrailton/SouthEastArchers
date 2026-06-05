@@ -98,7 +98,7 @@ omit = [
     "*/conftest.py",
     "*/.venv/*",
     "*/venv/*",
-    "app/cli/*",
+    "app/cli/__main__.py",
 ]
 
 [tool.coverage.report]

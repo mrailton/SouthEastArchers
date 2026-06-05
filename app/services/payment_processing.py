@@ -24,6 +24,16 @@ class CheckoutFulfillment:
     session_keys_to_clear: tuple[str, ...]
 
 
+def _verify_payment_ownership(payment: Payment, user_id: int) -> ServiceResult[None] | None:
+    """Return a failure result when payment does not belong to user_id."""
+    if payment.user_id != user_id:
+        return ServiceResult.fail(
+            "Payment does not belong to this user.",
+            error_code=ErrorCode.FORBIDDEN,
+        )
+    return None
+
+
 _CHECKOUT_FLOWS: dict[str, tuple[str, str, str, tuple[str, ...]]] = {
     "signup": (
         "signup_user_id",
@@ -59,6 +69,9 @@ def handle_signup_payment(user_id: int, payment_id: int, transaction_id: str) ->
     if not payment or not user:
         return ServiceResult.fail("Payment or user not found.", error_code=ErrorCode.NOT_FOUND)
 
+    if ownership_error := _verify_payment_ownership(payment, user_id):
+        return ownership_error
+
     result = fulfill_payment(
         payment,
         user,
@@ -81,6 +94,9 @@ def handle_membership_renewal(user_id: int, payment_id: int, transaction_id: str
     if not payment or not user:
         return ServiceResult.fail("Payment or user not found.", error_code=ErrorCode.NOT_FOUND)
 
+    if ownership_error := _verify_payment_ownership(payment, user_id):
+        return ownership_error
+
     result = fulfill_payment(
         payment,
         user,
@@ -102,6 +118,9 @@ def handle_credit_purchase(user_id: int, payment_id: int, quantity: int, transac
 
     if not payment or not user:
         return ServiceResult.fail("Payment or user not found.", error_code=ErrorCode.NOT_FOUND)
+
+    if ownership_error := _verify_payment_ownership(payment, user_id):
+        return ownership_error
 
     result = fulfill_payment(
         payment,

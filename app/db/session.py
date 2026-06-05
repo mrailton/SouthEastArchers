@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from contextvars import ContextVar, Token
 from typing import Any
 
@@ -18,10 +19,17 @@ class Base(DeclarativeBase):
 
 class _QueryProperty:
     def __get__(self, obj: object | None, cls: type[Model]) -> Query:
+        warnings.warn(
+            "Model.query is deprecated; use repositories or session.scalars(select(...)) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return get_current_session().query(cls)
 
 
 class Model(Base):
+    """Base ORM model. Prefer repository methods over the legacy ``query`` attribute."""
+
     __abstract__ = True
     query = _QueryProperty()
 

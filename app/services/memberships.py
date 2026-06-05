@@ -3,7 +3,7 @@ from datetime import date
 from typing import Any
 
 from app.enums import PaymentType
-from app.events import membership_activated
+from app.events.payloads import emit_membership_activated
 from app.models import Membership, User
 from app.repositories import BaseRepository, MembershipRepository, PaymentRepository
 from app.services import payments, settings
@@ -79,7 +79,7 @@ def activate_membership_for_admin(user: User) -> ServiceResult[None]:
     message = f"Membership activated for {user.name}!"
     if payment and not payment_event_emitted:
         try:
-            membership_activated.send(user_id=user.id, payment_id=payment.id)
+            emit_membership_activated(user.id, payment.id)
             message = f"{message} Receipt email sent."
         except Exception:
             logger.exception("Failed to send membership activation receipt for user %s", user.id)

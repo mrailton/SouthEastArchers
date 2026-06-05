@@ -15,6 +15,14 @@ from app.events import (
     user_registered,
 )
 from app.events.background import defer_handler
+from app.events.payloads import (
+    CashPaymentSubmittedPayload,
+    CreditPurchasedPayload,
+    MembershipActivatedPayload,
+    PasswordResetPayload,
+    PaymentCompletedPayload,
+    UserIdPayload,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,88 +35,99 @@ def _on_user_registered(sender: Any, **kwargs: Any) -> None:
     """Notify admins that a new member has signed up."""
     from app.services import mail
 
-    user_id: int = kwargs["user_id"]
+    payload = UserIdPayload.from_kwargs(kwargs)
     try:
-        mail.send_new_member_notification(user_id)
-    except Exception as e:
-        logger.error(f"Event handler _on_user_registered failed: {e}")
+        mail.send_new_member_notification(payload.user_id)
+    except Exception:
+        logger.exception("Event handler _on_user_registered failed for user_id=%s", payload.user_id)
 
 
 def _on_user_activated(sender: Any, **kwargs: Any) -> None:
     """Send a welcome email when a user account is activated."""
     from app.services import mail
 
-    user_id: int = kwargs["user_id"]
+    payload = UserIdPayload.from_kwargs(kwargs)
     try:
-        mail.send_welcome_email(user_id)
-    except Exception as e:
-        logger.error(f"Event handler _on_user_activated failed: {e}")
+        mail.send_welcome_email(payload.user_id)
+    except Exception:
+        logger.exception("Event handler _on_user_activated failed for user_id=%s", payload.user_id)
 
 
 def _on_payment_completed(sender: Any, **kwargs: Any) -> None:
     """Send a payment receipt when a payment is completed."""
     from app.services import mail
 
-    user_id: int = kwargs["user_id"]
-    payment_id: int = kwargs["payment_id"]
+    payload = PaymentCompletedPayload.from_kwargs(kwargs)
     try:
-        mail.send_payment_receipt(user_id, payment_id)
-    except Exception as e:
-        logger.error(f"Event handler _on_payment_completed failed: {e}")
+        mail.send_payment_receipt(payload.user_id, payload.payment_id)
+    except Exception:
+        logger.exception(
+            "Event handler _on_payment_completed mail failed for user_id=%s payment_id=%s",
+            payload.user_id,
+            payload.payment_id,
+        )
 
-    _record_payment_financial_transactions(payment_id, kwargs.get("payment_type", PaymentType.MEMBERSHIP))
+    _record_payment_financial_transactions(payload.payment_id, payload.payment_type)
 
 
 def _on_credit_purchased(sender: Any, **kwargs: Any) -> None:
     """Send a credit purchase receipt."""
     from app.services import mail
 
-    user_id: int = kwargs["user_id"]
-    payment_id: int = kwargs["payment_id"]
-    quantity: int = kwargs["quantity"]
+    payload = CreditPurchasedPayload.from_kwargs(kwargs)
     try:
-        mail.send_credit_purchase_receipt(user_id, payment_id, quantity)
-    except Exception as e:
-        logger.error(f"Event handler _on_credit_purchased failed: {e}")
+        mail.send_credit_purchase_receipt(payload.user_id, payload.payment_id, payload.quantity)
+    except Exception:
+        logger.exception(
+            "Event handler _on_credit_purchased mail failed for user_id=%s payment_id=%s quantity=%s",
+            payload.user_id,
+            payload.payment_id,
+            payload.quantity,
+        )
 
-    _record_payment_financial_transactions(payment_id, PaymentType.CREDITS)
+    _record_payment_financial_transactions(payload.payment_id, PaymentType.CREDITS)
 
 
 def _on_cash_payment_submitted(sender: Any, **kwargs: Any) -> None:
     """Send a cash payment pending confirmation email."""
     from app.services import mail
 
-    user_id: int = kwargs["user_id"]
-    payment_id: int = kwargs["payment_id"]
+    payload = CashPaymentSubmittedPayload.from_kwargs(kwargs)
     try:
-        mail.send_cash_payment_pending_email(user_id, payment_id)
-    except Exception as e:
-        logger.error(f"Event handler _on_cash_payment_submitted failed: {e}")
+        mail.send_cash_payment_pending_email(payload.user_id, payload.payment_id)
+    except Exception:
+        logger.exception(
+            "Event handler _on_cash_payment_submitted failed for user_id=%s payment_id=%s",
+            payload.user_id,
+            payload.payment_id,
+        )
 
 
 def _on_password_reset_requested(sender: Any, **kwargs: Any) -> None:
     """Send a password reset email."""
     from app.services import mail
 
-    user_id: int = kwargs["user_id"]
-    token: str = kwargs["token"]
+    payload = PasswordResetPayload.from_kwargs(kwargs)
     try:
-        mail.send_password_reset(user_id, token)
-    except Exception as e:
-        logger.error(f"Event handler _on_password_reset_requested failed: {e}")
+        mail.send_password_reset(payload.user_id, payload.token)
+    except Exception:
+        logger.exception("Event handler _on_password_reset_requested failed for user_id=%s", payload.user_id)
 
 
 def _on_membership_activated(sender: Any, **kwargs: Any) -> None:
     """Send a payment receipt when a membership is activated (if a payment exists)."""
     from app.services import mail
 
-    user_id: int = kwargs["user_id"]
-    payment_id: int | None = kwargs.get("payment_id")
-    if payment_id is not None:
+    payload = MembershipActivatedPayload.from_kwargs(kwargs)
+    if payload.payment_id is not None:
         try:
-            mail.send_payment_receipt(user_id, payment_id)
-        except Exception as e:
-            logger.error(f"Event handler _on_membership_activated failed: {e}")
+            mail.send_payment_receipt(payload.user_id, payload.payment_id)
+        except Exception:
+            logger.exception(
+                "Event handler _on_membership_activated failed for user_id=%s payment_id=%s",
+                payload.user_id,
+                payload.payment_id,
+            )
 
 
 def _record_payment_financial_transactions(payment_id: int, payment_type: str) -> None:
@@ -118,9 +137,13 @@ def _record_payment_financial_transactions(payment_id: int, payment_type: str) -
     try:
         result = finance.record_payment_transactions_for_completed_payment(payment_id, payment_type)
         if not result.success:
-            logger.warning("Auto-record financial transactions skipped for payment %s: %s", payment_id, result.message)
-    except Exception as e:
-        logger.error("Failed to record financial transactions for payment %s: %s", payment_id, e)
+            logger.warning(
+                "Auto-record financial transactions skipped for payment_id=%s: %s",
+                payment_id,
+                result.message,
+            )
+    except Exception:
+        logger.exception("Failed to record financial transactions for payment_id=%s", payment_id)
 
 
 def _make_deferred_receiver(handler) -> Callable[..., None]:

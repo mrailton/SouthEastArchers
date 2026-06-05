@@ -4,7 +4,7 @@ import logging
 from typing import Any, Protocol
 
 from app.enums import PaymentMethod, PaymentType
-from app.events import cash_payment_submitted
+from app.events.payloads import emit_cash_payment_submitted
 from app.models.payment import Payment
 from app.models.user import User
 from app.repositories import BaseRepository, PaymentRepository, UserRepository
@@ -138,7 +138,7 @@ def initiate_cash_membership_payment(user: User) -> ServiceResult[dict]:
         return ServiceResult.fail("Error creating payment. Please try again.")
 
     try:
-        cash_payment_submitted.send(user_id=user.id, payment_id=payment.id)
+        emit_cash_payment_submitted(user.id, payment.id)
     except Exception:
         logger.exception("Failed to emit cash_payment_submitted event")
 
@@ -171,7 +171,7 @@ def initiate_cash_credit_purchase(user: User, quantity: int) -> ServiceResult[di
         return ServiceResult.fail("Error creating payment. Please try again.")
 
     try:
-        cash_payment_submitted.send(user_id=user.id, payment_id=payment.id)
+        emit_cash_payment_submitted(user.id, payment.id)
     except Exception:
         logger.exception("Failed to emit cash_payment_submitted event")
 

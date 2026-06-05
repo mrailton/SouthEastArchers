@@ -7,6 +7,11 @@ from app.db import init_db, reset_current_session, set_current_session
 
 
 async def get_db() -> AsyncGenerator[Session]:
+    """Open a request-scoped session.
+
+    Does not auto-commit on success: services must call ``BaseRepository.save()``
+    or ``with BaseRepository.transaction()`` so writes are persisted explicitly.
+    """
     init_db()
     session = database.create_session()
     token = set_current_session(session)

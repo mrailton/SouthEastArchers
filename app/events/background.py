@@ -50,6 +50,12 @@ def run_handler_with_session(handler: _Handler, *args: Any, **kwargs: Any) -> No
         reset_current_session(token)
 
 
+def _log_handler_context(handler: _Handler, kwargs: dict[str, Any]) -> dict[str, Any]:
+    context = {key: value for key, value in kwargs.items() if key != "token"}
+    context["handler"] = handler.__name__
+    return context
+
+
 def run_handler_safe(handler: _Handler, *args: Any, **kwargs: Any) -> None:
     try:
         from app.db.session import has_current_session
@@ -59,7 +65,10 @@ def run_handler_safe(handler: _Handler, *args: Any, **kwargs: Any) -> None:
         else:
             run_handler_with_session(handler, *args, **kwargs)
     except Exception:
-        logger.exception("Deferred event handler %s failed", handler.__name__)
+        logger.exception(
+            "Deferred event handler failed: %s",
+            _log_handler_context(handler, kwargs),
+        )
 
 
 def flush_deferred_handlers() -> None:

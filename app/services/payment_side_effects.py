@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from app.enums import PaymentType
-from app.events import credit_purchased, payment_completed
+from app.events.payloads import emit_credit_purchased, emit_payment_completed
 from app.models import Payment, User
 from app.repositories import PaymentRepository, UserRepository
 from app.services.payment_fulfillment import credit_quantity_from_description
@@ -28,9 +28,9 @@ def emit_payment_side_effects(
     try:
         if payment.payment_type == PaymentType.CREDITS:
             resolved_quantity = quantity or credit_quantity_from_description(payment.description)
-            credit_purchased.send(user_id=member.id, payment_id=payment.id, quantity=resolved_quantity)
+            emit_credit_purchased(member.id, payment.id, resolved_quantity)
         else:
-            payment_completed.send(user_id=member.id, payment_id=payment.id, payment_type=payment.payment_type)
+            emit_payment_completed(member.id, payment.id, payment.payment_type)
     except Exception:
         logger.exception("Failed to emit payment side effects for payment %s", payment.id)
 

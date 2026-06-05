@@ -126,3 +126,39 @@ def test_credit_purchase_does_not_emit_when_payment_not_found(app, fake_mailer):
         payment_processing.handle_credit_purchase(user_id=1, payment_id=99999, quantity=5, transaction_id="txn_nope")
 
     assert len(received) == 0
+
+
+def test_signup_does_not_emit_when_payment_belongs_to_another_user(app, test_user, admin_user, fake_mailer):
+    """payment_completed should not fire when payment.user_id does not match user_id."""
+    from app.services.result import ErrorCode
+
+    payment = create_payment_for_user(db, admin_user, status="pending")
+
+    received: list[dict] = []
+
+    with payment_completed.connected_to(lambda sender, **kw: received.append(kw)):
+        result = payment_processing.handle_signup_payment(test_user.id, payment.id, "txn_wrong_owner")
+
+    assert result.success is False
+    assert result.error_code == ErrorCode.FORBIDDEN
+    assert len(received) == 0
+
+
+def test_membership_renewal_rejects_payment_for_another_user(app, test_user, admin_user, fake_mailer):
+    from app.services.result import ErrorCode
+
+    payment = create_payment_for_user(db, admin_user, status="pending")
+    result = payment_processing.handle_membership_renewal(test_user.id, payment.id, "txn_wrong_owner")
+
+    assert result.success is False
+    assert result.error_code == ErrorCode.FORBIDDEN
+
+
+def test_credit_purchase_rejects_payment_for_another_user(app, test_user, admin_user, fake_mailer):
+    from app.services.result import ErrorCode
+
+    payment = create_payment_for_user(db, admin_user, payment_type="credits", status="pending")
+    result = payment_processing.handle_credit_purchase(test_user.id, payment.id, 3, "txn_wrong_owner")
+
+    assert result.success is False
+    assert result.error_code == ErrorCode.FORBIDDEN

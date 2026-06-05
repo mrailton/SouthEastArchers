@@ -511,7 +511,7 @@ def test_approve_cash_payment_creates_membership(app, admin_user):
     assert user.membership.status == "active"
 
 
-@patch("app.services.payments.cash_payment_submitted.send", side_effect=RuntimeError("event"))
+@patch("app.services.payments.emit_cash_payment_submitted", side_effect=RuntimeError("event"))
 def test_initiate_cash_membership_event_failure_still_succeeds(mock_send, app, test_user):
     result = payments.initiate_cash_membership_payment(test_user)
     assert result.success is True

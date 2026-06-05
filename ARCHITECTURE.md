@@ -37,6 +37,20 @@ SQLAlchemy uses a **sync** session stored in a `ContextVar` (`app/db/session.py`
 
 Repositories call `db.session` implicitly. When adding code outside HTTP requests, ensure a session is active or use `BaseRepository.transaction()`.
 
+### Commit convention
+
+`get_db` opens a session per request but **does not auto-commit** on success. Uncommitted work is discarded when the session closes.
+
+| Pattern | When to use |
+|---------|-------------|
+| `with BaseRepository.transaction():` | Multi-step writes that must commit or roll back together |
+| `SomeRepository.save()` | Single logical unit after `add()` / in-place mutations |
+| `SomeRepository.flush()` | Need generated IDs before an external API call, then `save()` |
+
+New code should use one of these explicitly. Do not rely on the request ending to persist changes.
+
+`Model.query` is deprecated (Flask-style legacy). Use repositories or `session.scalars(select(...))` in `app/` code.
+
 ## ServiceResult
 
 Services return `ServiceResult[T]` (`app/services/result.py`):
@@ -81,7 +95,9 @@ sequenceDiagram
 
 ### Admin reconciliation (SumUp)
 
-If a member paid via SumUp but checkout completion failed (lost session), pending online payments with a stored `sumup_checkout_id` appear on **Admin → Reconcile Online Payments**. Admin verifies status with SumUp and fulfills manually.
+There is no SumUp webhook. Completion depends on the member POSTing `/payment/checkout/{id}/complete` after SumUp reports PAID. If the browser session is lost, pending online payments with a stored `sumup_checkout_id` appear on **Admin → Reconcile Online Payments**, where an admin verifies status with SumUp and fulfills manually.
+
+Payment fulfillment handlers verify `payment.user_id` matches the acting user before applying effects.
 
 ### Handler replay (recovery)
 
@@ -101,11 +117,25 @@ Ledger recording is idempotent on replay.
 
 ## Events
 
-Signals live in `app/events/__init__.py`. Handlers in `app/events/handlers.py` call `mail` and `finance` services only.
+Signals live in `app/events/__init__.py`. **Emit through typed helpers** in `app/events/payloads.py` (do not call `.send()` with raw kwargs from services). Handlers in `app/events/handlers.py` parse payloads and call `mail` and `finance` services only.
 
 **Emit events only after a successful commit** (see `users.create_user` and cash payment initiation).
 
 In production, handlers are deferred to a background thread after the response. In tests (`APP_ENV=testing`), they run synchronously in middleware.
+
+### Receipt and ledger paths
+
+| Path | Mail | Ledger | When |
+|------|------|--------|------|
+| `emit_payment_side_effects` → `payment_completed` / `credit_purchased` | via handler | via handler | Normal checkout, cash approval, admin reconcile |
+| `membership_activated` event | via handler | no | Admin activates membership when a completed payment exists but `payment_completed` was not emitted |
+| `replay_payment_side_effects` | direct `mail` service | direct `finance` service | Recovery after handler failure (idempotent ledger) |
+
+Use `emit_payment_side_effects` for all new fulfillment flows. Use replay only for operations recovery.
+
+### Handler failures
+
+Deferred handlers log failures with `user_id` / `payment_id` context; they do not retry automatically. For payments, use **Handler replay** above. For other events, check application logs for `Deferred event handler failed`.
 
 ## Adding a feature (checklist)
 

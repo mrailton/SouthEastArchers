@@ -14,7 +14,7 @@ from app.core.config import get_settings
 from app.db import init_db
 from app.exceptions import AlreadyAuthenticated, AuthorizationError, CsrfError, LoginRequired
 from app.routes import api_router
-from app.templating import register_route_names, render, setup_template_globals
+from app.templating import AnonymousUser, register_route_names, render, setup_template_globals
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -77,6 +77,16 @@ def _session_user(request: Request):
     return users.get_session_user_by_id(int(user_id))
 
 
+def _session_user_for_error_page(request: Request):
+    """Load the current user for error templates; never raise on DB failure."""
+    try:
+        user = _session_user(request)
+    except Exception:
+        logger.warning("Could not load session user for error page", exc_info=True)
+        return AnonymousUser()
+    return user if user is not None else AnonymousUser()
+
+
 @app.exception_handler(LoginRequired)
 async def login_required_handler(request: Request, _exc: LoginRequired):
     next_url = request.url.path
@@ -92,26 +102,26 @@ async def already_authenticated_handler(request: Request, _exc: AlreadyAuthentic
 
 @app.exception_handler(AuthorizationError)
 async def authorization_error_handler(request: Request, _exc: AuthorizationError):
-    user = _session_user(request)
+    user = _session_user_for_error_page(request)
     return render(request, "errors/403.html", status_code=403, user=user)
 
 
 @app.exception_handler(CsrfError)
 async def csrf_error_handler(request: Request, _exc: CsrfError):
-    user = _session_user(request)
+    user = _session_user_for_error_page(request)
     return render(request, "errors/csrf.html", status_code=403, user=user)
 
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, _exc: StarletteHTTPException):
-    user = _session_user(request)
+    user = _session_user_for_error_page(request)
     return render(request, "errors/404.html", status_code=404, user=user)
 
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
     logger.exception("Unhandled error processing %s", request.url.path)
-    user = _session_user(request)
+    user = _session_user_for_error_page(request)
     return render(request, "errors/500.html", status_code=500, user=user)
 
 

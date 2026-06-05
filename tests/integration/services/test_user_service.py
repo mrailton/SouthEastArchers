@@ -403,7 +403,7 @@ def test_update_profile_database_error(app, test_user):
     """Test update profile when database commit fails"""
     from unittest.mock import patch
 
-    with patch("app.db.session.commit", side_effect=Exception("Database error")):
+    with patch("app.repositories.base.db.session.commit", side_effect=Exception("Database error")):
         result = UserService.update_profile(test_user, name="New Name")
 
         assert result.success is False
@@ -417,7 +417,7 @@ def test_change_password_database_error(app, test_user):
     """Test change password when database commit fails"""
     from unittest.mock import patch
 
-    with patch("app.db.session.commit", side_effect=Exception("Database error")):
+    with patch("app.repositories.base.db.session.commit", side_effect=Exception("Database error")):
         result = UserService.change_password(test_user, "password123", "newpassword123")
 
         assert result.success is False
@@ -431,7 +431,7 @@ def test_create_member_database_error(app):
     """Test create member when database operation fails"""
     from unittest.mock import patch
 
-    with patch("app.db.session.commit", side_effect=Exception("Database error")):
+    with patch("app.repositories.base.db.session.commit", side_effect=Exception("Database error")):
         result = UserService.create_member(name="New Member", email="new@example.com")
 
         assert result.data is None
@@ -446,7 +446,7 @@ def test_update_member_database_error(app, test_user):
     """Test update member when database commit fails"""
     from unittest.mock import patch
 
-    with patch("app.db.session.commit", side_effect=Exception("Database error")):
+    with patch("app.repositories.base.db.session.commit", side_effect=Exception("Database error")):
         result = UserService.update_member(
             user=test_user,
             name="Updated Name",
@@ -464,7 +464,7 @@ def test_create_user_database_error(app):
     """Test create user when database operation fails"""
     from unittest.mock import patch
 
-    with patch("app.db.session.commit", side_effect=Exception("Database error")):
+    with patch("app.repositories.base.db.session.commit", side_effect=Exception("Database error")):
         result = UserService.create_user(
             name="New User",
             email="newuser@example.com",

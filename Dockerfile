@@ -61,5 +61,5 @@ EXPOSE 5000
 # Set entrypoint to run migrations
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
-# Run Flask app
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "web:app"]
+# Run FastAPI app (app.cli used for migrations/RBAC seed in entrypoint)
+CMD ["gunicorn", "asgi:app", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120"]

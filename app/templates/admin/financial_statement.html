@@ -8,7 +8,7 @@
 
     <!-- Date Range Filter -->
     <form method="POST" class="bg-white p-6 rounded shadow mb-8">
-        {{ form.hidden_tag() }}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="flex flex-wrap items-end gap-4">
             <div>
                 <label for="start_date" class="block text-gray-700 font-bold mb-2">Start Date</label>

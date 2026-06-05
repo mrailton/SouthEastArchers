@@ -24,7 +24,7 @@ class Schedule:
         def run_command():
             import os
 
-            os.system(f"flask {command}")
+            os.system(f"uv run python -m app.cli {command}")
 
         event = Event(run_command, description or f"Command: {command}")
         self._events.append(event)

@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from flask_sqlalchemy.pagination import Pagination
-
-from app import db
+from app.db import Pagination, db, paginate_query
 from app.models import Shoot
 from app.repositories.base import BaseRepository
 from app.utils.datetime_utils import utc_now
@@ -29,7 +27,7 @@ class ShootRepository(BaseRepository):
 
     @staticmethod
     def get_all_paginated(page: int = 1, per_page: int = 10) -> Pagination:
-        return Shoot.query.order_by(Shoot.date.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        return paginate_query(Shoot.query.order_by(Shoot.date.desc()), page=page, per_page=per_page)
 
     @staticmethod
     def add(shoot: Shoot) -> None:

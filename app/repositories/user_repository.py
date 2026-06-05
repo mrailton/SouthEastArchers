@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from flask_sqlalchemy.pagination import Pagination
-
-from app import db
+from app.db import Pagination, db, paginate_query
 from app.models import Permission, Role, User
 from app.repositories.base import BaseRepository
 
@@ -36,7 +34,7 @@ class UserRepository(BaseRepository):
             query = query.filter(User.membership.has())
         elif membership_filter == "without":
             query = query.filter(~User.membership.has())
-        return query.order_by(User.name).paginate(page=page, per_page=per_page, error_out=False)
+        return paginate_query(query.order_by(User.name), page=page, per_page=per_page)
 
     @staticmethod
     def get_recent(limit: int = 5) -> list[User]:

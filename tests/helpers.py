@@ -1,13 +1,10 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from types import SimpleNamespace
 from typing import Any
 
 
 class FakeQueue:
-    """Lightweight fake queue that records enqueued jobs.
-
-    It mirrors a minimal interface used in the app: enqueue(callable, *args, **kwargs)
-    and stores calls in .enqueued as tuples of (func, args, kwargs).
-    """
+    """Lightweight fake queue that records enqueued jobs."""
 
     def __init__(self) -> None:
         self.enqueued: list[tuple[Callable[..., Any], tuple, dict]] = []
@@ -16,7 +13,6 @@ class FakeQueue:
         self.enqueued.append((func, args, kwargs))
 
 
-# Small helper to assert an enqueued call contains ids
 def last_enqueue_ids(fake_queue: FakeQueue) -> tuple:
     if not fake_queue.enqueued:
         return ()
@@ -24,21 +20,24 @@ def last_enqueue_ids(fake_queue: FakeQueue) -> tuple:
     return args
 
 
-class FakeMailer:
-    """Simple fake mailer that records sent messages instead of performing network IO.
+class SentEmail:
+    def __init__(self, subject: str, recipients: Sequence[str], body: str, html: str | None = None) -> None:
+        self.subject = subject
+        self.recipients = list(recipients)
+        self.body = body
+        self.html = html
 
-    Designed to replace `app.mail` in tests by assignment: `app.mail = fake_mailer`.
-    It collects Message-like objects passed to `send` in `sent_messages`.
-    """
+
+class FakeMailer:
+    """Records emails sent via send_email instead of performing network I/O."""
 
     def __init__(self) -> None:
-        self.sent_messages: list[Any] = []
+        self.sent_messages: list[SentEmail] = []
 
-    def send(self, message: Any) -> None:
-        # Record the message object for assertions in tests
-        self.sent_messages.append(message)
+    def record(self, subject: str, recipients: Sequence[str], text_body: str, html_body: str | None = None) -> None:
+        self.sent_messages.append(SentEmail(subject, recipients, text_body, html_body))
 
-    def last_message(self) -> Any:
+    def last_message(self) -> SentEmail | None:
         return self.sent_messages[-1] if self.sent_messages else None
 
 
@@ -46,11 +45,7 @@ _UNSET = object()
 
 
 class FakePaymentProcessor:
-    """Fake payment processor that returns canned responses.
-
-    Drop-in replacement for ``SumUpService`` to avoid real API calls in tests.
-    Pass via ``PaymentService(processor=FakePaymentProcessor())``.
-    """
+    """Drop-in replacement for SumUpService to avoid real API calls in tests."""
 
     def __init__(
         self,
@@ -76,13 +71,7 @@ class FakePaymentProcessor:
         return self.verify_result
 
 
-# Higher-level helpers to reduce duplication in tests
 def create_payment_for_user(db, user, **kwargs):
-    """Create and persist a Payment for `user` with sensible defaults.
-
-    Accepts override kwargs for fields such as id, amount, amount_cents, payment_method, status, etc.
-    Returns the created Payment instance.
-    """
     from app.enums import PaymentMethod, PaymentType
     from app.models import Payment
 
@@ -96,33 +85,32 @@ def create_payment_for_user(db, user, **kwargs):
         "status": kwargs.get("status", "completed"),
         "description": kwargs.get("description", None),
     }
-
-    # Allow passing id and created_at explicitly via kwargs
     all_fields = {**defaults, **{k: v for k, v in kwargs.items() if k in ("id", "created_at", "external_transaction_id", "payment_processor")}}
-
     payment = Payment(**all_fields)
     db.session.add(payment)
     db.session.commit()
     return payment
 
 
-def inject_fake_mailer(fake_mailer):
-    """Inject `fake_mailer` into mail_service so email sending uses the fake mailer in tests."""
-    import app.services.mail_service as mail_service_mod
+def inject_fake_mailer(fake_mailer: FakeMailer) -> None:
+    """Patch send_email so tests capture messages without SMTP."""
 
-    mail_service_mod.mail = fake_mailer
+    def _fake_send(subject: str, recipients: Sequence[str], text_body: str, html_body: str | None = None) -> None:
+        fake_mailer.record(subject, recipients, text_body, html_body)
+
+    import app.services.mail_service as mail_service_mod
+    import app.utils.mail as mail_mod
+
+    mail_mod.send_email = _fake_send
+    mail_service_mod.send_email = _fake_send
 
 
 def assert_email_sent(fake_mailer, subject_contains=None, recipients=None, html_contains=None, body_contains=None):
-    """Assert that at least one email was sent and optionally check its contents.
-
-    Raises AssertionError with helpful message on failure.
-    Returns the last message for further assertions.
-    """
     if not fake_mailer.sent_messages:
         raise AssertionError("No messages were sent via fake_mailer")
 
     msg = fake_mailer.last_message()
+    assert msg is not None
     if subject_contains and subject_contains not in (msg.subject or ""):
         raise AssertionError(f"Expected subject to contain '{subject_contains}', got '{msg.subject}'")
     if recipients:
@@ -138,10 +126,6 @@ def assert_email_sent(fake_mailer, subject_contains=None, recipients=None, html_
 
 
 def create_user_with_membership(db, name="Test User", email="test@example.com", credits=20, **kwargs):
-    """Create a user with an active membership and return the user.
-
-    Additional user fields can be passed via kwargs.
-    """
     from app.models import Membership, User
 
     user = User(name=name, email=email, phone=kwargs.get("phone", "1234567890"), is_active=kwargs.get("is_active", True))
@@ -157,7 +141,6 @@ def create_user_with_membership(db, name="Test User", email="test@example.com", 
         purchased_credits=kwargs.get("purchased_credits", 0),
         status=kwargs.get("status", "active"),
     )
-    # If specific dates not provided, set reasonable defaults
     if membership.start_date is None:
         from datetime import date, timedelta
 
@@ -173,11 +156,6 @@ def create_user_with_membership(db, name="Test User", email="test@example.com", 
 
 
 def assert_queued(fake_queue, expected_func=None, expected_args: tuple | None = None):
-    """Assert that a job was enqueued on `fake_queue` and optionally check function and args.
-
-    - expected_func can be a callable or a substring of the repr of the callable.
-    - expected_args is a tuple of expected positional args to match the last enqueued job's args.
-    """
     if not fake_queue.enqueued:
         raise AssertionError("No jobs were enqueued on fake_queue")
 
@@ -186,9 +164,8 @@ def assert_queued(fake_queue, expected_func=None, expected_args: tuple | None = 
         if callable(expected_func):
             if func is not expected_func:
                 raise AssertionError(f"Expected enqueued function {expected_func}, got {func}")
-        else:
-            if expected_func not in repr(func):
-                raise AssertionError(f"Expected enqueued function name to contain '{expected_func}', got {repr(func)}")
+        elif expected_func not in repr(func):
+            raise AssertionError(f"Expected enqueued function name to contain '{expected_func}', got {repr(func)}")
 
     if expected_args is not None:
         if not args:
@@ -200,19 +177,11 @@ def assert_queued(fake_queue, expected_func=None, expected_args: tuple | None = 
 
 
 def assert_no_email_sent(fake_mailer):
-    """Assert no email was sent via the provided fake_mailer.
-
-    Raises AssertionError if any messages were recorded.
-    """
     if fake_mailer.sent_messages:
         raise AssertionError(f"Expected no emails to be sent, but found {len(fake_mailer.sent_messages)} messages")
 
 
 def assert_email_contains(fake_mailer, substring: str):
-    """Assert that the last email's html or body contains `substring`.
-
-    Uses assert_email_sent to ensure a message exists and provides a clearer assertion.
-    """
     msg = assert_email_sent(fake_mailer)
     if substring not in (msg.html or "") and substring not in (msg.body or ""):
         raise AssertionError(f"Expected email to contain '{substring}'")
@@ -222,11 +191,6 @@ _custom_role_counter = 0
 
 
 def create_user_with_permissions(db, permissions: list[str], **kwargs):
-    """Create a user with a custom role granting exactly the specified permissions.
-
-    Useful for testing RBAC edge cases without needing a full Admin role.
-    Returns the created User instance (active, with password ``password123``).
-    """
     global _custom_role_counter
 
     from app.models import Permission, Role, User
@@ -245,7 +209,6 @@ def create_user_with_permissions(db, permissions: list[str], **kwargs):
     )
     user.set_password(password)
 
-    # Build a one-off role with exactly the requested permissions
     perm_objects = Permission.query.filter(Permission.name.in_(permissions)).all()
     found_names = {p.name for p in perm_objects}
     missing = set(permissions) - found_names

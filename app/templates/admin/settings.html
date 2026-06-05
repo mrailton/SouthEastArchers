@@ -10,7 +10,7 @@
         </div>
 
         <form method="POST" action="{{ url_for('admin.settings') }}">
-            {{ form.csrf_token }}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             
             <!-- Membership Year Settings -->
             <div class="mb-8">

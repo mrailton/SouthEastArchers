@@ -1,9 +1,9 @@
-from flask_wtf import FlaskForm
 from wtforms import (
     BooleanField,
     DateField,
     DateTimeLocalField,
     DecimalField,
+    Form,
     IntegerField,
     PasswordField,
     SelectField,
@@ -14,21 +14,26 @@ from wtforms import (
 from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional
 
 
-class ShootForm(FlaskForm):
+class AdminForm(Form):
+    class Meta:
+        csrf = False
+
+
+class ShootForm(AdminForm):
     date = DateField("Date", validators=[DataRequired()])
     location = SelectField("Location", choices=[("HALL", "Hall"), ("MEADOW", "Meadow"), ("WOODS", "Woods")], validators=[DataRequired()])
     description = TextAreaField("Description", validators=[Optional()])
     attendees = SelectMultipleField("Attendees", coerce=int, validators=[Optional()])
 
 
-class NewsForm(FlaskForm):
+class NewsForm(AdminForm):
     title = StringField("Title", validators=[DataRequired(), Length(min=5)])
     summary = TextAreaField("Summary", validators=[Optional()])
     content = TextAreaField("Content", validators=[DataRequired(), Length(min=20)])
     published = BooleanField("Published", default=False)
 
 
-class EventForm(FlaskForm):
+class EventForm(AdminForm):
     title = StringField("Title", validators=[DataRequired(), Length(min=5)])
     description = TextAreaField("Description", validators=[DataRequired(), Length(min=1)])
     start_date = DateTimeLocalField("Start Date", format="%Y-%m-%dT%H:%M", validators=[DataRequired()])
@@ -36,7 +41,7 @@ class EventForm(FlaskForm):
     published = BooleanField("Published", default=False)
 
 
-class CreateMemberForm(FlaskForm):
+class CreateMemberForm(AdminForm):
     name = StringField("Name", validators=[DataRequired(), Length(min=2)])
     email = StringField("Email", validators=[DataRequired(), Email()])
     phone = StringField("Phone", validators=[Optional()])
@@ -45,7 +50,7 @@ class CreateMemberForm(FlaskForm):
     create_membership = BooleanField("Create Membership", default=False)
 
 
-class EditMemberForm(FlaskForm):
+class EditMemberForm(AdminForm):
     name = StringField("Name", validators=[DataRequired(), Length(min=2)])
     email = StringField("Email", validators=[DataRequired(), Email()])
     phone = StringField("Phone", validators=[Optional()])
@@ -69,18 +74,13 @@ class EditMemberForm(FlaskForm):
     membership_purchased_credits = IntegerField("Purchased Credits", validators=[Optional()])
 
 
-class SettingsForm(FlaskForm):
-    """Form for managing application settings."""
-
-    # Membership year start settings
+class SettingsForm(AdminForm):
     membership_year_start_month = IntegerField(
         "Membership Year Start Month", validators=[DataRequired(), NumberRange(min=1, max=12)], description="Month when membership year starts (1-12)"
     )
     membership_year_start_day = IntegerField(
         "Membership Year Start Day", validators=[DataRequired(), NumberRange(min=1, max=31)], description="Day when membership year starts (1-31)"
     )
-
-    # Pricing settings (in euros, will be converted to cents)
     annual_membership_cost = IntegerField(
         "Annual Membership Cost (€)", validators=[DataRequired(), NumberRange(min=0)], description="Cost in euros (e.g., 100 for €100)"
     )
@@ -93,34 +93,28 @@ class SettingsForm(FlaskForm):
     visitor_shoot_fee = IntegerField(
         "Visitor Shoot Fee (€)", validators=[DataRequired(), NumberRange(min=0)], description="Fee per shoot for visiting non-member archers"
     )
-
-    # Cash payment settings
     cash_payment_instructions = TextAreaField(
         "Cash Payment Instructions",
         validators=[DataRequired(), Length(min=10, max=1000)],
         description="Instructions shown to users when they select cash payment",
     )
-
-    # Payment processing
     sumup_fee_percentage = DecimalField(
         "SumUp Fee Percentage",
         places=2,
         validators=[Optional(), NumberRange(min=0, max=100)],
         description="SumUp transaction fee percentage (e.g., 2.50 for 2.5%). Leave blank to disable automatic transaction recording.",
     )
-
-    # Feature toggles
     news_enabled = BooleanField("Enable News", default=False)
     events_enabled = BooleanField("Enable Events", default=False)
 
 
-class RoleForm(FlaskForm):
+class RoleForm(AdminForm):
     name = StringField("Name", validators=[DataRequired(), Length(min=2, max=64)])
     description = TextAreaField("Description", validators=[Optional(), Length(max=255)])
     permissions = SelectMultipleField("Permissions", coerce=int, validators=[Optional()])
 
 
-class ExpenseForm(FlaskForm):
+class ExpenseForm(AdminForm):
     date = DateField("Date", validators=[DataRequired()])
     amount = DecimalField("Amount (€)", places=2, validators=[DataRequired(), NumberRange(min=0.01)])
     category = SelectField(
@@ -143,7 +137,7 @@ class ExpenseForm(FlaskForm):
     receipt_reference = StringField("Receipt Reference", validators=[Optional(), Length(max=255)])
 
 
-class IncomeForm(FlaskForm):
+class IncomeForm(AdminForm):
     date = DateField("Date", validators=[DataRequired()])
     amount = DecimalField("Amount (€)", places=2, validators=[DataRequired(), NumberRange(min=0.01)])
     category = SelectField(
@@ -164,6 +158,6 @@ class IncomeForm(FlaskForm):
     source = StringField("Source", validators=[Optional(), Length(max=255)])
 
 
-class FinancialStatementForm(FlaskForm):
+class FinancialStatementForm(AdminForm):
     start_date = DateField("Start Date", validators=[DataRequired()])
     end_date = DateField("End Date", validators=[DataRequired()])

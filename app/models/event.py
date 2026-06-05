@@ -1,22 +1,23 @@
 from datetime import UTC
 
-from app import db
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
+from app.db import Model
 from app.utils.datetime_utils import utc_now
 
 
-class Event(db.Model):
+class Event(Model):
     __tablename__ = "events"
 
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    start_date = db.Column(db.DateTime, nullable=False, index=True)
-    end_date = db.Column(db.DateTime)
-    location = db.Column(db.String(255))
-    capacity = db.Column(db.Integer, nullable=True)
-    published = db.Column(db.Boolean, default=False, index=True)
-    created_at = db.Column(db.DateTime, default=utc_now)
-    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+    id = Column(Integer, primary_key=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    start_date = Column(DateTime, nullable=False, index=True)
+    end_date = Column(DateTime)
+    location = Column(String(255))
+    capacity = Column(Integer, nullable=True)
+    published = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     def is_upcoming(self) -> bool:
         now = utc_now()

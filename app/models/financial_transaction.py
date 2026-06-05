@@ -1,6 +1,8 @@
+from sqlalchemy import Column, Date, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
 """Financial transaction model for tracking club income and expenses."""
 
-from app import db
+from app.db import Model, db
 from app.utils.datetime_utils import utc_now
 
 EXPENSE_CATEGORIES = [
@@ -28,23 +30,23 @@ INCOME_CATEGORIES = [
 ]
 
 
-class FinancialTransaction(db.Model):
+class FinancialTransaction(Model):
     __tablename__ = "financial_transactions"
 
-    id = db.Column(db.Integer, primary_key=True)
-    type = db.Column(db.Enum("income", "expense"), nullable=False, index=True)
-    date = db.Column(db.Date, nullable=False, index=True)
-    amount_cents = db.Column(db.Integer, nullable=False)
-    currency = db.Column(db.String(3), default="EUR")
-    category = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    source = db.Column(db.String(255), nullable=True)
-    receipt_reference = db.Column(db.String(255), nullable=True)
-    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=utc_now)
-    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+    id = Column(Integer, primary_key=True)
+    type = Column(Enum("income", "expense"), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    amount_cents = Column(Integer, nullable=False)
+    currency = Column(String(3), default="EUR")
+    category = Column(String(100), nullable=False)
+    description = Column(Text, nullable=False)
+    source = Column(String(255), nullable=True)
+    receipt_reference = Column(String(255), nullable=True)
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
-    created_by = db.relationship("User", foreign_keys=[created_by_id], lazy="joined")
+    created_by = relationship("User", foreign_keys=[created_by_id], lazy="joined")
 
     @property
     def amount(self) -> float:

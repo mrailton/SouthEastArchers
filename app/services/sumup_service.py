@@ -1,14 +1,18 @@
+from app.core.config import get_settings
+import logging
+
+logger = logging.getLogger(__name__)
+
 import uuid
 from typing import Any
 
-from flask import current_app
 from sumup import APIError, Sumup
 from sumup.checkouts import CreateCheckoutBody
 
 
 class SumUpService:
     def __init__(self, api_key: str | None = None) -> None:
-        self.api_key = api_key or current_app.config.get("SUMUP_API_KEY")
+        self.api_key = api_key or get_settings().sumup_api_key
         self.client = Sumup(api_key=self.api_key)
 
     def create_checkout(
@@ -22,11 +26,11 @@ class SumUpService:
         try:
             # Get merchant code from config if not provided
             if not merchant_code:
-                merchant_code = current_app.config.get("SUMUP_MERCHANT_CODE")
+                merchant_code = get_settings().sumup_merchant_code
 
             # Merchant code is required by SumUp SDK
             if not merchant_code:
-                current_app.logger.error("SUMUP_MERCHANT_CODE not configured")
+                logger.error("SUMUP_MERCHANT_CODE not configured")
                 raise ValueError("SUMUP_MERCHANT_CODE must be set in environment variables")
 
             # Generate checkout reference if not provided
@@ -49,7 +53,7 @@ class SumUpService:
             response = self.client.checkouts.create(body=checkout_body)
 
             # Log the response for debugging
-            current_app.logger.info(f"SumUp checkout created with ID: {response.id if hasattr(response, 'id') else 'no id'}")
+            logger.info(f"SumUp checkout created with ID: {response.id if hasattr(response, 'id') else 'no id'}")
 
             # The SDK returns a Checkout object
             if response and hasattr(response, "id"):
@@ -61,17 +65,17 @@ class SumUpService:
                     "status": (response.status if hasattr(response, "status") else "PENDING"),
                 }
 
-            current_app.logger.error("SumUp checkout response missing id")
+            logger.error("SumUp checkout response missing id")
             return None
 
         except APIError as e:
-            current_app.logger.error(f"SumUp API error creating checkout: {str(e)}")
+            logger.error(f"SumUp API error creating checkout: {str(e)}")
             return None
         except ValueError as e:
-            current_app.logger.error(f"Configuration error: {str(e)}")
+            logger.error(f"Configuration error: {str(e)}")
             return None
         except Exception as e:
-            current_app.logger.error(f"Error creating SumUp checkout: {str(e)}")
+            logger.error(f"Error creating SumUp checkout: {str(e)}")
             return None
 
     def get_checkout(self, checkout_id: str) -> Any | None:
@@ -79,10 +83,10 @@ class SumUpService:
             checkout = self.client.checkouts.get(id=checkout_id)
             return checkout
         except APIError as e:
-            current_app.logger.error(f"SumUp API error getting checkout: {str(e)}")
+            logger.error(f"SumUp API error getting checkout: {str(e)}")
             return None
         except Exception as e:
-            current_app.logger.error(f"Error getting SumUp checkout: {str(e)}")
+            logger.error(f"Error getting SumUp checkout: {str(e)}")
             return None
 
     def verify_payment(self, checkout_id: str) -> bool:
@@ -97,5 +101,5 @@ class SumUpService:
             return status == "PAID"
 
         except Exception as e:
-            current_app.logger.error(f"Error verifying SumUp payment: {str(e)}")
+            logger.error(f"Error verifying SumUp payment: {str(e)}")
             return False

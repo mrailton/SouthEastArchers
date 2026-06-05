@@ -1,6 +1,9 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 from typing import Any
 
-from flask import current_app
 
 from app.enums import PaymentMethod, PaymentType
 from app.events import cash_payment_submitted
@@ -127,7 +130,7 @@ class PaymentService:
         try:
             cash_payment_submitted.send(user_id=user.id, payment_id=payment.id)
         except Exception as e:
-            current_app.logger.error(f"Failed to emit cash_payment_submitted event: {e}")
+            logger.error(f"Failed to emit cash_payment_submitted event: {e}")
 
         return ServiceResult.ok(
             data={
@@ -163,7 +166,7 @@ class PaymentService:
         try:
             cash_payment_submitted.send(user_id=user.id, payment_id=payment.id)
         except Exception as e:
-            current_app.logger.error(f"Failed to emit cash_payment_submitted event: {e}")
+            logger.error(f"Failed to emit cash_payment_submitted event: {e}")
 
         return ServiceResult.ok(
             data={

@@ -1,0 +1,147 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from pathlib import Path
+from urllib.parse import urlencode, urljoin
+
+from fastapi import Request
+from fastapi.templating import Jinja2Templates
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.core.config import get_settings
+from app.core.vite import vite_asset, vite_hmr_client
+from app.dependencies import get_csrf_token
+from app.routes_map import FALLBACK_ROUTES
+
+TEMPLATES_DIR = Path(__file__).parent / "templates"
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+_route_names: dict[str, str] = dict(FALLBACK_ROUTES)
+
+
+class AnonymousUser:
+    is_authenticated = False
+    membership = None
+
+    @staticmethod
+    def has_permission(_permission_name: str) -> bool:
+        return False
+
+    @staticmethod
+    def has_any_permission(*_permission_names: str) -> bool:
+        return False
+
+
+def register_route_names(routes: list) -> None:
+    for route in routes:
+        name = getattr(route, "name", None)
+        path = getattr(route, "path", None)
+        if name and path:
+            _route_names[name] = path
+
+
+def url_for(name: str, _external: bool = False, **path_params: object) -> str:
+    if name == "static":
+        filename = str(path_params.get("filename", ""))
+        path = f"/static/{filename}"
+    else:
+        path = _route_names.get(name)
+        if path is None:
+            raise ValueError(f"Unknown route name: {name}")
+        used_keys: set[str] = set()
+        for key, value in path_params.items():
+            if key.startswith("_"):
+                continue
+            placeholder = "{" + key + "}"
+            if placeholder in path:
+                path = path.replace(placeholder, str(value))
+                used_keys.add(key)
+        query_params = {k: v for k, v in path_params.items() if k not in used_keys and not k.startswith("_")}
+        if query_params:
+            path = f"{path}?{urlencode(query_params)}"
+
+    if _external:
+        return urljoin(get_settings().app_url.rstrip("/") + "/", path.lstrip("/"))
+    return path
+
+
+def get_flashed_messages(with_categories: bool = False) -> list:
+    # Populated per-request in render(); kept for Jinja signature compatibility.
+    return []
+
+
+def flash(request: Request, category: str, message: str) -> None:
+    flashes: list[tuple[str, str]] = request.session.get("_flashes", [])
+    flashes.append((category, message))
+    request.session["_flashes"] = flashes
+
+
+def _feature_flags(db: Session | None) -> dict[str, bool]:
+    defaults = {"news_enabled": False, "events_enabled": False}
+    if db is None:
+        return defaults
+    try:
+        rows = db.execute(
+            text("SELECT `key`, value FROM setting WHERE `key` IN ('news_enabled', 'events_enabled')")
+        ).fetchall()
+        raw = {row[0]: row[1] for row in rows}
+        return {
+            "news_enabled": str(raw.get("news_enabled", "")).lower() in ("true", "1", "yes"),
+            "events_enabled": str(raw.get("events_enabled", "")).lower() in ("true", "1", "yes"),
+        }
+    except Exception:
+        return defaults
+
+
+def _pop_flashes(request: Request) -> list[tuple[str, str]]:
+    flashes: list[tuple[str, str]] = request.session.pop("_flashes", [])
+    return flashes
+
+
+def endpoint_is(request: Request, names: str | list[str]) -> bool:
+    route_name = getattr(request.scope.get("route"), "name", "") or ""
+    if isinstance(names, str):
+        return route_name == names
+    return route_name in names
+
+
+def setup_template_globals() -> None:
+    templates.env.globals.update(
+        {
+            "url_for": url_for,
+            "get_flashed_messages": get_flashed_messages,
+            "vite_hmr_client": vite_hmr_client,
+            "vite_asset": vite_asset,
+            "endpoint_is": endpoint_is,
+        }
+    )
+
+
+def render(
+    request: Request,
+    name: str,
+    context: dict | None = None,
+    user=None,
+    db: Session | None = None,
+    status_code: int = 200,
+):
+    current_user = user if user is not None else AnonymousUser()
+    flashes = _pop_flashes(request)
+    templates.env.globals["get_flashed_messages"] = lambda with_categories=False: flashes
+
+    ctx: dict = {
+        "request": request,
+        "csrf_token": get_csrf_token(request),
+        "current_user": current_user,
+        "user": current_user,
+        "errors": {},
+        "now": datetime.now(UTC),
+        "endpoint_is": endpoint_is,
+        **_feature_flags(db),
+    }
+    if "validation_errors" in request.session:
+        ctx["errors"] = request.session.pop("validation_errors")
+    if context:
+        ctx.update(context)
+    return templates.TemplateResponse(request, name, ctx, status_code=status_code)

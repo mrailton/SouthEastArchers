@@ -14,23 +14,27 @@
         </div>
         
         <form method="POST" class="space-y-4">
+        {% if csrf_token is defined %}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        {% elif form is defined %}
         {{ form.hidden_tag() }}
+        {% endif %}
         <div>
             <label for="name" class="block text-gray-700 font-bold mb-2">Full Name *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="text" id="name" name="name" value="{{ form.name.data or '' }}" required>
+                   type="text" id="name" name="name" value="{{ (form_values.name if form_values is defined else (form.name.data if form is defined else '')) or '' }}" required>
         </div>
         
         <div>
             <label for="email" class="block text-gray-700 font-bold mb-2">Email Address *</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="email" id="email" name="email" value="{{ form.email.data or '' }}" required>
+                   type="email" id="email" name="email" value="{{ (form_values.email if form_values is defined else (form.email.data if form is defined else '')) or '' }}" required>
         </div>
         
         <div>
             <label for="phone" class="block text-gray-700 font-bold mb-2">Phone Number (optional)</label>
             <input class="w-full border border-gray-300 rounded px-3 py-2" 
-                   type="tel" id="phone" name="phone" value="{{ form.phone.data or '' }}">
+                   type="tel" id="phone" name="phone" value="{{ (form_values.phone if form_values is defined else (form.phone.data if form is defined else '')) or '' }}">
         </div>
         
         <div>
@@ -46,7 +50,7 @@
         </div>
         
         <!-- QualificationSelection -->
-        <div class="border-t pt-4 mt-4" x-data="{ qualification: '{{ form.qualification.data or 'none' }}', qualificationDetail: '{{ form.qualification_detail.data or '' }}' }">
+        <div class="border-t pt-4 mt-4" x-data="{ qualification: '{{ (form_values.qualification if form_values is defined else (form.qualification.data if form is defined else 'none')) or 'none' }}', qualificationDetail: '{{ (form_values.qualification_detail if form_values is defined else (form.qualification_detail.data if form is defined else '')) or '' }}' }">
             <label class="block text-gray-700 font-bold mb-3">Qualification *</label>
             <div class="space-y-3">
                 <div class="flex items-start">
@@ -125,7 +129,12 @@
         </div>
 
         <div class="flex justify-center">
+            {% if recaptcha_site_key %}
+            <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+            <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+            {% elif form is defined and form.recaptcha %}
             {{ form.recaptcha }}
+            {% endif %}
         </div>
         
         <button type="submit" class="w-full btn-secondary py-3">

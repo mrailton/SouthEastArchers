@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from flask import current_app
-from flask_login import UserMixin
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app import bcrypt, db
+from app.core.config import get_settings
+from app.core.security import hash_password, verify_password
+from app.db import Model, db
 from app.utils.datetime_utils import utc_now
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from app.models.shoot import Shoot
 
 
-class User(UserMixin, db.Model):
+class User(Model):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -40,22 +40,30 @@ class User(UserMixin, db.Model):
     roles: Mapped[list[Role]] = relationship("Role", secondary="user_roles", back_populates="users")
 
     @property
+    def is_authenticated(self) -> bool:
+        return True
+
+    @property
+    def is_anonymous(self) -> bool:
+        return False
+
+    @property
     def has_active_membership(self) -> bool:
         return bool(self.membership and self.membership.is_active())
 
     def set_password(self, password: str) -> None:
-        self.password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+        self.password_hash = hash_password(password)
 
     def check_password(self, password: str) -> bool:
-        return bcrypt.check_password_hash(self.password_hash, password)
+        return verify_password(password, self.password_hash)
 
     def generate_reset_token(self) -> str:
-        serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+        serializer = URLSafeTimedSerializer(get_settings().secret_key)
         return serializer.dumps(self.email, salt="password-reset-salt")
 
     @staticmethod
     def verify_reset_token(token: str, max_age: int = 3600) -> User | None:
-        serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+        serializer = URLSafeTimedSerializer(get_settings().secret_key)
         try:
             email = serializer.loads(token, salt="password-reset-salt", max_age=max_age)
             return User.query.filter_by(email=email).first()

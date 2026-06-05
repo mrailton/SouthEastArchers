@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Any
 
-from flask_sqlalchemy.pagination import Pagination
+from app.db import Pagination
 
 from app.models import Shoot
 from app.models.shoot import ShootVisitor

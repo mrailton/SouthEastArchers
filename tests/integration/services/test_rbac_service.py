@@ -44,7 +44,7 @@ def test_create_role_duplicate(app):
 
 def test_create_role_exception(app):
     with app.app_context():
-        with patch("app.db.session.add", side_effect=Exception("DB Error")):
+        with patch("app.repositories.base.db.session.add", side_effect=Exception("DB Error")):
             result = RBACService.create_role("exception_role", "desc", [])
             assert result.data is None
             assert "Error creating role" in result.message
@@ -68,7 +68,7 @@ def test_update_role_exception(app):
         db.session.add(role)
         db.session.commit()
 
-        with patch("app.db.session.commit", side_effect=Exception("DB Error")):
+        with patch("app.repositories.base.db.session.commit", side_effect=Exception("DB Error")):
             result = RBACService.update_role(role, "new_name", "desc", [])
             assert not result.success
             assert "Error updating role" in result.message
@@ -80,7 +80,7 @@ def test_delete_role_exception(app):
         db.session.add(role)
         db.session.commit()
 
-        with patch("app.db.session.commit", side_effect=Exception("DB Error")):
+        with patch("app.repositories.base.db.session.commit", side_effect=Exception("DB Error")):
             result = RBACService.delete_role(role)
             assert not result.success
             assert "Error deleting role" in result.message

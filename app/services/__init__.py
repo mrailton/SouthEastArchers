@@ -6,6 +6,7 @@ from .membership_service import MembershipService
 from .news_service import NewsService
 from .payment_processing_service import PaymentProcessingService
 from .payment_service import PaymentService
+from .rbac_service import RBACService
 from .result import ServiceResult
 from .shoot_service import ShootService
 from .sumup_service import SumUpService
@@ -20,6 +21,7 @@ __all__ = [
     "NewsService",
     "PaymentProcessingService",
     "PaymentService",
+    "RBACService",
     "ServiceResult",
     "ShootService",
     "SumUpService",

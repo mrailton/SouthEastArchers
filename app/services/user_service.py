@@ -1,7 +1,10 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 from datetime import date
 
-from flask import current_app
-from flask_sqlalchemy.pagination import Pagination
+from app.db import Pagination
 
 from app.models import Membership, User
 from app.repositories import MembershipRepository, RBACRepository, UserRepository
@@ -32,7 +35,7 @@ class UserService:
             UserRepository.save()
             return ServiceResult.ok(message="Profile updated successfully!")
         except Exception as e:
-            current_app.logger.error(f"Error updating profile: {str(e)}")
+            logger.error(f"Error updating profile: {str(e)}")
             return ServiceResult.fail("An error occurred while updating profile.")
 
     @staticmethod
@@ -49,7 +52,7 @@ class UserService:
             UserRepository.save()
             return ServiceResult.ok(message="Password changed successfully!")
         except Exception as e:
-            current_app.logger.error(f"Error changing password: {str(e)}")
+            logger.error(f"Error changing password: {str(e)}")
             return ServiceResult.fail("An error occurred while changing password.")
 
     @staticmethod
@@ -98,7 +101,7 @@ class UserService:
             UserRepository.save()
             return ServiceResult.ok(data=user)
         except Exception as e:
-            current_app.logger.error(f"Error creating member: {str(e)}")
+            logger.error(f"Error creating member: {str(e)}")
             return ServiceResult.fail("An error occurred while creating member.")
 
     @staticmethod
@@ -146,7 +149,7 @@ class UserService:
             UserRepository.save()
             return ServiceResult.ok(message=f"Member {user.name} updated successfully!")
         except Exception as e:
-            current_app.logger.error(f"Error updating member: {str(e)}")
+            logger.error(f"Error updating member: {str(e)}")
             return ServiceResult.fail("An error occurred while updating member.")
 
     @staticmethod
@@ -176,7 +179,7 @@ class UserService:
             UserRepository.save()
             return ServiceResult.ok(data=user)
         except Exception as e:
-            current_app.logger.error(f"Error creating user: {str(e)}")
+            logger.error(f"Error creating user: {str(e)}")
             return ServiceResult.fail("An error occurred during registration.")
 
     @staticmethod

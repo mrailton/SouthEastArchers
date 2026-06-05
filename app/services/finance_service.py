@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from datetime import date
 
-from flask_sqlalchemy.pagination import Pagination
+from app.db import Pagination
 
 from app.enums import PaymentType
 from app.models import FinancialTransaction
@@ -55,13 +59,12 @@ class FinanceService:
         1. Income for the full payment amount
         2. Expense for the SumUp processing fee (based on sumup_fee_percentage setting)
         """
-        from flask import current_app
-
+        
         from app.services.settings_service import SettingsService
 
         fee_pct = SettingsService.get("sumup_fee_percentage")
         if fee_pct is None:
-            current_app.logger.warning("SumUp fee percentage not configured in settings — skipping automatic financial transaction recording")
+            logger.warning("SumUp fee percentage not configured in settings — skipping automatic financial transaction recording")
             return ServiceResult.fail("SumUp fee percentage not configured")
 
         fee_pct = float(fee_pct)

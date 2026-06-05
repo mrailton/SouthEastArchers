@@ -1,4 +1,4 @@
-.PHONY: help install dev clean test test-verbose test-file test-coverage test-k \
+.PHONY: help install dev clean test test-parallel test-verbose test-file test-coverage test-k \
        lint lint-fix lint-check format format-check typecheck lint-imports \
        assets assets-watch
 
@@ -11,18 +11,18 @@ install: ## Install all dependencies (Python + Node)
 	uv sync
 	npm ci
 
-dev: ## Run development servers (Flask + Vite)
+dev: ## Run development servers (FastAPI + Vite)
 	@mkdir -p resources/static
-	@test -L resources/static/images || ln -s ../assets/images resources/static/images
+	@if [ ! -e resources/static/images ]; then ln -s ../assets/images resources/static/images; fi
 	@echo "Starting development servers..."
 	@echo "  - Vite dev server (asset hot reloading)"
-	@echo "  - Flask dev server"
+	@echo "  - FastAPI dev server (uvicorn)"
 	@echo ""
 	@echo "Press Ctrl+C to stop"
 	@echo ""
 	@trap 'kill 0' EXIT; \
 		npm run dev & \
-		uv run flask run --debug & \
+		uv run uvicorn asgi:app --reload --host 127.0.0.1 --port 8000 & \
 		wait
 
 clean: ## Remove cache and temporary files
@@ -35,6 +35,9 @@ clean: ## Remove cache and temporary files
 test: ## Run test suite
 	uv run pytest
 
+test-parallel: ## Run test suite in parallel (faster on multi-core machines)
+	uv run pytest -n auto
+
 test-verbose: ## Run test suite with verbose output
 	uv run pytest -v
 
@@ -43,8 +46,6 @@ test-file: ## Run a single test file (FILE=tests/path/to/test.py)
 
 test-coverage: ## Run tests with coverage report
 	uv run pytest --cov=app --cov-report=term-missing --cov-report=html --no-cov-on-fail
-	@echo ""
-	@echo "HTML coverage report generated in htmlcov/"
 
 test-k: ## Run tests matching keyword (K="test_something")
 	uv run pytest -k "$(K)"

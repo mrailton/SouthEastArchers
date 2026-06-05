@@ -1,26 +1,39 @@
 import os
 import shutil
+from contextlib import contextmanager
 from datetime import date, timedelta
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.pool import StaticPool
 
-from app import create_app, db
+os.environ.setdefault("APP_ENV", "testing")
+os.environ.setdefault("TEST_DATABASE_URL", "sqlite://")
+os.environ.setdefault("DATABASE_URL", "sqlite://")
+os.environ.setdefault("SECRET_KEY", "test-secret")
+
+import app.core.config  # noqa: F401 - load settings
+import app.models  # noqa: F401 - register models with metadata
+from app import db
+from app.core.config import get_settings
+from app.core.database import get_db
+from app.core.security import hash_password
+from app.db import init_db, reset_current_session, set_current_session
+from app.main import app as fastapi_app
 from app.models import Membership, Role, User
 from app.models.rbac import seed_rbac
-from tests.helpers import FakeMailer, FakeQueue
+from click.testing import CliRunner
 
-# ---------------------------------------------------------------------------
-# Password-hash cache – avoid repeated bcrypt work for the same plaintext.
-# The first call for each unique password goes through bcrypt; subsequent
-# calls reuse the cached hash.  This is safe because check_password extracts
-# the salt from the stored hash, so a shared hash still validates correctly.
-# ---------------------------------------------------------------------------
+from app.cli import cli
+from app.events.handlers import connect_handlers
+from tests.helpers import FakeMailer, FakeQueue
+from tests.http_helpers import CSRFClient, login
+
 _password_cache: dict[str, str] = {}
 _original_set_password = User.set_password
 
 
 def _fast_set_password(self, password):
-    """Cache-aware set_password: computes bcrypt hash once per unique password."""
     if password not in _password_cache:
         _original_set_password(self, password)
         _password_cache[password] = self.password_hash
@@ -28,80 +41,89 @@ def _fast_set_password(self, password):
         self.password_hash = _password_cache[password]
 
 
-# ---------------------------------------------------------------------------
-# Session-scoped app + schema + RBAC seed (created once for entire test run)
-# ---------------------------------------------------------------------------
+class _TestApp:
+    @contextmanager
+    def app_context(self):
+        yield
+
+
 @pytest.fixture(scope="session")
 def app_instance():
-    """Create application instance and seed RBAC data once."""
+    """Create database schema and seed RBAC once per test run."""
     User.set_password = _fast_set_password
 
-    app = create_app("testing")
+    get_settings.cache_clear()
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
 
-    with app.app_context():
-        db.create_all()
-        seed_rbac(db.session)
+    db.engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    db._session_factory = sessionmaker(bind=db.engine, autoflush=False, autocommit=False)
+    db.create_all()
+    session = db.create_session()
+    token = set_current_session(session)
+    seed_rbac(session)
+    session.commit()
+    session.close()
+    reset_current_session(token)
 
-        # Pre-warm the cache with commonly used test passwords
-        from app import bcrypt
+    for pw in ("password123", "adminpass"):
+        _password_cache[pw] = hash_password(pw)
 
-        for pw in ("password123", "adminpass"):
-            _password_cache[pw] = bcrypt.generate_password_hash(pw).decode("utf-8")
+    connect_handlers()
 
-        yield app
+    yield _TestApp()
 
-        db.session.remove()
-        db.drop_all()
+    db.drop_all()
+    if db.engine is not None:
         db.engine.dispose()
-
+    get_settings.cache_clear()
     User.set_password = _original_set_password
 
 
-# ---------------------------------------------------------------------------
-# Per-test fixture – transaction rollback isolation
-# ---------------------------------------------------------------------------
 @pytest.fixture(scope="function")
 def app(app_instance):
-    """Provide application context with transaction rollback isolation.
+    """Transaction-isolated database session for each test."""
+    from sqlalchemy import event
 
-    Each test runs inside a database transaction that is rolled back after
-    the test finishes, avoiding the cost of DELETE-all + re-seed RBAC.
-    """
-    with app_instance.app_context():
-        connection = db.engine.connect()
-        transaction = connection.begin()
+    from sqlalchemy.orm import sessionmaker
 
-        # Route every session through our transacted connection so that
-        # commits become savepoint releases rather than real commits.
-        SessionClass = db.session.session_factory.class_
-        original_get_bind = SessionClass.get_bind
-        SessionClass.get_bind = lambda self, *args, **kw: connection
+    connection = db.engine.connect()
+    transaction = connection.begin()
+    session = sessionmaker(bind=connection, autoflush=False, autocommit=False)()
+    nested = connection.begin_nested()
+    token = set_current_session(session)
 
-        db.session.remove()  # clear stale session state
+    @event.listens_for(session, "after_transaction_end")
+    def restart_savepoint(sess, trans):
+        nonlocal nested
+        if trans.nested and not trans._parent.nested:
+            nested = connection.begin_nested()
 
-        yield app_instance
+    yield app_instance
 
-        db.session.remove()
-        SessionClass.get_bind = original_get_bind
-        transaction.rollback()
-        connection.close()
+    session.close()
+    reset_current_session(token)
+    event.remove(session, "after_transaction_end", restart_savepoint)
+    transaction.rollback()
+    connection.close()
 
 
 def pytest_collection_modifyitems(items):
-    """Auto-apply unit/integration/e2e markers based on test file location."""
     for item in items:
         path = str(item.fspath)
         if "/unit/" in path:
             item.add_marker(pytest.mark.unit)
         elif "/integration/" in path:
             item.add_marker(pytest.mark.integration)
-        elif "/e2e/" in path:
-            item.add_marker(pytest.mark.e2e)
+        elif "/routes/" in path:
+            item.add_marker(pytest.mark.routes)
 
 
 def pytest_sessionfinish(session, exitstatus):
-    """Clean up artifacts after test session finishes"""
-    # Remove coverage artifacts
     if os.path.exists(".coverage"):
         os.remove(".coverage")
     if os.path.exists("htmlcov"):
@@ -111,20 +133,38 @@ def pytest_sessionfinish(session, exitstatus):
 
 
 @pytest.fixture
+def db_session(app):
+    """Alias for the per-test SQLAlchemy session."""
+    return db.session
+
+
+@pytest.fixture
 def client(app):
-    """Create test client"""
-    return app.test_client()
+    session = db.session
+
+    async def override_get_db():
+        try:
+            yield session
+            if session.info.pop("commit", False):
+                session.commit()
+        except Exception:
+            session.rollback()
+            raise
+
+    fastapi_app.dependency_overrides[get_db] = override_get_db
+    with TestClient(fastapi_app) as test_client:
+        yield CSRFClient(test_client)
+    fastapi_app.dependency_overrides.clear()
 
 
 @pytest.fixture
 def runner(app):
-    """Create CLI runner"""
-    return app.test_cli_runner()
+    """Click CLI test runner."""
+    return CliRunner()
 
 
 @pytest.fixture
 def test_user(app):
-    """Create a test user"""
     user = User(
         name="Test User",
         email="test@example.com",
@@ -155,7 +195,6 @@ def test_user(app):
 
 @pytest.fixture
 def admin_user(app):
-    """Create a test admin user"""
     user = User(
         name="Admin User",
         email="admin@example.com",
@@ -174,15 +213,12 @@ def admin_user(app):
 
 @pytest.fixture
 def fake_queue():
-    """Provide a lightweight fake queue object for tests to capture enqueued jobs."""
     return FakeQueue()
 
 
 @pytest.fixture
 def fake_mailer():
-    """Provide a lightweight fake mailer for tests to capture sent messages."""
     fm = FakeMailer()
-    # Inject into common modules so tests don't need to set it manually
     from tests.helpers import inject_fake_mailer
 
     inject_fake_mailer(fm)
@@ -191,23 +227,18 @@ def fake_mailer():
 
 @pytest.fixture
 def admin_client(client, admin_user):
-    """Return a test client pre-authenticated as admin."""
-    client.post("/auth/login", data={"email": admin_user.email, "password": "adminpass"})
+    login(client, admin_user.email, "adminpass")
     return client
 
 
 @pytest.fixture
 def member_client(client, test_user):
-    """Return a test client pre-authenticated as a member."""
-    client.post("/auth/login", data={"email": test_user.email, "password": "password123"})
+    login(client, test_user.email, "password123")
     return client
 
 
 @pytest.fixture
 def member_with_credits(app, name="Test Member", email="member@example.com", initial_credits=3, purchased_credits=0, status="active"):
-    """Create a user with an active membership and specified credits."""
-    from datetime import date, timedelta
-
     user = User(name=name, email=email, phone="1234567890", is_active=True)
     user.set_password("password123")
     db.session.add(user)

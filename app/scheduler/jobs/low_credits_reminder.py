@@ -1,12 +1,14 @@
-from flask import current_app, render_template, url_for
-from flask_mail import Message
+import logging
 
-from app import mail
+from app.core.config import get_settings
 from app.models import Membership, User
+from app.templating import templates, url_for
+from app.utils.mail import send_email
+
+logger = logging.getLogger(__name__)
 
 
 def send_low_credits_reminder():
-    # Find active memberships with 3 or fewer total credits (initial + purchased)
     memberships = Membership.query.filter(Membership.status == "active").join(User).filter(User.is_active).all()
     low_credit_memberships = [m for m in memberships if m.credits_remaining() <= 3]
 
@@ -18,8 +20,6 @@ def send_low_credits_reminder():
 
     for membership in low_credit_memberships:
         user = membership.user
-
-        # Skip if user doesn't have an email
         if not user.email:
             print(f"Skipping user {user.id} - no email address")
             continue
@@ -32,22 +32,17 @@ def send_low_credits_reminder():
 
 
 def _send_reminder_email(user, credits_remaining):
-    # Generate URL for purchasing credits
     try:
         credits_url = url_for("member.credits", _external=True)
-    except RuntimeError:
-        # Fallback if outside request context
-        credits_url = current_app.config.get("SITE_URL", "https://southeastarchers.ie") + "/member/credits"
+    except Exception:
+        credits_url = get_settings().app_url.rstrip("/") + "/member/credits"
 
-    # Prepare template data
-    template_data = {"user": user, "credits_remaining": credits_remaining, "credits_url": credits_url}
-
-    # Create and send the email
-    msg = Message(
+    context = {"user": user, "credits_remaining": credits_remaining, "credits_url": credits_url}
+    text_body = templates.env.get_template("email/low_credits_reminder.txt").render(**context)
+    html_body = templates.env.get_template("email/low_credits_reminder.html").render(**context)
+    send_email(
         "Low Credits Reminder - South East Archers",
-        recipients=[user.email],
-        body=render_template("email/low_credits_reminder.txt", **template_data),
-        html=render_template("email/low_credits_reminder.html", **template_data),
+        [user.email],
+        text_body,
+        html_body,
     )
-
-    mail.send(msg)

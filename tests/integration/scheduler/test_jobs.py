@@ -72,20 +72,20 @@ def test_low_credits_reminder_skips_invalid(app, status, is_active, email):
     """Test that reminders are skipped for invalid memberships/users."""
     _create_member(email, status=status or "active", is_active=is_active)
 
-    with patch("app.scheduler.jobs.low_credits_reminder.mail") as mock_mail:
+    with patch("app.scheduler.jobs.low_credits_reminder.send_email") as mock_send:
         send_low_credits_reminder()
-        assert not mock_mail.send.called
+        assert not mock_send.called
 
 
 def test_low_credits_reminder_handles_negative_credits(app):
     """Test that emails are sent to members with negative credits."""
     _create_member("negative@example.com", initial_credits=-2)
 
-    with patch("app.scheduler.jobs.low_credits_reminder.mail") as mock_mail:
+    with patch("app.scheduler.jobs.low_credits_reminder.send_email") as mock_send:
         send_low_credits_reminder()
-        assert mock_mail.send.called
-        call_args = mock_mail.send.call_args[0][0]
-        assert "-2" in call_args.html or "negative" in call_args.html.lower()
+        assert mock_send.called
+        html_body = mock_send.call_args[0][3]
+        assert "-2" in html_body or "negative" in html_body.lower()
 
 
 def test_low_credits_reminder_sends_to_multiple_members(app):
@@ -93,9 +93,9 @@ def test_low_credits_reminder_sends_to_multiple_members(app):
     for i in range(3):
         _create_member(f"user{i}@example.com", initial_credits=i + 1)
 
-    with patch("app.scheduler.jobs.low_credits_reminder.mail") as mock_mail:
+    with patch("app.scheduler.jobs.low_credits_reminder.send_email") as mock_send:
         send_low_credits_reminder()
-        assert mock_mail.send.call_count == 3
+        assert mock_send.call_count == 3
 
 
 def test_low_credits_reminder_continues_on_email_failure(app):
@@ -103,7 +103,7 @@ def test_low_credits_reminder_continues_on_email_failure(app):
     for i in range(2):
         _create_member(f"fail_user{i}@example.com", initial_credits=2)
 
-    with patch("app.scheduler.jobs.low_credits_reminder.mail") as mock_mail:
-        mock_mail.send.side_effect = [Exception("Email failed"), None]
+    with patch("app.scheduler.jobs.low_credits_reminder.send_email") as mock_send:
+        mock_send.side_effect = [Exception("Email failed"), None]
         send_low_credits_reminder()
-        assert mock_mail.send.call_count == 2
+        assert mock_send.call_count == 2

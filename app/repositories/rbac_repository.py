@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from app import db
+from app.db import db
 from app.models import Permission, Role
 from app.repositories.base import BaseRepository
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app import db
+from app.db import db
 from app.models import Event
 from app.repositories.base import BaseRepository
 from app.utils.datetime_utils import utc_now

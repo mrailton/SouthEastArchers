@@ -1,21 +1,22 @@
+from sqlalchemy import Column, Date, DateTime, Enum, ForeignKey, Integer, String, Table, Text
 from datetime import date
 
-from app import db
+from app.db import Model, db
 from app.utils.datetime_utils import utc_now
 
 
-class Membership(db.Model):
+class Membership(Model):
     __tablename__ = "memberships"
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, unique=True, index=True)
-    start_date = db.Column(db.Date, nullable=False)
-    expiry_date = db.Column(db.Date, nullable=False)
-    initial_credits = db.Column(db.Integer, default=20, nullable=False)  # Credits from membership fee
-    purchased_credits = db.Column(db.Integer, default=0, nullable=False)  # Additional purchased credits
-    status = db.Column(db.String(20), default="pending")
-    created_at = db.Column(db.DateTime, default=utc_now)
-    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    start_date = Column(Date, nullable=False)
+    expiry_date = Column(Date, nullable=False)
+    initial_credits = Column(Integer, default=20, nullable=False)  # Credits from membership fee
+    purchased_credits = Column(Integer, default=0, nullable=False)  # Additional purchased credits
+    status = Column(String(20), default="pending")
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     def is_active(self) -> bool:
         return self.status == "active" and self.expiry_date >= date.today()

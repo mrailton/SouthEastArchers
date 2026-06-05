@@ -346,7 +346,7 @@ def test_command_executes_management_command():
 
     with patch("os.system") as mock_system:
         event.run()
-        mock_system.assert_called_once_with("flask test command")
+        mock_system.assert_called_once_with("uv run python -m app.cli test command")
 
 
 def test_due_events_returns_due_tasks():

@@ -1,6 +1,9 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 from datetime import date
 
-from flask import current_app
 
 from app.events import credit_purchased, payment_completed
 from app.models import Credit, Membership
@@ -30,13 +33,13 @@ class PaymentProcessingService:
                 if user.membership:
                     user.membership.activate()
         except Exception as e:
-            current_app.logger.error(f"Signup payment commit failed: {e}")
+            logger.error(f"Signup payment commit failed: {e}")
             return ServiceResult.fail("Payment could not be processed. Please try again.")
 
         try:
             payment_completed.send(user_id=user.id, payment_id=payment.id, payment_type=payment.payment_type)
         except Exception as e:
-            current_app.logger.error(f"Failed to emit payment_completed event: {e}")
+            logger.error(f"Failed to emit payment_completed event: {e}")
 
         return ServiceResult.ok(message="Payment successful! Your membership is now active. A receipt has been sent to your email.")
 
@@ -71,13 +74,13 @@ class PaymentProcessingService:
                     )
                     MembershipRepository.add(membership)
         except Exception as e:
-            current_app.logger.error(f"Membership renewal commit failed: {e}")
+            logger.error(f"Membership renewal commit failed: {e}")
             return ServiceResult.fail("Renewal could not be processed. Please try again.")
 
         try:
             payment_completed.send(user_id=user.id, payment_id=payment.id, payment_type=payment.payment_type)
         except Exception as e:
-            current_app.logger.error(f"Failed to emit payment_completed event: {e}")
+            logger.error(f"Failed to emit payment_completed event: {e}")
 
         return ServiceResult.ok(message="Membership renewed successfully! A receipt has been sent to your email.")
 
@@ -105,12 +108,12 @@ class PaymentProcessingService:
                 credit = Credit(user_id=user.id, amount=quantity, payment_id=payment.id)
                 CreditRepository.add(credit)
         except Exception as e:
-            current_app.logger.error(f"Credit purchase commit failed: {e}")
+            logger.error(f"Credit purchase commit failed: {e}")
             return ServiceResult.fail("Credit purchase could not be processed. Please try again.")
 
         try:
             credit_purchased.send(user_id=user_id, payment_id=payment.id, quantity=quantity)
         except Exception as e:
-            current_app.logger.error(f"Failed to emit credit_purchased event: {e}")
+            logger.error(f"Failed to emit credit_purchased event: {e}")
 
         return ServiceResult.ok(message=f"Successfully purchased {quantity} credits! A receipt has been sent to your email.")

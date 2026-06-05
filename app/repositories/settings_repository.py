@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app import db
+from app.db import db
 from app.models.application_settings import Setting
 from app.repositories.base import BaseRepository
 

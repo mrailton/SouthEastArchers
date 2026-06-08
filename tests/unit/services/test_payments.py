@@ -545,19 +545,20 @@ def test_get_unfulfilled_online_payment_rows(app, test_user):
     assert any(item["payment"].sumup_checkout_id == "chk_rows" for item in rows)
 
 
-def test_approve_cash_payment_user_not_found(app):
-    from app import db
-    from app.models import Payment
+def test_approve_cash_payment_user_not_found(app, test_user):
+    from unittest.mock import patch
 
-    payment = Payment(
-        user_id=99999,
-        amount_cents=1000,
-        payment_type="membership",
+    from app import db
+
+    payment = create_payment_for_user(
+        db,
+        test_user,
         payment_method="cash",
         status="pending",
+        payment_type="membership",
+        amount_cents=1000,
     )
-    db.session.add(payment)
-    db.session.commit()
-    result = payments.approve_cash_payment(payment.id)
+    with patch("app.services.payments.UserRepository.get_by_id", return_value=None):
+        result = payments.approve_cash_payment(payment.id)
     assert result.success is False
     assert "User not found" in result.message

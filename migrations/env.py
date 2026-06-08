@@ -1,4 +1,5 @@
 import logging
+import sys
 from logging.config import fileConfig
 
 from alembic import context
@@ -11,7 +12,10 @@ from app.db.session import Base
 import app.core.config  # noqa: F401 - load .env
 
 config = context.config
-fileConfig(config.config_file_name)
+# Alembic's fileConfig replaces root handlers and breaks pytest caplog when env.py
+# is loaded during integration tests. Skip under pytest; CLI migrations still configure logging.
+if config.config_file_name is not None and "pytest" not in sys.modules:
+    fileConfig(config.config_file_name)
 logger = logging.getLogger("alembic.env")
 
 settings = get_settings()

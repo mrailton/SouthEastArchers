@@ -26,6 +26,73 @@ def get_user_payments(user_id: int) -> list[Payment]:
     return PaymentRepository.get_by_user(user_id)
 
 
+def retry_payment(
+    payment_id: int,
+    user: User,
+    *,
+    processor: CheckoutProcessor | None = None,
+    sumup: SumUpService | None = None,
+) -> ServiceResult[dict]:
+    """Allow a user to retry a pending or failed online payment.
+
+    If the linked SumUp checkout is still PENDING it is reused directly.
+    Otherwise a fresh checkout is created and the payment record is updated
+    in-place so the full payment history is preserved.
+    """
+    payment = PaymentRepository.get_by_id(payment_id)
+    if not payment:
+        return ServiceResult.fail("Payment not found.", error_code=ErrorCode.NOT_FOUND)
+    if payment.user_id != user.id:
+        return ServiceResult.fail("Payment not found.", error_code=ErrorCode.FORBIDDEN)
+    if payment.payment_method != PaymentMethod.ONLINE:
+        return ServiceResult.fail("Only online payments can be retried.")
+    if payment.status in ("completed", "cancelled"):
+        return ServiceResult.fail("This payment cannot be retried.")
+
+    # For a still-pending payment, check whether the existing SumUp checkout is live.
+    if payment.status == "pending" and payment.sumup_checkout_id:
+        sumup_service = sumup or SumUpService()
+        checkout = sumup_service.get_checkout(payment.sumup_checkout_id)
+        if checkout and getattr(checkout, "status", None) == "PENDING":
+            return ServiceResult.ok(
+                data={
+                    "checkout_id": payment.sumup_checkout_id,
+                    "payment_id": payment.id,
+                    "user_id": user.id,
+                    "amount": payment.amount,
+                    "description": payment.description or "",
+                }
+            )
+
+    # Checkout is failed/expired or payment was explicitly failed — create a new one.
+    checkout_processor = processor or SumUpService()
+    checkout_data = checkout_processor.create_checkout(
+        amount=payment.amount_cents,
+        currency=payment.currency,
+        description=payment.description or "",
+    )
+    if not checkout_data:
+        return ServiceResult.fail("Error creating payment. Please try again.")
+
+    try:
+        with BaseRepository.transaction():
+            payment.sumup_checkout_id = checkout_data["id"]
+            payment.status = "pending"
+    except Exception as exc:
+        logger.error("Error updating payment %s for retry: %s", payment_id, exc)
+        return ServiceResult.fail("Error creating payment. Please try again.")
+
+    return ServiceResult.ok(
+        data={
+            "checkout_id": checkout_data["id"],
+            "payment_id": payment.id,
+            "user_id": user.id,
+            "amount": payment.amount,
+            "description": payment.description or "",
+        }
+    )
+
+
 def initiate_membership_payment(
     user: User,
     *,
@@ -235,6 +302,20 @@ def reject_cash_payment(payment_id: int) -> ServiceResult[dict[str, Any]]:
     PaymentRepository.save()
     member_name = member.name if member else "user"
     return ServiceResult.ok(data={"member_name": member_name}, message=f"Payment rejected for {member_name}.")
+
+
+def cancel_payment(payment_id: int) -> ServiceResult[dict[str, Any]]:
+    """Admin-initiated cancellation of any pending or failed payment."""
+    payment = PaymentRepository.get_by_id(payment_id)
+    if not payment:
+        return ServiceResult.fail("Payment not found.", error_code=ErrorCode.NOT_FOUND)
+    if payment.status not in ("pending", "failed"):
+        return ServiceResult.fail("Only pending or failed payments can be cancelled.")
+    member = UserRepository.get_by_id(payment.user_id)
+    payment.status = "cancelled"
+    PaymentRepository.save()
+    member_name = member.name if member else "user"
+    return ServiceResult.ok(data={"member_name": member_name}, message=f"Payment cancelled for {member_name}.")
 
 
 def replay_completed_payment_side_effects(payment_id: int, *, send_mail: bool = True) -> ServiceResult[dict[str, Any]]:

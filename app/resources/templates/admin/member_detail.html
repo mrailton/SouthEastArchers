@@ -205,10 +205,20 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                                 {% if payment.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif payment.status == 'pending' and payment.payment_method == 'online' %}bg-yellow-100 text-yellow-800
                                 {% elif payment.status == 'pending' %}bg-yellow-100 text-yellow-800
                                 {% elif payment.status == 'failed' %}bg-red-100 text-red-800
+                                {% elif payment.status == 'cancelled' %}bg-gray-100 text-gray-500
                                 {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {{ payment.status|title }}
+                                {% if payment.status == 'pending' and payment.payment_method == 'online' %}
+                                    Awaiting payment
+                                {% elif payment.status == 'pending' %}
+                                    Pending approval
+                                {% elif payment.status == 'failed' %}
+                                    Declined
+                                {% else %}
+                                    {{ payment.status|title }}
+                                {% endif %}
                             </span>
                         </td>
                         {% if current_user.has_permission('payments.approve') %}
@@ -219,7 +229,12 @@
                                     class="text-green-600 hover:text-green-900 font-medium mr-3">Approve</button>
                             <button type="button"
                                     @click="showPaymentModal('reject', {{ payment.id }}, '{{ payment.payment_type }}')"
-                                    class="text-red-600 hover:text-red-900 font-medium">Reject</button>
+                                    class="text-red-600 hover:text-red-900 font-medium mr-3">Reject</button>
+                            {% endif %}
+                            {% if payment.status in ('pending', 'failed') %}
+                            <button type="button"
+                                    @click="showPaymentModal('cancel', {{ payment.id }}, '{{ payment.payment_type }}')"
+                                    class="text-gray-600 hover:text-gray-900 font-medium">Cancel</button>
                             {% endif %}
                         </td>
                         {% endif %}

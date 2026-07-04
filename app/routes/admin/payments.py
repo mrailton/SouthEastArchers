@@ -125,3 +125,16 @@ def reject_payment(payment_id: int, request: Request, user: CurrentUser, form_da
         return render(request, "errors/404.html", user=user, status_code=404)
     flash(request, "success" if result.success else "error", result.message)
     return RedirectResponse(url=redirect_to, status_code=303)
+
+
+@router.post("/payments/{payment_id}/cancel", name="admin.cancel_payment", dependencies=[require_perms("payments.approve")])
+def cancel_payment(payment_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
+    redirect_to = form_data.get("redirect_to") or "/admin/payments"
+    if not redirect_to.startswith("/"):
+        redirect_to = "/admin/payments"
+
+    result = payments.cancel_payment(payment_id)
+    if result.error_code == ErrorCode.NOT_FOUND:
+        return render(request, "errors/404.html", user=user, status_code=404)
+    flash(request, "success" if result.success else "error", result.message)
+    return RedirectResponse(url=redirect_to, status_code=303)

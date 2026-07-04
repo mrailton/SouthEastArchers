@@ -561,3 +561,187 @@ def test_approve_cash_payment_user_not_found(app, test_user):
         result = payments.approve_cash_payment(payment.id)
     assert result.success is False
     assert "User not found" in result.message
+
+
+# ---------------------------------------------------------------------------
+# retry_payment
+# ---------------------------------------------------------------------------
+
+
+class TestRetryPayment:
+    def test_reuses_pending_checkout_when_sumup_still_pending(self, app, test_user):
+        """If SumUp checkout is still PENDING, return it without creating a new one."""
+        from unittest.mock import Mock
+
+        from app.services import payments
+
+        payment = create_payment_for_user(
+            db,
+            test_user,
+            status="pending",
+            payment_method="online",
+            sumup_checkout_id="chk_live",
+            amount_cents=10000,
+            description="Annual Membership",
+        )
+        mock_sumup = Mock()
+        mock_sumup.get_checkout.return_value = Mock(status="PENDING")
+
+        result = payments.retry_payment(payment.id, test_user, sumup=mock_sumup)
+
+        assert result.success is True
+        assert result.data["checkout_id"] == "chk_live"
+        mock_sumup.get_checkout.assert_called_once_with("chk_live")
+
+    def test_creates_new_checkout_when_sumup_checkout_failed(self, app, test_user):
+        """If SumUp checkout is FAILED, a new checkout is created and payment updated."""
+        from unittest.mock import Mock
+
+        from app.services import payments
+
+        payment = create_payment_for_user(
+            db,
+            test_user,
+            status="pending",
+            payment_method="online",
+            sumup_checkout_id="chk_dead",
+            amount_cents=10000,
+            description="Annual Membership",
+        )
+        mock_sumup = Mock()
+        mock_sumup.get_checkout.return_value = Mock(status="FAILED")
+        mock_processor = Mock()
+        mock_processor.create_checkout.return_value = {"id": "chk_new", "checkout_reference": "ref_new", "status": "PENDING"}
+
+        result = payments.retry_payment(payment.id, test_user, processor=mock_processor, sumup=mock_sumup)
+
+        db.session.refresh(payment)
+        assert result.success is True
+        assert result.data["checkout_id"] == "chk_new"
+        assert payment.sumup_checkout_id == "chk_new"
+        assert payment.status == "pending"
+
+    def test_creates_new_checkout_for_failed_status_payment(self, app, test_user):
+        """A payment with status=failed always gets a fresh checkout (skip SumUp check)."""
+        from unittest.mock import Mock
+
+        from app.services import payments
+
+        payment = create_payment_for_user(
+            db,
+            test_user,
+            status="failed",
+            payment_method="online",
+            sumup_checkout_id="chk_old",
+            amount_cents=5000,
+            description="5 shooting credits",
+        )
+        mock_sumup = Mock()
+        mock_processor = Mock()
+        mock_processor.create_checkout.return_value = {"id": "chk_fresh", "checkout_reference": "r", "status": "PENDING"}
+
+        result = payments.retry_payment(payment.id, test_user, processor=mock_processor, sumup=mock_sumup)
+
+        db.session.refresh(payment)
+        assert result.success is True
+        assert result.data["checkout_id"] == "chk_fresh"
+        assert payment.status == "pending"
+        mock_sumup.get_checkout.assert_not_called()
+
+    def test_returns_not_found_for_missing_payment(self, app, test_user):
+        from app.services import payments
+
+        result = payments.retry_payment(999999, test_user)
+        assert result.success is False
+
+    def test_returns_not_found_for_wrong_user(self, app, test_user):
+        from app.models import User
+        from app.services import payments
+
+        other_user = User(name="Other", email="other@example.com", phone="0000000000", is_active=True)
+        other_user.set_password("pass")
+        db.session.add(other_user)
+        db.session.commit()
+        payment = create_payment_for_user(db, other_user, status="pending", payment_method="online")
+
+        result = payments.retry_payment(payment.id, test_user)
+        assert result.success is False
+
+    def test_cannot_retry_completed_payment(self, app, test_user):
+        from app.services import payments
+
+        payment = create_payment_for_user(db, test_user, status="completed", payment_method="online")
+        result = payments.retry_payment(payment.id, test_user)
+        assert result.success is False
+        assert "cannot be retried" in result.message
+
+    def test_cannot_retry_cash_payment(self, app, test_user):
+        from app.services import payments
+
+        payment = create_payment_for_user(db, test_user, status="pending", payment_method="cash")
+        result = payments.retry_payment(payment.id, test_user)
+        assert result.success is False
+        assert "online payments" in result.message
+
+    def test_fails_gracefully_when_new_checkout_creation_fails(self, app, test_user):
+        """If SumUp create_checkout returns None, retry returns a user-facing error."""
+        from unittest.mock import Mock
+
+        from app.services import payments
+
+        payment = create_payment_for_user(db, test_user, status="failed", payment_method="online", sumup_checkout_id="chk_x")
+        mock_processor = Mock()
+        mock_processor.create_checkout.return_value = None
+
+        result = payments.retry_payment(payment.id, test_user, processor=mock_processor)
+        assert result.success is False
+        assert "Error creating payment" in result.message
+
+    def test_fails_gracefully_when_db_update_fails(self, app, test_user):
+        """If the DB write fails after creating a new checkout, retry returns a user-facing error."""
+        from unittest.mock import Mock, patch
+
+        from app.services import payments
+
+        payment = create_payment_for_user(db, test_user, status="failed", payment_method="online", sumup_checkout_id="chk_db_err")
+        mock_processor = Mock()
+        mock_processor.create_checkout.return_value = {"id": "chk_new2", "checkout_reference": "r", "status": "PENDING"}
+
+        with patch("app.services.payments.BaseRepository.transaction", side_effect=Exception("db down")):
+            result = payments.retry_payment(payment.id, test_user, processor=mock_processor)
+
+        assert result.success is False
+        assert "Error creating payment" in result.message
+
+
+def test_cancel_payment_pending_online(app, test_user):
+    payment = create_payment_for_user(db, test_user, status="pending", payment_method="online")
+    result = payments.cancel_payment(payment.id)
+    assert result.success is True
+    assert payment.status == "cancelled"
+
+
+def test_cancel_payment_failed_online(app, test_user):
+    payment = create_payment_for_user(db, test_user, status="failed", payment_method="online")
+    result = payments.cancel_payment(payment.id)
+    assert result.success is True
+    assert payment.status == "cancelled"
+
+
+def test_cancel_payment_pending_cash(app, test_user):
+    payment = create_payment_for_user(db, test_user, status="pending", payment_method="cash")
+    result = payments.cancel_payment(payment.id)
+    assert result.success is True
+    assert payment.status == "cancelled"
+
+
+def test_cancel_payment_not_found(app):
+    result = payments.cancel_payment(999999)
+    assert result.success is False
+
+
+def test_cancel_payment_completed_is_rejected(app, test_user):
+    payment = create_payment_for_user(db, test_user, status="completed", payment_method="online")
+    result = payments.cancel_payment(payment.id)
+    assert result.success is False
+    assert "pending or failed" in result.message

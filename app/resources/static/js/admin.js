@@ -116,6 +116,12 @@ Alpine.data('memberDetailActions', () => ({
             this.modalMessage = 'Reject this payment? This action cannot be undone.'
             this.confirmText = 'Reject'
             this.formAction = `/admin/payments/${paymentId}/reject`
+        } else if (action === 'cancel') {
+            this.modalType = 'danger'
+            this.modalTitle = 'Cancel Payment'
+            this.modalMessage = 'Cancel this payment? The member will need to initiate a new payment. This action cannot be undone.'
+            this.confirmText = 'Cancel payment'
+            this.formAction = `/admin/payments/${paymentId}/cancel`
         }
         this.showConfirmModal = true
     }

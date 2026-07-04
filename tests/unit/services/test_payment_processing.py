@@ -13,14 +13,14 @@ def mock_sumup():
 
 
 @pytest.mark.parametrize(
-    "status,expected_category,message_fragment",
+    "status,expected_category,message_fragment,expected_redirect",
     [
-        ("FAILED", "error", "Payment declined"),
-        ("PENDING", "warning", "pending"),
-        ("CANCELLED", "error", "Payment failed"),
+        ("FAILED", "error", "declined", "/member/dashboard"),
+        ("PENDING", "warning", "pending", "/payment/checkout/chk_1"),
+        ("CANCELLED", "error", "not completed", "/member/dashboard"),
     ],
 )
-def test_fulfill_checkout_non_paid_status(mock_sumup, status, expected_category, message_fragment):
+def test_fulfill_checkout_non_paid_status(mock_sumup, status, expected_category, message_fragment, expected_redirect):
     mock_sumup.get_checkout.return_value = Mock(status=status)
 
     result = fulfill_checkout(checkout_id="chk_1", session={}, user_id=1, sumup=mock_sumup)
@@ -29,7 +29,7 @@ def test_fulfill_checkout_non_paid_status(mock_sumup, status, expected_category,
     assert result.data is not None
     assert result.data.flash_category == expected_category
     assert message_fragment in result.data.flash_message
-    assert result.data.redirect_url == "/payment/checkout/chk_1"
+    assert result.data.redirect_url == expected_redirect
 
 
 def test_fulfill_checkout_missing_checkout(mock_sumup):
@@ -317,3 +317,38 @@ def test_fulfill_checkout_credit_purchase_string_quantity(mock_sumup):
 
     assert result.success is True
     mock_handle.assert_called_once_with(8, 55, 3, "TXN")  # quantity cast to int
+
+
+# ---------------------------------------------------------------------------
+# _mark_checkout_payment_failed
+# ---------------------------------------------------------------------------
+
+
+def test_fulfill_checkout_failed_marks_payment_failed(app, test_user, mock_sumup):
+    """When SumUp status is FAILED, the linked DB payment is marked failed."""
+    from app import db
+    from app.services.payment_processing import fulfill_checkout
+    from tests.helpers import create_payment_for_user
+
+    payment = create_payment_for_user(db, test_user, status="pending", payment_method="online", sumup_checkout_id="chk_fail")
+    mock_sumup.get_checkout.return_value = Mock(status="FAILED")
+
+    result = fulfill_checkout(checkout_id="chk_fail", session={}, user_id=test_user.id, sumup=mock_sumup)
+
+    db.session.refresh(payment)
+    assert result.success is True
+    assert result.data.redirect_url == "/member/dashboard"
+    assert result.data.flash_category == "error"
+    assert payment.status == "failed"
+
+
+def test_fulfill_checkout_failed_clears_all_session_keys(app, mock_sumup):
+    """Failed checkout clears all checkout session keys."""
+    from app.services.payment_processing import _ALL_CHECKOUT_SESSION_KEYS, fulfill_checkout
+
+    mock_sumup.get_checkout.return_value = Mock(status="FAILED")
+
+    result = fulfill_checkout(checkout_id="chk_fail_keys", session={}, user_id=1, sumup=mock_sumup)
+
+    assert result.success is True
+    assert set(result.data.session_keys_to_clear) == set(_ALL_CHECKOUT_SESSION_KEYS)

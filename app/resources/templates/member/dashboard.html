@@ -116,7 +116,9 @@
                         <th class="py-2 pr-4 font-medium text-gray-600">Date</th>
                         <th class="py-2 pr-4 font-medium text-gray-600">Description</th>
                         <th class="py-2 pr-4 font-medium text-gray-600">Amount</th>
-                        <th class="py-2 font-medium text-gray-600">Status</th>
+                        <th class="py-2 pr-4 font-medium text-gray-600">Method</th>
+                        <th class="py-2 pr-4 font-medium text-gray-600">Status</th>
+                        <th class="py-2 font-medium text-gray-600">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -125,14 +127,37 @@
                         <td class="py-3 pr-4 text-sm text-gray-700">{{ payment.created_at.strftime('%d %b %Y') }}</td>
                         <td class="py-3 pr-4 text-sm text-gray-700">{{ payment.description or payment.payment_type|title }}</td>
                         <td class="py-3 pr-4 text-sm text-gray-700">€{{ "%.2f"|format(payment.amount_cents / 100) }}</td>
-                        <td class="py-3 text-sm">
+                        <td class="py-3 pr-4 text-sm">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                                {% if payment.status == 'completed' %}bg-green-100 text-green-800
-                                {% elif payment.status == 'pending' %}bg-yellow-100 text-yellow-800
-                                {% elif payment.status == 'failed' %}bg-red-100 text-red-800
+                                {% if payment.payment_method == 'online' %}bg-blue-100 text-blue-800
                                 {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {{ payment.status|title }}
+                                {{ payment.payment_method|title }}
                             </span>
+                        </td>
+                        <td class="py-3 pr-4 text-sm">
+                            {% if payment.status == 'completed' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
+                            {% elif payment.status == 'pending' and payment.payment_method == 'online' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Awaiting payment</span>
+                            {% elif payment.status == 'pending' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending approval</span>
+                            {% elif payment.status == 'failed' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Declined</span>
+                            {% elif payment.status == 'cancelled' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Cancelled</span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ payment.status|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 text-sm">
+                            {% if payment.status in ('pending', 'failed') and payment.payment_method == 'online' %}
+                            <form method="post" action="/payment/{{ payment.id }}/retry">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">
+                                    Retry payment
+                                </button>
+                            </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

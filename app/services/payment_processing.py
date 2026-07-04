@@ -24,6 +24,17 @@ class CheckoutFulfillment:
     session_keys_to_clear: tuple[str, ...]
 
 
+def _mark_checkout_payment_failed(checkout_id: str) -> None:
+    """Mark the pending payment linked to this checkout as failed."""
+    try:
+        payment = PaymentRepository.get_pending_by_sumup_checkout_id(checkout_id)
+        if payment and payment.status == "pending":
+            payment.mark_failed()
+            PaymentRepository.save()
+    except Exception:
+        logger.exception("Error marking payment failed for checkout %s", checkout_id)
+
+
 def _verify_payment_ownership(payment: Payment, user_id: int) -> ServiceResult[None] | None:
     """Return a failure result when payment does not belong to user_id."""
     if payment.user_id != user_id:
@@ -54,6 +65,9 @@ _CHECKOUT_FLOWS: dict[str, tuple[str, str, str, tuple[str, ...]]] = {
         ),
     ),
 }
+
+# Union of all session keys used by any checkout flow — used to clear stale state.
+_ALL_CHECKOUT_SESSION_KEYS: tuple[str, ...] = tuple(dict.fromkeys(key for _, _, _, clear_keys in _CHECKOUT_FLOWS.values() for key in clear_keys))
 
 
 def handle_signup_payment(user_id: int, payment_id: int, transaction_id: str) -> ServiceResult[None]:
@@ -205,7 +219,15 @@ def fulfill_checkout(
         status = getattr(checkout, "status", None)
         if status != "PAID":
             if status == "FAILED":
-                message = "Payment declined: Payment was not approved"
+                _mark_checkout_payment_failed(checkout_id)
+                return ServiceResult.ok(
+                    data=CheckoutFulfillment(
+                        redirect_url="/member/dashboard",
+                        flash_category="error",
+                        flash_message="Your payment was declined. You can retry from your payment history.",
+                        session_keys_to_clear=_ALL_CHECKOUT_SESSION_KEYS,
+                    )
+                )
             elif status == "PENDING":
                 message = "Payment is pending. Please contact us if the issue persists."
                 return ServiceResult.ok(
@@ -217,15 +239,15 @@ def fulfill_checkout(
                     )
                 )
             else:
-                message = "Payment failed: Payment was not approved"
-            return ServiceResult.ok(
-                data=CheckoutFulfillment(
-                    redirect_url=f"/payment/checkout/{checkout_id}",
-                    flash_category="error",
-                    flash_message=message,
-                    session_keys_to_clear=(),
+                _mark_checkout_payment_failed(checkout_id)
+                return ServiceResult.ok(
+                    data=CheckoutFulfillment(
+                        redirect_url="/member/dashboard",
+                        flash_category="error",
+                        flash_message="Your payment was not completed. You can retry from your payment history.",
+                        session_keys_to_clear=_ALL_CHECKOUT_SESSION_KEYS,
+                    )
                 )
-            )
 
         if user_id is None:
             return ServiceResult.ok(

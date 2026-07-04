@@ -1,8 +1,6 @@
 import logging
 from unittest.mock import patch
 
-import pytest
-
 from app.main import _configure_app_logging, _session_user_for_error_page
 from app.templating import AnonymousUser
 

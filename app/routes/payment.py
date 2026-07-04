@@ -9,6 +9,7 @@ from app.services import payment_processing
 from app.services import payments as payment_service
 from app.templating import flash, flash_field_errors, render
 from app.utils.checkout_session import (
+    _clear_all_checkout_keys,
     clear_session_keys,
     get_user_id_from_session,
     set_credit_purchase_checkout,
@@ -123,6 +124,24 @@ def credits_cash_payment(request: Request, user: CurrentUser, form_data: CsrfFor
     return RedirectResponse(url="/payment/credits", status_code=303)
 
 
+@router.post("/{payment_id}/retry", name="payment.retry_payment")
+def retry_payment_route(payment_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
+    result = payment_service.retry_payment(payment_id, user)
+    if not result.success:
+        flash(request, "error", result.message)
+        return RedirectResponse(url="/member/dashboard", status_code=303)
+
+    data = result.data
+    assert data is not None
+    # Set display data for the checkout page.  We deliberately do NOT set flow
+    # keys (membership_renewal_user_id etc.) so that fulfill_checkout uses its
+    # DB-lookup fallback path — the updated sumup_checkout_id is sufficient.
+    _clear_all_checkout_keys(request.session)
+    request.session["checkout_amount"] = data["amount"]
+    request.session["checkout_description"] = data["description"]
+    return RedirectResponse(url=f"/payment/checkout/{data['checkout_id']}", status_code=303)
+
+
 @router.get("/checkout/{checkout_id}", name="payment.show_checkout")
 def show_checkout(checkout_id: str, request: Request, user: CurrentUser):
     amount = request.session.get("checkout_amount", 100.00)
@@ -152,9 +171,3 @@ def complete_checkout(checkout_id: str, request: Request, user: CurrentUser, for
         clear_session_keys(request, *fulfillment.session_keys_to_clear)
     flash(request, fulfillment.flash_category, fulfillment.flash_message)
     return RedirectResponse(url=fulfillment.redirect_url, status_code=303)
-
-
-@router.get("/history", name="payment.history")
-def payment_history(request: Request, user: CurrentUser):
-    payments = payment_service.get_user_payments(user.id)
-    return render(request, "payment/history.html", {"payments": payments}, user=user)

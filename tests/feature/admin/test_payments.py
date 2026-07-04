@@ -292,3 +292,29 @@ def test_reject_payment_with_redirect(admin_client, test_user):
     )
     assert response.status_code in (302, 303)
     assert f"/admin/members/{test_user.id}" in response.headers.get("location", "")
+
+
+def test_cancel_payment_success(admin_client, test_user):
+    payment = create_payment_for_user(db, test_user, status="pending", payment_method="online")
+    response = admin_client.post(
+        f"/admin/payments/{payment.id}/cancel",
+        data={"redirect_to": f"/admin/members/{test_user.id}"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    db.session.refresh(payment)
+    assert payment.status == "cancelled"
+
+
+def test_cancel_payment_not_found_returns_404(admin_client):
+    response = admin_client.post(
+        "/admin/payments/999999/cancel",
+        data={"redirect_to": "/admin/payments"},
+    )
+    assert response.status_code == 404
+
+
+def test_cancel_payment_requires_permission(member_client, test_user):
+    payment = create_payment_for_user(db, test_user, status="pending", payment_method="online")
+    response = member_client.post(f"/admin/payments/{payment.id}/cancel")
+    assert response.status_code == 403

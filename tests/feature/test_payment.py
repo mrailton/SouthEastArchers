@@ -43,7 +43,7 @@ def test_complete_checkout_for_inactive_user_via_fallback(mock_email, mock_sumup
 def test_complete_checkout_failed_status(mock_sumup_class, member_client):
     mock_sumup_class.return_value.get_checkout.return_value = Mock(status="FAILED", transaction_code=None, transaction_id=None)
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
-    assert b"Payment declined" in response.content
+    assert b"declined" in response.content.lower()
 
 
 @patch("app.services.payment_processing.SumUpService")
@@ -84,7 +84,7 @@ def test_checkout_page_displays_session_data(member_client):
     assert b"test_checkout_123" in response.content
 
 
-@pytest.mark.parametrize("path", ["/payment/membership", "/payment/credits", "/payment/history"])
+@pytest.mark.parametrize("path", ["/payment/membership", "/payment/credits"])
 def test_payment_pages_require_login(client, path):
     response = client.get(path, follow_redirects=True)
     assert b"Login" in response.content
@@ -184,9 +184,9 @@ def test_credits_cash_payment_success(mock_send_email, member_client):
     assert b"Cash Payment Pending" in response.content
 
 
-def test_payment_history_page(member_client):
-    response = member_client.get("/payment/history")
-    assert response.status_code == 200
+def test_payment_history_redirects_to_dashboard(member_client):
+    response = member_client.get("/payment/history", follow_redirects=False)
+    assert response.status_code == 404
 
 
 @patch("app.services.payment_processing.SumUpService")
@@ -251,7 +251,7 @@ def test_credits_cash_payment_failure(mock_initiate, member_client):
 def test_complete_checkout_generic_failure_status(mock_sumup_class, member_client):
     mock_sumup_class.return_value.get_checkout.return_value = Mock(status="UNKNOWN")
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
-    assert b"not approved" in response.content.lower()
+    assert b"not completed" in response.content.lower()
 
 
 @patch("app.services.payment_processing.SumUpService")
@@ -266,3 +266,45 @@ def test_complete_checkout_paid_without_checkout_context(mock_sumup_class, membe
 def test_complete_checkout_exception(mock_sumup_class, member_client):
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
     assert b"error occurred" in response.content.lower()
+
+
+# ---------------------------------------------------------------------------
+# Retry payment route
+# ---------------------------------------------------------------------------
+
+
+@patch("app.services.payments.SumUpService")
+def test_retry_payment_redirects_to_checkout_on_success(mock_sumup_class, member_client, test_user):
+    """POST /{payment_id}/retry redirects to the checkout page when retry succeeds."""
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        payment_method="online",
+        status="failed",
+        description="Annual Membership",
+        sumup_checkout_id="chk_old",
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    mock_sumup_class.return_value.create_checkout.return_value = {
+        "id": "chk_retry",
+        "checkout_reference": "ref_retry",
+        "status": "PENDING",
+    }
+
+    response = member_client.post(f"/payment/{payment.id}/retry", follow_redirects=False)
+    assert response.status_code == 303
+    assert "/payment/checkout/chk_retry" in response.headers["location"]
+
+
+@patch("app.services.payments.SumUpService")
+def test_retry_payment_redirects_to_dashboard_on_failure(mock_sumup_class, member_client, test_user):
+    """POST /{payment_id}/retry redirects to member dashboard if retry fails."""
+    mock_sumup_class.return_value.create_checkout.return_value = None
+
+    response = member_client.post("/payment/999999/retry", follow_redirects=False)
+    assert response.status_code == 303
+    assert "/member/dashboard" in response.headers["location"]

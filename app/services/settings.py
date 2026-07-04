@@ -117,3 +117,20 @@ def calculate_membership_expiry(start_date: date | datetime) -> datetime:
         expiry = next_year_start - timedelta(seconds=1)
 
     return expiry
+
+
+def get_membership_year_start(today: date | None = None) -> date:
+    """Return the start date of the current membership year.
+
+    Uses ``membership_year_start_month`` and ``membership_year_start_day``
+    from settings. If today falls before the configured month/day, the year
+    start is in the previous calendar year.
+    """
+    if today is None:
+        today = date.today()
+    start_month: int = get("membership_year_start_month")
+    start_day: int = get("membership_year_start_day")
+    this_year_start = date(today.year, start_month, start_day)
+    if today >= this_year_start:
+        return this_year_start
+    return date(today.year - 1, start_month, start_day)

@@ -4,11 +4,12 @@ from fastapi import Request
 from fastapi.responses import RedirectResponse
 
 from app.templating import flash
+from app.utils import is_safe_redirect
 
 
 def redirect_back(request: Request, default: str) -> str:
     target = request.query_params.get("next") or default
-    if not target.startswith("/"):
+    if not is_safe_redirect(target):
         return default
     return target
 

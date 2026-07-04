@@ -185,3 +185,44 @@ def test_membership_expiry_edge_cases(app):
     start = date(2026, 12, 31)
     expiry = settings.calculate_membership_expiry(start)
     assert expiry.date() == date(2027, 2, 28)
+
+
+class TestGetMembershipYearStart:
+    def test_default_march_after_year_start(self, app):
+        """Today is after March 1 → year start is March 1 of this year."""
+        today = date(2026, 7, 4)
+        result = settings.get_membership_year_start(today)
+        assert result == date(2026, 3, 1)
+
+    def test_default_march_before_year_start(self, app):
+        """Today is before March 1 → year start is March 1 of previous year."""
+        today = date(2026, 1, 15)
+        result = settings.get_membership_year_start(today)
+        assert result == date(2025, 3, 1)
+
+    def test_on_year_start_date(self, app):
+        """Today is exactly the year start → year start is today."""
+        today = date(2026, 3, 1)
+        result = settings.get_membership_year_start(today)
+        assert result == date(2026, 3, 1)
+
+    def test_custom_start_month_and_day_after(self, app):
+        """Custom June 15 start; today is after it → year start is this year."""
+        settings.set("membership_year_start_month", 6)
+        settings.set("membership_year_start_day", 15)
+        today = date(2026, 9, 1)
+        result = settings.get_membership_year_start(today)
+        assert result == date(2026, 6, 15)
+
+    def test_custom_start_month_and_day_before(self, app):
+        """Custom June 15 start; today is before it → year start is previous year."""
+        settings.set("membership_year_start_month", 6)
+        settings.set("membership_year_start_day", 15)
+        today = date(2026, 4, 1)
+        result = settings.get_membership_year_start(today)
+        assert result == date(2025, 6, 15)
+
+    def test_no_today_uses_today(self, app):
+        """Calling without today argument returns a date (smoke test)."""
+        result = settings.get_membership_year_start()
+        assert isinstance(result, date)

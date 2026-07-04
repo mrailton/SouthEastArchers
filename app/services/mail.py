@@ -192,5 +192,5 @@ def send_cash_payment_pending_email(user_id: int, payment_id: int) -> None:
         amount=payment.amount,
         instructions=settings.get("cash_payment_instructions"),
         payment_type=payment.payment_type,
-        history_url=_safe_url_for("payment.history", "/payment/history"),
+        history_url=_safe_url_for("member.dashboard", "/member/dashboard"),
     )

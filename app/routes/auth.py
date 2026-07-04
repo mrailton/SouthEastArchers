@@ -8,6 +8,7 @@ from app.schemas.forms import ForgotPasswordForm, LoginForm, ResetPasswordForm, 
 from app.services import recaptcha as recaptcha_service
 from app.services import users
 from app.templating import flash, flash_field_errors, render
+from app.utils import is_safe_redirect
 from app.utils.rate_limit import check_rate_limit
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -48,7 +49,7 @@ def login_store(
     if csrf_token:
         request.session["csrf_token"] = csrf_token
     flash(request, "success", "Logged in successfully!")
-    destination = next_url if next_url and next_url.startswith("/") else "/member/dashboard"
+    destination = next_url if next_url and is_safe_redirect(next_url) else "/member/dashboard"
     return RedirectResponse(url=destination, status_code=303)
 
 

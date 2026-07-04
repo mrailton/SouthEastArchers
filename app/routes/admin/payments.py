@@ -5,6 +5,7 @@ from app.dependencies import CsrfFormData, CurrentUser, require_perms
 from app.services import payment_processing, payments
 from app.services.result import ErrorCode
 from app.templating import flash, render
+from app.utils import is_safe_redirect
 
 router = APIRouter(tags=["admin.payments"])
 
@@ -18,7 +19,7 @@ def pending_payments(request: Request, user: CurrentUser):
 @router.post("/payments/{payment_id}/approve", name="admin.approve_payment", dependencies=[require_perms("payments.approve")])
 def approve_payment(payment_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     redirect_to = form_data.get("redirect_to") or "/admin/payments"
-    if not redirect_to.startswith("/"):
+    if not is_safe_redirect(redirect_to):
         redirect_to = "/admin/payments"
 
     result = payments.approve_cash_payment(payment_id)
@@ -56,7 +57,7 @@ def _replay_payment_side_effects_response(
 )
 def replay_payment_side_effects_form(request: Request, user: CurrentUser, form_data: CsrfFormData):
     redirect_to = form_data.get("redirect_to") or "/admin/payments/reconcile"
-    if not redirect_to.startswith("/"):
+    if not is_safe_redirect(redirect_to):
         redirect_to = "/admin/payments/reconcile"
 
     raw_id = form_data.get("payment_id")
@@ -85,7 +86,7 @@ def replay_payment_side_effects_form(request: Request, user: CurrentUser, form_d
 )
 def replay_payment_side_effects(payment_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     redirect_to = form_data.get("redirect_to") or "/admin/payments/reconcile"
-    if not redirect_to.startswith("/"):
+    if not is_safe_redirect(redirect_to):
         redirect_to = "/admin/payments/reconcile"
     send_mail = form_data.get("send_mail", "1") != "0"
     return _replay_payment_side_effects_response(
@@ -104,7 +105,7 @@ def replay_payment_side_effects(payment_id: int, request: Request, user: Current
 )
 def reconcile_payment(payment_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     redirect_to = form_data.get("redirect_to") or "/admin/payments/reconcile"
-    if not redirect_to.startswith("/"):
+    if not is_safe_redirect(redirect_to):
         redirect_to = "/admin/payments/reconcile"
 
     result = payment_processing.reconcile_sumup_payment(payment_id)
@@ -117,7 +118,7 @@ def reconcile_payment(payment_id: int, request: Request, user: CurrentUser, form
 @router.post("/payments/{payment_id}/reject", name="admin.reject_payment", dependencies=[require_perms("payments.approve")])
 def reject_payment(payment_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     redirect_to = form_data.get("redirect_to") or "/admin/payments"
-    if not redirect_to.startswith("/"):
+    if not is_safe_redirect(redirect_to):
         redirect_to = "/admin/payments"
 
     result = payments.reject_cash_payment(payment_id)
@@ -130,7 +131,7 @@ def reject_payment(payment_id: int, request: Request, user: CurrentUser, form_da
 @router.post("/payments/{payment_id}/cancel", name="admin.cancel_payment", dependencies=[require_perms("payments.approve")])
 def cancel_payment(payment_id: int, request: Request, user: CurrentUser, form_data: CsrfFormData):
     redirect_to = form_data.get("redirect_to") or "/admin/payments"
-    if not redirect_to.startswith("/"):
+    if not is_safe_redirect(redirect_to):
         redirect_to = "/admin/payments"
 
     result = payments.cancel_payment(payment_id)

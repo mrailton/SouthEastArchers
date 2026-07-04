@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 from sqlalchemy import func, select
 
 from app.db import Pagination, db, paginate
 from app.models import Shoot
 from app.repositories.base import BaseRepository
-from app.utils.datetime_utils import utc_now
 
 
 class ShootRepository(BaseRepository):
@@ -22,12 +23,12 @@ class ShootRepository(BaseRepository):
 
     @staticmethod
     def get_upcoming() -> list[Shoot]:
-        stmt = select(Shoot).where(Shoot.date > utc_now()).order_by(Shoot.date.desc())
+        stmt = select(Shoot).where(Shoot.date >= date.today()).order_by(Shoot.date.asc())
         return list(db.session.scalars(stmt).unique().all())
 
     @staticmethod
     def count_upcoming() -> int:
-        stmt = select(func.count()).select_from(Shoot).where(Shoot.date > utc_now())
+        stmt = select(func.count()).select_from(Shoot).where(Shoot.date >= date.today())
         return db.session.scalar(stmt) or 0
 
     @staticmethod

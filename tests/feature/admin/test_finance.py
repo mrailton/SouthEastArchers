@@ -101,6 +101,19 @@ def test_financial_statement_page_defaults(admin_client):
     assert b"start_date" in response.content
 
 
+def test_financial_statement_defaults_use_membership_year_start(app, admin_client):
+    """Statement page pre-fills start_date from the configured membership year, not hardcoded March."""
+    from app.services import settings
+
+    settings.set("membership_year_start_month", 9)
+    settings.set("membership_year_start_day", 1)
+
+    response = admin_client.get("/admin/finance/statement")
+    assert response.status_code == 200
+    # The pre-filled start date should be September, not March
+    assert b"09-01" in response.content or b'value="2025-09-01"' in response.content or b"2025-09-01" in response.content
+
+
 def test_financial_statement_validation_error(admin_client):
     response = admin_client.post("/admin/finance/statement", data={"start_date": "", "end_date": ""})
     assert response.status_code == 422

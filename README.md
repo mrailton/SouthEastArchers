@@ -51,7 +51,11 @@ uv run python -m app.cli db upgrade
 uv run python -m app.cli rbac seed
 ```
 
-Create an admin user via the admin members UI after starting the app, or insert one directly in the database.
+Create an admin user via the CLI:
+
+```bash
+uv run sea users create
+```
 
 ## Running the Application
 
@@ -83,7 +87,7 @@ Run due scheduled jobs (membership expiry, low-credits reminders) via your sched
 │   │   ├── templates/      # Jinja2 templates
 │   │   └── static/         # CSS/JS source; dist/ holds Vite build output
 │   └── scheduler/          # Scheduled jobs
-├── tests/                  # Test suite (feature/, unit/)
+├── tests/                  # Test suite (feature/, unit/, integration/)
 └── migrations/             # Alembic migrations
 ```
 
@@ -116,14 +120,23 @@ Run these via system cron (example, daily at 00:01 and weekly Monday 09:00):
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `APP_ENV` | Environment (`development`, `testing`, `production`) | `development` |
+| `APP_URL` | Public base URL (used in emails) | `http://127.0.0.1:8000` |
 | `SECRET_KEY` | Session signing key | (required in production) |
 | `DATABASE_URL` | MySQL connection string | (required) |
+| `REDIS_URL` | Redis URL for rate-limit state (required for multi-worker production) | — |
 | `MAIL_SERVER` | SMTP server | `localhost` |
 | `MAIL_PORT` | SMTP port | `587` |
+| `MAIL_USE_TLS` | Enable STARTTLS | `True` |
+| `MAIL_USE_SSL` | Enable SSL | `False` |
+| `MAIL_USERNAME` | SMTP username | — |
+| `MAIL_PASSWORD` | SMTP password | — |
+| `MAIL_DEFAULT_SENDER` | From address for outbound email | `noreply@southeastarchers.ie` |
 | `SUMUP_API_KEY` | SumUp API key | (required for card payments) |
 | `SUMUP_MERCHANT_CODE` | SumUp merchant code | (required for card payments) |
-
-`FLASK_ENV` is still accepted as an alias for `APP_ENV` for backward compatibility.
+| `SUMUP_API_URL` | SumUp API base URL | `https://api.sumup.com` |
+| `RECAPTCHA_PUBLIC_KEY` | reCAPTCHA v2 site key | — |
+| `RECAPTCHA_PRIVATE_KEY` | reCAPTCHA v2 secret key | — |
+| `LOG_LEVEL` | Log level for `app.*` loggers | `INFO` |
 
 ## Docker
 

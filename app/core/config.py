@@ -39,7 +39,6 @@ class Settings(BaseSettings):
     mail_password: str | None = None
     mail_default_sender: str = "noreply@southeastarchers.ie"
 
-    payment_processor: str = "sumup"
     sumup_api_key: str | None = None
     sumup_merchant_code: str | None = None
     sumup_api_url: str = "https://api.sumup.com"

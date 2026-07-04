@@ -14,6 +14,7 @@ from app.schemas.admin_forms import (
 )
 from app.schemas.form_helpers import FormView, parse_form
 from app.services import finance
+from app.services.settings import get_membership_year_start
 from app.templating import flash, render
 from app.utils.pdf import generate_statement_pdf
 
@@ -111,8 +112,7 @@ def create_income_store(request: Request, user: CurrentUser, form_data: CsrfForm
 @router.get("/finance/statement", name="admin.financial_statement", dependencies=[require_perms("finance.report")])
 def financial_statement_page(request: Request, user: CurrentUser):
     today = date.today()
-    current_year = today.year
-    start_date = date(current_year, 3, 1) if today.month >= 3 else date(current_year - 1, 3, 1)
+    start_date = get_membership_year_start(today)
     form = _statement_form_view(values={"start_date": start_date, "end_date": today})
     return render(request, "admin/financial_statement.html", {"form": form, "statement": None}, user=user)
 

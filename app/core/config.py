@@ -49,6 +49,8 @@ class Settings(BaseSettings):
 
     redis_url: str | None = Field(default=None, validation_alias="REDIS_URL")
 
+    log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
+
     def model_post_init(self, __context: object) -> None:
         if self.is_development:
             object.__setattr__(self, "app_debug", True)

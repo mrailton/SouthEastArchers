@@ -5,7 +5,10 @@ from app.services.sumup import SumUpService
 
 
 class MockAPIError(Exception):
-    pass
+    def __init__(self, message="API Error", status=None, body=None):
+        super().__init__(message)
+        self.status = status
+        self.body = body
 
 
 def test_init_with_api_key():

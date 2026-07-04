@@ -28,7 +28,7 @@ def credit_quantity_from_description(description: str | None) -> int:
     if description and "shooting credits" in description.lower():
         try:
             return int(description.split()[0])
-        except ValueError, IndexError:
+        except (ValueError, IndexError):
             return 1
     return 1
 

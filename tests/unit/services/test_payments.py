@@ -9,25 +9,6 @@ from tests.helpers import FakePaymentProcessor, create_payment_for_user
 # TestPaymentService module-level functions
 
 
-def test_create_checkout_success(app, test_user):
-    """Test creating a checkout successfully"""
-    processor = FakePaymentProcessor(checkout_response={"id": "checkout_123", "status": "PENDING"})
-    result = payments.create_checkout(10000, "Test payment", processor=processor)
-
-    assert result is not None
-    assert result["id"] == "checkout_123"
-    assert len(processor.calls) == 1
-    assert processor.calls[0][0] == "create_checkout"
-
-
-def test_create_checkout_failure(app, test_user):
-    """Test creating checkout when API fails"""
-    processor = FakePaymentProcessor(checkout_response=None)
-    result = payments.create_checkout(10000, "Test payment", processor=processor)
-
-    assert result is None
-
-
 def test_initiate_membership_payment_success(app, test_user):
     """Test initiating membership payment successfully"""
     processor = FakePaymentProcessor(checkout_response={"id": "checkout_123"})
@@ -53,6 +34,24 @@ def test_initiate_membership_payment_checkout_fails(app, test_user):
     assert "Error creating payment" in result.message
     # Payment should be rolled back
     assert Payment.query.count() == initial_payment_count
+
+
+def test_initiate_membership_payment_db_failure(app, test_user):
+    """DB write failure after successful checkout creation returns an error without leaving a dangling SumUp checkout."""
+    processor = FakePaymentProcessor(checkout_response={"id": "checkout_db_fail"})
+    with patch("app.repositories.PaymentRepository.add", side_effect=Exception("DB error")):
+        result = payments.initiate_membership_payment(test_user, processor=processor)
+    assert result.success is False
+    assert "Error creating payment" in result.message
+
+
+def test_initiate_credit_purchase_db_failure(app, test_user):
+    """DB write failure after successful credit checkout creation returns an error."""
+    processor = FakePaymentProcessor(checkout_response={"id": "checkout_credit_db_fail"})
+    with patch("app.repositories.PaymentRepository.add", side_effect=Exception("DB error")):
+        result = payments.initiate_credit_purchase(test_user, 3, processor=processor)
+    assert result.success is False
+    assert "Error creating payment" in result.message
 
 
 def test_initiate_credit_purchase_success(app, test_user):

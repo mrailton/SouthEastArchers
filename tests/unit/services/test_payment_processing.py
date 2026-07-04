@@ -64,21 +64,38 @@ def test_fulfill_checkout_paid_without_flow_keys_warns_when_unmatched(app, mock_
     assert "could not be matched" in result.data.flash_message
 
 
-@patch("app.services.payment_processing.handle_signup_payment")
-def test_fulfill_checkout_signup_flow(mock_handle, mock_sumup):
-    from app.services.result import ServiceResult
+def test_fulfill_checkout_fallback_routes_inactive_user_via_signup_handler(app, test_user, mock_sumup):
+    """Inactive user with a matching pending payment should be processed via handle_signup_payment."""
+    from app import db
+    from app.models import Payment
 
-    mock_sumup.get_checkout.return_value = Mock(status="PAID", transaction_code="TXN3", transaction_id="txn_3")
-    mock_handle.return_value = ServiceResult.ok(message="Payment successful!")
+    test_user.is_active = False
+    db.session.commit()
 
-    session = {"signup_user_id": 10, "signup_payment_id": 99}
-    result = fulfill_checkout(checkout_id="chk_4", session=session, user_id=10, sumup=mock_sumup)
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        payment_method="online",
+        status="pending",
+        sumup_checkout_id="chk_inactive",
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    mock_sumup.get_checkout.return_value = Mock(status="PAID", transaction_code="TXN_INACTIVE", transaction_id="txn_inactive")
+
+    with patch("app.services.payment_processing.handle_signup_payment") as mock_handle:
+        from app.services.result import ServiceResult
+
+        mock_handle.return_value = ServiceResult.ok(message="Payment successful!")
+        result = fulfill_checkout(checkout_id="chk_inactive", session={}, user_id=test_user.id, sumup=mock_sumup)
 
     assert result.success is True
     assert result.data is not None
-    assert result.data.redirect_url == "/auth/login"
     assert result.data.flash_category == "success"
-    mock_handle.assert_called_once_with(10, 99, "TXN3")
+    mock_handle.assert_called_once_with(test_user.id, payment.id, "TXN_INACTIVE")
 
 
 @patch("app.services.payment_processing.handle_membership_renewal")
@@ -241,3 +258,62 @@ def test_reconcile_sumup_payment_rejects_unpaid_checkout(app, test_user):
 
     assert result.success is False
     assert "not paid" in result.message.lower()
+
+
+def test_reconcile_sumup_payment_checkout_unreachable(app, test_user):
+    """SumUp returns None (network/API error) → reconcile fails gracefully."""
+    from unittest.mock import Mock
+
+    from app import db
+    from app.services import payment_processing
+    from tests.helpers import create_payment_for_user
+
+    payment = create_payment_for_user(
+        db,
+        test_user,
+        status="pending",
+        payment_method="online",
+        sumup_checkout_id="chk_unreachable",
+    )
+    mock_sumup = Mock()
+    mock_sumup.get_checkout.return_value = None
+
+    result = payment_processing.reconcile_sumup_payment(payment.id, sumup=mock_sumup)
+
+    assert result.success is False
+    assert "Could not verify" in result.message
+
+
+def test_fulfill_checkout_membership_renewal_non_int_payment_id(mock_sumup):
+    """Non-integer payment_id in session (e.g. stale stringified value) returns a failure."""
+    from app.services.payment_processing import fulfill_checkout
+
+    mock_sumup.get_checkout.return_value = Mock(status="PAID", transaction_code="TXN", transaction_id="txn")
+
+    session = {"membership_renewal_user_id": 1, "membership_renewal_payment_id": "not-an-int"}
+    result = fulfill_checkout(checkout_id="chk_bad_id", session=session, user_id=1, sumup=mock_sumup)
+
+    assert result.success is False
+    assert "session" in result.message.lower()
+
+
+def test_fulfill_checkout_credit_purchase_string_quantity(mock_sumup):
+    """String credit_purchase_quantity in session is cast to int before dispatch."""
+    from unittest.mock import patch
+
+    from app.services.payment_processing import fulfill_checkout
+    from app.services.result import ServiceResult
+
+    mock_sumup.get_checkout.return_value = Mock(status="PAID", transaction_code="TXN", transaction_id="txn")
+
+    session = {
+        "credit_purchase_user_id": 8,
+        "credit_purchase_payment_id": 55,
+        "credit_purchase_quantity": "3",  # string, not int
+    }
+    with patch("app.services.payment_processing.handle_credit_purchase") as mock_handle:
+        mock_handle.return_value = ServiceResult.ok(message="Done")
+        result = fulfill_checkout(checkout_id="chk_str_qty", session=session, user_id=8, sumup=mock_sumup)
+
+    assert result.success is True
+    mock_handle.assert_called_once_with(8, 55, 3, "TXN")  # quantity cast to int

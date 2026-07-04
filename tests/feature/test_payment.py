@@ -12,13 +12,20 @@ from tests.http_helpers import set_session
 
 @patch("app.services.payment_processing.SumUpService")
 @patch("app.services.mail.send_payment_receipt")
-def test_complete_checkout_signup_payment(mock_email, mock_sumup_class, member_client, test_user):
+def test_complete_checkout_for_inactive_user_via_fallback(mock_email, mock_sumup_class, member_client, test_user):
+    """An inactive user's pending payment found by checkout_id routes through handle_signup_payment."""
+    test_user.is_active = False
+    from app import db
+
+    db.session.commit()
+
     payment = Payment(
         user_id=test_user.id,
         amount_cents=10000,
         currency="EUR",
         payment_type="membership",
         status="pending",
+        sumup_checkout_id="test_123",
     )
     db.session.add(payment)
     db.session.commit()
@@ -26,11 +33,6 @@ def test_complete_checkout_signup_payment(mock_email, mock_sumup_class, member_c
     mock_checkout = Mock(status="PAID", transaction_code="TXN123", transaction_id="txn_123")
     mock_sumup_class.return_value.get_checkout.return_value = mock_checkout
 
-    set_session(
-        member_client,
-        signup_user_id=test_user.id,
-        signup_payment_id=payment.id,
-    )
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
 
     assert response.status_code == 200

@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from urllib.parse import quote
 
@@ -11,7 +11,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import get_settings
-from app.db import init_db
+from app.db import db, init_db, reset_current_session, set_current_session
+from app.db.session import has_current_session
 from app.exceptions import AlreadyAuthenticated, AuthorizationError, CsrfError, LoginRequired
 from app.routes import api_router
 from app.templating import AnonymousUser, register_route_names, render, setup_template_globals
@@ -25,10 +26,30 @@ STATIC_DIR = APP_DIR / "resources" / "static"
 BUILT_ASSETS_DIR = STATIC_DIR / "dist" / "assets"
 
 
+def _configure_app_logging() -> None:
+    """Attach a StreamHandler to the 'app' logger hierarchy.
+
+    Uvicorn only wires up handlers for its own loggers; without this, every
+    app.* logger propagates to the root logger which has no handlers, and all
+    messages are silently dropped.  We add our own handler directly so the
+    level set via LOG_LEVEL is actually honoured.
+
+    In the test environment we only set the level — pytest's caplog fixture
+    captures via propagation and adding a handler here would break that.
+    """
+    app_logger = logging.getLogger("app")
+    app_logger.setLevel(settings.log_level.upper())
+    if not settings.is_testing and not app_logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)-8s  %(name)s - %(message)s"))
+        app_logger.addHandler(handler)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.events.handlers import connect_handlers
 
+    _configure_app_logging()
     register_route_names(list(app.routes))
     connect_handlers()
     yield
@@ -87,6 +108,28 @@ def _session_user_for_error_page(request: Request):
     return user if user is not None else AnonymousUser()
 
 
+@contextmanager
+def _error_page_db_session():
+    """Ensure an active DB session for error-page rendering.
+
+    Exception handlers run outside FastAPI's dependency injection lifecycle,
+    so they have no session when a route never matched (e.g. 404 on /favicon.ico)
+    or after get_db() has already been torn down.  Open a fresh read session
+    only when one is not already present; always close it afterwards.
+    """
+    if has_current_session():
+        yield
+        return
+
+    session = db.create_session()
+    token = set_current_session(session)
+    try:
+        yield
+    finally:
+        session.close()
+        reset_current_session(token)
+
+
 @app.exception_handler(LoginRequired)
 async def login_required_handler(request: Request, _exc: LoginRequired):
     next_url = request.url.path
@@ -102,27 +145,31 @@ async def already_authenticated_handler(request: Request, _exc: AlreadyAuthentic
 
 @app.exception_handler(AuthorizationError)
 async def authorization_error_handler(request: Request, _exc: AuthorizationError):
-    user = _session_user_for_error_page(request)
-    return render(request, "errors/403.html", status_code=403, user=user)
+    with _error_page_db_session():
+        user = _session_user_for_error_page(request)
+        return render(request, "errors/403.html", status_code=403, user=user)
 
 
 @app.exception_handler(CsrfError)
 async def csrf_error_handler(request: Request, _exc: CsrfError):
-    user = _session_user_for_error_page(request)
-    return render(request, "errors/csrf.html", status_code=403, user=user)
+    with _error_page_db_session():
+        user = _session_user_for_error_page(request)
+        return render(request, "errors/csrf.html", status_code=403, user=user)
 
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, _exc: StarletteHTTPException):
-    user = _session_user_for_error_page(request)
-    return render(request, "errors/404.html", status_code=404, user=user)
+    with _error_page_db_session():
+        user = _session_user_for_error_page(request)
+        return render(request, "errors/404.html", status_code=404, user=user)
 
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
     logger.exception("Unhandled error processing %s", request.url.path)
-    user = _session_user_for_error_page(request)
-    return render(request, "errors/500.html", status_code=500, user=user)
+    with _error_page_db_session():
+        user = _session_user_for_error_page(request)
+        return render(request, "errors/500.html", status_code=500, user=user)
 
 
 if settings.is_testing:

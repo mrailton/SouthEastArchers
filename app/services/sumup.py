@@ -15,7 +15,7 @@ class SumUpService:
         settings = get_settings()
         self.api_key = api_key or settings.sumup_api_key
         self.merchant_code = merchant_code or settings.sumup_merchant_code
-        self.client = Sumup(api_key=self.api_key)
+        self.client = Sumup(api_key=self.api_key, base_url=settings.sumup_api_url)
 
     def create_checkout(
         self,
@@ -41,17 +41,37 @@ class SumUpService:
                 merchant_code=merchant_code,
                 description=description,
             )
+            logger.debug(
+                "SumUp create_checkout request: amount=%.2f currency=%s reference=%s merchant=%s description=%r",
+                float(amount / 100.0),
+                currency,
+                checkout_reference,
+                merchant_code,
+                description,
+            )
             response = self.client.checkouts.create(body=checkout_body)
+            logger.debug("SumUp create_checkout raw response: %r", response)
             if response and hasattr(response, "id"):
-                return {
+                result = {
                     "id": response.id,
                     "checkout_reference": getattr(response, "checkout_reference", checkout_reference),
                     "status": getattr(response, "status", "PENDING"),
                 }
-            logger.error("SumUp checkout response missing id")
+                logger.info(
+                    "SumUp checkout created: id=%s reference=%s status=%s",
+                    result["id"],
+                    result["checkout_reference"],
+                    result["status"],
+                )
+                return result
+            logger.error("SumUp checkout response missing id: %r", response)
             return None
         except APIError as exc:
-            logger.error("SumUp API error creating checkout: %s", exc)
+            logger.error(
+                "SumUp API error creating checkout: status=%s body=%s",
+                exc.status,
+                exc.body,
+            )
             return None
         except ValueError as exc:
             logger.error("Configuration error: %s", exc)
@@ -62,12 +82,27 @@ class SumUpService:
 
     def get_checkout(self, checkout_id: str) -> Any | None:
         try:
-            return self.client.checkouts.get(id=checkout_id)
+            logger.debug("SumUp get_checkout request: id=%s", checkout_id)
+            response = self.client.checkouts.get(id=checkout_id)
+            logger.debug("SumUp get_checkout raw response: %r", response)
+            if response:
+                logger.info(
+                    "SumUp checkout fetched: id=%s status=%s transaction_code=%s",
+                    checkout_id,
+                    getattr(response, "status", "?"),
+                    getattr(response, "transaction_code", None),
+                )
+            return response
         except APIError as exc:
-            logger.error("SumUp API error getting checkout: %s", exc)
+            logger.error(
+                "SumUp API error getting checkout %s: status=%s body=%s",
+                checkout_id,
+                exc.status,
+                exc.body,
+            )
             return None
         except Exception as exc:
-            logger.error("Error getting SumUp checkout: %s", exc)
+            logger.error("Error getting SumUp checkout %s: %s", checkout_id, exc)
             return None
 
     def verify_payment(self, checkout_id: str) -> bool:

@@ -35,12 +35,6 @@ def _verify_payment_ownership(payment: Payment, user_id: int) -> ServiceResult[N
 
 
 _CHECKOUT_FLOWS: dict[str, tuple[str, str, str, tuple[str, ...]]] = {
-    "signup": (
-        "signup_user_id",
-        "signup_payment_id",
-        "/auth/login",
-        ("signup_user_id", "signup_payment_id", "checkout_amount", "checkout_description"),
-    ),
     "membership_renewal": (
         "membership_renewal_user_id",
         "membership_renewal_payment_id",
@@ -276,9 +270,7 @@ def fulfill_checkout(
         if not isinstance(payment_id, int):
             return ServiceResult.fail("Payment session not found. Please try again.")
 
-        if flow_name == "signup":
-            result = handle_signup_payment(user_id, payment_id, txn_id)
-        elif flow_name == "membership_renewal":
+        if flow_name == "membership_renewal":
             result = handle_membership_renewal(user_id, payment_id, txn_id)
         else:
             quantity = session.get("credit_purchase_quantity", 1)

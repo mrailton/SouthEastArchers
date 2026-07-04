@@ -22,16 +22,6 @@ class CheckoutProcessor(Protocol):
     def create_checkout(self, amount: int, currency: str = "EUR", description: str = "") -> dict[str, Any] | None: ...
 
 
-def create_checkout(
-    amount_cents: int,
-    description: str,
-    *,
-    processor: CheckoutProcessor | None = None,
-) -> dict[str, Any] | None:
-    processor = processor or SumUpService()
-    return processor.create_checkout(amount=amount_cents, currency="EUR", description=description)
-
-
 def get_user_payments(user_id: int) -> list[Payment]:
     return PaymentRepository.get_by_user(user_id)
 
@@ -45,6 +35,10 @@ def initiate_membership_payment(
     amount_cents: int = settings.get("annual_membership_cost")
     description = f"Annual Membership - {user.name}"
 
+    checkout = processor.create_checkout(amount=amount_cents, currency="EUR", description=description)
+    if not checkout:
+        return ServiceResult.fail("Error creating payment. Please try again.")
+
     payment = Payment(
         user_id=user.id,
         amount_cents=amount_cents,
@@ -53,27 +47,24 @@ def initiate_membership_payment(
         payment_method=PaymentMethod.ONLINE,
         description=description,
         status="pending",
+        sumup_checkout_id=checkout.get("id"),
     )
-    PaymentRepository.add(payment)
-    PaymentRepository.flush()
+    try:
+        with BaseRepository.transaction():
+            PaymentRepository.add(payment)
+    except Exception as exc:
+        logger.error("Error saving membership payment: %s", exc)
+        return ServiceResult.fail("Error creating payment. Please try again.")
 
-    checkout = processor.create_checkout(amount=amount_cents, currency="EUR", description=description)
-    if checkout:
-        payment.sumup_checkout_id = checkout.get("id")
-        PaymentRepository.save()
-        return ServiceResult.ok(
-            data={
-                "checkout_id": checkout.get("id"),
-                "payment_id": payment.id,
-                "user_id": user.id,
-                "amount": amount_cents / 100.0,
-                "description": description,
-            }
-        )
-
-    PaymentRepository.delete(payment)
-    PaymentRepository.flush()
-    return ServiceResult.fail("Error creating payment. Please try again.")
+    return ServiceResult.ok(
+        data={
+            "checkout_id": checkout.get("id"),
+            "payment_id": payment.id,
+            "user_id": user.id,
+            "amount": amount_cents / 100.0,
+            "description": description,
+        }
+    )
 
 
 def initiate_credit_purchase(
@@ -86,6 +77,10 @@ def initiate_credit_purchase(
     amount_cents: int = quantity * settings.get("additional_shoot_cost")
     description = f"{quantity} credits - {user.name}"
 
+    checkout = processor.create_checkout(amount=amount_cents, currency="EUR", description=description)
+    if not checkout:
+        return ServiceResult.fail("Error creating payment. Please try again.")
+
     payment = Payment(
         user_id=user.id,
         amount_cents=amount_cents,
@@ -94,28 +89,25 @@ def initiate_credit_purchase(
         payment_method=PaymentMethod.ONLINE,
         description=f"{quantity} shooting credits",
         status="pending",
+        sumup_checkout_id=checkout.get("id"),
     )
-    PaymentRepository.add(payment)
-    PaymentRepository.flush()
+    try:
+        with BaseRepository.transaction():
+            PaymentRepository.add(payment)
+    except Exception as exc:
+        logger.error("Error saving credit payment: %s", exc)
+        return ServiceResult.fail("Error creating payment. Please try again.")
 
-    checkout = processor.create_checkout(amount=amount_cents, currency="EUR", description=description)
-    if checkout:
-        payment.sumup_checkout_id = checkout.get("id")
-        PaymentRepository.save()
-        return ServiceResult.ok(
-            data={
-                "checkout_id": checkout.get("id"),
-                "payment_id": payment.id,
-                "user_id": user.id,
-                "quantity": quantity,
-                "amount": amount_cents / 100.0,
-                "description": description,
-            }
-        )
-
-    PaymentRepository.delete(payment)
-    PaymentRepository.flush()
-    return ServiceResult.fail("Error creating payment. Please try again.")
+    return ServiceResult.ok(
+        data={
+            "checkout_id": checkout.get("id"),
+            "payment_id": payment.id,
+            "user_id": user.id,
+            "quantity": quantity,
+            "amount": amount_cents / 100.0,
+            "description": description,
+        }
+    )
 
 
 def initiate_cash_membership_payment(user: User) -> ServiceResult[dict]:

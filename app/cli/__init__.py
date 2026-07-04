@@ -108,6 +108,75 @@ def payments_replay_side_effects(payment_id: int, no_mail: bool) -> None:
         _close_cli_session(session, token)
 
 
+@cli.group("users")
+def users_cli() -> None:
+    """User management commands."""
+
+
+@users_cli.command("create")
+def users_create() -> None:
+    """Interactively create a new user."""
+    from app.repositories import RBACRepository
+    from app.services import users
+
+    session, token = _open_cli_session()
+    try:
+        click.echo("=== Create New User ===\n")
+
+        name = click.prompt("Full name")
+        email = click.prompt("Email address")
+        password = click.prompt("Password", hide_input=True, confirmation_prompt=True)
+        phone = click.prompt("Phone number (optional)", default="", show_default=False)
+
+        # Role selection
+        roles = RBACRepository.list_roles()
+        selected_role_ids: list[int] = []
+        if roles:
+            click.echo("\nAvailable roles:")
+            for role in roles:
+                click.echo(f"  [{role.id}] {role.name}" + (f" — {role.description}" if role.description else ""))
+            raw = click.prompt("\nEnter role IDs to assign (comma-separated, or blank for none)", default="", show_default=False)
+            if raw.strip():
+                valid_ids = {r.id for r in roles}
+                for part in raw.split(","):
+                    part = part.strip()
+                    if part.isdigit() and int(part) in valid_ids:
+                        selected_role_ids.append(int(part))
+                    elif part:
+                        click.echo(f"  ⚠ Skipping unknown role ID: {part}", err=True)
+
+        activate = click.confirm("\nActivate account immediately?", default=False)
+        create_membership = click.confirm("Create membership?", default=False)
+
+        result = users.create_member(
+            name=name,
+            email=email,
+            phone=phone or None,
+            password=password,
+            role_ids=selected_role_ids or None,
+            create_membership=create_membership,
+        )
+
+        if not result.success:
+            click.echo(f"\n✗ {result.message}", err=True)
+            raise SystemExit(1)
+
+        user = result.data
+        if activate and user and not user.is_active:
+            users.activate_account(user.id)
+
+        click.echo(f"\n✓ User '{name}' ({email}) created successfully.")
+        if selected_role_ids:
+            assigned = [r.name for r in roles if r.id in selected_role_ids]
+            click.echo(f"  Roles: {', '.join(assigned)}")
+        if activate:
+            click.echo("  Account: active")
+        if create_membership:
+            click.echo("  Membership: created")
+    finally:
+        _close_cli_session(session, token)
+
+
 @cli.group("rbac")
 def rbac_cli() -> None:
     """RBAC management."""

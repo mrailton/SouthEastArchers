@@ -15,7 +15,7 @@ A web application for South East Archers club management, including membership m
 - Member management — create, edit, and manage member accounts and memberships
 - Shoot management — schedule shoots, track attendance, manage locations
 - Event and news management — create and publish club content
-- Payment approvals — approve pending cash payments
+- Payment approvals — approve or reject cash payments, cancel or reconcile online payments, and replay side-effects for recovery
 - Settings — configure membership costs, year dates, and payment instructions
 - Role-based access control — fine-grained permissions for admin functions
 

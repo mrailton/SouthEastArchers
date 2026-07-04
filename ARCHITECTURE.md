@@ -88,10 +88,25 @@ sequenceDiagram
     Event->>Finance: record_payment_transactions (idempotent)
 ```
 
+### Failed / abandoned checkouts
+
+If SumUp returns `FAILED` or `CANCELLED` on `/payment/checkout/{id}/complete`, `fulfill_checkout` marks the `Payment` as `failed` in the DB and redirects to the member dashboard with a flash message.
+
+Members can **retry** a failed or pending online payment from their dashboard without creating a new `Payment` record:
+
+1. `POST /payment/{payment_id}/retry` → `payments.retry_payment()`
+2. If the original SumUp checkout is still `PENDING`, it is reused; otherwise a new SumUp checkout is created and the existing `Payment` record is updated with the new `sumup_checkout_id` and reset to `pending`.
+3. The member is redirected to the SumUp widget as normal.
+
+Admins can **cancel** any pending or failed payment from the member detail page:
+
+- `POST /admin/payments/{payment_id}/cancel` → `payments.cancel_payment()` — works for both cash and online payments.
+
 ### Cash payments
 
 1. Member submits cash request → `initiate_cash_*` creates pending payment, commits, then emits `cash_payment_submitted` (pending email).
 2. Admin approves → `approve_cash_payment` → `fulfill_payment` → `payment_completed` → mail + ledger.
+3. Admin can also reject or cancel pending cash payments from the member detail page.
 
 ### Admin reconciliation (SumUp)
 
@@ -104,7 +119,7 @@ Payment fulfillment handlers verify `payment.user_id` matches the acting user be
 If a completed payment is missing its receipt or ledger entry after a deferred handler failure, replay side effects:
 
 - **CLI:** `uv run sea payments replay-side-effects PAYMENT_ID` (`--no-mail` for ledger only)
-- **Admin:** Reconcile page → “Replay side effects” form
+- **Admin:** Reconcile page → "Replay side effects" form
 
 Ledger recording is idempotent on replay.
 
@@ -139,12 +154,26 @@ Deferred handlers log failures with `user_id` / `payment_id` context; they do no
 
 ## Adding a feature (checklist)
 
-1. Schema in `app/schemas/` if the route accepts form input
-2. Service method returning `ServiceResult`
-3. Repository method if the query is non-trivial
-4. Route with `CsrfFormData` on POST and `require_perms()` on admin routes
-5. Unit test for service logic; feature test for HTTP happy path
-6. Event + handler only if the action sends email or writes to the ledger
+1. **Model** in `app/models/` if the feature needs new DB tables — follow existing `mapped_column` / `relationship` patterns.
+2. **Migration** — `alembic revision --autogenerate -m "description"` and review the generated file before applying.
+3. **Schema** in `app/schemas/` if the route accepts form input.
+4. **Service** method returning `ServiceResult` — business logic lives here, not in routes.
+5. **Repository** method if the query is non-trivial — keep raw `db.session` calls out of services.
+6. **Route** with `CsrfFormData` on POST and `require_perms()` on admin routes.
+7. **Templates** in `app/resources/templates/` — extend `base.html` or `admin/base.html`; use existing Tailwind utility classes.
+8. **`app/routes_map.py`** — add any new named routes that need to be resolved outside of HTTP request context (emails, CLI, scheduler).
+9. **Unit test** for service logic; **feature test** for HTTP happy path.
+10. **Event + handler** only if the action sends email or writes to the ledger — see `app/events/`.
+
+## Beginner courses (planned feature notes)
+
+The planned beginner courses feature will need:
+
+- **New models:** `Course`, `CourseSession` (many sessions per course), `CourseEnrollment` (with status: enrolled/waitlisted/cancelled/completed). Keep these separate from `Event` — events are single-date announcements, not multi-session operational entities.
+- **Non-member enrollment:** `Payment.user_id` is currently non-nullable, so course fees require either creating a lightweight account before enrollment/payment or a separate `CoursePayment` model. The simplest approach is to require account creation as step 1 of enrollment.
+- **Reuse:** RBAC/permissions pattern, email/event infrastructure, payment reconciliation/replay, the `qualification` field on memberships for marking course completion, and `ShootVisitor` as prior art for non-member participation.
+- **New signals:** `course_enrollment_confirmed`, `course_reminder_due`, `course_completed`.
+- **Scheduler jobs:** enrollment reminder emails, waitlist promotion on cancellation.
 
 ## Testing
 

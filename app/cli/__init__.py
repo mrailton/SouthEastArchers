@@ -33,6 +33,9 @@ def _open_cli_session() -> tuple[Session | None, Token | None]:
 
 def _close_cli_session(session: Session | None, token: Token | None) -> None:
     if session is not None and token is not None:
+        from app.events.background import flush_deferred_handlers
+
+        flush_deferred_handlers()
         session.close()
         reset_current_session(token)
 
@@ -53,6 +56,9 @@ def _resolve_job(job_name: str):
 def cli() -> None:
     """South East Archers management commands."""
     init_db()
+    from app.events.handlers import connect_handlers
+
+    connect_handlers()
 
 
 def main() -> None:

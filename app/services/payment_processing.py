@@ -224,7 +224,7 @@ def fulfill_checkout(
                     data=CheckoutFulfillment(
                         redirect_url="/member/dashboard",
                         flash_category="error",
-                        flash_message="Your payment was declined. You can retry from your payment history.",
+                        flash_message="Your payment was declined. You can retry from your dashboard.",
                         session_keys_to_clear=_ALL_CHECKOUT_SESSION_KEYS,
                     )
                 )
@@ -244,7 +244,7 @@ def fulfill_checkout(
                     data=CheckoutFulfillment(
                         redirect_url="/member/dashboard",
                         flash_category="error",
-                        flash_message="Your payment was not completed. You can retry from your payment history.",
+                        flash_message="Your payment was not completed. You can retry from your dashboard.",
                         session_keys_to_clear=_ALL_CHECKOUT_SESSION_KEYS,
                     )
                 )

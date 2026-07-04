@@ -15,8 +15,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.get("/login", name="auth.login", dependencies=[Depends(require_guest)])
-def login_page(request: Request):
-    return render(request, "auth/login.html")
+def login_page(request: Request, next_url: str | None = Query(None, alias="next")):
+    safe_next = next_url if next_url and is_safe_redirect(next_url) else None
+    return render(request, "auth/login.html", {"next_url": safe_next})
 
 
 @router.post("/login", name="auth.login_post", dependencies=[Depends(require_guest)])

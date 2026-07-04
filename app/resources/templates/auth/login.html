@@ -15,7 +15,7 @@
             <p class="text-gray-600 mt-2">Login to your account</p>
         </div>
         
-        <form method="POST" class="space-y-6">
+        <form method="POST" action="{{ url_for('auth.login_post') }}{% if next_url %}?next={{ next_url | urlencode }}{% endif %}" class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div>
                 <label class="form-label" for="email">Email Address</label>

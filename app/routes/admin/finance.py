@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, Response
 
 from app.dependencies import CsrfFormData, CurrentUser, require_perms
-from app.routes.admin._helpers import flash_form_errors
+from app.routes.admin._helpers import flash_form_errors, safe_int_param
 from app.schemas.admin_forms import (
     EXPENSE_CATEGORY_CHOICES,
     INCOME_CATEGORY_CHOICES,
@@ -40,8 +40,8 @@ def _transaction_form_view(transaction, *, values: dict | None = None, errors: d
 
 @router.get("/finance", name="admin.finance", dependencies=[require_perms("finance.read")])
 def finance_index(request: Request, user: CurrentUser):
-    page = int(request.query_params.get("page", 1))
-    per_page = int(request.query_params.get("per_page", 20))
+    page = safe_int_param(request, "page", 1)
+    per_page = safe_int_param(request, "per_page", 20)
     if per_page not in (5, 10, 20, 50, 100):
         per_page = 20
     pagination = finance.get_all_transactions_paginated(page=page, per_page=per_page)

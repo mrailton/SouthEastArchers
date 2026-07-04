@@ -184,7 +184,7 @@ def test_credits_cash_payment_success(mock_send_email, member_client):
     assert b"Cash Payment Pending" in response.content
 
 
-def test_payment_history_redirects_to_dashboard(member_client):
+def test_payment_history_returns_404(member_client):
     response = member_client.get("/payment/history", follow_redirects=False)
     assert response.status_code == 404
 

@@ -271,7 +271,7 @@ def activate_account(user_id: int) -> ServiceResult[User]:
         emit_user_activated(user_id)
     except Exception:
         pass
-    return ServiceResult.ok(data=member, message=f"Account activated for {member.name}! Welcome email sent.")
+    return ServiceResult.ok(data=member, message=f"Account activated for {member.name}.")
 
 
 def adjust_member_credits(

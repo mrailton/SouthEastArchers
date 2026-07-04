@@ -29,7 +29,6 @@ FALLBACK_ROUTES: dict[str, str] = {
     "payment.membership_payment_post": "/payment/membership",
     "payment.credits": "/payment/credits",
     "payment.credits_post": "/payment/credits",
-    "payment.history": "/payment/history",
     "payment.membership_cash_payment": "/payment/membership/cash",
     "payment.credits_cash_payment": "/payment/credits/cash",
     "admin.dashboard": "/admin/dashboard",

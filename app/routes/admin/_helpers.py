@@ -14,6 +14,14 @@ def redirect_back(request: Request, default: str) -> str:
     return target
 
 
+def safe_int_param(request: Request, name: str, default: int) -> int:
+    """Read an integer query parameter, falling back to *default* on bad input."""
+    try:
+        return int(request.query_params.get(name, default))
+    except TypeError, ValueError:
+        return default
+
+
 def flash_form_errors(request: Request, form_or_errors) -> None:
     errors = form_or_errors.errors if hasattr(form_or_errors, "errors") else form_or_errors
     for field, field_errors in errors.items():

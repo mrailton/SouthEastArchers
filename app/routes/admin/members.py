@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
 from app.dependencies import CsrfFormData, CurrentUser, require_perms
-from app.routes.admin._helpers import flash_form_errors
+from app.routes.admin._helpers import flash_form_errors, safe_int_param
 from app.schemas.admin_forms import QUALIFICATION_CHOICES, CreateMemberForm, EditMemberForm
 from app.schemas.form_helpers import FormView, parse_form
 from app.services import memberships, rbac, users
@@ -39,8 +39,8 @@ def _member_form_view(member, *, errors: dict | None = None) -> FormView:
 
 @router.get("/members", name="admin.members", dependencies=[require_perms("members.read")])
 def members_index(request: Request, user: CurrentUser):
-    page = int(request.query_params.get("page", 1))
-    per_page = int(request.query_params.get("per_page", 20))
+    page = safe_int_param(request, "page", 1)
+    per_page = safe_int_param(request, "per_page", 20)
     if per_page not in (5, 10, 20, 50, 100):
         per_page = 10
     search = request.query_params.get("search", "").strip()

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
 from app.dependencies import CsrfFormData, CurrentUser, require_perms
-from app.routes.admin._helpers import flash_form_errors, flash_service_warnings
+from app.routes.admin._helpers import flash_form_errors, flash_service_warnings, safe_int_param
 from app.schemas.admin_forms import ShootForm
 from app.schemas.form_helpers import parse_form
 from app.services import settings, shoots
@@ -20,8 +20,8 @@ def _shoot_page_context():
 
 @router.get("/shoots", name="admin.shoots", dependencies=[require_perms("shoots.read")])
 def shoots_index(request: Request, user: CurrentUser):
-    page = int(request.query_params.get("page", 1))
-    per_page = int(request.query_params.get("per_page", 10))
+    page = safe_int_param(request, "page", 1)
+    per_page = safe_int_param(request, "per_page", 10)
     if per_page not in (5, 10, 20, 50, 100):
         per_page = 10
     pagination = shoots.get_all_shoots_paginated(page=page, per_page=per_page)

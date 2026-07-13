@@ -8,7 +8,7 @@ echo "⏳ Waiting for database to be ready..."
 max_retries=30
 retry_count=0
 last_error=""
-until uv run python -m app.cli db current > /dev/null 2>/tmp/db_check_error || [ $retry_count -eq $max_retries ]; do
+until uv run sea db current > /dev/null 2>/tmp/db_check_error || [ $retry_count -eq $max_retries ]; do
     last_error=$(cat /tmp/db_check_error 2>/dev/null || true)
     retry_count=$((retry_count + 1))
     echo "  Database not ready yet (attempt $retry_count/$max_retries)..."
@@ -26,10 +26,10 @@ fi
 
 echo "✅ Database is ready!"
 echo "🔄 Running database migrations..."
-uv run python -m app.cli db upgrade
+uv run sea db upgrade
 
 echo "🔄 Seeding roles and permissions..."
-uv run python -m app.cli rbac seed
+uv run sea rbac seed
 
 echo "🚀 Starting application..."
 exec "$@"

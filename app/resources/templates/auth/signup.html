@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Sign Up - South East Archers{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="card">
+        <div class="text-center mb-8">
+            <div class="inline-block p-2 mb-6">
+                <img src="{{ url_for('static', filename='images/logo.png') }}"
+                     alt="South East Archers" 
+                     class="h-32 w-auto object-contain">
+            </div>
+            <h2 class="text-3xl font-bold text-primary">Join Our Club</h2>
+            <p class="text-gray-600 mt-2">Create your account to get started</p>
+        </div>
+        
+        <form method="POST" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div>
+            <label for="name" class="block text-gray-700 font-bold mb-2">Full Name *</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="text" id="name" name="name" value="{{ (form_values.name if form_values is defined else (form.name.data if form is defined else '')) or '' }}" required>
+        </div>
+        
+        <div>
+            <label for="email" class="block text-gray-700 font-bold mb-2">Email Address *</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="email" id="email" name="email" value="{{ (form_values.email if form_values is defined else (form.email.data if form is defined else '')) or '' }}" required>
+        </div>
+        
+        <div>
+            <label for="phone" class="block text-gray-700 font-bold mb-2">Phone Number (optional)</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="tel" id="phone" name="phone" value="{{ (form_values.phone if form_values is defined else (form.phone.data if form is defined else '')) or '' }}">
+        </div>
+        
+        <div>
+            <label for="password" class="block text-gray-700 font-bold mb-2">Password *</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="password" id="password" name="password" required>
+        </div>
+        
+        <div>
+            <label for="password_confirm" class="block text-gray-700 font-bold mb-2">Confirm Password *</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="password" id="password_confirm" name="password_confirm" required>
+        </div>
+        
+        <!-- QualificationSelection -->
+        <div class="border-t pt-4 mt-4" x-data="{ qualification: '{{ (form_values.qualification if form_values is defined else (form.qualification.data if form is defined else 'none')) or 'none' }}', qualificationDetail: '{{ (form_values.qualification_detail if form_values is defined else (form.qualification_detail.data if form is defined else '')) or '' }}' }">
+            <label class="block text-gray-700 font-bold mb-3">Qualification *</label>
+            <div class="space-y-3">
+                <div class="flex items-start">
+                    <input type="radio" 
+                           id="qualification_none"
+                           name="qualification"
+                           value="none"
+                           class="mt-1 mr-3"
+                           x-model="qualification">
+                    <div>
+                        <label for="qualification_none" class="font-semibold text-gray-900 cursor-pointer">None</label>
+                        <p class="text-sm text-gray-600">Select this if you have never taken a beginners course and are not a member of Archery Ireland or the Irish Field Archery Federation.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <input type="radio"
+                           id="qualification_beginner"
+                           name="qualification"
+                           value="beginner"
+                           class="mt-1 mr-3"
+                           x-model="qualification">
+                    <div>
+                        <label for="qualification_beginner" class="font-semibold text-gray-900 cursor-pointer">Beginner Course Completed</label>
+                        <p class="text-sm text-gray-600">Select this if you have completed a recognised beginners course but are not a member of Archery Ireland or the Irish Field Archery Federation.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <input type="radio"
+                           id="qualification_ai"
+                           name="qualification"
+                           value="ai"
+                           class="mt-1 mr-3"
+                           x-model="qualification">
+                    <div>
+                        <label for="qualification_ai" class="font-semibold text-gray-900 cursor-pointer">Archery Ireland Member</label>
+                        <p class="text-sm text-gray-600">Select this if you have completed a recognised beginners course and are a member of Archery Ireland.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <input type="radio"
+                           id="qualification_ifaf"
+                           name="qualification"
+                           value="ifaf"
+                           class="mt-1 mr-3"
+                           x-model="qualification">
+                    <div>
+                        <label for="qualification_ifaf" class="font-semibold text-gray-900 cursor-pointer">Irish Field Archery Federation Member</label>
+                        <p class="text-sm text-gray-600">Select this if you have completed a recognised beginners course and are a member of the Irish Field Archery Federation.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conditional detail field: single input, label/placeholder driven by Alpine -->
+            <div x-show="qualification !== 'none'" x-cloak class="mt-4">
+                <label for="qualification_detail" class="block text-gray-700 font-bold mb-2">
+                    <span x-show="qualification === 'beginner'">Where did you complete your beginners course? *</span>
+                    <span x-show="qualification === 'ai'">Archery Ireland Membership Number *</span>
+                    <span x-show="qualification === 'ifaf'">IFAF Membership Number *</span>
+                </label>
+                <input type="text"
+                       id="qualification_detail"
+                       name="qualification_detail"
+                       x-model="qualificationDetail"
+                       class="w-full border border-gray-300 rounded px-3 py-2"
+                       :placeholder="qualification === 'beginner' ? 'e.g. Dublin Archery Club, 2024' : qualification === 'ai' ? 'e.g. 12345' : 'e.g. 67890'"
+                       :required="qualification !== 'none'">
+                <p class="text-sm text-gray-500 mt-1">
+                    <span x-show="qualification === 'beginner'">Please enter the club or organisation that provided your certificate.</span>
+                    <span x-show="qualification === 'ai'">Please enter your Archery Ireland membership number.</span>
+                    <span x-show="qualification === 'ifaf'">Please enter your Irish Field Archery Federation membership number.</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="flex justify-center">
+            {% if recaptcha_site_key %}
+            <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+            <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+            {% elif form is defined and form.recaptcha %}
+            {{ form.recaptcha }}
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="w-full btn-secondary py-3">
+            Create Account
+        </button>
+    </form>
+    
+    <div class="text-center mt-6">
+        <p class="text-gray-700">
+            Already have an account? 
+            <a href="{{ url_for('auth.login') }}" class="link-primary">Login here</a>
+        </p>
+    </div>
+</div>
+</div>
+{% endblock %}

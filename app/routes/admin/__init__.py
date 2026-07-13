@@ -1,5 +1,14 @@
-from flask import Blueprint
+from fastapi import APIRouter
 
-bp = Blueprint("admin", __name__, url_prefix="/admin")
+from app.routes.admin import dashboard, events, finance, members, news, payments, roles, settings, shoots
 
-from . import dashboard, events, finance, members, news, payments, roles, settings, shoots  # noqa: E402
+router = APIRouter(prefix="/admin")
+router.include_router(dashboard.router)
+router.include_router(members.router)
+router.include_router(payments.router)
+router.include_router(shoots.router)
+router.include_router(events.router)
+router.include_router(news.router)
+router.include_router(finance.router)
+router.include_router(settings.router)
+router.include_router(roles.router)

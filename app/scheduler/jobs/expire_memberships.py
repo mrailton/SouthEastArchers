@@ -2,8 +2,7 @@
 
 from datetime import date
 
-from app.services.membership_service import MembershipService
-from app.services.settings_service import SettingsService
+from app.services import memberships, settings
 
 
 def expire_memberships():
@@ -16,12 +15,12 @@ def expire_memberships():
     today = date.today()
 
     # Get configured membership year start date
-    start_month = SettingsService.get("membership_year_start_month")
-    start_day = SettingsService.get("membership_year_start_day")
+    start_month = settings.get("membership_year_start_month")
+    start_day = settings.get("membership_year_start_day")
 
     # Check if today is the membership year start date
     if today.month == start_month and today.day == start_day:
-        count = MembershipService.expire_memberships_for_year_end()
+        count = memberships.expire_memberships_for_year_end()
         print(f"Membership expiry: New year started, processed {count} expired memberships")
     else:
         print(f"Membership expiry: Not year start date (configured: {start_month}/{start_day}, today: {today.month}/{today.day})")

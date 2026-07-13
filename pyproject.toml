@@ -2,46 +2,94 @@
 name = "south-east-archers"
 version = "1.0.0"
 description = "South East Archers Club Website"
-requires-python = ">=3.14"
+requires-python = ">=3.14,<3.15"
 dependencies = [
-    "Flask==3.1.3",
-    "flask-vite-assets>=0.2.0",
-    "Flask-SQLAlchemy==3.1.1",
-    "Flask-Migrate==4.1.0",
-    "Flask-Mail==0.10.0",
+    "fastapi>=0.136.3",
+    "uvicorn[standard]>=0.48.0",
+    "pydantic-settings>=2.14.1",
+    "jinja2>=3.1.6",
+    "python-multipart>=0.0.29",
+    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0,<4.1",
+    "httpx>=0.28.1",
     "sqlalchemy>=2.0.49",
-    "cryptography>=46.0.5",
+    "alembic>=1.15.0",
+    "click>=8.1.0",
+    "blinker>=1.9.0",
     "email-validator==2.3.0",
-    "Werkzeug==3.1.8",
     "python-dotenv==1.2.2",
-    "requests==2.33.1",
-    "MarkupSafe==3.0.3",
     "PyMySQL==1.1.3",
+    "cryptography>=42.0.0",
     "itsdangerous==2.2.0",
-    "Flask-Login==0.6.3",
-    "Flask-Bcrypt==1.0.1",
-    "Flask-WTF==1.3.0",
-    "WTForms==3.2.2",
     "gunicorn==26.0.0",
-    "whitenoise==6.12.0",
     "sumup==0.0.13",
     "fpdf2>=2.8.6",
+    "redis>=5.0.0",
 ]
 
 [dependency-groups]
 dev = [
-    "flask-shell-ipython",
-    "watchdog[watchmedo]",
     "pytest==9.0.3",
     "pytest-cov==7.1.0",
-    "pytest-flask==1.3.0",
-    "pytest-sugar>=1.1.1",
     "mypy>=1.19.1",
     "pytest-mock>=3.15.1",
+    "pytest-xdist>=3.8.0",
     "ruff>=0.15.2",
     "import-linter>=2.10",
-    "hypothesis>=6.130.0",
 ]
+
+[project.scripts]
+sea = "app.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.uv]
+package = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "--disable-warnings",
+    "-p", "no:warnings",
+    "-ra",
+    "--cov=app",
+    "--cov-report=term-missing",
+    "--cov-fail-under=95",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::sqlalchemy.exc.SAWarning",
+    "ignore::ResourceWarning",
+]
+markers = [
+    "slow: marks tests as slow",
+    "unit: marks tests as unit tests (models, services, repositories, events, CLI)",
+    "feature: marks tests as feature tests (HTTP client against FastAPI app)",
+]
+
+[tool.mypy]
+python_version = "3.14"
+files = ["app"]
+explicit_package_bases = true
+namespace_packages = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+ignore_missing_imports = true
+plugins = ["sqlalchemy.ext.mypy.plugin"]
+
 
 [tool.coverage.run]
 omit = [
@@ -49,12 +97,13 @@ omit = [
     "*/conftest.py",
     "*/.venv/*",
     "*/venv/*",
-    "app/schedule.py",  # Schedule configuration file - no logic to test
+    "app/cli/__main__.py",
 ]
 
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
+fail_under = 95
 
 [tool.ruff]
 line-length = 160
@@ -84,18 +133,50 @@ root_packages = ["app"]
 include_external_packages = false
 
 [[tool.importlinter.contracts]]
-name = "Only models and repositories may import app.db"
+name = "Services must not access database sessions directly"
 type = "forbidden"
-source_modules = [
-    "app.cli",
-    "app.controllers",
-    "app.events",
-    "app.forms",
-    "app.routes",
-    "app.scheduler",
-    "app.services",
-    "app.utils",
-]
+source_modules = ["app.services"]
+forbidden_modules = ["app.db.session"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Routes must not import the database layer directly"
+type = "forbidden"
+source_modules = ["app.routes"]
 forbidden_modules = ["app.db"]
+allow_indirect_imports = true
 
+[[tool.importlinter.contracts]]
+name = "Routes must not import repositories directly"
+type = "forbidden"
+source_modules = ["app.routes"]
+forbidden_modules = ["app.repositories"]
+allow_indirect_imports = true
 
+[[tool.importlinter.contracts]]
+name = "Routes must not import policies directly"
+type = "forbidden"
+source_modules = ["app.routes"]
+forbidden_modules = ["app.policies"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Routes must not import domain events directly"
+type = "forbidden"
+source_modules = ["app.routes"]
+forbidden_modules = ["app.events"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Schemas must not import services, routes, or presentation"
+type = "forbidden"
+source_modules = ["app.schemas"]
+forbidden_modules = ["app.services", "app.routes", "app.templating"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Event handlers must not import repositories directly"
+type = "forbidden"
+source_modules = ["app.events.handlers"]
+forbidden_modules = ["app.repositories"]
+allow_indirect_imports = true

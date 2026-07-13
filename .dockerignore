@@ -18,8 +18,7 @@ __pycache__
 node_modules
 
 # Built assets (will be copied from builder stage)
-resources/static/css
-resources/static/js
+app/resources/static/dist
 
 # Development
 .env

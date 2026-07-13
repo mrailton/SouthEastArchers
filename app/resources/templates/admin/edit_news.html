@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-4xl font-bold mb-6">Edit News</h1>
+    
+    <form method="POST" class="bg-white p-8 rounded shadow space-y-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div>
+            <label for="title" class="block text-gray-700 font-bold mb-2">Title</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="text" id="title" name="title" value="{{ news.title }}" required>
+        </div>
+        
+        <div>
+            <label for="summary" class="block text-gray-700 font-bold mb-2">Summary</label>
+            <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                   type="text" id="summary" name="summary" value="{{ news.summary or '' }}" maxlength="500">
+        </div>
+        
+        <div>
+            <label for="content" class="block text-gray-700 font-bold mb-2">Content</label>
+            <textarea class="w-full border border-gray-300 rounded px-3 py-2" 
+                      id="content" name="content" rows="8" required>{{ news.content }}</textarea>
+        </div>
+        
+        <div class="flex items-center">
+            <input type="checkbox" name="published" id="published" {% if news.published %}checked{% endif %}
+                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+            <label for="published" class="ml-2 text-sm text-gray-700">Published</label>
+        </div>
+        
+        <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">
+            Update News
+        </button>
+    </form>
+</div>
+{% endblock admin_content %}

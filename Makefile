@@ -1,6 +1,6 @@
-.PHONY: help install dev clean test test-verbose test-file test-coverage test-k \
+.PHONY: help install setup dev server clean test test-parallel test-verbose test-file test-coverage test-k test-migrations \
        lint lint-fix lint-check format format-check typecheck lint-imports \
-       assets assets-watch
+       assets assets-watch db-upgrade rbac-seed
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -11,22 +11,22 @@ install: ## Install all dependencies (Python + Node)
 	uv sync
 	npm ci
 
-dev: ## Run development servers (Flask + Vite)
-	@mkdir -p resources/static
-	@test -L resources/static/images || ln -s ../assets/images resources/static/images
-	@echo "Starting development servers..."
-	@echo "  - Vite dev server (asset hot reloading)"
-	@echo "  - Flask dev server"
-	@echo ""
-	@echo "Press Ctrl+C to stop"
-	@echo ""
-	@trap 'kill 0' EXIT; \
-		npm run dev & \
-		uv run flask run --debug & \
-		wait
+setup: ## First-time setup: install deps and build assets
+	$(MAKE) install
+	$(MAKE) assets
+
+dev: ## Run dev server and watch assets (parallel)
+	@$(MAKE) -j2 server assets-watch
+
+server: ## Run FastAPI with reload
+	uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 clean: ## Remove cache and temporary files
+	rm -rf app/resources/static/dist
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .mypy_cache -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .ruff_cache -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .import_linter_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	rm -rf .pytest_cache htmlcov .coverage
 
@@ -35,19 +35,23 @@ clean: ## Remove cache and temporary files
 test: ## Run test suite
 	uv run pytest
 
+test-parallel: ## Run test suite in parallel (faster on multi-core machines)
+	uv run pytest -n auto
+
 test-verbose: ## Run test suite with verbose output
 	uv run pytest -v
 
 test-file: ## Run a single test file (FILE=tests/path/to/test.py)
 	uv run pytest $(FILE)
 
-test-coverage: ## Run tests with coverage report
-	uv run pytest --cov=app --cov-report=term-missing --cov-report=html --no-cov-on-fail
-	@echo ""
-	@echo "HTML coverage report generated in htmlcov/"
+test-coverage: ## Run tests with coverage report (HTML + 95% gate)
+	uv run pytest --cov-report=html --no-cov-on-fail
 
 test-k: ## Run tests matching keyword (K="test_something")
 	uv run pytest -k "$(K)"
+
+test-migrations: ## Run Alembic migration smoke tests (requires MySQL DATABASE_URL)
+	uv run pytest tests/integration/ -v
 
 # ── Linting ──────────────────────────────────────────────────────────────────
 
@@ -84,4 +88,10 @@ assets: ## Build production assets with Vite
 
 assets-watch: ## Watch and rebuild assets on change
 	npm run dev
+
+db-upgrade: ## Apply database migrations
+	uv run sea db upgrade
+
+rbac-seed: ## Seed default roles and permissions
+	uv run sea rbac seed
 

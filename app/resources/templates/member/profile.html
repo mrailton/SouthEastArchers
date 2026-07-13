@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Profile - South East Archers{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-4xl font-bold mb-6">Your Profile</h1>
+    
+    <div class="bg-white p-8 rounded shadow">
+        <form method="POST" action="{{ url_for('member.profile_post') }}" class="space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="name" class="block text-gray-700 font-bold mb-2">Name</label>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                           type="text" id="name" name="name" value="{{ user.name }}" required>
+                </div>
+                
+                <div>
+                    <label for="email" class="block text-gray-700 font-bold mb-2">Email</label>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                           type="email" id="email" value="{{ user.email }}" disabled>
+                </div>
+                
+                <div>
+                    <label for="phone" class="block text-gray-700 font-bold mb-2">Phone</label>
+                    <input class="w-full border border-gray-300 rounded px-3 py-2" 
+                           type="tel" id="phone" name="phone" value="{{ user.phone or '' }}">
+                </div>
+            </div>
+            
+            <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">
+                Update Profile
+            </button>
+        </form>
+        
+        <hr class="my-8">
+        
+        <div>
+            <a href="{{ url_for('member.change_password') }}" class="text-blue-600 hover:underline">Change your password</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

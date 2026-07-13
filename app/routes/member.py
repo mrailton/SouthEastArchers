@@ -1,21 +1,96 @@
-from flask import Blueprint
+from fastapi import APIRouter, Query, Request
+from fastapi.responses import RedirectResponse
 
-from app.controllers.member import (
-    ChangePasswordController,
-    ChangePasswordPostController,
-    CreditsController,
-    DashboardController,
-    ProfileController,
-    ProfilePostController,
-    ShootsController,
-)
+from app.dependencies import CsrfFormData, CurrentUser
+from app.schemas.form_helpers import parse_form, single_field_errors
+from app.schemas.forms import ChangePasswordForm, ProfileForm
+from app.services import credits, users
+from app.templating import flash, flash_field_errors, render
 
-bp = Blueprint("member", __name__, url_prefix="/member")
+router = APIRouter(prefix="/member", tags=["member"])
 
-bp.add_url_rule("/dashboard", view_func=DashboardController(), endpoint="dashboard", methods=["GET"])
-bp.add_url_rule("/shoots", view_func=ShootsController(), endpoint="shoots", methods=["GET"])
-bp.add_url_rule("/credits", view_func=CreditsController(), endpoint="credits", methods=["GET"])
-bp.add_url_rule("/profile", view_func=ProfileController(), endpoint="profile", methods=["GET"])
-bp.add_url_rule("/profile", view_func=ProfilePostController(), endpoint="profile_post", methods=["POST"])
-bp.add_url_rule("/change-password", view_func=ChangePasswordController(), endpoint="change_password", methods=["GET"])
-bp.add_url_rule("/change-password", view_func=ChangePasswordPostController(), endpoint="change_password_post", methods=["POST"])
+
+@router.get("/dashboard", name="member.dashboard")
+def dashboard(
+    request: Request,
+    user: CurrentUser,
+    page: int = Query(1, ge=1),
+):
+    payment_page = users.get_user_payments_paginated(user.id, page=page, per_page=5)
+    return render(
+        request,
+        "member/dashboard.html",
+        {
+            "membership": user.membership,
+            "shoots_attended": len(user.shoots),
+            "payments": payment_page,
+        },
+        user=user,
+    )
+
+
+@router.get("/shoots", name="member.shoots")
+def shoots(request: Request, user: CurrentUser):
+    user_shoots = users.get_user_shoots(user)
+    return render(request, "member/shoots.html", {"shoots": user_shoots}, user=user)
+
+
+@router.get("/credits", name="member.credits")
+def credits_page(request: Request, user: CurrentUser):
+    user_credits = credits.get_user_credits(user.id)
+    return render(request, "member/credits.html", {"credits": user_credits}, user=user)
+
+
+@router.get("/profile", name="member.profile")
+def profile(request: Request, user: CurrentUser):
+    return render(request, "member/profile.html", user=user)
+
+
+@router.post("/profile", name="member.profile_post")
+def profile_update(request: Request, user: CurrentUser, form_data: CsrfFormData):
+    form, errors, _values = parse_form(ProfileForm, form_data)
+    if errors:
+        return render(
+            request,
+            "member/profile.html",
+            {"errors": single_field_errors(errors)},
+            user=user,
+            status_code=422,
+        )
+
+    assert form is not None
+    result = users.update_profile(user, name=form.name, phone=form.phone or None)
+    flash(request, "success" if result.success else "error", result.message)
+    return RedirectResponse(url="/member/profile", status_code=303)
+
+
+@router.get("/change-password", name="member.change_password")
+def change_password_page(request: Request, user: CurrentUser):
+    return render(request, "member/change_password.html", user=user)
+
+
+@router.post("/change-password", name="member.change_password_post")
+def change_password_store(request: Request, user: CurrentUser, form_data: CsrfFormData):
+    form, errors, _values = parse_form(ChangePasswordForm, form_data)
+    if errors:
+        flash_field_errors(request, errors)
+        return render(
+            request,
+            "member/change_password.html",
+            {"errors": single_field_errors(errors)},
+            user=user,
+            status_code=422,
+        )
+
+    assert form is not None
+    result = users.change_password(
+        user,
+        current_password=form.current_password,
+        new_password=form.new_password,
+    )
+    if not result.success:
+        flash(request, "error", result.message)
+        return render(request, "member/change_password.html", user=user, status_code=422)
+
+    flash(request, "success", result.message)
+    return RedirectResponse(url="/member/profile", status_code=303)

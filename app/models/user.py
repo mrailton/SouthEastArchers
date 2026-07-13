@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from flask import current_app
-from flask_login import UserMixin
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app import bcrypt, db
+from app.core.config import get_settings
+from app.core.security import hash_password, verify_password
+from app.db import Model
 from app.utils.datetime_utils import utc_now
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from app.models.shoot import Shoot
 
 
-class User(UserMixin, db.Model):
+class User(Model):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -33,34 +33,33 @@ class User(UserMixin, db.Model):
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[DateTime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
-    membership: Mapped[Membership | None] = relationship("Membership", backref="user", uselist=False, cascade="all, delete-orphan")
+    membership: Mapped[Membership | None] = relationship("Membership", back_populates="user", uselist=False, cascade="all, delete-orphan")
     credits: Mapped[list[Credit]] = relationship("Credit", backref="user", foreign_keys="Credit.user_id", cascade="all, delete-orphan")
-    shoots: Mapped[list[Shoot]] = relationship("Shoot", secondary="user_shoots", backref="users")
-    payments: Mapped[list[Payment]] = relationship("Payment", backref="user", cascade="all, delete-orphan")
+    shoots: Mapped[list[Shoot]] = relationship("Shoot", secondary="user_shoots", back_populates="users")
+    payments: Mapped[list[Payment]] = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
     roles: Mapped[list[Role]] = relationship("Role", secondary="user_roles", back_populates="users")
+
+    @property
+    def is_authenticated(self) -> bool:
+        return True
+
+    @property
+    def is_anonymous(self) -> bool:
+        return False
 
     @property
     def has_active_membership(self) -> bool:
         return bool(self.membership and self.membership.is_active())
 
     def set_password(self, password: str) -> None:
-        self.password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+        self.password_hash = hash_password(password)
 
     def check_password(self, password: str) -> bool:
-        return bcrypt.check_password_hash(self.password_hash, password)
+        return verify_password(password, self.password_hash)
 
     def generate_reset_token(self) -> str:
-        serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+        serializer = URLSafeTimedSerializer(get_settings().secret_key)
         return serializer.dumps(self.email, salt="password-reset-salt")
-
-    @staticmethod
-    def verify_reset_token(token: str, max_age: int = 3600) -> User | None:
-        serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
-        try:
-            email = serializer.loads(token, salt="password-reset-salt", max_age=max_age)
-            return User.query.filter_by(email=email).first()
-        except Exception:
-            return None
 
     def has_role(self, role_name: str) -> bool:
         return any(role.name == role_name for role in self.roles)

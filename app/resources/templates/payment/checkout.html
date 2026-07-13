@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Complete Payment - South East Archers{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white p-8 rounded-lg shadow">
+        <h2 class="text-3xl font-bold mb-6 text-center">Complete Payment</h2>
+        
+        <!-- Payment Summary -->
+        <div class="bg-gray-50 p-4 rounded mb-6">
+            <h3 class="font-semibold mb-2">Payment Summary</h3>
+            <div class="flex justify-between mb-1">
+                <span>{{ description }}</span>
+                <span class="font-bold">€{{ "%.2f"|format(amount) }}</span>
+            </div>
+        </div>
+        
+        <!-- SumUp Card Widget Container -->
+        <div id="sumup-card"></div>
+
+        <!-- Status messages -->
+        <div id="payment-processing" class="hidden text-center py-4">
+            <p class="text-gray-600">Processing your payment, please wait...</p>
+        </div>
+        <div id="payment-error" class="hidden bg-red-50 border-l-4 border-red-400 p-4 my-4">
+            <p class="text-sm text-red-700" id="payment-error-message"></p>
+        </div>
+
+        <!-- Hidden form for completion redirect -->
+        <form id="completion-form" method="POST" action="{{ url_for('payment.complete_checkout', checkout_id=checkout_id) }}" class="hidden">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+        </form>
+
+        <!-- Security Notice -->
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 my-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                        Your payment is processed securely by SumUp. We never store your card details.
+                    </p>
+                </div>
+            </div>
+        </div>
+            
+        <!-- Cancel Link -->
+        <div class="text-center mt-4">
+            <a href="{{ url_for('member.dashboard') }}" class="text-gray-600 hover:text-gray-800">
+                Cancel and return to dashboard
+            </a>
+        </div>
+        
+        <!-- Accepted Cards -->
+        <div class="mt-6 text-center text-gray-500 text-sm">
+            <p class="mb-2">Accepted payment methods:</p>
+            <div class="flex justify-center space-x-4">
+                <span>💳 Visa</span>
+                <span>💳 Mastercard</span>
+                <span>💳 Amex</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js"></script>
+<script>
+    SumUpCard.mount({
+        id: 'sumup-card',
+        checkoutId: '{{ checkout_id }}',
+        onResponse: function(type, body) {
+            var processingEl = document.getElementById('payment-processing');
+            var errorEl = document.getElementById('payment-error');
+            var errorMsgEl = document.getElementById('payment-error-message');
+
+            if (type === 'sent') {
+                processingEl.classList.remove('hidden');
+                errorEl.classList.add('hidden');
+            } else if (type === 'success') {
+                processingEl.classList.add('hidden');
+                errorEl.classList.add('hidden');
+                document.getElementById('completion-form').submit();
+            } else if (type === 'error' || type === 'invalid') {
+                processingEl.classList.add('hidden');
+                var message = (body && body.message) ? body.message : 'Payment failed. Please try again.';
+                errorMsgEl.textContent = message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+    });
+</script>
+{% endblock %}

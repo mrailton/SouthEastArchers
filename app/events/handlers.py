@@ -1,14 +1,8 @@
-"""Event handlers that connect domain signals to side effects (e.g., email sending).
-
-All handlers are registered when :func:`connect_handlers` is called during app
-startup.  They keep side-effect logic out of the core services.
-"""
-
 from __future__ import annotations
 
+import logging
+from collections.abc import Callable
 from typing import Any
-
-from flask import current_app
 
 from app.enums import PaymentType
 from app.events import (
@@ -20,6 +14,17 @@ from app.events import (
     user_activated,
     user_registered,
 )
+from app.events.background import defer_handler
+from app.events.payloads import (
+    CashPaymentSubmittedPayload,
+    CreditPurchasedPayload,
+    MembershipActivatedPayload,
+    PasswordResetPayload,
+    PaymentCompletedPayload,
+    UserIdPayload,
+)
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Handler implementations
@@ -28,128 +33,143 @@ from app.events import (
 
 def _on_user_registered(sender: Any, **kwargs: Any) -> None:
     """Notify admins that a new member has signed up."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
-    user_id: int = kwargs["user_id"]
+    payload = UserIdPayload.from_kwargs(kwargs)
     try:
-        MailService.send_new_member_notification(user_id)
-    except Exception as e:
-        current_app.logger.error(f"Event handler _on_user_registered failed: {e}")
+        mail.send_new_member_notification(payload.user_id)
+    except Exception:
+        logger.exception("Event handler _on_user_registered failed for user_id=%s", payload.user_id)
 
 
 def _on_user_activated(sender: Any, **kwargs: Any) -> None:
     """Send a welcome email when a user account is activated."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
-    user_id: int = kwargs["user_id"]
+    payload = UserIdPayload.from_kwargs(kwargs)
     try:
-        MailService.send_welcome_email(user_id)
-    except Exception as e:
-        current_app.logger.error(f"Event handler _on_user_activated failed: {e}")
+        mail.send_welcome_email(payload.user_id)
+    except Exception:
+        logger.exception("Event handler _on_user_activated failed for user_id=%s", payload.user_id)
 
 
 def _on_payment_completed(sender: Any, **kwargs: Any) -> None:
     """Send a payment receipt when a payment is completed."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
-    user_id: int = kwargs["user_id"]
-    payment_id: int = kwargs["payment_id"]
+    payload = PaymentCompletedPayload.from_kwargs(kwargs)
     try:
-        MailService.send_payment_receipt(user_id, payment_id)
-    except Exception as e:
-        current_app.logger.error(f"Event handler _on_payment_completed failed: {e}")
+        mail.send_payment_receipt(payload.user_id, payload.payment_id)
+    except Exception:
+        logger.exception(
+            "Event handler _on_payment_completed mail failed for user_id=%s payment_id=%s",
+            payload.user_id,
+            payload.payment_id,
+        )
 
-    _record_payment_financial_transactions(payment_id, kwargs.get("payment_type", PaymentType.MEMBERSHIP))
+    _record_payment_financial_transactions(payload.payment_id, payload.payment_type)
 
 
 def _on_credit_purchased(sender: Any, **kwargs: Any) -> None:
     """Send a credit purchase receipt."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
-    user_id: int = kwargs["user_id"]
-    payment_id: int = kwargs["payment_id"]
-    quantity: int = kwargs["quantity"]
+    payload = CreditPurchasedPayload.from_kwargs(kwargs)
     try:
-        MailService.send_credit_purchase_receipt(user_id, payment_id, quantity)
-    except Exception as e:
-        current_app.logger.error(f"Event handler _on_credit_purchased failed: {e}")
+        mail.send_credit_purchase_receipt(payload.user_id, payload.payment_id, payload.quantity)
+    except Exception:
+        logger.exception(
+            "Event handler _on_credit_purchased mail failed for user_id=%s payment_id=%s quantity=%s",
+            payload.user_id,
+            payload.payment_id,
+            payload.quantity,
+        )
 
-    _record_payment_financial_transactions(payment_id, PaymentType.CREDITS)
+    _record_payment_financial_transactions(payload.payment_id, PaymentType.CREDITS)
 
 
 def _on_cash_payment_submitted(sender: Any, **kwargs: Any) -> None:
     """Send a cash payment pending confirmation email."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
-    user_id: int = kwargs["user_id"]
-    payment_id: int = kwargs["payment_id"]
+    payload = CashPaymentSubmittedPayload.from_kwargs(kwargs)
     try:
-        MailService.send_cash_payment_pending_email(user_id, payment_id)
-    except Exception as e:
-        current_app.logger.error(f"Event handler _on_cash_payment_submitted failed: {e}")
+        mail.send_cash_payment_pending_email(payload.user_id, payload.payment_id)
+    except Exception:
+        logger.exception(
+            "Event handler _on_cash_payment_submitted failed for user_id=%s payment_id=%s",
+            payload.user_id,
+            payload.payment_id,
+        )
 
 
 def _on_password_reset_requested(sender: Any, **kwargs: Any) -> None:
     """Send a password reset email."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
-    user_id: int = kwargs["user_id"]
-    token: str = kwargs["token"]
+    payload = PasswordResetPayload.from_kwargs(kwargs)
     try:
-        MailService.send_password_reset(user_id, token)
-    except Exception as e:
-        current_app.logger.error(f"Event handler _on_password_reset_requested failed: {e}")
+        mail.send_password_reset(payload.user_id, payload.token)
+    except Exception:
+        logger.exception("Event handler _on_password_reset_requested failed for user_id=%s", payload.user_id)
 
 
 def _on_membership_activated(sender: Any, **kwargs: Any) -> None:
     """Send a payment receipt when a membership is activated (if a payment exists)."""
-    from app.services.mail_service import MailService
+    from app.services import mail
 
-    user_id: int = kwargs["user_id"]
-    payment_id: int | None = kwargs.get("payment_id")
-    if payment_id is not None:
+    payload = MembershipActivatedPayload.from_kwargs(kwargs)
+    if payload.payment_id is not None:
         try:
-            MailService.send_payment_receipt(user_id, payment_id)
-        except Exception as e:
-            current_app.logger.error(f"Event handler _on_membership_activated failed: {e}")
+            mail.send_payment_receipt(payload.user_id, payload.payment_id)
+        except Exception:
+            logger.exception(
+                "Event handler _on_membership_activated failed for user_id=%s payment_id=%s",
+                payload.user_id,
+                payload.payment_id,
+            )
 
 
 def _record_payment_financial_transactions(payment_id: int, payment_type: str) -> None:
-    """Record financial transactions for completed payments.
-
-    For SumUp payments: creates income + processing fee expense.
-    For cash payments: creates income only.
-    """
-    from app.repositories import PaymentRepository
-    from app.services.finance_service import FinanceService
+    """Record financial transactions for completed payments."""
+    from app.services import finance
 
     try:
-        payment = PaymentRepository.get_by_id(payment_id)
-        if not payment:
-            return
-
-        if payment.payment_processor == "sumup":
-            result = FinanceService.record_sumup_payment_transactions(
-                payment_amount_cents=payment.amount_cents,
-                payment_type=payment_type,
-                description=payment.description or f"SumUp {payment_type} payment",
-                created_by_id=payment.user_id,
-                receipt_reference=payment.external_transaction_id,
-            )
-        elif payment.payment_processor == "cash":
-            result = FinanceService.record_cash_payment_transaction(
-                payment_amount_cents=payment.amount_cents,
-                payment_type=payment_type,
-                description=payment.description or f"Cash {payment_type} payment",
-                created_by_id=payment.user_id,
-            )
-        else:
-            return
-
+        result = finance.record_payment_transactions_for_completed_payment(payment_id, payment_type)
         if not result.success:
-            current_app.logger.warning(f"Auto-record financial transactions skipped for payment {payment_id}: {result.message}")
-    except Exception as e:
-        current_app.logger.error(f"Failed to record financial transactions for payment {payment_id}: {e}")
+            logger.warning(
+                "Auto-record financial transactions skipped for payment_id=%s: %s",
+                payment_id,
+                result.message,
+            )
+    except Exception:
+        logger.exception("Failed to record financial transactions for payment_id=%s", payment_id)
+
+
+def _make_deferred_receiver(handler) -> Callable[..., None]:
+    def receiver(sender: Any, **kwargs: Any) -> None:
+        from app.core.config import get_settings
+        from app.events.background import run_handler_safe
+
+        if get_settings().is_testing:
+            run_handler_safe(handler, sender, **kwargs)
+        else:
+            defer_handler(handler, sender, **kwargs)
+
+    receiver.__name__ = f"deferred_{handler.__name__}"
+    return receiver
+
+
+# Strong references prevent blinker from garbage-collecting weak receiver refs.
+_RECEIVERS: list[tuple[Any, Callable[..., None]]] = [
+    (user_registered, _make_deferred_receiver(_on_user_registered)),
+    (user_activated, _make_deferred_receiver(_on_user_activated)),
+    (payment_completed, _make_deferred_receiver(_on_payment_completed)),
+    (credit_purchased, _make_deferred_receiver(_on_credit_purchased)),
+    (cash_payment_submitted, _make_deferred_receiver(_on_cash_payment_submitted)),
+    (password_reset_requested, _make_deferred_receiver(_on_password_reset_requested)),
+    (membership_activated, _make_deferred_receiver(_on_membership_activated)),
+]
 
 
 # ---------------------------------------------------------------------------
@@ -169,10 +189,5 @@ def connect_handlers() -> None:
         return
     _handlers_connected = True
 
-    user_registered.connect(_on_user_registered)
-    user_activated.connect(_on_user_activated)
-    payment_completed.connect(_on_payment_completed)
-    credit_purchased.connect(_on_credit_purchased)
-    cash_payment_submitted.connect(_on_cash_payment_submitted)
-    password_reset_requested.connect(_on_password_reset_requested)
-    membership_activated.connect(_on_membership_activated)
+    for signal, receiver in _RECEIVERS:
+        signal.connect(receiver)

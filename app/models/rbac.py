@@ -2,32 +2,35 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Integer, String
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
-from app import db
+from app.db import Model
+from app.db.session import Base
 from app.utils.datetime_utils import utc_now
 
 if TYPE_CHECKING:
     from app.models.user import User
 
 # Association tables
-user_roles = db.Table(
+user_roles = Table(
     "user_roles",
-    db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
-    db.Column("role_id", db.Integer, db.ForeignKey("roles.id"), primary_key=True),
-    db.Column("created_at", db.DateTime, default=utc_now, nullable=False),
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("role_id", Integer, ForeignKey("roles.id"), primary_key=True),
+    Column("created_at", DateTime, default=utc_now, nullable=False),
 )
 
-role_permissions = db.Table(
+role_permissions = Table(
     "role_permissions",
-    db.Column("role_id", db.Integer, db.ForeignKey("roles.id"), primary_key=True),
-    db.Column("permission_id", db.Integer, db.ForeignKey("permissions.id"), primary_key=True),
-    db.Column("created_at", db.DateTime, default=utc_now, nullable=False),
+    Base.metadata,
+    Column("role_id", Integer, ForeignKey("roles.id"), primary_key=True),
+    Column("permission_id", Integer, ForeignKey("permissions.id"), primary_key=True),
+    Column("created_at", DateTime, default=utc_now, nullable=False),
 )
 
 
-class Role(db.Model):
+class Role(Model):
     __tablename__ = "roles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -43,7 +46,7 @@ class Role(db.Model):
         return f"<Role {self.name}>"
 
 
-class Permission(db.Model):
+class Permission(Model):
     __tablename__ = "permissions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -154,11 +157,16 @@ def seed_rbac(session: Session) -> None:
     for role_name, config in ROLE_DEFINITIONS.items():
         role = existing_roles.get(role_name)
         if not role:
-            role = Role(name=role_name, description=config.get("description", ""))
+            raw_description = config.get("description", "")
+            role = Role(
+                name=role_name,
+                description=raw_description if isinstance(raw_description, str) else "",
+            )
             session.add(role)
             existing_roles[role_name] = role
-        if config.get("description"):
-            role.description = config["description"]
+        role_description = config.get("description")
+        if isinstance(role_description, str):
+            role.description = role_description
 
         desired_permissions = {existing_permissions[name] for name in config["permissions"]}
         role.permissions = list(desired_permissions)

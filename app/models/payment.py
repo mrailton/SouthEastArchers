@@ -1,27 +1,48 @@
-from app import db
+from __future__ import annotations
+
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
+
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db import Model
 from app.enums import PaymentMethod, PaymentType
 from app.utils.datetime_utils import utc_now
 
 
-class Payment(db.Model):
+class Payment(Model):
     __tablename__ = "payments"
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
-    amount_cents = db.Column(db.Integer, nullable=False)
-    currency = db.Column(db.String(3), default="EUR")
-    payment_type = db.Column(db.Enum(PaymentType, values_callable=lambda e: [m.value for m in e]), nullable=False)
-    payment_method = db.Column(db.Enum(PaymentMethod, values_callable=lambda e: [m.value for m in e]), nullable=False, default=PaymentMethod.ONLINE)
-    status = db.Column(
-        db.Enum("pending", "completed", "failed", "cancelled"),
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), default="EUR")
+    payment_type: Mapped[PaymentType] = mapped_column(
+        Enum(PaymentType, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+    )
+    payment_method: Mapped[PaymentMethod] = mapped_column(
+        Enum(PaymentMethod, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+        default=PaymentMethod.ONLINE,
+    )
+    status: Mapped[str] = mapped_column(
+        Enum("pending", "completed", "failed", "cancelled"),
         default="pending",
         index=True,
     )
-    description = db.Column(db.Text)
-    payment_processor = db.Column(db.String(50), nullable=True)
-    external_transaction_id = db.Column(db.String(255), unique=True, nullable=True, index=True)
-    created_at = db.Column(db.DateTime, default=utc_now)
-    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+    description: Mapped[str | None] = mapped_column(Text)
+    payment_processor: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    sumup_checkout_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    external_transaction_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+
+    user: Mapped[User] = relationship("User", back_populates="payments")
 
     def mark_completed(self, transaction_id: str | None = None, processor: str | None = None) -> None:
         self.status = "completed"

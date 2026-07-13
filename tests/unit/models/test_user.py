@@ -91,34 +91,30 @@ def test_generate_reset_token(test_user):
 
 def test_verify_reset_token_valid(app, test_user):
     """Test verifying valid reset token"""
-    from app.models import User
+    from app.services import users
 
     token = test_user.generate_reset_token()
-    verified_user = User.verify_reset_token(token)
+    verified_user = users.verify_reset_token(token)
     assert verified_user is not None
     assert verified_user.id == test_user.id
 
 
 def test_verify_reset_token_invalid(app):
     """Test verifying invalid reset token"""
-    from app.models import User
+    from app.services import users
 
-    verified_user = User.verify_reset_token("invalid_token")
+    verified_user = users.verify_reset_token("invalid_token")
     assert verified_user is None
 
 
 def test_verify_reset_token_expired(app, test_user):
     """Test verifying expired reset token"""
+    from app.services import users
 
-    from app.models import User
-
-    # Test with a garbage token
-    verified_user = User.verify_reset_token("invalid_token_string")
+    verified_user = users.verify_reset_token("invalid_token_string")
     assert verified_user is None
 
-    # Also test with a valid token but very short max_age
-    # (token just created should work with reasonable max_age)
     token = test_user.generate_reset_token()
-    verified_user = User.verify_reset_token(token, max_age=3600)
+    verified_user = users.verify_reset_token(token, max_age=3600)
     assert verified_user is not None
     assert verified_user.id == test_user.id

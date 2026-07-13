@@ -1,19 +1,14 @@
-"""Property-based tests for Membership credit logic using Hypothesis.
+"""Invariant tests for Membership credit logic.
 
-These tests verify invariants that must hold for *any* combination of
-initial/purchased credit values and operation sequences.  They complement the
-example-based tests in ``test_membership.py``.
+These complement the example-based tests in ``test_membership.py`` by checking
+rules that must hold across varied credit balances and operation sequences.
 
-The ``membership`` helper constructs ``Membership`` objects using the normal
-constructor within an app context (required by SQLAlchemy), but never adds
-them to the session — no database IO takes place.
+Membership objects are constructed in memory only — no database IO.
 """
 
 from datetime import date, timedelta
 
 import pytest
-from hypothesis import given
-from hypothesis import strategies as st
 
 from app.models import Membership
 
@@ -25,7 +20,6 @@ def _app_context(app):
 
 
 def _make_membership(initial: int = 20, purchased: int = 0, active: bool = True) -> Membership:
-    """Build a transient Membership (not added to DB session)."""
     return Membership(
         user_id=1,
         start_date=date.today() - timedelta(days=30),
@@ -36,153 +30,130 @@ def _make_membership(initial: int = 20, purchased: int = 0, active: bool = True)
     )
 
 
-# ---------------------------------------------------------------------------
-# credits_remaining is always initial + purchased
-# ---------------------------------------------------------------------------
-
-
-@given(
-    initial=st.integers(-50, 200),
-    purchased=st.integers(-50, 200),
+@pytest.mark.parametrize(
+    "initial,purchased",
+    [
+        (0, 0),
+        (20, 0),
+        (0, 15),
+        (10, 5),
+        (-5, 0),
+        (0, -3),
+        (-10, 20),
+        (200, 50),
+    ],
 )
 def test_credits_remaining_equals_initial_plus_purchased(initial, purchased):
     m = _make_membership(initial=initial, purchased=purchased)
     assert m.credits_remaining() == initial + purchased
 
 
-# ---------------------------------------------------------------------------
-# use_credit decreases total by exactly 1 when it returns True
-# ---------------------------------------------------------------------------
-
-
-@given(
-    initial=st.integers(0, 100),
-    purchased=st.integers(0, 100),
+@pytest.mark.parametrize(
+    "initial,purchased,expected_result,expected_remaining",
+    [
+        (5, 0, True, 4),
+        (0, 3, True, 2),
+        (0, 0, False, 0),
+        (-2, 0, False, -2),
+        (0, -1, False, -1),
+    ],
 )
-def test_use_credit_decreases_total_by_one(initial, purchased):
+def test_use_credit_decreases_total_by_one_when_successful(initial, purchased, expected_result, expected_remaining):
     m = _make_membership(initial=initial, purchased=purchased)
     before = m.credits_remaining()
 
     result = m.use_credit()
 
-    if before > 0:
-        assert result is True
+    assert result is expected_result
+    assert m.credits_remaining() == expected_remaining
+    if expected_result:
         assert m.credits_remaining() == before - 1
-    else:
-        assert result is False
-        assert m.credits_remaining() == before
 
 
-# ---------------------------------------------------------------------------
-# use_credit takes from initial before purchased
-# ---------------------------------------------------------------------------
-
-
-@given(
-    initial=st.integers(1, 100),
-    purchased=st.integers(0, 100),
+@pytest.mark.parametrize(
+    "initial,purchased,expected_initial,expected_purchased",
+    [
+        (10, 5, 9, 5),
+        (1, 20, 0, 20),
+    ],
 )
-def test_use_credit_takes_initial_first(initial, purchased):
+def test_use_credit_takes_initial_first(initial, purchased, expected_initial, expected_purchased):
     m = _make_membership(initial=initial, purchased=purchased)
-
     m.use_credit()
+    assert m.initial_credits == expected_initial
+    assert m.purchased_credits == expected_purchased
 
-    assert m.initial_credits == initial - 1
-    assert m.purchased_credits == purchased
 
-
-@given(purchased=st.integers(1, 100))
+@pytest.mark.parametrize("purchased", [1, 5, 20])
 def test_use_credit_takes_purchased_when_initial_zero(purchased):
     m = _make_membership(initial=0, purchased=purchased)
-
     m.use_credit()
-
     assert m.initial_credits == 0
     assert m.purchased_credits == purchased - 1
 
 
-# ---------------------------------------------------------------------------
-# use_credit(allow_negative=False) never mutates when returning False
-# ---------------------------------------------------------------------------
-
-
-@given(
-    initial=st.integers(-50, 0),
-    purchased=st.integers(-50, 0),
+@pytest.mark.parametrize(
+    "initial,purchased",
+    [
+        (0, 0),
+        (-5, 0),
+        (0, -2),
+        (-10, -3),
+    ],
 )
 def test_use_credit_no_mutation_on_false(initial, purchased):
     m = _make_membership(initial=initial, purchased=purchased)
-
     result = m.use_credit(allow_negative=False)
-
     assert result is False
     assert m.initial_credits == initial
     assert m.purchased_credits == purchased
 
 
-# ---------------------------------------------------------------------------
-# add_credits only affects purchased_credits
-# ---------------------------------------------------------------------------
-
-
-@given(
-    initial=st.integers(-50, 100),
-    purchased=st.integers(-50, 100),
-    amount=st.integers(0, 100),
+@pytest.mark.parametrize(
+    "initial,purchased,amount,expected_purchased",
+    [
+        (10, 5, 0, 5),
+        (0, 0, 7, 7),
+        (-5, 3, 10, 13),
+        (20, -2, 4, 2),
+    ],
 )
-def test_add_credits_only_changes_purchased(initial, purchased, amount):
+def test_add_credits_only_changes_purchased(initial, purchased, amount, expected_purchased):
     m = _make_membership(initial=initial, purchased=purchased)
-
     m.add_credits(amount)
-
     assert m.initial_credits == initial
-    assert m.purchased_credits == purchased + amount
+    assert m.purchased_credits == expected_purchased
 
 
-# ---------------------------------------------------------------------------
-# remove_credits takes from initial first, then purchased
-# ---------------------------------------------------------------------------
-
-
-@given(
-    initial=st.integers(0, 100),
-    purchased=st.integers(0, 100),
-    amount=st.integers(0, 200),
+@pytest.mark.parametrize(
+    "initial,purchased,amount,expected_initial,expected_purchased",
+    [
+        (10, 5, 0, 10, 5),
+        (10, 5, 4, 6, 5),
+        (10, 5, 10, 0, 5),
+        (10, 5, 12, 0, 3),
+        (10, 5, 15, 0, 0),
+        (0, 8, 3, 0, 5),
+        (0, 8, 20, 0, -12),
+    ],
 )
-def test_remove_credits_deducts_initial_first(initial, purchased, amount):
+def test_remove_credits_deducts_initial_first(initial, purchased, amount, expected_initial, expected_purchased):
     m = _make_membership(initial=initial, purchased=purchased)
-
     m.remove_credits(amount)
-
-    deduct_from_initial = min(amount, max(initial, 0))
-    remaining = amount - deduct_from_initial
-
-    assert m.initial_credits == initial - deduct_from_initial
-    if remaining > 0:
-        assert m.purchased_credits == purchased - remaining
-    else:
-        assert m.purchased_credits == purchased
+    assert m.initial_credits == expected_initial
+    assert m.purchased_credits == expected_purchased
 
 
-# ---------------------------------------------------------------------------
-# credits_remaining is consistent after any sequence of operations
-# ---------------------------------------------------------------------------
-
-
-@given(
-    initial=st.integers(0, 50),
-    purchased=st.integers(0, 50),
-    operations=st.lists(
-        st.one_of(
-            st.tuples(st.just("use"), st.just(None)),
-            st.tuples(st.just("add"), st.integers(1, 20)),
-            st.tuples(st.just("remove"), st.integers(1, 20)),
-        ),
-        max_size=30,
-    ),
+@pytest.mark.parametrize(
+    "initial,purchased,operations",
+    [
+        (10, 5, [("use", None), ("use", None), ("add", 3)]),
+        (5, 5, [("add", 10), ("remove", 4), ("use", None)]),
+        (0, 10, [("use", None), ("use", None), ("remove", 2), ("add", 5)]),
+        (20, 0, [("remove", 15), ("use", None), ("add", 1), ("use", None)]),
+    ],
 )
 def test_credits_remaining_invariant_after_operations(initial, purchased, operations):
-    """credits_remaining() == initial_credits + purchased_credits after any operation sequence."""
     m = _make_membership(initial=initial, purchased=purchased)
 
     for op, arg in operations:

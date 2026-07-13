@@ -1,7 +1,12 @@
-from .admin import bp as admin_bp
-from .auth import bp as auth_bp
-from .member import bp as member_bp
-from .payment import bp as payment_bp
-from .public import bp as public_bp
+from fastapi import APIRouter, Depends
 
-__all__ = ["public_bp", "auth_bp", "member_bp", "payment_bp", "admin_bp"]
+from app.core.database import get_db
+from app.routes import admin, auth, health, member, payment, public
+
+api_router = APIRouter(dependencies=[Depends(get_db)])
+api_router.include_router(health.router)
+api_router.include_router(public.router)
+api_router.include_router(auth.router)
+api_router.include_router(member.router)
+api_router.include_router(payment.router)
+api_router.include_router(admin.router)

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from app import db
+from sqlalchemy import func, select
+
+from app.db import db
 from app.models import News
 from app.repositories.base import BaseRepository
 
@@ -14,11 +16,13 @@ class NewsRepository(BaseRepository):
 
     @staticmethod
     def get_all() -> list[News]:
-        return News.query.order_by(News.created_at.desc()).all()
+        stmt = select(News).order_by(News.created_at.desc())
+        return list(db.session.scalars(stmt).unique().all())
 
     @staticmethod
     def get_published() -> list[News]:
-        return News.query.filter_by(published=True).order_by(News.published_at.desc()).all()
+        stmt = select(News).where(News.published.is_(True)).order_by(News.published_at.desc())
+        return list(db.session.scalars(stmt).unique().all())
 
     @staticmethod
     def add(news: News) -> None:
@@ -26,4 +30,4 @@ class NewsRepository(BaseRepository):
 
     @staticmethod
     def count() -> int:
-        return News.query.count()
+        return db.session.scalar(select(func.count()).select_from(News)) or 0

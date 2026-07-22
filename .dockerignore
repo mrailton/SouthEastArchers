@@ -2,7 +2,7 @@
 .git
 .gitignore
 .github
-
+ 
 # Python
 __pycache__
 *.pyc
@@ -11,23 +11,38 @@ __pycache__
 .Python
 *.so
 .pytest_cache
+.mypy_cache
+.ruff_cache
 *.egg-info
 .venv
-
+venv
+ 
 # Node
 node_modules
-
-# Built assets (will be copied from builder stage)
+npm-debug.log*
+ 
+# Built assets (rebuilt fresh by the builder stage — don't ship stale local copies)
 app/resources/static/dist
-
+ 
 # Development
 .env
+.env.*
 .env.example
 *.log
-
+ 
 # IDE
 .vscode
 .idea
-
+.DS_Store
+ 
 # Docs
 README.md
+docs/
+ 
+# Tests
+tests/
+ 
+# Docker itself (no reason to send these into the build context)
+Dockerfile*
+.dockerignore
+docker-compose*.yml

@@ -9,7 +9,7 @@ max_retries=30
 retry_count=0
 last_error=""
 
-until uv run sea db current 2> >(tee /tmp/db_check_error >&2) || [ $retry_count -eq $max_retries ]; do
+until sea db current 2> >(tee /tmp/db_check_error >&2) || [ $retry_count -eq $max_retries ]; do
     last_error=$(cat /tmp/db_check_error 2>/dev/null || true)
     retry_count=$((retry_count + 1))
 
@@ -30,10 +30,10 @@ fi
 
 echo "✅ Database is ready!"
 echo "🔄 Running database migrations..."
-uv run sea db upgrade
+sea db upgrade
 
 echo "🔄 Seeding roles and permissions..."
-uv run sea rbac seed
+sea rbac seed
 
 echo "🚀 Starting application..."
 exec "$@"

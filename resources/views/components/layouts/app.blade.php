@@ -56,7 +56,7 @@
                 <a href="{{ route('index') }}" class="nav-link text-gray-700 font-medium">Home</a>
                 <a href="{{ route('about') }}" class="nav-link text-gray-700 font-medium">About</a>
 
-                <a href="#" class="nav-link text-gray-700 font-medium">Membership</a>
+                <a href="{{ route('membership') }}" class="nav-link text-gray-700 font-medium">Membership</a>
                 <a href="#" class="nav-link text-gray-700 font-medium">Login</a>
 
 
@@ -81,7 +81,7 @@
             <a href="{{ route('index') }}" class="block py-2 text-gray-700 hover:text-primary">Home</a>
             <a href="{{ route('about') }}" class="block py-2 text-gray-700 hover:text-primary">About</a>
 
-            <a href="#" class="block py-2 text-gray-700 hover:text-primary">Membership</a>
+            <a href="{{ route('membership') }}" class="block py-2 text-gray-700 hover:text-primary">Membership</a>
             <a href="#" class="block py-2 text-gray-700 hover:text-primary">Login</a>
             <a href="#" class="block py-2 text-red font-semibold">Sign Up</a>
 
@@ -120,8 +120,8 @@
             <div>
                 <h4 class="text-lg font-bold mb-6 text-primary" style="color: var(--sea-primary-light);">Quick Links</h4>
                 <ul class="space-y-4">
-                    <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
-                    <li><a href="#" class="text-gray-400 hover:text-white transition-colors">About Us</a></li>
+                    <li><a href="{{ route('index') }}" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
+                    <li><a href="{{ route('about') }}" class="text-gray-400 hover:text-white transition-colors">About Us</a></li>
                 </ul>
             </div>
             <div>

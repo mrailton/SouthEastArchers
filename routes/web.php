@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\IndexController;
+use App\Http\Controllers\MembershipController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', IndexController::class)->name('index');
 Route::get('/about', AboutController::class)->name('about');
+Route::get('/membership', MembershipController::class)->name('membership');

@@ -85,7 +85,7 @@ async def run_deferred_event_handlers(request: Request, call_next):
             run_handler_safe(handler, *args, **kwargs)
     else:
         for handler, args, kwargs in deferred:
-            asyncio.create_task(asyncio.to_thread(run_handler_safe, handler, *args, **kwargs))
+            asyncio.create_task(asyncio.to_thread(run_handler_safe, handler, *args, use_fresh_session=True, **kwargs))
     return response
 
 

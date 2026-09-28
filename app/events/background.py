@@ -56,11 +56,16 @@ def _log_handler_context(handler: _Handler, kwargs: dict[str, Any]) -> dict[str,
     return context
 
 
-def run_handler_safe(handler: _Handler, *args: Any, **kwargs: Any) -> None:
+def run_handler_safe(
+    handler: _Handler,
+    *args: Any,
+    use_fresh_session: bool = False,
+    **kwargs: Any,
+) -> None:
     try:
         from app.db.session import has_current_session
 
-        if has_current_session():
+        if has_current_session() and not use_fresh_session:
             handler(*args, **kwargs)
         else:
             run_handler_with_session(handler, *args, **kwargs)

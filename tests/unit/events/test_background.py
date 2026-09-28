@@ -72,6 +72,20 @@ def test_run_handler_safe_runs_with_active_session(app):
     assert called == [True]
 
 
+def test_run_handler_safe_can_replace_inherited_session(app):
+    from app import db
+
+    request_session = db.session
+    observed: list[bool] = []
+
+    def handler() -> None:
+        observed.append(db.session is request_session)
+
+    run_handler_safe(handler, use_fresh_session=True)
+
+    assert observed == [False]
+
+
 def test_run_handler_safe_logs_handler_failure(app, caplog):
     def handler() -> None:
         raise RuntimeError("boom")

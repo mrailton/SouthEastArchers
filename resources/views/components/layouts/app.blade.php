@@ -27,7 +27,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-32">
             <div class="flex items-center">
-                <a href="#" class="flex items-center space-x-4 group">
+                <a href="{{ route('index') }}" class="flex items-center space-x-4 group">
                     <div class="relative p-1">
                         <img src="{{ asset('images/logo.png') }}"
                              alt="South East Archers Logo"
@@ -53,8 +53,8 @@
 
             <!-- Desktop menu -->
             <div class="hidden md:flex items-center space-x-6">
-                <a href="#" class="nav-link text-gray-700 font-medium">Home</a>
-                <a href="#" class="nav-link text-gray-700 font-medium">About</a>
+                <a href="{{ route('index') }}" class="nav-link text-gray-700 font-medium">Home</a>
+                <a href="{{ route('about') }}" class="nav-link text-gray-700 font-medium">About</a>
 
                 <a href="#" class="nav-link text-gray-700 font-medium">Membership</a>
                 <a href="#" class="nav-link text-gray-700 font-medium">Login</a>
@@ -78,8 +78,8 @@
 
         <!-- Mobile menu -->
         <div x-show="open" class="md:hidden pb-4 space-y-2">
-            <a href="#" class="block py-2 text-gray-700 hover:text-primary">Home</a>
-            <a href="#" class="block py-2 text-gray-700 hover:text-primary">About</a>
+            <a href="{{ route('index') }}" class="block py-2 text-gray-700 hover:text-primary">Home</a>
+            <a href="{{ route('about') }}" class="block py-2 text-gray-700 hover:text-primary">About</a>
 
             <a href="#" class="block py-2 text-gray-700 hover:text-primary">Membership</a>
             <a href="#" class="block py-2 text-gray-700 hover:text-primary">Login</a>

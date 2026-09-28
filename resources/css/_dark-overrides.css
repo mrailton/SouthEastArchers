@@ -1,0 +1,215 @@
+/* ============================================
+   DARK MODE OVERRIDES
+   Shared between site.css and admin.css.
+   Placed outside @layer for cascade priority
+   over Tailwind utility classes.
+   ============================================ */
+
+/* Native browser dark color scheme */
+html.dark {
+    color-scheme: dark;
+}
+
+/* ---- Background overrides ---- */
+html.dark .bg-white {
+    background-color: #1e293b !important;
+}
+
+html.dark .bg-gray-50 {
+    background-color: #0f172a !important;
+}
+
+html.dark .bg-gray-100 {
+    background-color: #111827 !important;
+}
+
+/* ---- Text overrides ---- */
+html.dark .text-gray-900 {
+    color: #f1f5f9 !important;
+}
+
+html.dark .text-gray-800 {
+    color: #e2e8f0 !important;
+}
+
+html.dark .text-gray-700 {
+    color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-600 {
+    color: #94a3b8 !important;
+}
+
+html.dark .text-gray-500 {
+    color: #64748b !important;
+}
+
+/* ---- Border overrides ---- */
+html.dark .border-gray-200 {
+    border-color: #334155 !important;
+}
+
+html.dark .border-gray-300 {
+    border-color: #475569 !important;
+}
+
+html.dark .border-gray-400 {
+    border-color: #64748b !important;
+}
+
+html.dark .divide-gray-200 > :not(:last-child) {
+    border-color: #334155 !important;
+}
+
+/* ---- Semantic background tints ---- */
+html.dark .bg-green-100,
+html.dark .bg-green-50 {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+}
+
+html.dark .bg-red-100,
+html.dark .bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+}
+
+html.dark .bg-yellow-100,
+html.dark .bg-yellow-50 {
+    background-color: rgba(245, 158, 11, 0.12) !important;
+}
+
+html.dark .bg-blue-100,
+html.dark .bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.12) !important;
+}
+
+/* ---- Semantic text tints ---- */
+html.dark .text-green-800 {
+    color: #6ee7b7 !important;
+}
+
+html.dark .text-red-800 {
+    color: #fca5a5 !important;
+}
+
+html.dark .text-yellow-800 {
+    color: #fcd34d !important;
+}
+
+html.dark .text-blue-800 {
+    color: #93c5fd !important;
+}
+
+html.dark .text-yellow-600 {
+    color: #fbbf24 !important;
+}
+
+html.dark .text-yellow-700 {
+    color: #fcd34d !important;
+}
+
+/* ---- Form elements ---- */
+html.dark .form-input,
+html.dark select,
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+html.dark textarea {
+    background-color: #0f172a !important;
+    border-color: #475569 !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .form-input:focus,
+html.dark select:focus,
+html.dark input:focus,
+html.dark textarea:focus {
+    border-color: var(--sea-primary) !important;
+}
+
+html.dark .form-label {
+    color: #cbd5e1 !important;
+}
+
+/* ---- Component overrides ---- */
+html.dark .card {
+    background-color: #1e293b !important;
+}
+
+html.dark .alert-info {
+    background-color: rgba(27, 163, 156, 0.1) !important;
+}
+
+html.dark .alert-warning-red {
+    background-color: rgba(196, 30, 58, 0.15) !important;
+}
+
+/* ---- Table overrides ---- */
+html.dark thead.bg-gray-50,
+html.dark .bg-gray-50:is(thead) {
+    background-color: #1e293b !important;
+}
+
+html.dark tbody .bg-white,
+html.dark tbody.bg-white {
+    background-color: #1e293b !important;
+}
+
+/* ---- Shadow softening ---- */
+html.dark .shadow,
+html.dark .shadow-sm,
+html.dark .shadow-md,
+html.dark .shadow-lg,
+html.dark .shadow-xl {
+    --tw-shadow-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ---- Badge dark treatment ---- */
+html.dark .bg-green-100.text-green-800,
+html.dark .bg-green-100 {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+html.dark .bg-red-100.text-red-800,
+html.dark .bg-red-100 {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+html.dark .bg-yellow-100.text-yellow-800,
+html.dark .bg-yellow-100 {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+/* ---- Admin-specific flash message borders ---- */
+html.dark .border-green-200 {
+    border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+html.dark .border-red-200 {
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+html.dark .border-yellow-200 {
+    border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+html.dark .border-blue-200 {
+    border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+/* ---- Hover state overrides ---- */
+html.dark .hover\:bg-gray-50:hover {
+    background-color: #1e293b !important;
+}
+
+html.dark .hover\:bg-gray-100:hover {
+    background-color: #1e293b !important;
+}
+
+/* ---- Ring overrides ---- */
+html.dark .ring-gray-200 {
+    --tw-ring-color: #334155 !important;
+}
+
+/* ---- Placeholder text ---- */
+html.dark ::placeholder {
+    color: #64748b !important;
+}
+

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import ceil
-from typing import TypeVar
+from typing import TypeVar, Any
 
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
@@ -61,7 +61,7 @@ class Pagination:
             yield page
 
 
-def paginate[T](session: Session, stmt: Select[tuple[T]], *, page: int = 1, per_page: int = 20) -> Pagination:
+def paginate(session: Session, stmt: Select[Any], *, page: int = 1, per_page: int = 20) -> Pagination:
     page = max(page, 1)
     per_page = max(per_page, 1)
     total = session.scalar(select(func.count()).select_from(stmt.subquery())) or 0

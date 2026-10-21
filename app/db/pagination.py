@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import ceil
-from typing import TypeVar, Any
+from typing import Any, TypeVar
 
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session

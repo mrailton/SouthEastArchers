@@ -24,6 +24,7 @@ dependencies = [
     "sumup==0.0.13",
     "fpdf2>=2.8.6",
     "redis>=5.0.0",
+    "anyio>=4.14.2",
 ]
 
 [dependency-groups]

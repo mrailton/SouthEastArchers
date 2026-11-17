@@ -14,6 +14,11 @@ _Queue = list[tuple[_Handler, tuple[Any, ...], dict[str, Any]]]
 _deferred: ContextVar[_Queue | None] = ContextVar("_deferred_event_handlers", default=None)
 
 
+def init_deferred_handlers() -> None:
+    """Initialize the deferred handlers queue for the current request context."""
+    _deferred.set([])
+
+
 def _queue() -> _Queue:
     handlers = _deferred.get()
     if handlers is None:

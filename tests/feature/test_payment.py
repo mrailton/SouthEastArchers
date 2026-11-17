@@ -71,6 +71,136 @@ def test_complete_checkout_membership_renewal(mock_email, mock_sumup_class, memb
 
 
 @patch("app.services.payment_processing.SumUpService")
+@patch("app.services.mail.send_payment_receipt")
+def test_complete_checkout_records_financial_transactions(mock_email, mock_sumup_class, member_client, test_user):
+    """When sumup_fee_percentage is configured, online payment records income and fee expense."""
+    from app.models import FinancialTransaction
+    from app.services import settings
+
+    settings.set("sumup_fee_percentage", "2.50")
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    mock_sumup_class.return_value.get_checkout.return_value = Mock(status="PAID", transaction_code="TXN_MEM_FEE", transaction_id="txn_mem_fee")
+    set_session(
+        member_client,
+        membership_renewal_user_id=test_user.id,
+        membership_renewal_payment_id=payment.id,
+    )
+    response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
+    assert response.status_code == 200
+
+    income = FinancialTransaction.query.filter_by(receipt_reference="TXN_MEM_FEE", type="income").first()
+    assert income is not None
+    assert income.amount == 100.00
+    assert income.category == "membership_fees"
+    assert income.source == "SumUp"
+
+    expense = FinancialTransaction.query.filter_by(receipt_reference="TXN_MEM_FEE", type="expense").first()
+    assert expense is not None
+    assert expense.amount == 2.50
+    assert expense.category == "payment_processing_fees"
+
+
+@patch("app.services.payment_processing.SumUpService")
+@patch("app.services.mail.send_credit_purchase_receipt")
+def test_complete_checkout_credit_purchase_records_financial_transactions(mock_email, mock_sumup_class, member_client, test_user):
+    """Online credit purchase records shoot_fees income and processing fee expense."""
+    from app.models import FinancialTransaction
+    from app.services import settings
+
+    settings.set("sumup_fee_percentage", "2.50")
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=1500,
+        currency="EUR",
+        payment_type="credits",
+        status="pending",
+        description="3 shooting credits",
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    mock_sumup_class.return_value.get_checkout.return_value = Mock(status="PAID", transaction_code="TXN_CRED_FEE", transaction_id="txn_cred_fee")
+    set_session(
+        member_client,
+        credit_purchase_user_id=test_user.id,
+        credit_purchase_payment_id=payment.id,
+        credit_purchase_quantity=3,
+    )
+    response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
+    assert response.status_code == 200
+
+    income = FinancialTransaction.query.filter_by(receipt_reference="TXN_CRED_FEE", type="income").first()
+    assert income is not None
+    assert income.amount == 15.00
+    assert income.category == "shoot_fees"
+    assert income.source == "SumUp"
+
+    expense = FinancialTransaction.query.filter_by(receipt_reference="TXN_CRED_FEE", type="expense").first()
+    assert expense is not None
+    assert expense.amount == 0.38
+    assert expense.category == "payment_processing_fees"
+
+
+@patch("app.services.payment_processing.SumUpService")
+@patch("app.services.mail.send_payment_receipt")
+def test_complete_checkout_production_mode_defers_and_records(mock_email, mock_sumup_class, member_client, test_user, monkeypatch):
+    import time
+
+    from app.core.config import get_settings
+    from app.models import FinancialTransaction
+    from app.services import settings
+
+    settings.set("sumup_fee_percentage", "2.50")
+    payment = Payment(
+        user_id=test_user.id,
+        amount_cents=10000,
+        currency="EUR",
+        payment_type="membership",
+        status="pending",
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    monkeypatch.setattr(get_settings(), "app_env", "production")
+    assert get_settings().is_testing is False
+
+    mock_sumup_class.return_value.get_checkout.return_value = Mock(status="PAID", transaction_code="TXN_PROD_123", transaction_id="txn_prod_123")
+    set_session(
+        member_client,
+        membership_renewal_user_id=test_user.id,
+        membership_renewal_payment_id=payment.id,
+    )
+    response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)
+    assert response.status_code == 200
+
+    # Wait for threadpool background task to execute
+    for _ in range(50):
+        income = FinancialTransaction.query.filter_by(receipt_reference="TXN_PROD_123", type="income").first()
+        if income:
+            break
+        time.sleep(0.05)
+
+    assert income is not None
+    assert income.amount == 100.00
+    assert income.category == "membership_fees"
+    assert income.source == "SumUp"
+
+    expense = FinancialTransaction.query.filter_by(receipt_reference="TXN_PROD_123", type="expense").first()
+    assert expense is not None
+    assert expense.amount == 2.50
+    assert expense.category == "payment_processing_fees"
+
+
+@patch("app.services.payment_processing.SumUpService")
 def test_complete_checkout_null_checkout(mock_sumup_class, member_client):
     mock_sumup_class.return_value.get_checkout.return_value = None
     response = member_client.post("/payment/checkout/test_123/complete", follow_redirects=True)

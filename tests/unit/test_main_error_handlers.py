@@ -1,6 +1,8 @@
 import logging
 from unittest.mock import patch
 
+import pytest
+
 from app.main import _configure_app_logging, _session_user_for_error_page
 from app.templating import AnonymousUser
 
@@ -63,3 +65,46 @@ def test_configure_app_logging_skips_handler_when_already_present():
         assert app_logger.handlers == [existing]
     finally:
         app_logger.handlers = original_handlers
+
+
+@pytest.mark.anyio
+async def test_run_deferred_event_handlers_production_mode():
+    from app.events.background import defer_handler
+    from app.main import run_deferred_event_handlers
+
+    called = []
+
+    def dummy_handler(val):
+        called.append(val)
+
+    async def call_next(req):
+        defer_handler(dummy_handler, 123)
+        return "response"
+
+    with patch("app.main.settings") as mock_settings:
+        mock_settings.is_testing = False
+        res = await run_deferred_event_handlers(None, call_next)
+        assert res == "response"
+
+    import asyncio
+
+    await asyncio.sleep(0.05)
+    assert called == [123]
+
+
+@pytest.mark.anyio
+async def test_run_deferred_event_handlers_clears_on_exception():
+    from app.events.background import defer_handler, take_deferred_handlers
+    from app.main import run_deferred_event_handlers
+
+    def dummy_handler(val):
+        pass
+
+    async def call_next(req):
+        defer_handler(dummy_handler, 456)
+        raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError, match="boom"):
+        await run_deferred_event_handlers(None, call_next)
+
+    assert take_deferred_handlers() == []

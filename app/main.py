@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 init_db(settings)
 
+_background_tasks: set[asyncio.Task] = set()
+
 APP_DIR = Path(__file__).resolve().parent
 STATIC_DIR = APP_DIR / "resources" / "static"
 BUILT_ASSETS_DIR = STATIC_DIR / "dist" / "assets"
@@ -76,16 +78,24 @@ app.include_router(api_router)
 
 @app.middleware("http")
 async def run_deferred_event_handlers(request: Request, call_next):
-    from app.events.background import run_handler_safe, take_deferred_handlers
+    from app.events.background import init_deferred_handlers, run_handler_safe, take_deferred_handlers
 
-    response = await call_next(request)
+    init_deferred_handlers()
+    try:
+        response = await call_next(request)
+    except Exception:
+        take_deferred_handlers()
+        raise
+
     deferred = take_deferred_handlers()
     if settings.is_testing:
         for handler, args, kwargs in deferred:
             run_handler_safe(handler, *args, **kwargs)
     else:
         for handler, args, kwargs in deferred:
-            asyncio.create_task(asyncio.to_thread(run_handler_safe, handler, *args, use_fresh_session=True, **kwargs))
+            task = asyncio.create_task(asyncio.to_thread(run_handler_safe, handler, *args, use_fresh_session=True, **kwargs))
+            _background_tasks.add(task)
+            task.add_done_callback(_background_tasks.discard)
     return response
 
 

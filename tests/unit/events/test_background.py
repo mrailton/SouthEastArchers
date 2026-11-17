@@ -5,10 +5,19 @@ import pytest
 from app.events.background import (
     defer_handler,
     flush_deferred_handlers,
+    init_deferred_handlers,
     run_handler_safe,
     run_handler_with_session,
     take_deferred_handlers,
 )
+
+
+def test_init_deferred_handlers():
+    from app.events.background import _deferred
+
+    init_deferred_handlers()
+    assert _deferred.get() == []
+    assert take_deferred_handlers() == []
 
 
 def test_defer_handler_queues_and_take_clears():
